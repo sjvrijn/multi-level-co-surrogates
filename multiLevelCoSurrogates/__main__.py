@@ -13,11 +13,12 @@ import cma
 import numpy as np
 from pyKriging.samplingplan import samplingplan
 from itertools import product
+from functools import partial
 
 from .Surrogates import RBF, Kriging
 from .Logger import Logger
 from .config import data_dir, filename, suffix, data_ext, fit_funcs
-from .config import experiment_repetitions
+from .config import experiment_repetitions, training_size
 
 
 def createSurrogate(N, init_sample_size, fit_func, Surrogate):
@@ -50,9 +51,17 @@ def preSelection(candidates, pre_results, lambda_, fit_func, archive_candidates)
     return results
 
 
-def runExperiment(N, lambda_, lambda_pre, mu, init_sample_size, training_size,
-                  fit_func_name, rep):
+def calcMultiFidelityError(candidate, highFidFunc, lowFidFunc):
+    high = highFidFunc(candidate)
+    low = lowFidFunc(candidate)
+    return high - low
 
+
+
+def runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
+                               fit_func_name, rep):
+
+    ### SETUP ###
     Surrogate = Kriging
     fit_func = fit_funcs[fit_func_name]
     sigma = 0.5
@@ -72,7 +81,8 @@ def runExperiment(N, lambda_, lambda_pre, mu, init_sample_size, training_size,
     full_res_log = Logger(filename_prefix + 'fullreslog' + data_ext,
                           header="Fitness values from actual function, evaluated for all candidates")
 
-    surrogate = createSurrogate(N, init_sample_size, fit_func, Surrogate)
+    error_func = partial(calcMultiFidelityError, highFidFunc=fit_func.high, lowFidFunc=fit_func.low)
+    surrogate = createSurrogate(N, init_sample_size, error_func, Surrogate)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
@@ -83,6 +93,8 @@ def runExperiment(N, lambda_, lambda_pre, mu, init_sample_size, training_size,
     else:
         std_log = None
 
+
+    ### OPTIMIZATION ###
     while not es.stop():
         # Obtain the list of lambda_pre candidates to evaluate
         candidates = np.array(es.ask())
@@ -114,21 +126,18 @@ def run():
     init_sample_size = 20
 
     num_reps = experiment_repetitions
-    training_sizes = [50] #[i*lambda_ for i in range(1, 6)]
 
     fit_func_names = fit_funcs.keys()
 
-    experiments = product(training_sizes, range(num_reps), fit_func_names)
-    # experiments = product(training_sizes, training_intervals, [5], ['Rastrigin'], [0.5])
-    for tr_size, rep, fit_func_name in experiments:
+    experiments = product(range(num_reps), fit_func_names)
+    for rep, fit_func_name in experiments:
 
         print("\n\n"
               "---------------------------------------------\n"
-              "Training size:      {size}\n"
               "Function:           {fname}\n"
-              "Repetittion:        {rep}".format(size=tr_size, fname=fit_func_name, rep=rep))
+              "Repetittion:        {rep}".format(fname=fit_func_name, rep=rep))
 
-        runExperiment(N, lambda_, lambda_pre, mu, init_sample_size, tr_size, fit_func_name, rep)
+        runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size, fit_func_name, rep)
 
 
 if __name__ == "__main__":
