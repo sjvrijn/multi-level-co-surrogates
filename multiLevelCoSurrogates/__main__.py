@@ -98,8 +98,11 @@ def runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
     while not es.stop():
         # Obtain the list of lambda_pre candidates to evaluate
         candidates = np.array(es.ask())
-        pre_results = surrogate.predict(candidates)
-        results = preSelection(candidates, pre_results, lambda_, fit_func, archive_candidates)
+        low_results = [fit_func.low(cand) for cand in candidates]
+        low_errors = surrogate.predict(candidates)
+        pre_results = [a + b for a, b in zip(low_results, low_errors)]
+
+        results = preSelection(candidates, pre_results, lambda_, fit_func.high, archive_candidates)
         es.tell(candidates, results)
         full_res_log.writeLine([fit_func(cand) for cand in candidates])
 
@@ -114,6 +117,7 @@ def runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
         # es.disp()
 
         gen_counter += 1
+        #TODO: update retraining/archive to store both high and low fidelity values
         surrogate = retrain(archive_candidates, training_size, Surrogate)
 
 
