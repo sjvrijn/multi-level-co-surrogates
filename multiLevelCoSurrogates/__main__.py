@@ -15,10 +15,10 @@ from pyKriging.samplingplan import samplingplan
 from itertools import product
 from functools import partial
 
-from .Surrogates import RBF, Kriging
-from .Logger import Logger
-from .config import data_dir, filename, suffix, data_ext, fit_funcs
-from .config import experiment_repetitions, training_size
+from multiLevelCoSurrogates.Surrogates import RBF, Kriging
+from multiLevelCoSurrogates.Logger import Logger
+from multiLevelCoSurrogates.config import data_dir, filename, suffix, data_ext, fit_funcs
+from multiLevelCoSurrogates.config import experiment_repetitions, training_size
 
 
 def createSurrogate(N, init_sample_size, fit_func, Surrogate):
@@ -45,9 +45,10 @@ def preSelection(candidates, pre_results, lambda_, fit_func, archive_candidates)
     indices = np.argsort(pre_results)
     results = [np.inf for _ in candidates]
     for index in indices[:lambda_]:
-        res = fit_func(candidates[index])
-        results[index] = res
-        archive_candidates.append((candidates[index], res))
+        res_high = fit_func.high(candidates[index])
+        res_low = fit_func.low(candidates[index])
+        results[index] = res_high
+        archive_candidates.append((candidates[index], res_high-res_low))
     return results
 
 
@@ -102,7 +103,7 @@ def runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
         low_errors = surrogate.predict(candidates)
         pre_results = [a + b for a, b in zip(low_results, low_errors)]
 
-        results = preSelection(candidates, pre_results, lambda_, fit_func.high, archive_candidates)
+        results = preSelection(candidates, pre_results, lambda_, fit_func, archive_candidates)
         es.tell(candidates, results)
         full_res_log.writeLine([fit_func(cand) for cand in candidates])
 
@@ -117,13 +118,12 @@ def runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
         # es.disp()
 
         gen_counter += 1
-        #TODO: update retraining/archive to store both high and low fidelity values
         surrogate = retrain(archive_candidates, training_size, Surrogate)
 
 
 def run():
 
-    N = 10
+    N = 8
     lambda_ = 4+int(3*np.log(N))
     lambda_pre = 2*lambda_
     mu = lambda_//2
