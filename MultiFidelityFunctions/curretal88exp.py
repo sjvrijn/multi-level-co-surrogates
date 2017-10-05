@@ -3,6 +3,8 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import math
 
+from MultiFidelityFunctions import BiFidelityFunction
+
 """
 curretal88exp.py:
 CURRIN ET AL. (1988) EXPONENTIAL FUNCTION
@@ -30,7 +32,7 @@ http://www.sfu.ca/~ssurjano/
 """
 
 
-def curretal88exp(xx):
+def curretal88exp_hf(xx):
     """
     CURRIN ET AL. (1988) EXPONENTIAL FUNCTION
 
@@ -49,7 +51,7 @@ def curretal88exp(xx):
 def curretal88exp_lf(xx):
     """
     CURRIN ET AL. (1988) EXPONENTIAL FUNCTION, LOWER FIDELITY CODE
-    Calls: curretal88exp
+    Calls: curretal88exp_hf
     This function, from Xiong et al. (2013), is used as the "low-accuracy
     code" version of the function curretal88exp.
 
@@ -59,9 +61,15 @@ def curretal88exp_lf(xx):
     x1, x2 = xx
     maxarg = max([0, x2 - 1 / 20])
 
-    yh1 = curretal88exp( [x1+1 / 20, x2+1 / 20] )
-    yh2 = curretal88exp( [x1+1 / 20, maxarg] )
-    yh3 = curretal88exp( [x1-1 / 20, x2+1 / 20] )
-    yh4 = curretal88exp( [x1-1 / 20, maxarg] )
+    yh1 = curretal88exp_hf( [x1+1 / 20, x2+1 / 20] )
+    yh2 = curretal88exp_hf( [x1+1 / 20, maxarg] )
+    yh3 = curretal88exp_hf( [x1-1 / 20, x2+1 / 20] )
+    yh4 = curretal88exp_hf( [x1-1 / 20, maxarg] )
 
     return (yh1 + yh2 + yh3 + yh4) / 4
+
+
+u_bound = [0, 0]
+l_bound = [1, 1]
+
+curretal88exp = BiFidelityFunction(u_bound, l_bound, curretal88exp_hf, curretal88exp_lf)

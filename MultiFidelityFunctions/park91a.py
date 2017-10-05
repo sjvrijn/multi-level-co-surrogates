@@ -3,6 +3,8 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import math
 
+from MultiFidelityFunctions import BiFidelityFunction
+
 """
 park91a.py:
 PARK (1991) FUNCTION 1
@@ -30,7 +32,7 @@ http://www.sfu.ca/~ssurjano/
 """
 
 
-def park91a(xx):
+def park91a_hf(xx):
     """
     PARK (1991) FUNCTION 1
 
@@ -53,7 +55,7 @@ def park91a(xx):
 def park91a_lf(xx):
     """
     PARK (1991) FUNCTION 1, LOWER FIDELITY CODE
-    Calls: park91a
+    Calls: park91a_hf
     This function, from Xiong et al. (2013), is used as the "low-accuracy
     code" version of the function park91a.
 
@@ -61,9 +63,15 @@ def park91a_lf(xx):
     xx = [x1, x2, x3, x4]
     """
     x1, x2, x3, x4 = xx
-    yh = park91a(xx)
+    yh = park91a_hf(xx)
 
     term1 = (1 + math.sin(x1) / 10) * yh
     term2 = -2 * x1 + x2 ** 2 + x3 ** 2
 
     return term1 + term2 + 0.5
+
+
+u_bound = [0, 0, 0, 0]
+l_bound = [1, 1, 1, 1]
+
+park91a = BiFidelityFunction(u_bound, l_bound, park91a_hf, park91a_lf)

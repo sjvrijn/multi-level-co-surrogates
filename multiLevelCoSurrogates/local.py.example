@@ -9,3 +9,5 @@ local.py: A file to store variable information that is bound to a physical machi
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
+
+base_dir = '~/mlcs/'
