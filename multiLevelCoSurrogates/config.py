@@ -30,6 +30,8 @@ fit_funcs = {
     'park91b': park91b,
 }
 
+fit_func_dims = {name: len(fit_funcs[name].u_bound) for name in fit_funcs.keys()}
+
 # Experimental parameters
 training_size = 50
 experiment_repetitions = 30

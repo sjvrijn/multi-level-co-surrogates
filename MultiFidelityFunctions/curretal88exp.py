@@ -59,7 +59,7 @@ def curretal88exp_lf(xx):
     xx = [x1, x2]
     """
     x1, x2 = xx
-    maxarg = max([0, x2 - 1 / 20])
+    maxarg = max(0.001, x2 - 1 / 20)  # TODO: '0.001' was originally '0', but caused divide by zero errors
 
     yh1 = curretal88exp_hf( [x1+1 / 20, x2+1 / 20] )
     yh2 = curretal88exp_hf( [x1+1 / 20, maxarg] )
