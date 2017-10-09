@@ -47,10 +47,13 @@ def _keepInBounds(x, l_bound, u_bound):
     return x
 
 
-def createSurrogate(N, init_sample_size, fit_func, Surrogate):
+def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, Surrogate):
+    space = u_bound - l_bound
+
     # The surrogate model starts by defining a sampling plan, we use an optimal Latin Hypercube here
     sp = samplingplan(N)
     init_candidates = sp.optimallhc(init_sample_size)
+    init_candidates = [np.array(cand)*space + l_bound for cand in init_candidates]
     results = np.array([fit_func(cand) for cand in init_candidates], ndmin=2).T
 
     # Now that we have our initial data, we can create an instance of a Kriging model
@@ -95,6 +98,8 @@ def runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
     init_individual = [(u+l)/2 for u, l in zip(fit_func.u_bound, fit_func.l_bound)]
     archive_candidates = []
     gen_counter = 0
+    l_bound = np.array(fit_func.l_bound)
+    u_bound = np.array(fit_func.u_bound)
 
     # Set up the filename detailing all settings of the experiment
     fname = filename.format(dim=N, func=fit_func_name)
@@ -109,7 +114,7 @@ def runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
                           header="Fitness values from actual function, evaluated for all candidates")
 
     error_func = partial(calcMultiFidelityError, highFidFunc=fit_func.high, lowFidFunc=fit_func.low)
-    surrogate = createSurrogate(N, init_sample_size, error_func, Surrogate)
+    surrogate = createSurrogate(N, init_sample_size, error_func, l_bound, u_bound, Surrogate)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
@@ -119,9 +124,6 @@ def runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
                                 " as predicted by the Kriging surrogate")
     else:
         std_log = None
-
-    l_bound = np.array(fit_func.l_bound)
-    u_bound = np.array(fit_func.u_bound)
 
 
     ### OPTIMIZATION ###
