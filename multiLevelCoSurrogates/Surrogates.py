@@ -11,6 +11,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.ensemble import RandomForestRegressor
 from scipy.interpolate import Rbf
 
 
@@ -88,3 +89,33 @@ class Kriging(Surrogate):
 
     def predict_std(self, X):
         return self._surr.predict(X, return_std=True)[1]
+
+
+class RandomForest(Surrogate):
+    """Generic Random Forest surrogate, implemented by sklearn.ensemble.RandomForestRegressor.
+
+    Assumes input and output are given as column vectors.
+    :param X: input coordinates
+    :param y: expected output values
+    """
+
+    def __init__(self, X, y):
+        super(self.__class__, self).__init__(X, y)
+        self._surr = RandomForestRegressor()
+        self.name = 'RandomForest'
+        self.is_trained = False
+
+    def do_predict(self, X):
+        return self._surr.predict(X).reshape((-1, ))
+
+    def train(self):
+        self._surr.fit(self.X, self.y)
+        self.is_trained = True
+
+    def predict_std(self, X):
+        stds = []
+        for x in X:
+            preds = [pred.predict(x)[0] for pred in self._surr.estimators_]
+            stds.append(np.std(preds))
+        return stds
+
