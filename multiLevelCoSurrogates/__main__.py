@@ -162,6 +162,8 @@ def runExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
     init_individual = [(u+l)/2 for u, l in zip(fit_func.u_bound, fit_func.l_bound)]
     archive_candidates = []
     gen_counter = 0
+    l_bound = np.array(fit_func.l_bound)
+    u_bound = np.array(fit_func.u_bound)
 
     # Set up the filename detailing all settings of the experiment
     fname = filename.format(dim=N, func=fit_func_name)
@@ -175,7 +177,7 @@ def runExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
     full_res_log = Logger(filename_prefix + 'fullreslog' + data_ext,
                           header="Fitness values from actual function, evaluated for all candidates")
 
-    surrogate = createSurrogate(N, init_sample_size, fit_func.high, Surrogate)
+    surrogate = createSurrogate(N, init_sample_size, fit_func.high, l_bound, u_bound, Surrogate)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
@@ -186,15 +188,12 @@ def runExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
     else:
         std_log = None
 
-    l_bound = np.array(fit_func.l_bound)
-    u_bound = np.array(fit_func.u_bound)
-
     while not es.stop():
         # Obtain the list of lambda_pre candidates to evaluate
         candidates = es.ask()
         candidates = np.array([_keepInBounds(cand, l_bound, u_bound) for cand in candidates])
         pre_results = surrogate.predict(candidates)
-        results = preSelection(candidates, pre_results, lambda_, fit_func.high, archive_candidates)
+        results = preSelection(candidates, pre_results, lambda_, fit_func, archive_candidates)
         es.tell(candidates, results)
         full_res_log.writeLine([fit_func.high(cand) for cand in candidates])
 
@@ -231,7 +230,7 @@ def run():
               f"Function:           {fit_func_name}\n"
               f"Repetittion:        {rep}")
 
-        runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size, fit_func_name, rep)
+        runExperiment(N, lambda_, lambda_pre, mu, init_sample_size, fit_func_name, rep)
 
 
 if __name__ == "__main__":
