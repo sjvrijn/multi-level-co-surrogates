@@ -36,7 +36,8 @@ def _keepInBounds(x, l_bound, u_bound):
     """
 
     y = (x - l_bound) / (u_bound - l_bound)
-    floor_y = np.floor(y)                              # Local storage to prevent double calls
+    floor_y = np.floor(y)
+
     I = np.mod(floor_y, 2) == 0
     yprime = np.zeros(np.shape(y))
     yprime[I] = np.abs(y[I] - floor_y[I])
@@ -133,6 +134,65 @@ def runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
         pre_results = [a + b for a, b in zip(low_results, low_errors)]
 
         results = preSelection(candidates, pre_results, lambda_, fit_func, archive_candidates)
+        es.tell(candidates, results)
+        full_res_log.writeLine([fit_func.high(cand) for cand in candidates])
+
+        # Write data to disc to be plotted
+        if std_log:
+            pre_std = surrogate.predict_std(candidates)
+            std_log.writeLine(pre_std)
+
+        pre_log.writeLine(pre_results)
+        res_log.writeLine(results)
+        es.logger.add()
+        # es.disp()
+
+        gen_counter += 1
+        surrogate = retrain(archive_candidates, training_size, Surrogate)
+
+
+def runExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
+                  fit_func_name, rep):
+
+    Surrogate = Kriging
+    fit_func = fit_funcs[fit_func_name]
+    sigma = 0.5
+    init_individual = [(u+l)/2 for u, l in zip(fit_func.u_bound, fit_func.l_bound)]
+    archive_candidates = []
+    gen_counter = 0
+
+    # Set up the filename detailing all settings of the experiment
+    fname = filename.format(dim=N, func=fit_func_name)
+    fsuff = suffix.format(size=training_size, rep=rep)
+    filename_prefix = data_dir + 'benchmark_' + fname + fsuff
+
+    pre_log = Logger(filename_prefix + 'prelog' + data_ext,
+                     header="Pre-results, as predicted by the surrogate")
+    res_log = Logger(filename_prefix + 'reslog' + data_ext,
+                     header="Fitness values from actual function, inf for any not pre-selected candidate")
+    full_res_log = Logger(filename_prefix + 'fullreslog' + data_ext,
+                          header="Fitness values from actual function, evaluated for all candidates")
+
+    surrogate = createSurrogate(N, init_sample_size, fit_func.high, Surrogate)
+    es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
+                                                                  'verb_filenameprefix': filename_prefix})
+
+    if surrogate.name == 'Kriging':
+        std_log = Logger(filename_prefix + 'stdlog' + data_ext,
+                         header="Standard deviations associated with the pre-results,"
+                                " as predicted by the Kriging surrogate")
+    else:
+        std_log = None
+
+    l_bound = np.array(fit_func.l_bound)
+    u_bound = np.array(fit_func.u_bound)
+
+    while not es.stop():
+        # Obtain the list of lambda_pre candidates to evaluate
+        candidates = es.ask()
+        candidates = np.array([_keepInBounds(cand, l_bound, u_bound) for cand in candidates])
+        pre_results = surrogate.predict(candidates)
+        results = preSelection(candidates, pre_results, lambda_, fit_func.high, archive_candidates)
         es.tell(candidates, results)
         full_res_log.writeLine([fit_func.high(cand) for cand in candidates])
 
