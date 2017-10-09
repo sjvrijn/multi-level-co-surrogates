@@ -81,6 +81,17 @@ def preSelection(candidates, pre_results, lambda_, fit_func, archive_candidates)
     return results
 
 
+def singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func, archive_candidates):
+    # Pre-selection evolution control: Choose the best lambda from lambda_pre to be re-evaluated (otherwise: np.inf)
+    indices = np.argsort(pre_results)
+    results = [np.inf for _ in candidates]
+    for index in indices[:lambda_]:
+        res = fit_func(candidates[index])
+        results[index] = res
+        archive_candidates.append((candidates[index], res))
+    return results
+
+
 def calcMultiFidelityError(candidate, highFidFunc, lowFidFunc):
     high = highFidFunc(candidate)
     low = lowFidFunc(candidate)
@@ -193,7 +204,7 @@ def runExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
         candidates = es.ask()
         candidates = np.array([_keepInBounds(cand, l_bound, u_bound) for cand in candidates])
         pre_results = surrogate.predict(candidates)
-        results = preSelection(candidates, pre_results, lambda_, fit_func, archive_candidates)
+        results = singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func.high, archive_candidates)
         es.tell(candidates, results)
         full_res_log.writeLine([fit_func.high(cand) for cand in candidates])
 
