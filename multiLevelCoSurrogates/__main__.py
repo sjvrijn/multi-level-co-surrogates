@@ -15,7 +15,7 @@ from pyKriging.samplingplan import samplingplan
 from itertools import product
 from functools import partial
 
-from multiLevelCoSurrogates.Surrogates import RBF, Kriging
+from multiLevelCoSurrogates.Surrogates import RBF, Kriging, RandomForest
 from multiLevelCoSurrogates.Logger import Logger
 from multiLevelCoSurrogates.config import data_dir, filename, suffix, data_ext, fit_funcs, fit_func_dims
 from multiLevelCoSurrogates.config import experiment_repetitions, training_size
@@ -192,7 +192,7 @@ def runExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
-    if surrogate.name == 'Kriging':
+    if surrogate.name in ['Kriging', 'RandomForest']:
         std_log = Logger(filename_prefix + 'stdlog' + data_ext,
                          header="Standard deviations associated with the pre-results,"
                                 " as predicted by the Kriging surrogate")
