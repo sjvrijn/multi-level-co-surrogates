@@ -44,6 +44,17 @@ class Surrogate(object):
         for point in points:
             self.addPoint(point)
 
+    @classmethod
+    def fromname(cls, name, X, y):
+        if name == 'RBF':
+            return RBF(X, y)
+        elif name == 'Kriging':
+            return Kriging(X, y)
+        elif name == 'RandomForest':
+            return RandomForest(X, y)
+        else:
+            raise ValueError(f"Unknown surrogate name '{name}'.")
+
 
 class RBF(Surrogate):
     """Generic RBF surrogate, implemented by scipy.interpolate.
