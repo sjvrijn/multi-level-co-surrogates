@@ -17,6 +17,7 @@ from scipy.interpolate import Rbf
 
 class Surrogate(object):
     """A generic interface to allow interchangeable use of various models such as RBF, SVM and Kriging"""
+    provides_std = False
 
     def __init__(self, X, y):
         self._surr = None
@@ -73,6 +74,7 @@ class Kriging(Surrogate):
     :param X: input coordinates
     :param y: expected output values
     """
+    provides_std = True
 
     def __init__(self, X, y):
         super(self.__class__, self).__init__(X, y)
@@ -98,6 +100,7 @@ class RandomForest(Surrogate):
     :param X: input coordinates
     :param y: expected output values
     """
+    provides_std = True
 
     def __init__(self, X, y):
         super(self.__class__, self).__init__(X, y)

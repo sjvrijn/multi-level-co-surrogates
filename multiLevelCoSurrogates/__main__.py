@@ -129,7 +129,7 @@ def runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
-    if surrogate.name == 'Kriging':
+    if surrogate.provides_std:
         std_log = Logger(filename_prefix + 'stdlog' + data_ext,
                          header="Standard deviations associated with the pre-results,"
                                 " as predicted by the Kriging surrogate")
@@ -192,7 +192,7 @@ def runExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
-    if surrogate.name in ['Kriging', 'RandomForest']:
+    if surrogate.provides_std:
         std_log = Logger(filename_prefix + 'stdlog' + data_ext,
                          header="Standard deviations associated with the pre-results,"
                                 " as predicted by the Kriging surrogate")
