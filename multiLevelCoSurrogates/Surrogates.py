@@ -109,13 +109,12 @@ class RandomForest(Surrogate):
         return self._surr.predict(X).reshape((-1, ))
 
     def train(self):
-        self._surr.fit(self.X, self.y)
+        self._surr.fit(self.X, np.ravel(self.y))
         self.is_trained = True
 
     def predict_std(self, X):
         stds = []
         for x in X:
-            preds = [pred.predict(x)[0] for pred in self._surr.estimators_]
-            stds.append(np.std(preds))
+            predictions = [est.predict(x.reshape(1, -1))[0] for est in self._surr.estimators_]
+            stds.append(np.std(predictions))
         return stds
-
