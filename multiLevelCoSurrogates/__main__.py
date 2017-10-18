@@ -15,7 +15,7 @@ from pyKriging.samplingplan import samplingplan
 from itertools import product
 from functools import partial
 
-from multiLevelCoSurrogates.Surrogates import RBF, Kriging, RandomForest
+from multiLevelCoSurrogates.Surrogates import Surrogate
 from multiLevelCoSurrogates.Logger import Logger
 from multiLevelCoSurrogates.config import data_dir, filename, suffix, data_ext, fit_funcs, fit_func_dims
 from multiLevelCoSurrogates.config import experiment_repetitions, training_size
@@ -47,7 +47,7 @@ def _keepInBounds(x, l_bound, u_bound):
     return x
 
 
-def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, Surrogate):
+def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, surrogate_name):
     space = u_bound - l_bound
 
     # The surrogate model starts by defining a sampling plan, we use an optimal Latin Hypercube here
@@ -57,7 +57,7 @@ def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, Surrogate):
     results = np.array([fit_func(cand) for cand in init_candidates], ndmin=2).T
 
     # Now that we have our initial data, we can create an instance of a Kriging model
-    surrogate = Surrogate(init_candidates, results)
+    surrogate = Surrogate.fromname(surrogate_name, init_candidates, results)
     surrogate.train()
     return surrogate
 
@@ -100,10 +100,9 @@ def calcMultiFidelityError(candidate, highFidFunc, lowFidFunc):
 
 
 def runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
-                               fit_func_name, rep):
+                               fit_func_name, surrogate_name, rep):
 
     ### SETUP ###
-    Surrogate = RBF
     fit_func = fit_funcs[fit_func_name]
     sigma = 0.5
     init_individual = [(u+l)/2 for u, l in zip(fit_func.u_bound, fit_func.l_bound)]
@@ -125,7 +124,7 @@ def runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
                           header="Fitness values from actual function, evaluated for all candidates")
 
     error_func = partial(calcMultiFidelityError, highFidFunc=fit_func.high, lowFidFunc=fit_func.low)
-    surrogate = createSurrogate(N, init_sample_size, error_func, l_bound, u_bound, Surrogate)
+    surrogate = createSurrogate(N, init_sample_size, error_func, l_bound, u_bound, surrogate_name)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
@@ -161,13 +160,12 @@ def runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
         # es.disp()
 
         gen_counter += 1
-        surrogate = retrain(archive_candidates, training_size, Surrogate)
+        surrogate = retrain(archive_candidates, training_size, surrogate_name)
 
 
 def runExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
-                  fit_func_name, rep):
+                  fit_func_name, surrogate_name, rep):
 
-    Surrogate = Kriging
     fit_func = fit_funcs[fit_func_name]
     sigma = 0.5
     init_individual = [(u+l)/2 for u, l in zip(fit_func.u_bound, fit_func.l_bound)]
@@ -188,7 +186,7 @@ def runExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
     full_res_log = Logger(filename_prefix + 'fullreslog' + data_ext,
                           header="Fitness values from actual function, evaluated for all candidates")
 
-    surrogate = createSurrogate(N, init_sample_size, fit_func.high, l_bound, u_bound, Surrogate)
+    surrogate = createSurrogate(N, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
@@ -219,7 +217,7 @@ def runExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
         # es.disp()
 
         gen_counter += 1
-        surrogate = retrain(archive_candidates, training_size, Surrogate)
+        surrogate = retrain(archive_candidates, training_size, surrogate_name)
 
 
 def run():
@@ -227,9 +225,10 @@ def run():
 
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
-    experiments = product(fit_func_names, range(num_reps))
+    surrogates = ['Kriging', 'RBF', 'RandomForest']
+    experiments = product(fit_func_names, surrogates, range(num_reps))
 
-    for fit_func_name, rep in experiments:
+    for fit_func_name, surrogate_name, rep in experiments:
 
         N = fit_func_dims[fit_func_name]
         lambda_ = 4 + int(3 * np.log(N))
@@ -241,7 +240,7 @@ def run():
               f"Function:           {fit_func_name}\n"
               f"Repetittion:        {rep}")
 
-        runExperiment(N, lambda_, lambda_pre, mu, init_sample_size, fit_func_name, rep)
+        runExperiment(N, lambda_, lambda_pre, mu, init_sample_size, fit_func_name, surrogate_name, rep)
 
 
 if __name__ == "__main__":
