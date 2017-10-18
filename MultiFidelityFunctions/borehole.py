@@ -55,7 +55,7 @@ def borehole_lf(xx):
     """
         BOREHOLE FUNCTION, LOWER FIDELITY CODE
         This function is used as the "low-accuracy code" version of the function
-        borehole.
+        borehole_hf.
 
         INPUT AND OUTPUT:
         inputs = [rw, r, Tu, Hu, Tl, Hl, L, Kw]

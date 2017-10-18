@@ -57,7 +57,7 @@ def park91a_lf(xx):
     PARK (1991) FUNCTION 1, LOWER FIDELITY CODE
     Calls: park91a_hf
     This function, from Xiong et al. (2013), is used as the "low-accuracy
-    code" version of the function park91a.
+    code" version of the function park91a_hf.
 
     INPUT:
     xx = [x1, x2, x3, x4]

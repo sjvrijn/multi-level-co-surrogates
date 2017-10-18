@@ -53,7 +53,7 @@ def curretal88exp_lf(xx):
     CURRIN ET AL. (1988) EXPONENTIAL FUNCTION, LOWER FIDELITY CODE
     Calls: curretal88exp_hf
     This function, from Xiong et al. (2013), is used as the "low-accuracy
-    code" version of the function curretal88exp.
+    code" version of the function curretal88exp_hf.
 
     INPUT:
     xx = [x1, x2]
