@@ -6,6 +6,12 @@ from .borehole import *
 from .curretal88exp import *
 from .park91a import *
 from .park91b import *
+from .OD import *
+from .BC import *
+from .BR import *
+from .BT import *
+from .HM import *
+from .SC import *
 
 u"""
 MultiFidelityFunctions
@@ -21,6 +27,12 @@ bi_fidelity = [
     'curretal88exp',
     'park91a',
     'park91b',
+    'oneDimensional',
+    'bohachevsky',
+    'branin',
+    'booth',
+    'himmelblau',
+    'sixHumpCamelBack',
 ]
 
 six_fidelity = [
