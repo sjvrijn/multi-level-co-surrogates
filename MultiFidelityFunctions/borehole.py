@@ -72,7 +72,7 @@ def borehole_lf(xx):
     return frac1 / frac2
 
 
-u_bound = [0.05,   100,  63070,  990, 63.1, 700, 1120,  9855]
-l_bound = [0.15, 50000, 115600, 1110,  116, 820, 1680, 12045]
+l_bound = [0.05,   100,  63070,  990, 63.1, 700, 1120,  9855]
+u_bound = [0.15, 50000, 115600, 1110,  116, 820, 1680, 12045]
 
 borehole = BiFidelityFunction(u_bound, l_bound, borehole_hf, borehole_lf)

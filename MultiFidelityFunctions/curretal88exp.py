@@ -69,7 +69,7 @@ def curretal88exp_lf(xx):
     return (yh1 + yh2 + yh3 + yh4) / 4
 
 
-u_bound = [0, 0]
-l_bound = [1, 1]
+l_bound = [0, 0]
+u_bound = [1, 1]
 
 curretal88exp = BiFidelityFunction(u_bound, l_bound, curretal88exp_hf, curretal88exp_lf)

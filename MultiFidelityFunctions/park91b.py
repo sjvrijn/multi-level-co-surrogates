@@ -64,7 +64,7 @@ def park91b_lf(xxx):
     return 1.2 * yh - 1
 
 
-u_bound = [0, 0, 0, 0]
-l_bound = [1, 1, 1, 1]
+l_bound = [0, 0, 0, 0]
+u_bound = [1, 1, 1, 1]
 
 park91b = BiFidelityFunction(u_bound, l_bound, park91b_hf, park91b_lf)
