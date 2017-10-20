@@ -19,8 +19,8 @@ plot_dir = base_dir + 'plots/'
 data_dir = base_dir + 'data/'
 filename = '{ndim}D-{func}'
 suffix   = '-s{size}-r{rep}-'
-plot_ext = '.png'  # Choose from: ['.png', '.pdf']
-data_ext = '.dat'
+plot_ext = 'png'  # Choose from: ['png', 'pdf']
+data_ext = 'dat'
 
 # Dictionary of available functions
 fit_funcs = {

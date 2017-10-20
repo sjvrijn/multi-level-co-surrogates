@@ -98,6 +98,23 @@ def calcMultiFidelityError(candidate, highFidFunc, lowFidFunc):
     return high - low
 
 
+def create_loggers(surrogate, filename_prefix):
+    pre_log = Logger(f'{filename_prefix}prelog.{data_ext}',
+                     header="Pre-results, as predicted by the surrogate")
+    res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
+                     header="Fitness values from actual function, inf for any not pre-selected candidate")
+    full_res_log = Logger(f'{filename_prefix}fullreslog.{data_ext}',
+                          header="Fitness values from actual function, evaluated for all candidates")
+    if surrogate.provides_std:
+        std_log = Logger(f'{filename_prefix}stdlog.{data_ext}',
+                         header="Standard deviations associated with the pre-results,"
+                                " as predicted by the Kriging surrogate")
+    else:
+        std_log = None
+
+    return full_res_log, pre_log, res_log, std_log
+
+
 
 def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
                                fit_func_name, surrogate_name, rep):
@@ -114,27 +131,14 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
     # Set up the filename detailing all settings of the experiment
     fname = filename.format(ndim=ndim, func=fit_func_name)
     fsuff = suffix.format(size=training_size, rep=rep)
-    filename_prefix = data_dir + 'benchmark_' + fname + fsuff
-
-    pre_log = Logger(filename_prefix + 'prelog' + data_ext,
-                     header="Pre-results, as predicted by the surrogate")
-    res_log = Logger(filename_prefix + 'reslog' + data_ext,
-                     header="Fitness values from actual function, inf for any not pre-selected candidate")
-    full_res_log = Logger(filename_prefix + 'fullreslog' + data_ext,
-                          header="Fitness values from actual function, evaluated for all candidates")
+    filename_prefix = f'{data_dir}{fname}{fsuff}'
 
     error_func = partial(calcMultiFidelityError, highFidFunc=fit_func.high, lowFidFunc=fit_func.low)
     surrogate = createSurrogate(ndim, init_sample_size, error_func, l_bound, u_bound, surrogate_name)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
-    if surrogate.provides_std:
-        std_log = Logger(filename_prefix + 'stdlog' + data_ext,
-                         header="Standard deviations associated with the pre-results,"
-                                " as predicted by the Kriging surrogate")
-    else:
-        std_log = None
-
+    full_res_log, pre_log, res_log, std_log = create_loggers(surrogate, filename_prefix)
 
     ### OPTIMIZATION ###
     while not es.stop():
@@ -177,25 +181,13 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
     # Set up the filename detailing all settings of the experiment
     fname = filename.format(ndim=ndim, func=fit_func_name)
     fsuff = suffix.format(size=training_size, rep=rep)
-    filename_prefix = data_dir + 'benchmark_' + fname + fsuff
-
-    pre_log = Logger(filename_prefix + 'prelog' + data_ext,
-                     header="Pre-results, as predicted by the surrogate")
-    res_log = Logger(filename_prefix + 'reslog' + data_ext,
-                     header="Fitness values from actual function, inf for any not pre-selected candidate")
-    full_res_log = Logger(filename_prefix + 'fullreslog' + data_ext,
-                          header="Fitness values from actual function, evaluated for all candidates")
+    filename_prefix = f'{data_dir}{fname}{fsuff}'
 
     surrogate = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
-    if surrogate.provides_std:
-        std_log = Logger(filename_prefix + 'stdlog' + data_ext,
-                         header="Standard deviations associated with the pre-results,"
-                                " as predicted by the Kriging surrogate")
-    else:
-        std_log = None
+    full_res_log, pre_log, res_log, std_log = create_loggers(surrogate, filename_prefix)
 
     while not es.stop():
         # Obtain the list of lambda_pre candidates to evaluate
