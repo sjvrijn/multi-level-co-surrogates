@@ -99,7 +99,7 @@ def calcMultiFidelityError(candidate, highFidFunc, lowFidFunc):
 
 
 
-def runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
+def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
                                fit_func_name, surrogate_name, rep):
 
     ### SETUP ###
@@ -112,7 +112,7 @@ def runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
     u_bound = np.array(fit_func.u_bound)
 
     # Set up the filename detailing all settings of the experiment
-    fname = filename.format(dim=N, func=fit_func_name)
+    fname = filename.format(ndim=ndim, func=fit_func_name)
     fsuff = suffix.format(size=training_size, rep=rep)
     filename_prefix = data_dir + 'benchmark_' + fname + fsuff
 
@@ -124,7 +124,7 @@ def runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
                           header="Fitness values from actual function, evaluated for all candidates")
 
     error_func = partial(calcMultiFidelityError, highFidFunc=fit_func.high, lowFidFunc=fit_func.low)
-    surrogate = createSurrogate(N, init_sample_size, error_func, l_bound, u_bound, surrogate_name)
+    surrogate = createSurrogate(ndim, init_sample_size, error_func, l_bound, u_bound, surrogate_name)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
@@ -163,7 +163,7 @@ def runMultiFidelityExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
         surrogate = retrain(archive_candidates, training_size, surrogate_name)
 
 
-def runExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
+def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
                   fit_func_name, surrogate_name, rep):
 
     fit_func = fit_funcs[fit_func_name]
@@ -175,7 +175,7 @@ def runExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
     u_bound = np.array(fit_func.u_bound)
 
     # Set up the filename detailing all settings of the experiment
-    fname = filename.format(dim=N, func=fit_func_name)
+    fname = filename.format(ndim=ndim, func=fit_func_name)
     fsuff = suffix.format(size=training_size, rep=rep)
     filename_prefix = data_dir + 'benchmark_' + fname + fsuff
 
@@ -186,7 +186,7 @@ def runExperiment(N, lambda_, lambda_pre, mu, init_sample_size,
     full_res_log = Logger(filename_prefix + 'fullreslog' + data_ext,
                           header="Fitness values from actual function, evaluated for all candidates")
 
-    surrogate = createSurrogate(N, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
+    surrogate = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
@@ -230,17 +230,17 @@ def run():
 
     for fit_func_name, surrogate_name, rep in experiments:
 
-        N = fit_func_dims[fit_func_name]
-        lambda_ = 4 + int(3 * np.log(N))
+        ndim = fit_func_dims[fit_func_name]
+        lambda_ = 4 + int(3 * np.log(ndim))
         lambda_pre = 2 * lambda_
         mu = lambda_ // 2
 
-        print(f"\n\n"
-              f"---------------------------------------------\n"
-              f"Function:           {fit_func_name}\n"
-              f"Repetittion:        {rep}")
+        print(f"""\n\n
+              ---------------------------------------------\n
+              Function:           {fit_func_name}\n
+              Repetittion:        {rep}""")
 
-        runExperiment(N, lambda_, lambda_pre, mu, init_sample_size, fit_func_name, surrogate_name, rep)
+        runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, fit_func_name, surrogate_name, rep)
 
 
 if __name__ == "__main__":
