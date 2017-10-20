@@ -129,7 +129,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
     u_bound = np.array(fit_func.u_bound)
 
     # Set up the filename detailing all settings of the experiment
-    fname = filename.format(ndim=ndim, func=fit_func_name)
+    fname = filename.format(ndim=ndim, func=fit_func_name, use='MF', surr=surrogate_name)
     fsuff = suffix.format(size=training_size, rep=rep)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
 
@@ -179,7 +179,7 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
     u_bound = np.array(fit_func.u_bound)
 
     # Set up the filename detailing all settings of the experiment
-    fname = filename.format(ndim=ndim, func=fit_func_name)
+    fname = filename.format(ndim=ndim, func=fit_func_name, use='reg', surr=surrogate_name)
     fsuff = suffix.format(size=training_size, rep=rep)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
 
