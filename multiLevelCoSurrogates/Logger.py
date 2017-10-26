@@ -10,7 +10,7 @@ __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 
-class Logger(object):
+class Logger:
     """A generic logging class to store fitness values as they are created for later post-processing"""
 
     def __init__(self, fname, header=None):

@@ -15,7 +15,7 @@ from sklearn.ensemble import RandomForestRegressor
 from scipy.interpolate import Rbf
 
 
-class Surrogate(object):
+class Surrogate:
     """A generic interface to allow interchangeable use of various models such as RBF, SVM and Kriging"""
     provides_std = False
 
