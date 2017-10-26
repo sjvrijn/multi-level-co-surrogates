@@ -51,9 +51,15 @@ def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, surrogate_n
     space = u_bound - l_bound
 
     # The surrogate model starts by defining a sampling plan, we use an optimal Latin Hypercube here
-    sp = samplingplan(N)
-    init_candidates = sp.optimallhc(init_sample_size)
-    init_candidates = [np.array(cand)*space + l_bound for cand in init_candidates]
+    try:
+        sp = samplingplan(N)
+        init_candidates = sp.optimallhc(init_sample_size)
+        init_candidates = [np.array(cand)*space + l_bound for cand in init_candidates]
+    except IndexError as e:
+        if N < 2:
+            raise ValueError(f'LHS can only be defined for >= 2 dimensions (N={N} given)')
+        else:
+            raise e
     results = np.array([fit_func(cand) for cand in init_candidates], ndmin=2).T
 
     # Now that we have our initial data, we can create an instance of a Kriging model
@@ -62,9 +68,9 @@ def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, surrogate_n
     return surrogate
 
 
-def retrain(archive_candidates, training_size, Surrogate):
+def retrain(archive_candidates, training_size, surrogate_name):
     x, y = zip(*archive_candidates[-training_size:])
-    surrogate = Surrogate(np.array(list(x)), np.array(list(y), ndmin=2).T)
+    surrogate = Surrogate.fromname(surrogate_name, np.array(list(x)), np.array(list(y), ndmin=2).T)
     surrogate.train()
     return surrogate
 
@@ -191,8 +197,7 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
 
     while not es.stop():
         # Obtain the list of lambda_pre candidates to evaluate
-        candidates = es.ask()
-        candidates = np.array([_keepInBounds(cand, l_bound, u_bound) for cand in candidates])
+        candidates = np.array([_keepInBounds(cand, l_bound, u_bound) for cand in es.ask()])
         pre_results = surrogate.predict(candidates)
         results = singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func.high, archive_candidates)
         es.tell(candidates, results)
@@ -227,12 +232,14 @@ def run():
         lambda_pre = 2 * lambda_
         mu = lambda_ // 2
 
-        print(f"""\n\n
-              ---------------------------------------------\n
-              Function:           {fit_func_name}\n
+        print(f"""\n
+              ---------------------------------------------
+              Function:           {fit_func_name}
+              Surrogate:          {surrogate_name}
               Repetittion:        {rep}""")
 
         runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, fit_func_name, surrogate_name, rep)
+        runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, fit_func_name, surrogate_name, rep)
 
 
 if __name__ == "__main__":
