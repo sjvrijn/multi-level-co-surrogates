@@ -73,6 +73,16 @@ def createScaledLHS(ndim, init_sample_size, l_bound, u_bound):
 
 
 def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, surrogate_name):
+    """
+
+        :param N:                   Dimensionality, length of the desired vectors
+        :param init_sample_size:    Number of samples to return
+        :param fit_func:            Function to use for determining fitness of candidates
+        :param l_bound:             Lower bound of the search space (numpy array)
+        :param u_bound:             Upper bound of the search space (numpy array)
+        :param surrogate_name:      Name of the surrogate type to use (e.g. Kriging)
+        :return:                    Trained and initialized surrogate of desired type
+    """
 
     init_candidates = createScaledLHS(N, init_sample_size, l_bound, u_bound)
     results = np.array([fit_func(cand) for cand in init_candidates], ndmin=2).T
@@ -84,6 +94,17 @@ def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, surrogate_n
 
 
 def createCoSurrogate(N, init_sample_size, fit_func_low, fit_func_high, l_bound, u_bound, surrogate_name):
+    """
+
+        :param N:                   Dimensionality, length of the desired vectors
+        :param init_sample_size:    Number of samples to return
+        :param fit_func_low:        Low fidelity function to use for determining fitness of candidates
+        :param fit_func_high:       High fidelity function to use for determining fitness of candidates
+        :param l_bound:             Lower bound of the search space (numpy array)
+        :param u_bound:             Upper bound of the search space (numpy array)
+        :param surrogate_name:      Name of the surrogate type to use (e.g. Kriging)
+        :return:                    Trained and initialized surrogate of desired type
+    """
 
     init_candidates = createScaledLHS(N, init_sample_size, l_bound, u_bound)
     results_low = np.array([fit_func_low(cand) for cand in init_candidates], ndmin=2).T
