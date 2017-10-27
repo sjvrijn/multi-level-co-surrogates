@@ -15,7 +15,7 @@ from pyKriging.samplingplan import samplingplan
 from itertools import product
 from functools import partial
 
-from multiLevelCoSurrogates.Surrogates import Surrogate
+from multiLevelCoSurrogates.Surrogates import Surrogate, CoSurrogate
 from multiLevelCoSurrogates.Logger import Logger
 from multiLevelCoSurrogates.config import data_dir, filename, suffix, data_ext, fit_funcs, fit_func_dims
 from multiLevelCoSurrogates.config import experiment_repetitions, training_size
@@ -79,6 +79,18 @@ def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, surrogate_n
 
     # Now that we have our initial data, we can create an instance of the surrogate model
     surrogate = Surrogate.fromname(surrogate_name, init_candidates, results)
+    surrogate.train()
+    return surrogate
+
+
+def createCoSurrogate(N, init_sample_size, fit_func_low, fit_func_high, l_bound, u_bound, surrogate_name):
+
+    init_candidates = createScaledLHS(N, init_sample_size, l_bound, u_bound)
+    results_low = np.array([fit_func_low(cand) for cand in init_candidates], ndmin=2).T
+    results_high = np.array([fit_func_high(cand) for cand in init_candidates], ndmin=2).T
+
+    # Now that we have our initial data, we can create an instance of the surrogate model
+    surrogate = CoSurrogate(surrogate_name, init_candidates, results_low, results_high)
     surrogate.train()
     return surrogate
 
