@@ -47,22 +47,37 @@ def _keepInBounds(x, l_bound, u_bound):
     return x
 
 
-def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, surrogate_name):
-    space = u_bound - l_bound
+def createScaledLHS(ndim, init_sample_size, l_bound, u_bound):
+    """
+        Return a sample of `init_sample_size` points in `ndim` dimensions, scaled to cover the
+        search space defined by `l_bound` and `u_bound`.
 
-    # The surrogate model starts by defining a sampling plan, we use an optimal Latin Hypercube here
+        :param ndim:                Dimensionality, length of the desired vectors
+        :param init_sample_size:    Number of samples to return
+        :param l_bound:             Lower bound of the search space (numpy array)
+        :param u_bound:             Upper bound of the search space (numpy array)
+        :return:                    Sample (2D numpy array)
+    """
+    space = u_bound - l_bound
     try:
-        sp = samplingplan(N)
-        init_candidates = sp.optimallhc(init_sample_size)
-        init_candidates = [np.array(cand)*space + l_bound for cand in init_candidates]
+        sp = samplingplan(ndim)
+        sample = sp.optimallhc(init_sample_size)
+        sample = (sample*space) + l_bound
     except IndexError as e:
-        if N < 2:
-            raise ValueError(f'LHS can only be defined for >= 2 dimensions (N={N} given)')
+        if ndim < 2:
+            raise ValueError(f'LHS can only be defined for >= 2 dimensions (N={ndim} given)')
         else:
             raise e
+
+    return sample
+
+
+def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, surrogate_name):
+
+    init_candidates = createScaledLHS(N, init_sample_size, l_bound, u_bound)
     results = np.array([fit_func(cand) for cand in init_candidates], ndmin=2).T
 
-    # Now that we have our initial data, we can create an instance of a Kriging model
+    # Now that we have our initial data, we can create an instance of the surrogate model
     surrogate = Surrogate.fromname(surrogate_name, init_candidates, results)
     surrogate.train()
     return surrogate
@@ -75,7 +90,7 @@ def retrain(archive_candidates, training_size, surrogate_name):
     return surrogate
 
 
-def preSelection(candidates, pre_results, lambda_, fit_func, archive_candidates):
+def multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, archive_candidates):
     # Pre-selection evolution control: Choose the best lambda from lambda_pre to be re-evaluated (otherwise: np.inf)
     indices = np.argsort(pre_results)
     results = [np.inf for _ in candidates]
@@ -141,6 +156,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
 
     error_func = partial(calcMultiFidelityError, highFidFunc=fit_func.high, lowFidFunc=fit_func.low)
     surrogate = createSurrogate(ndim, init_sample_size, error_func, l_bound, u_bound, surrogate_name)
+    surrogate = createCoSurrogate(ndim, init_sample_size, error_func, l_bound, u_bound, surrogate_name)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
@@ -155,7 +171,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
         low_errors = surrogate.predict(candidates)
         pre_results = [a + b for a, b in zip(low_results, low_errors)]
 
-        results = preSelection(candidates, pre_results, lambda_, fit_func, archive_candidates)
+        results = multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, archive_candidates)
         es.tell(candidates, results)
         full_res_log.writeLine([fit_func.high(cand) for cand in candidates])
 
