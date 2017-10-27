@@ -12,6 +12,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
 from scipy.interpolate import Rbf
 
 
@@ -54,6 +55,39 @@ class Surrogate:
             return RandomForest(X, y)
         else:
             raise ValueError(f"Unknown surrogate name '{name}'.")
+
+
+class CoSurrogate:
+    """A generic interface for co-surrogates"""
+
+    def __init__(self, surrogate_name, X, y_low, y_high, fit_scaling_param=True):
+
+        self.X = X
+        self.y_low = np.array(y_low)
+        self.y_high = np.array(y_high)
+
+        self.rho = self.determineScaleParameter() if fit_scaling_param else 1
+        self.y = y_high - self.rho*y_low
+
+        self.surrogate = Surrogate.fromname(surrogate_name, X, self.y)
+
+
+    def determineScaleParameter(self):
+        """ Determine the scaling parameter 'rho' between y_low and y_high using simple linear regression """
+        regr = LinearRegression()
+        regr.fit(self.y_low, self.y_high)
+        return regr.coef_
+
+
+    @property
+    def is_trained(self):
+        return self.surrogate.is_trained
+
+    def predict(self, X):
+        return self.surrogate.predict(X)
+
+    def train(self):
+        return self.surrogate.train()
 
 
 class RBF(Surrogate):
