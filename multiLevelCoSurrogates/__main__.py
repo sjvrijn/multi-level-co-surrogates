@@ -13,7 +13,6 @@ import cma
 import numpy as np
 from pyKriging.samplingplan import samplingplan
 from itertools import product
-from functools import partial
 
 from multiLevelCoSurrogates.Surrogates import Surrogate, CoSurrogate
 from multiLevelCoSurrogates.Logger import Logger
@@ -116,6 +115,15 @@ def createCoSurrogate(N, init_sample_size, fit_func_low, fit_func_high, l_bound,
     return surrogate
 
 
+def retrainMultiFidelity(archive_candidates_low, archive_candidates_high, training_size, surrogate_name):
+    x, y_low = zip(*archive_candidates_low[-training_size:])
+    x, y_high = zip(*archive_candidates_high[-training_size:])
+    co_surrogate = CoSurrogate(surrogate_name, np.array(list(x)),
+                               np.array(list(y_low), ndmin=2).T, np.array(list(y_high), ndmin=2).T)
+    co_surrogate.train()
+    return co_surrogate
+
+
 def retrain(archive_candidates, training_size, surrogate_name):
     x, y = zip(*archive_candidates[-training_size:])
     surrogate = Surrogate.fromname(surrogate_name, np.array(list(x)), np.array(list(y), ndmin=2).T)
@@ -123,7 +131,7 @@ def retrain(archive_candidates, training_size, surrogate_name):
     return surrogate
 
 
-def multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, archive_candidates):
+def multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, archive_candidates_low, archive_candidates_high):
     # Pre-selection evolution control: Choose the best lambda from lambda_pre to be re-evaluated (otherwise: np.inf)
     indices = np.argsort(pre_results)
     results = [np.inf for _ in candidates]
@@ -131,7 +139,8 @@ def multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, archiv
         res_high = fit_func.high(candidates[index])
         res_low = fit_func.low(candidates[index])
         results[index] = res_high
-        archive_candidates.append((candidates[index], res_high-res_low))
+        archive_candidates_low.append((candidates[index], res_low))
+        archive_candidates_high.append((candidates[index], res_high))
     return results
 
 
@@ -177,7 +186,8 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
     fit_func = fit_funcs[fit_func_name]
     sigma = 0.5
     init_individual = [(u+l)/2 for u, l in zip(fit_func.u_bound, fit_func.l_bound)]
-    archive_candidates = []
+    archive_candidates_low = []
+    archive_candidates_high = []
     gen_counter = 0
     l_bound = np.array(fit_func.l_bound)
     u_bound = np.array(fit_func.u_bound)
@@ -187,9 +197,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
     fsuff = suffix.format(size=training_size, rep=rep)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
 
-    error_func = partial(calcMultiFidelityError, highFidFunc=fit_func.high, lowFidFunc=fit_func.low)
-    surrogate = createSurrogate(ndim, init_sample_size, error_func, l_bound, u_bound, surrogate_name)
-    surrogate = createCoSurrogate(ndim, init_sample_size, error_func, l_bound, u_bound, surrogate_name)
+    surrogate = createCoSurrogate(ndim, init_sample_size, fit_func.low, fit_func.high, l_bound, u_bound, surrogate_name)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
@@ -204,7 +212,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
         low_errors = surrogate.predict(candidates)
         pre_results = [a + b for a, b in zip(low_results, low_errors)]
 
-        results = multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, archive_candidates)
+        results = multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, archive_candidates_low, archive_candidates_high)
         es.tell(candidates, results)
         full_res_log.writeLine([fit_func.high(cand) for cand in candidates])
 
@@ -219,7 +227,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
         # es.disp()
 
         gen_counter += 1
-        surrogate = retrain(archive_candidates, training_size, surrogate_name)
+        surrogate = retrainMultiFidelity(archive_candidates_low, archive_candidates_high, training_size, surrogate_name)
 
 
 def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
