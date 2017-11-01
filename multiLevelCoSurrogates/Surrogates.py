@@ -83,8 +83,15 @@ class CoSurrogate:
     def is_trained(self):
         return self.surrogate.is_trained
 
+    @property
+    def provides_std(self):
+        return self.surrogate.provides_std
+
     def predict(self, X):
         return self.surrogate.predict(X)
+
+    def predict_std(self, X):
+        return self.surrogate.predict_std(X)
 
     def train(self):
         return self.surrogate.train()
