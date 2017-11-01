@@ -11,6 +11,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 import cma
 import numpy as np
+import os
 from pyKriging.samplingplan import samplingplan
 from itertools import product
 
@@ -18,6 +19,14 @@ from multiLevelCoSurrogates.Surrogates import Surrogate, CoSurrogate
 from multiLevelCoSurrogates.Logger import Logger
 from multiLevelCoSurrogates.config import data_dir, filename, suffix, data_ext, fit_funcs, fit_func_dims
 from multiLevelCoSurrogates.config import experiment_repetitions, training_size
+
+
+def guaranteeFolderExists(path_name):
+    """ Make sure the given path exists after this call """
+    try:
+        os.mkdir(path_name)
+    except OSError:
+        pass  # Folder exists, nothing to be done
 
 
 def _keepInBounds(x, l_bound, u_bound):

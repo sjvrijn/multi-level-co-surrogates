@@ -28,7 +28,7 @@ fit_funcs = {
     # 'curretal88exp': curretal88exp,
     'park91a': park91a,
     'park91b': park91b,
-    'oneDimensional': oneDimensional,
+    # 'oneDimensional': oneDimensional,
     'bohachevsky': bohachevsky,
     'branin': branin,
     'booth': booth,
