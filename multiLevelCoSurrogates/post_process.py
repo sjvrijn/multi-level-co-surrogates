@@ -97,8 +97,51 @@ def plotSimpleComparisons():
         plt.close()
 
 
+def plotMedianComparisons():
+
+    num_reps = experiment_repetitions
+    fit_func_names = fit_funcs.keys()
+    surrogates = ['Kriging', 'RBF', 'RandomForest']
+    uses = ['reg', 'MF', 'scaled-MF']
+    experiments = product(fit_func_names, surrogates)
+
+    for fit_func_name, surrogate_name in experiments:
+        print(fit_func_name, surrogate_name)
+
+        ndim = fit_func_dims[fit_func_name]
+        plt.figure()
+
+        for use in uses:
+
+            fname = folder_name.format(ndim=ndim, func=fit_func_name, use=use, surr=surrogate_name)
+            total_data = []
+
+            for rep in range(num_reps):
+                fsuff = suffix.format(size=training_size, rep=rep)
+                filename_prefix = f'{data_dir}{fname}{fsuff}'
+
+                data = np.array(loadFitnessHistory(filename_prefix + 'reslog.' + data_ext, column=(1, -1)))
+                data = np.ma.masked_invalid(data).min(axis=1)
+                data = np.minimum.accumulate(data)
+                total_data.append(data)
+
+            min_idx = np.argmin(np.asarray([dat[-1] for dat in total_data]))
+            plt.plot(total_data[min_idx], label=use)
+
+        fsuff = suffix.format(size=training_size, rep='')
+        # plot_folder = folder_name.format(ndim=ndim, func=fit_func_name, use='', surr=surrogate_name)
+        plot_folder = f'{fit_func_name}-{surrogate_name}'
+        plot_name_prefix = f'{plot_dir}{plot_folder}{fsuff}'
+        guaranteeFolderExists(f'{plot_dir}')
+        plt.yscale('log')
+        plt.legend(loc=0)
+        plt.savefig(plot_name_prefix + 'reslog.' + plot_ext)
+        plt.close()
+
+
 def run():
-    plotSimpleComparisons()
+    # plotSimpleComparisons()
+    plotMedianComparisons()
 
 
 if __name__ == '__main__':
