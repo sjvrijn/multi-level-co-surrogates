@@ -10,6 +10,13 @@ post_process.py: This file is intended to perform some simple post-processing
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
+from multiLevelCoSurrogates.config import experiment_repetitions, fit_funcs, fit_func_dims, folder_name, suffix, training_size, data_ext, plot_ext, data_dir, plot_dir
+from multiLevelCoSurrogates.__main__ import guaranteeFolderExists
+from itertools import product
+from matplotlib import pyplot as plt
+
+import numpy as np
+
 
 def isTwoInts(value):
     """Returns True if the given value is a tuple or list consisting of exactly 2 integers"""
@@ -50,16 +57,48 @@ def loadFitnessHistory(fname, column=None):
 
     with open(fname, 'r') as f:
         next(f)  # Skip the first line which header information
-        return [map(float, line.split(' ')[start:end]) for line in f]
+        return [list(map(float, line.split(' ')[start:end])) for line in f]
 
 
 #=======================================================================================================================
 #=======================================================================================================================
 #=======================================================================================================================
+
+
+def plotSimpleComparisons():
+
+    num_reps = experiment_repetitions
+    fit_func_names = fit_funcs.keys()
+    surrogates = ['Kriging', 'RBF', 'RandomForest']
+    uses = ['reg', 'MF', 'scaled-MF']
+    experiments = product(fit_func_names, surrogates, range(num_reps))
+
+    for fit_func_name, surrogate_name, rep in experiments:
+        print(fit_func_name, surrogate_name, rep)
+
+        ndim = fit_func_dims[fit_func_name]
+        fsuff = suffix.format(size=training_size, rep=rep)
+        plt.figure()
+
+        for use in uses:
+            fname = folder_name.format(ndim=ndim, func=fit_func_name, use=use, surr=surrogate_name)
+            filename_prefix = f'{data_dir}{fname}{fsuff}'
+
+            data = np.array(loadFitnessHistory(filename_prefix + 'reslog.' + data_ext, column=(1, -1)))
+            data = np.ma.masked_invalid(data).min(axis=1)
+            data = np.minimum.accumulate(data)
+            plt.plot(data, label=use)
+
+        plot_folder = folder_name.format(ndim=ndim, func=fit_func_name, use='', surr=surrogate_name)
+        plot_name_prefix = f'{plot_dir}{plot_folder}{fsuff}'
+        guaranteeFolderExists(f'{plot_dir}{plot_folder}')
+        plt.legend(loc=0)
+        plt.savefig(plot_name_prefix + 'reslog.' + plot_ext)
+        plt.close()
 
 
 def run():
-    pass
+    plotSimpleComparisons()
 
 
 if __name__ == '__main__':
