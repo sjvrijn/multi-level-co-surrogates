@@ -11,22 +11,20 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 import cma
 import numpy as np
-import os
+from pathlib import Path
 from pyKriging.samplingplan import samplingplan
 from itertools import product
 
 from multiLevelCoSurrogates.Surrogates import Surrogate, CoSurrogate
 from multiLevelCoSurrogates.Logger import Logger
-from multiLevelCoSurrogates.config import data_dir, filename, suffix, data_ext, fit_funcs, fit_func_dims
+from multiLevelCoSurrogates.config import data_dir, folder_name, suffix, data_ext, fit_funcs, fit_func_dims
 from multiLevelCoSurrogates.config import experiment_repetitions, training_size
 
 
 def guaranteeFolderExists(path_name):
     """ Make sure the given path exists after this call """
-    try:
-        os.mkdir(path_name)
-    except OSError:
-        pass  # Folder exists, nothing to be done
+    path = Path(path_name)
+    path.mkdir(parents=True, exist_ok=True)
 
 
 def _keepInBounds(x, l_bound, u_bound):
@@ -101,7 +99,7 @@ def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, surrogate_n
     return surrogate
 
 
-def createCoSurrogate(N, init_sample_size, fit_func_low, fit_func_high, l_bound, u_bound, surrogate_name):
+def createCoSurrogate(N, init_sample_size, fit_func_low, fit_func_high, l_bound, u_bound, surrogate_name, fit_scaling_param=True):
     """
 
         :param N:                   Dimensionality, length of the desired vectors
@@ -119,16 +117,17 @@ def createCoSurrogate(N, init_sample_size, fit_func_low, fit_func_high, l_bound,
     results_high = np.array([fit_func_high(cand) for cand in init_candidates], ndmin=2).T
 
     # Now that we have our initial data, we can create an instance of the surrogate model
-    surrogate = CoSurrogate(surrogate_name, init_candidates, results_low, results_high)
+    surrogate = CoSurrogate(surrogate_name, init_candidates, results_low, results_high, fit_scaling_param=fit_scaling_param)
     surrogate.train()
     return surrogate
 
 
-def retrainMultiFidelity(archive_candidates_low, archive_candidates_high, training_size, surrogate_name):
+def retrainMultiFidelity(archive_candidates_low, archive_candidates_high, training_size, surrogate_name, fit_scaling_param=True):
     x, y_low = zip(*archive_candidates_low[-training_size:])
     x, y_high = zip(*archive_candidates_high[-training_size:])
     co_surrogate = CoSurrogate(surrogate_name, np.array(list(x)),
-                               np.array(list(y_low), ndmin=2).T, np.array(list(y_high), ndmin=2).T)
+                               np.array(list(y_low), ndmin=2).T, np.array(list(y_high), ndmin=2).T,
+                               fit_scaling_param=fit_scaling_param)
     co_surrogate.train()
     return co_surrogate
 
@@ -189,7 +188,7 @@ def create_loggers(surrogate, filename_prefix):
 
 
 def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
-                               fit_func_name, surrogate_name, rep):
+                               fit_func_name, surrogate_name, rep, fit_scaling_param=True):
 
     ### SETUP ###
     fit_func = fit_funcs[fit_func_name]
@@ -202,11 +201,12 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
     u_bound = np.array(fit_func.u_bound)
 
     # Set up the filename detailing all settings of the experiment
-    fname = filename.format(ndim=ndim, func=fit_func_name, use='MF', surr=surrogate_name)
+    fname = folder_name.format(ndim=ndim, func=fit_func_name, use=f"{'scaled-MF' if fit_scaling_param else 'MF'}", surr=surrogate_name)
     fsuff = suffix.format(size=training_size, rep=rep)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
+    guaranteeFolderExists(f'{data_dir}{fname}')
 
-    surrogate = createCoSurrogate(ndim, init_sample_size, fit_func.low, fit_func.high, l_bound, u_bound, surrogate_name)
+    surrogate = createCoSurrogate(ndim, init_sample_size, fit_func.low, fit_func.high, l_bound, u_bound, surrogate_name, fit_scaling_param)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
@@ -236,7 +236,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
         # es.disp()
 
         gen_counter += 1
-        surrogate = retrainMultiFidelity(archive_candidates_low, archive_candidates_high, training_size, surrogate_name)
+        surrogate = retrainMultiFidelity(archive_candidates_low, archive_candidates_high, training_size, surrogate_name, fit_scaling_param)
 
 
 def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
@@ -251,9 +251,10 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
     u_bound = np.array(fit_func.u_bound)
 
     # Set up the filename detailing all settings of the experiment
-    fname = filename.format(ndim=ndim, func=fit_func_name, use='reg', surr=surrogate_name)
+    fname = folder_name.format(ndim=ndim, func=fit_func_name, use='reg', surr=surrogate_name)
     fsuff = suffix.format(size=training_size, rep=rep)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
+    guaranteeFolderExists(f'{data_dir}{fname}')
 
     surrogate = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
@@ -305,7 +306,8 @@ def run():
               Repetittion:        {rep}""")
 
         runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, fit_func_name, surrogate_name, rep)
-        runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, fit_func_name, surrogate_name, rep)
+        runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True)
+        runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False)
 
 
 if __name__ == "__main__":

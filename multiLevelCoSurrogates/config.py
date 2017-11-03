@@ -17,8 +17,8 @@ from .local import base_dir
 # Filename related settings
 plot_dir = base_dir + 'plots/'
 data_dir = base_dir + 'data/'
-filename = '{ndim}D-{func}-{use}-{surr}'
-suffix   = '-s{size}-r{rep}-'
+folder_name = '{ndim}D/{func}/{use}-{surr}/'
+suffix   = 's{size}-r{rep}-'
 plot_ext = 'png'  # Choose from: ['png', 'pdf']
 data_ext = 'dat'
 
