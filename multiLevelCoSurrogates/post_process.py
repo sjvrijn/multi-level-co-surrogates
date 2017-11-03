@@ -14,6 +14,7 @@ from multiLevelCoSurrogates.config import experiment_repetitions, fit_funcs, fit
 from multiLevelCoSurrogates.__main__ import guaranteeFolderExists
 from itertools import product
 from matplotlib import pyplot as plt
+from collections import Counter
 
 import numpy as np
 
@@ -139,9 +140,58 @@ def plotMedianComparisons():
         plt.close()
 
 
+def calcWinsPerStrategy():
+
+    num_reps = experiment_repetitions
+    fit_func_names = fit_funcs.keys()
+    surrogates = ['Kriging', 'RBF', 'RandomForest']
+    uses = ['reg', 'MF', 'scaled-MF']
+    experiments = product(fit_func_names, surrogates)
+
+    c = Counter()
+    surr_c = {name: Counter() for name in surrogates}
+
+    for fit_func_name, surrogate_name in experiments:
+        print(fit_func_name, surrogate_name)
+
+        ndim = fit_func_dims[fit_func_name]
+        best_res = {}
+
+        for use in uses:
+
+            fname = folder_name.format(ndim=ndim, func=fit_func_name, use=use, surr=surrogate_name)
+            total_data = []
+
+            for rep in range(num_reps):
+                fsuff = suffix.format(size=training_size, rep=rep)
+                filename_prefix = f'{data_dir}{fname}{fsuff}'
+
+                data = np.array(loadFitnessHistory(filename_prefix + 'reslog.' + data_ext, column=(1, -1)))
+                data = np.ma.masked_invalid(data).min(axis=1)
+                data = np.minimum.accumulate(data)
+                total_data.append(data)
+
+            bests = np.asarray([dat[-1] for dat in total_data])
+            best_res[use] = np.argsort(bests)[len(bests) // 2]
+
+        if best_res['reg'] < best_res['MF'] and best_res['reg'] < best_res['scaled-MF']:
+            c['reg'] += 1
+            surr_c[surrogate_name]['reg'] += 1
+        elif best_res['MF'] < best_res['reg'] and best_res['MF'] < best_res['scaled-MF']:
+            c['MF'] += 1
+            surr_c[surrogate_name]['MF'] += 1
+        else:
+            c['scaled-MF'] += 1
+            surr_c[surrogate_name]['scaled-MF'] += 1
+
+    print(surr_c)
+    print(c)
+
+
 def run():
     # plotSimpleComparisons()
-    plotMedianComparisons()
+    # plotMedianComparisons()
+    calcWinsPerStrategy()
 
 
 if __name__ == '__main__':
