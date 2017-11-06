@@ -16,6 +16,7 @@ from itertools import product
 from matplotlib import pyplot as plt
 from collections import Counter
 
+from pprint import pprint
 import numpy as np
 
 
@@ -149,6 +150,7 @@ def calcWinsPerStrategy():
 
     c = Counter()
     surr_c = {name: Counter() for name in surrogates}
+    func_c = {name: Counter() for name in fit_func_names}
 
     for fit_func_name, surrogate_name in experiments:
         print(fit_func_name, surrogate_name)
@@ -176,15 +178,21 @@ def calcWinsPerStrategy():
         if best_res['reg'] < best_res['MF'] and best_res['reg'] < best_res['scaled-MF']:
             c['reg'] += 1
             surr_c[surrogate_name]['reg'] += 1
+            func_c[fit_func_name]['reg'] += 1
         elif best_res['MF'] < best_res['reg'] and best_res['MF'] < best_res['scaled-MF']:
             c['MF'] += 1
             surr_c[surrogate_name]['MF'] += 1
+            func_c[fit_func_name]['MF'] += 1
         else:
             c['scaled-MF'] += 1
             surr_c[surrogate_name]['scaled-MF'] += 1
+            func_c[fit_func_name]['scaled-MF'] += 1
 
-    print(surr_c)
-    print(c)
+    pprint(func_c)
+    print()
+    pprint(surr_c)
+    print()
+    pprint(c)
 
 
 def plotBoxPlots():
@@ -234,8 +242,8 @@ def plotBoxPlots():
 def run():
     # plotSimpleComparisons()
     # plotMedianComparisons()
-    # calcWinsPerStrategy()
-    plotBoxPlots()
+    calcWinsPerStrategy()
+    # plotBoxPlots()
 
 
 if __name__ == '__main__':
