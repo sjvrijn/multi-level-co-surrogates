@@ -209,30 +209,41 @@ def plotBoxPlots():
         plt.figure()
         ndim = fit_func_dims[fit_func_name]
         bests = []
+        lengths = []
 
         for use in uses:
 
             fname = folder_name.format(ndim=ndim, func=fit_func_name, use=use, surr=surrogate_name)
             total_data = []
+            total_lengths = []
 
             for rep in range(num_reps):
                 fsuff = suffix.format(size=training_size, rep=rep)
                 filename_prefix = f'{data_dir}{fname}{fsuff}'
 
                 data = np.array(loadFitnessHistory(filename_prefix + 'reslog.' + data_ext, column=(1, -1)))
+                total_lengths.append(len(data))
                 data = np.ma.masked_invalid(data).min(axis=1)
                 data = np.minimum.accumulate(data)
                 total_data.append(data)
 
             bests.append(np.array([dat[-1] for dat in total_data]))
+            lengths.append(total_lengths)
 
+        plt.subplot(211)
+        plt.title("Fitness values")
         plt.boxplot(bests, labels=uses)
+        plt.yscale('log')
+
+        plt.subplot(212)
+        plt.title("Time to convergence")
+        plt.boxplot(lengths, labels=uses)
+
+        plt.tight_layout()
         fsuff = suffix.format(size=training_size, rep='')
         plot_folder = f'{fit_func_name}-{surrogate_name}-'
         plot_name_prefix = f'{plot_dir}{plot_folder}{fsuff}'
         guaranteeFolderExists(f'{plot_dir}')
-        plt.yscale('log')
-        plt.legend(loc=0)
         plt.savefig(plot_name_prefix + 'reslog-boxplot.' + plot_ext)
         plt.close()
 
@@ -240,10 +251,11 @@ def plotBoxPlots():
 
 
 def run():
+    print(training_size)
     # plotSimpleComparisons()
     # plotMedianComparisons()
-    calcWinsPerStrategy()
-    # plotBoxPlots()
+    # calcWinsPerStrategy()
+    plotBoxPlots()
 
 
 if __name__ == '__main__':
