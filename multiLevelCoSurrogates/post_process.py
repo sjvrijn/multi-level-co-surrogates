@@ -10,7 +10,7 @@ post_process.py: This file is intended to perform some simple post-processing
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-from multiLevelCoSurrogates.config import experiment_repetitions, fit_funcs, fit_func_dims, folder_name, suffix, training_size, data_ext, plot_ext, data_dir, plot_dir
+from multiLevelCoSurrogates.config import experiment_repetitions, fit_funcs, fit_func_dims, folder_name, suffix, training_sizes, data_ext, plot_ext, data_dir, plot_dir
 from multiLevelCoSurrogates.__main__ import guaranteeFolderExists
 from itertools import product
 from matplotlib import pyplot as plt
@@ -67,7 +67,7 @@ def loadFitnessHistory(fname, column=None):
 #=======================================================================================================================
 
 
-def plotSimpleComparisons():
+def plotSimpleComparisons(training_size):
 
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
@@ -99,7 +99,7 @@ def plotSimpleComparisons():
         plt.close()
 
 
-def plotMedianComparisons():
+def plotMedianComparisons(training_size):
 
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
@@ -140,7 +140,17 @@ def plotMedianComparisons():
         plt.close()
 
 
-def calcWinsPerStrategy():
+def counterToFilledTupleList(counter):
+    result = []
+    for usage in ['reg', 'MF', 'scaled-MF']:
+        if usage not in counter:
+            result.append((usage, 0))
+        else:
+            result.append((usage, counter[usage]))
+    return result
+
+
+def calcWinsPerStrategy(training_size):
 
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
@@ -194,8 +204,61 @@ def calcWinsPerStrategy():
     print()
     pprint(c)
 
+    plt.figure(figsize=(4,4))
+    plt.suptitle(f'Wins per usage type, training size = {training_size}')
+    plt.subplot(211)
+    # plt.title('Combined wins per usage type')
+    # ids, vals = zip(*counterToFilledTupleList(c))
+    # plt.hist(range(len(ids)), weights=vals)
+    # plt.xticks(range(len(ids)), ids)
 
-def plotBoxPlots():
+    ax1 = plt.subplot(211)
+    ax1.set_title('by surrogate')
+    indices = []
+    values = []
+    labels = []
+    for name, counter in surr_c.items():
+        ids, vals = zip(*counterToFilledTupleList(counter))
+        indices.append(range(len(ids)))
+        values.append(vals)
+        labels.append(name)
+    ax1.hist(indices, bins=np.arange(4)-.5, weights=values, label=labels, stacked=True, align='mid', rwidth=.5)
+    ax1.set_xticks(range(len(ids)))
+    ax1.set_xticklabels(ids)
+
+    ax2 = plt.subplot(212)
+    ax2.set_title('by benchmark function')
+    indices = []
+    values = []
+    labels = []
+    for name, counter in func_c.items():
+        ids, vals = zip(*counterToFilledTupleList(counter))
+        indices.append(range(len(ids)))
+        values.append(vals)
+        labels.append(name)
+    ax2.hist(indices, bins=np.arange(4)-.5, weights=values, label=labels, stacked=True, align='mid', rwidth=.5)
+    ax2.set_xticks(range(len(ids)))
+    ax2.set_xticklabels(ids)
+
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    # plt.tight_layout()
+    #
+    # box = ax1.get_position()
+    # ax1.set_position([box.x0, box.y0, box.width * 0.65, box.height])
+    # ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    #
+    # box = ax2.get_position()
+    # ax2.set_position([box.x0, box.y0, box.width * 0.65, box.height])
+    # ax2.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+
+    fsuff = suffix.format(size=training_size, rep='')
+    plot_name_prefix = f'{plot_dir}{fsuff}'
+    guaranteeFolderExists(f'{plot_dir}')
+    plt.savefig(plot_name_prefix + 'reslog-histogram_no-legend.' + plot_ext)
+
+
+def plotBoxPlots(training_size):
 
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
@@ -251,11 +314,12 @@ def plotBoxPlots():
 
 
 def run():
-    print(training_size)
-    # plotSimpleComparisons()
-    # plotMedianComparisons()
-    # calcWinsPerStrategy()
-    plotBoxPlots()
+    for training_size in training_sizes:
+        print(training_size)
+        plotSimpleComparisons(training_size)
+        plotMedianComparisons(training_size)
+        # calcWinsPerStrategy(training_size)
+        plotBoxPlots(training_size)
 
 
 if __name__ == '__main__':
