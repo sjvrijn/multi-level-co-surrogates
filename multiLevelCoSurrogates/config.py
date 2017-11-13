@@ -39,5 +39,5 @@ fit_funcs = {
 fit_func_dims = {name: len(fit_funcs[name].u_bound) for name in fit_funcs.keys()}
 
 # Experimental parameters
-training_size = 50
+training_sizes = [10, 25, 50, 75, 100]
 experiment_repetitions = 30

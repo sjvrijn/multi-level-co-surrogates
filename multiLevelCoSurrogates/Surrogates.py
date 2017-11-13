@@ -76,7 +76,7 @@ class CoSurrogate:
         """ Determine the scaling parameter 'rho' between y_low and y_high using simple linear regression """
         regr = LinearRegression()
         regr.fit(self.y_low, self.y_high)
-        return regr.coef_
+        return regr.coef_.flatten()[0]
 
 
     @property
