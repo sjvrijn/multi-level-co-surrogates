@@ -18,7 +18,7 @@ from itertools import product
 from multiLevelCoSurrogates.Surrogates import Surrogate, CoSurrogate
 from multiLevelCoSurrogates.Logger import Logger
 from multiLevelCoSurrogates.config import data_dir, folder_name, suffix, data_ext, fit_funcs, fit_func_dims
-from multiLevelCoSurrogates.config import experiment_repetitions, training_size
+from multiLevelCoSurrogates.config import experiment_repetitions, training_sizes
 
 
 def guaranteeFolderExists(path_name):
@@ -187,7 +187,7 @@ def create_loggers(surrogate, filename_prefix):
 
 
 
-def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
+def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
                                fit_func_name, surrogate_name, rep, fit_scaling_param=True):
 
     ### SETUP ###
@@ -219,7 +219,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
         candidates = np.array([_keepInBounds(cand, l_bound, u_bound) for cand in candidates])
         low_results = [fit_func.low(cand) for cand in candidates]
         low_errors = surrogate.predict(candidates)
-        pre_results = [a + b for a, b in zip(low_results, low_errors)]
+        pre_results = [a*surrogate.rho + b for a, b in zip(low_results, low_errors)]
 
         results = multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, archive_candidates_low, archive_candidates_high)
         es.tell(candidates, results)
@@ -239,7 +239,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
         surrogate = retrainMultiFidelity(archive_candidates_low, archive_candidates_high, training_size, surrogate_name, fit_scaling_param)
 
 
-def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size,
+def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
                   fit_func_name, surrogate_name, rep):
 
     fit_func = fit_funcs[fit_func_name]
@@ -290,9 +290,9 @@ def run():
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
     surrogates = ['Kriging', 'RBF', 'RandomForest']
-    experiments = product(fit_func_names, surrogates, range(num_reps))
+    experiments = product(training_sizes, fit_func_names, surrogates, range(num_reps))
 
-    for fit_func_name, surrogate_name, rep in experiments:
+    for training_size, fit_func_name, surrogate_name, rep in experiments:
 
         ndim = fit_func_dims[fit_func_name]
         lambda_ = 4 + int(3 * np.log(ndim))
@@ -305,9 +305,9 @@ def run():
               Surrogate:          {surrogate_name}
               Repetittion:        {rep}""")
 
-        runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, fit_func_name, surrogate_name, rep)
-        runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True)
-        runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False)
+        runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
+        runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True)
+        runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False)
 
 
 if __name__ == "__main__":
