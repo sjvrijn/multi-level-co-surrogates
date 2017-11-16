@@ -104,10 +104,10 @@ class RBF(Surrogate):
     :param X: input coordinates
     :param y: expected output values
     """
+    name = 'RBF'
 
     def __init__(self, X, y):
         super(self.__class__, self).__init__(X, y)
-        self.name = 'RBF'
         self.is_trained = False
 
     def do_predict(self, X):
@@ -127,11 +127,11 @@ class Kriging(Surrogate):
     :param y: expected output values
     """
     provides_std = True
+    name = 'Kriging'
 
     def __init__(self, X, y):
         super(self.__class__, self).__init__(X, y)
         self._surr = GaussianProcessRegressor()
-        self.name = 'Kriging'
         self.is_trained = False
 
     def do_predict(self, X):
@@ -153,11 +153,11 @@ class RandomForest(Surrogate):
     :param y: expected output values
     """
     provides_std = True
+    name = 'RandomForest'
 
     def __init__(self, X, y):
         super(self.__class__, self).__init__(X, y)
         self._surr = RandomForestRegressor()
-        self.name = 'RandomForest'
         self.is_trained = False
 
     def do_predict(self, X):
