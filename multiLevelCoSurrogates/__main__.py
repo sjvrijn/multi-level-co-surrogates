@@ -19,6 +19,7 @@ from multiLevelCoSurrogates.Surrogates import Surrogate, CoSurrogate
 from multiLevelCoSurrogates.Logger import Logger
 from multiLevelCoSurrogates.config import data_dir, folder_name, suffix, data_ext, fit_funcs, fit_func_dims
 from multiLevelCoSurrogates.config import experiment_repetitions, training_sizes
+from multiLevelCoSurrogates.BayesianOptimization import EGO
 
 
 def guaranteeFolderExists(path_name):
@@ -282,6 +283,36 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
 
         gen_counter += 1
         surrogate = retrain(archive_candidates, training_size, surrogate_name)
+
+
+def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep):
+
+    num_iters = 1000
+
+    fit_func = fit_funcs[fit_func_name]
+    archive_candidates = []
+    l_bound = np.array(fit_func.l_bound)
+    u_bound = np.array(fit_func.u_bound)
+
+    # Set up the filename detailing all settings of the experiment
+    fname = folder_name.format(ndim=ndim, func=fit_func_name, use='EGO-reg', surr=surrogate_name)
+    fsuff = suffix.format(size=training_size, rep=rep)
+    filename_prefix = f'{data_dir}{fname}{fsuff}'
+    guaranteeFolderExists(f'{data_dir}{fname}')
+
+    surrogate = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
+    ego = EGO(surrogate, ndim)
+
+    full_res_log, pre_log, res_log, std_log = create_loggers(surrogate, filename_prefix)
+
+    for _ in range(num_iters):
+
+        x, ei = ego.next_infill()
+        x_fit = fit_func.high(x)
+        archive_candidates.append((x, x_fit))
+        ego.surrogate = retrain(archive_candidates, training_size, surrogate_name)
+
+        res_log.writeLine([x_fit])
 
 
 def run():
