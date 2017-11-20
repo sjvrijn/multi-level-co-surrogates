@@ -15,23 +15,25 @@ from scipy.special import erf
 
 
 class EGO:
-    def __init__(self, kriging):
-        self.kriging = kriging
-        self.ndims = kriging.nvars
-        self.y_best = min(kriging.y)
+    def __init__(self, surrogate, ndims):
+        self.surrogate = surrogate
+        self.ndims = ndims
+        self.y_best = min(surrogate.y)
 
-    def next_infill(self):
+    def next_infill(self, verbose=False):
 
-        print('CMA-ES run for optimizing EI...')
+        if verbose:
+            print('CMA-ES run for optimizing EI...')
         x0 = [0.5] * self.ndims
         sigma0 = 1
         es = cma.CMAEvolutionStrategy(x0, sigma0).optimize(self.exp_imp)
         x, EI = es.result.xbest, es.result.fbest
-        print('CMA-ES run complete.')
+        if verbose:
+            print('CMA-ES run complete.')
         return x, EI
 
     def exp_imp(self, x):
-        y_hat, SSqr = self.kriging.predict(x)
+        y_hat, SSqr = self.surrogate.predict(x)
 
         if SSqr == 0:
             EI = 0
