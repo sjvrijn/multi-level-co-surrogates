@@ -285,9 +285,40 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
         surrogate = retrain(archive_candidates, training_size, surrogate_name)
 
 
+def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep):
+
+    fit_func = fit_funcs[fit_func_name]
+    sigma = 0.5
+    init_individual = [(u+l)/2 for u, l in zip(fit_func.u_bound, fit_func.l_bound)]
+    l_bound = np.array(fit_func.l_bound)
+    u_bound = np.array(fit_func.u_bound)
+
+    # Set up the filename detailing all settings of the experiment
+    fname = folder_name.format(ndim=ndim, func=fit_func_name, use='reg', surr='NoSurrogate')
+    fsuff = suffix.format(size=0, rep=rep)
+    filename_prefix = f'{data_dir}{fname}{fsuff}'
+    guaranteeFolderExists(f'{data_dir}{fname}')
+
+    es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_, 'CMA_mu': mu, 'maxiter': 1000,
+                                                                  'verb_filenameprefix': filename_prefix})
+
+    surrogate = Surrogate(None, None)
+    full_res_log, pre_log, res_log, std_log = create_loggers(surrogate, filename_prefix)
+
+    while not es.stop():
+        # Obtain the list of lambda_pre candidates to evaluate
+        candidates = np.array([_keepInBounds(cand, l_bound, u_bound) for cand in es.ask()])
+        results = [fit_func.high(cand) for cand in candidates]
+        es.tell(candidates, results)
+        full_res_log.writeLine(results)
+        res_log.writeLine(results)
+
+        es.logger.add()
+
+
 def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep):
 
-    num_iters = 1000
+    num_iters = 250
 
     fit_func = fit_funcs[fit_func_name]
     archive_candidates = []
@@ -301,7 +332,7 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
     guaranteeFolderExists(f'{data_dir}{fname}')
 
     surrogate = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
-    ego = EGO(surrogate, ndim)
+    ego = EGO(surrogate, ndim, fit_func.u_bound, fit_func.l_bound)
 
     full_res_log, pre_log, res_log, std_log = create_loggers(surrogate, filename_prefix)
 
@@ -313,6 +344,7 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
         ego.surrogate = retrain(archive_candidates, training_size, surrogate_name)
 
         res_log.writeLine([x_fit])
+        full_res_log.writeLine([x_fit])
 
 
 def run():
@@ -335,6 +367,10 @@ def run():
               Function:           {fit_func_name}
               Surrogate:          {surrogate_name}
               Repetittion:        {rep}""")
+
+        # runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep)
+
+        runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
 
         runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
         runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True)

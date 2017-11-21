@@ -172,4 +172,4 @@ class RandomForest(Surrogate):
         for x in X:
             predictions = [est.predict(x.reshape(1, -1))[0] for est in self._surr.estimators_]
             stds.append(np.std(predictions))
-        return stds
+        return np.array(stds)
