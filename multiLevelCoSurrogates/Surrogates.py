@@ -72,22 +72,33 @@ class Surrogate:
         self.y = y
         self.is_trained = False
 
-    def predict(self, X):
+    def predict(self, X, *, mode='value'):
+        """Public prediction function. Available modes: 'value' and 'std'"""
         if not self.is_trained:
             raise Exception("Cannot predict: surrogate is not trained yet.")
 
+        if mode == 'value':
+            predictor = self.do_predict
+        elif mode == 'std':
+            predictor = self.do_predict_std
+        else:
+            raise ValueError(f"Invalid prediction mode '{mode}'. Supported are: 'value', 'std'")
+
         if self.normalized:
             X = normalize(X, min_vals=self.Xmins, scale=self.Xscales, target_range=self.normalize_target)
-            prediction = self.do_predict(X)
+            prediction = predictor(X)
             prediction = denormalize(prediction, min_vals=self.ymin, scale=self.yscale,
                                      target_range=self.normalize_target)
         else:
-            prediction = self.do_predict(X)
+            prediction = predictor(X)
 
         return prediction
 
 
     def do_predict(self, X):
+        raise NotImplementedError
+
+    def do_predict_std(self, X):
         raise NotImplementedError
 
     def train(self):
@@ -142,11 +153,8 @@ class CoSurrogate:
     def provides_std(self):
         return self.surrogate.provides_std
 
-    def predict(self, X):
-        return self.surrogate.predict(X)
-
-    def predict_std(self, X):
-        return self.surrogate.predict_std(X)
+    def predict(self, X, *, mode='value'):
+        return self.surrogate.predict(X, mode=mode)
 
     def train(self):
         return self.surrogate.train()
@@ -196,7 +204,7 @@ class Kriging(Surrogate):
         self._surr.fit(self.X, self.y)
         self.is_trained = True
 
-    def predict_std(self, X):
+    def do_predict_std(self, X):
         return self._surr.predict(X, return_std=True)[1]
 
 
@@ -222,7 +230,7 @@ class RandomForest(Surrogate):
         self._surr.fit(self.X, np.ravel(self.y))
         self.is_trained = True
 
-    def predict_std(self, X):
+    def do_predict_std(self, X):
         stds = []
         for x in X:
             predictions = [est.predict(x.reshape(1, -1))[0] for est in self._surr.estimators_]

@@ -228,7 +228,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
 
         # Write data to disc to be plotted
         if std_log:
-            pre_std = surrogate.predict_std(candidates)
+            pre_std = surrogate.predict(candidates, mode='std')
             std_log.writeLine(pre_std)
 
         pre_log.writeLine(pre_results)
@@ -273,7 +273,7 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
 
         # Write data to disc to be plotted
         if std_log:
-            pre_std = surrogate.predict_std(candidates)
+            pre_std = surrogate.predict(candidates, mode='std')
             std_log.writeLine(pre_std)
 
         pre_log.writeLine(pre_results)

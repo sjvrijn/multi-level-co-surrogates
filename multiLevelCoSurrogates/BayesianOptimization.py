@@ -43,7 +43,7 @@ class EGO:
     def exp_imp(self, x):
         x = x.reshape(1,-1)
         y_hat = self.surrogate.predict(x)
-        SSqr = self.surrogate.predict_std(x)
+        SSqr = self.surrogate.predict(x, mode='std')
 
         if SSqr == 0:
             EI = 0
