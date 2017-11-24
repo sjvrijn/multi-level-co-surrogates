@@ -57,17 +57,35 @@ class Surrogate:
     """A generic interface to allow interchangeable use of various models such as RBF, SVM and Kriging"""
     provides_std = False
 
-    def __init__(self, X, y):
+    def __init__(self, X, y, *, normalized=True, normalize_target=(0, 1)):
         self._surr = None
+
+        self.normalized = normalized
+        if normalized:
+            self.normalize_target = normalize_target
+            self.Xmins, self.Xscales = get_min_and_scale(X)
+            self.ymin, self.yscale = get_min_and_scale(y)
+            X = normalize(X, target_range=normalize_target)
+            y = normalize(y, target_range=normalize_target)
+
         self.X = X
         self.y = y
         self.is_trained = False
 
     def predict(self, X):
-        if self.is_trained:
-            return self.do_predict(X)
-        else:
+        if not self.is_trained:
             raise Exception("Cannot predict: surrogate is not trained yet.")
+
+        if self.normalized:
+            X = normalize(X, min_vals=self.Xmins, scale=self.Xscales, target_range=self.normalize_target)
+            prediction = self.do_predict(X)
+            prediction = denormalize(prediction, min_vals=self.ymin, scale=self.yscale,
+                                     target_range=self.normalize_target)
+        else:
+            prediction = self.do_predict(X)
+
+        return prediction
+
 
     def do_predict(self, X):
         raise NotImplementedError
