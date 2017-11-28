@@ -26,13 +26,16 @@ def get_min_and_scale(values):
     return min_vals, scale
 
 
-def normalize(values, *, min_vals=None, scale=None, target_range=(0,1)):
+def normalize(values, *, min_vals=None, scale=None, target_range=(0.25, 0.75)):
     """Normalize the given values to target range (default: [0,1])"""
 
     if (min_vals is not None) is not (scale is not None):  # x-or: if just one of them is None
         raise Exception("If specified, both 'min_vals' and 'scale' must be given.")
     elif min_vals is None and scale is None:
         min_vals, scale = get_min_and_scale(values)
+
+    if any(scale == 0):
+        raise ValueError(f'Scale cannot be 0: {scale}')
 
     t_min, t_max = target_range
 
@@ -42,7 +45,7 @@ def normalize(values, *, min_vals=None, scale=None, target_range=(0,1)):
     return normalized_values
 
 
-def denormalize(values, min_vals, scale, *, target_range=(0,1)):
+def denormalize(values, min_vals, scale, *, target_range=(0.25, 0.75)):
     """Denormalize the given normalized values, default assumed normalization target is [0,1]"""
 
     t_min, t_max = target_range
@@ -57,7 +60,7 @@ class Surrogate:
     """A generic interface to allow interchangeable use of various models such as RBF, SVM and Kriging"""
     provides_std = False
 
-    def __init__(self, X, y, *, normalized=True, normalize_target=(0, 1)):
+    def __init__(self, X, y, *, normalized=True, normalize_target=(0.25, 0.75)):
         self._surr = None
 
         self.normalized = normalized
@@ -86,11 +89,12 @@ class Surrogate:
 
         if self.normalized:
             X = normalize(X, min_vals=self.Xmins, scale=self.Xscales, target_range=self.normalize_target)
-            prediction = predictor(X)
+
+        prediction = predictor(X)
+
+        if self.normalized and mode == 'value':
             prediction = denormalize(prediction, min_vals=self.ymin, scale=self.yscale,
                                      target_range=self.normalize_target)
-        else:
-            prediction = predictor(X)
 
         return prediction
 
