@@ -38,6 +38,13 @@ class CandidateArchive:
         return len(self.data)
 
 
+    def _getcandidateindex(self, candidate):
+        """"""
+        query_parts = [f'x{i} == {val}' for i, val in enumerate(candidate)]
+        idx = self.data.query(' & '.join(query_parts)).iloc[-1].name
+        return idx
+
+
     def addcandidate(self, candidate, fitness, fidelity=None):
         """"""
 
@@ -49,6 +56,13 @@ class CandidateArchive:
         if type(fidelity) in [tuple, list]:
             # TODO: Implement case for adding multiple fitnesses at the same time
             raise NotImplementedError
+
+        try:  # Check if candidate already exists
+            _ = self._getcandidateindex(candidate)
+            raise ValueError(f"candidate {candidate} is already present in the archive."
+                             f" Use 'CandidateArchive.updatecandidate()' instead")
+        except IndexError:
+            pass  # candidate does not yet exist, we'll add the new one as intended
 
         if self.num_fidelities == 1:
             fit_values = [fitness]
@@ -65,8 +79,7 @@ class CandidateArchive:
     def updatecandidate(self, candidate, fitness, fidelity=None, *, verbose=False):
         """"""
 
-        query_parts = [f'x{i} == {val}' for i, val in enumerate(candidate)]
-        idx = self.data.query(' & '.join(query_parts)).iloc[-1].name
+        idx = self._getcandidateindex(candidate)
 
         if fidelity is None:
             fidelity = 'fitness'
