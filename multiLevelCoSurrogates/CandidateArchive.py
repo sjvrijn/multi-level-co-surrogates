@@ -53,6 +53,7 @@ class CandidateArchive:
         if self.num_fidelities == 1:
             fit_values = [fitness]
         else:
+            fidelity = f'fitness_{fidelity}'
             fit_values = [np.nan] * self.num_fidelities
             idx = self.fidelities.index(fidelity)
             fit_values[idx] = fitness
@@ -72,7 +73,7 @@ class CandidateArchive:
         else:
             fidelity = f'fitness_{fidelity}'
 
-        if not np.isnan(self.data[idx, fidelity]) and verbose:
+        if not np.isnan(self.data.at[idx, fidelity]) and verbose:
             raise Warning(f"overwriting existing value '{self.data[idx, fidelity]}' with '{fitness}'")
 
         self.data.at[idx, fidelity] = fitness
