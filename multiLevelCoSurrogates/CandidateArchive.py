@@ -20,6 +20,7 @@ class CandidateArchive:
 
     def __init__(self, ndim, fidelities=None):
         """"""
+        self.ndim = ndim
 
         if fidelities:
             self.num_fidelities = len(fidelities)
@@ -90,3 +91,27 @@ class CandidateArchive:
             raise Warning(f"overwriting existing value '{self.data[idx, fidelity]}' with '{fitness}'")
 
         self.data.at[idx, fidelity] = fitness
+
+
+    def getcandidates(self, n=None, fidelity=None):
+        """"""
+
+        if type(fidelity) in [tuple, list]:
+            fidelity = [f'fitness_{fid}' for fid in fidelity]
+        elif fidelity:
+            fidelity = [f'fitness_{fidelity}']
+        else:
+            fidelity = ['fitness']
+
+        selected_data = self.data
+        for fid in fidelity:
+            selected_data = selected_data[selected_data[fid].notnull()]
+
+        candidates = selected_data.as_matrix(columns=self.data.columns[:self.ndim])
+        fitnesses = selected_data.as_matrix(columns=fidelity)
+
+        if n is not None:
+            candidates = candidates[-n:]
+            fitnesses = fitnesses[-n:]
+
+        return candidates, fitnesses
