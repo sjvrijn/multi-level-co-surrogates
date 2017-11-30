@@ -66,14 +66,14 @@ class CandidateArchive:
             pass  # candidate does not yet exist, we'll add the new one as intended
 
         if self.num_fidelities == 1:
-            fit_values = [fitness]
+            fit_values = fitness
         else:
             fidelity = f'fitness_{fidelity}'
-            fit_values = [np.nan] * self.num_fidelities
+            fit_values = np.array([np.nan] * self.num_fidelities)
             idx = self.fidelities.index(fidelity)
             fit_values[idx] = fitness
 
-        row = np.array([candidate, fit_values]).flatten()
+        row = np.hstack((candidate, fit_values)).flatten()
         self.data.loc[len(self.data)] = row
 
 
