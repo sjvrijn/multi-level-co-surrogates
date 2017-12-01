@@ -48,7 +48,7 @@ def borehole_hf(xx):
     frac2b = Tu / Tl
     frac2 = math.log(r/rw) * (1+frac2a+frac2b)
 
-    return frac1 / frac2
+    return -(frac1 / frac2)
 
 
 def borehole_lf(xx):
@@ -69,7 +69,7 @@ def borehole_lf(xx):
     frac2b = Tu/Tl
     frac2 = math.log(r/rw) * (1.5+frac2a+frac2b)
 
-    return frac1 / frac2
+    return -(frac1 / frac2)
 
 
 l_bound = [0.05,   100,  63070,  990, 63.1, 700, 1120,  9855]
