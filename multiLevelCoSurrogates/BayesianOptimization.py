@@ -46,7 +46,7 @@ class EGO:
         SSqr = self.surrogate.predict(x, mode='std')
 
         if SSqr == 0:
-            EI = 0
+            EI = [0]
         else:
             EI = (self.y_best - y_hat) * (0.5 + 0.5*erf((self.y_best - y_hat)/np.sqrt(2 * SSqr))) + \
                     np.sqrt(0.5*SSqr/np.pi)*np.exp(-0.5*(self.y_best - y_hat)**2/SSqr)

@@ -34,8 +34,9 @@ def normalize(values, *, min_vals=None, scale=None, target_range=(0.25, 0.75)):
     elif min_vals is None and scale is None:
         min_vals, scale = get_min_and_scale(values)
 
-    if any(scale == 0):
-        raise ValueError(f'Scale cannot be 0: {scale}')
+    if any(scale == 0):  # Hardcoded error prevention TODO: find better solution?!?
+        scale[scale == 0] = 1
+        # raise ValueError(f'Scale cannot be 0: {scale}')
 
     t_min, t_max = target_range
 
