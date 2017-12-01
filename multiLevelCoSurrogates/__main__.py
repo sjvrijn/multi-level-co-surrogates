@@ -123,15 +123,21 @@ def createCoSurrogate(N, init_sample_size, fit_func_low, fit_func_high, l_bound,
     results_low = np.array([fit_func_low(cand) for cand in init_candidates], ndmin=2).T
     results_high = np.array([fit_func_high(cand) for cand in init_candidates], ndmin=2).T
 
+    cand_archive = CandidateArchive(ndim=N, fidelities=['high', 'low'])
+    for cand, res_h, res_l in zip(init_candidates, results_high, results_low):
+        cand_archive.addcandidate(cand, res_h, fidelity='high')
+        cand_archive.updatecandidate(cand, res_l, fidelity='low')
+
     # Now that we have our initial data, we can create an instance of the surrogate model
     surrogate = CoSurrogate(surrogate_name, init_candidates, results_low, results_high, fit_scaling_param=fit_scaling_param)
     surrogate.train()
-    return surrogate
+    return surrogate, cand_archive
 
 
-def retrainMultiFidelity(archive_candidates_low, archive_candidates_high, training_size, surrogate_name, fit_scaling_param=True):
-    x, y_low = zip(*archive_candidates_low[-training_size:])
-    x, y_high = zip(*archive_candidates_high[-training_size:])
+def retrainMultiFidelity(cand_archive, training_size, surrogate_name, fit_scaling_param=True):
+    x, y = cand_archive.getcandidates(n=training_size, fidelity=['high', 'low'])
+    y_high, y_low = y[:,0], y[:,1]
+
     co_surrogate = CoSurrogate(surrogate_name, np.array(list(x)),
                                np.array(list(y_low), ndmin=2).T, np.array(list(y_high), ndmin=2).T,
                                fit_scaling_param=fit_scaling_param)
@@ -146,7 +152,7 @@ def retrain(cand_archive, training_size, surrogate_name):
     return surrogate
 
 
-def multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, archive_candidates_low, archive_candidates_high):
+def multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_archive):
     # Pre-selection evolution control: Choose the best lambda from lambda_pre to be re-evaluated (otherwise: np.inf)
     indices = np.argsort(pre_results)
     results = [np.inf for _ in candidates]
@@ -154,8 +160,9 @@ def multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, archiv
         res_high = fit_func.high(candidates[index])
         res_low = fit_func.low(candidates[index])
         results[index] = res_high
-        archive_candidates_low.append((candidates[index], res_low))
-        archive_candidates_high.append((candidates[index], res_high))
+
+        cand_archive.addcandidate(candidates[index], res_high, 'high')
+        cand_archive.updatecandidate(candidates[index], res_low, 'low')
     return results
 
 
@@ -168,12 +175,6 @@ def singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_
         results[index] = res
         cand_archive.addcandidate(candidates[index], res)
     return results
-
-
-def calcMultiFidelityError(candidate, highFidFunc, lowFidFunc):
-    high = highFidFunc(candidate)
-    low = lowFidFunc(candidate)
-    return high - low
 
 
 def create_loggers(surrogate, filename_prefix):
@@ -201,9 +202,6 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
     fit_func = fit_funcs[fit_func_name]
     sigma = 0.5
     init_individual = [(u+l)/2 for u, l in zip(fit_func.u_bound, fit_func.l_bound)]
-    archive_candidates_low = []
-    archive_candidates_high = []
-    gen_counter = 0
     l_bound = np.array(fit_func.l_bound)
     u_bound = np.array(fit_func.u_bound)
 
@@ -213,7 +211,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
     filename_prefix = f'{data_dir}{fname}{fsuff}'
     guaranteeFolderExists(f'{data_dir}{fname}')
 
-    surrogate = createCoSurrogate(ndim, init_sample_size, fit_func.low, fit_func.high, l_bound, u_bound, surrogate_name, fit_scaling_param)
+    surrogate, cand_archive = createCoSurrogate(ndim, init_sample_size, fit_func.low, fit_func.high, l_bound, u_bound, surrogate_name, fit_scaling_param)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
@@ -228,7 +226,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
         low_errors = surrogate.predict(candidates)
         pre_results = [a*surrogate.rho + b for a, b in zip(low_results, low_errors)]
 
-        results = multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, archive_candidates_low, archive_candidates_high)
+        results = multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_archive)
         es.tell(candidates, results)
         full_res_log.writeLine([fit_func.high(cand) for cand in candidates])
 
@@ -242,8 +240,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
         es.logger.add()
         # es.disp()
 
-        gen_counter += 1
-        surrogate = retrainMultiFidelity(archive_candidates_low, archive_candidates_high, training_size, surrogate_name, fit_scaling_param)
+        surrogate = retrainMultiFidelity(cand_archive, training_size, surrogate_name, fit_scaling_param)
 
 
 def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
@@ -252,7 +249,6 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
     fit_func = fit_funcs[fit_func_name]
     sigma = 0.5
     init_individual = [(u+l)/2 for u, l in zip(fit_func.u_bound, fit_func.l_bound)]
-    gen_counter = 0
     l_bound = np.array(fit_func.l_bound)
     u_bound = np.array(fit_func.u_bound)
 
@@ -286,7 +282,6 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
         es.logger.add()
         # es.disp()
 
-        gen_counter += 1
         surrogate = retrain(cand_archive, training_size, surrogate_name)
 
 
@@ -307,7 +302,7 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep):
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
-    surrogate = Surrogate(None, None)
+    surrogate = Surrogate([[0],[1]], [[0],[1]])  # Just an empty surrogate
     full_res_log, pre_log, res_log, std_log = create_loggers(surrogate, filename_prefix)
 
     while not es.stop():
@@ -323,10 +318,9 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep):
 
 def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep):
 
-    num_iters = 250
+    num_iters = 100
 
     fit_func = fit_funcs[fit_func_name]
-    archive_candidates = []
     l_bound = np.array(fit_func.l_bound)
     u_bound = np.array(fit_func.u_bound)
 
@@ -336,7 +330,7 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
     filename_prefix = f'{data_dir}{fname}{fsuff}'
     guaranteeFolderExists(f'{data_dir}{fname}')
 
-    surrogate = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
+    surrogate, cand_archive = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
     ego = EGO(surrogate, ndim, fit_func.u_bound, fit_func.l_bound)
 
     full_res_log, pre_log, res_log, std_log = create_loggers(surrogate, filename_prefix)
@@ -345,8 +339,8 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
 
         x, ei = ego.next_infill()
         x_fit = fit_func.high(x)
-        archive_candidates.append((x, x_fit))
-        ego.surrogate = retrain(archive_candidates, training_size, surrogate_name)
+        cand_archive.addcandidate(x, x_fit)
+        ego.surrogate = retrain(cand_archive, training_size, surrogate_name)
 
         res_log.writeLine([x_fit])
         full_res_log.writeLine([x_fit])
@@ -363,19 +357,19 @@ def run():
     for training_size, fit_func_name, surrogate_name, rep in experiments:
 
         ndim = fit_func_dims[fit_func_name]
-        lambda_ = 4 + int(3 * np.log(ndim))
-        lambda_pre = 2 * lambda_
+        lambda_ = 2      #4 + int(3 * np.log(ndim))
+        lambda_pre = 10  #2 * lambda_
         mu = lambda_ // 2
 
-        print(f"""\n
+        print(f"""
               ---------------------------------------------
+              Training size:      {training_size}
               Function:           {fit_func_name}
               Surrogate:          {surrogate_name}
               Repetittion:        {rep}""")
 
-        # runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep)
-
         if surrogate_name == 'Kriging':
+            runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep)
             runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
 
         runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
