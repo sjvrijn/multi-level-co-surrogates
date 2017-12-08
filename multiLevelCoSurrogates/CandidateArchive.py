@@ -14,6 +14,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 import numpy as np
 import pandas as pd
+from warnings import warn
 
 
 class CandidateArchive:
@@ -46,11 +47,11 @@ class CandidateArchive:
         return idx
 
 
-    def addcandidate(self, candidate, fitness, fidelity=None):
+    def addcandidate(self, candidate, fitness, fidelity=None, *, verbose=False):
         """"""
 
         if self.num_fidelities == 1 and fidelity is not None:
-            raise Warning(f"fidelity specification {fidelity} ignored in single-fidelity case")
+            warn(f"fidelity specification {fidelity} ignored in single-fidelity case", RuntimeWarning)
         elif self.num_fidelities > 1 and fidelity is None:
             raise ValueError('must specify fidelity level in multi-fidelity case')
 
@@ -59,9 +60,17 @@ class CandidateArchive:
             raise NotImplementedError
 
         try:  # Check if candidate already exists
-            _ = self._getcandidateindex(candidate)
-            raise ValueError(f"candidate {candidate} is already present in the archive."
-                             f" Use 'CandidateArchive.updatecandidate()' instead")
+            idx = self._getcandidateindex(candidate)
+
+            fid = 'fitness' if self.num_fidelities == 1 else f'fitness_{fidelity}'
+            if verbose:
+                warn(f"candidate {candidate} is already present in the archive. Reverting to "
+                     f"'CandidateArchive.updatecandidate()' instead", RuntimeWarning)
+
+            if self.data.at[idx, fid] != fitness:
+                self.updatecandidate(candidate, fitness, fidelity=fidelity)
+
+            return
         except IndexError:
             pass  # candidate does not yet exist, we'll add the new one as intended
 
@@ -87,8 +96,8 @@ class CandidateArchive:
         else:
             fidelity = f'fitness_{fidelity}'
 
-        if not np.isnan(self.data.at[idx, fidelity]) and verbose:
-            raise Warning(f"overwriting existing value '{self.data[idx, fidelity]}' with '{fitness}'")
+        if verbose and not np.isnan(self.data.at[idx, fidelity]):
+            warn(f"overwriting existing value '{self.data[idx, fidelity]}' with '{fitness}'", RuntimeWarning)
 
         self.data.at[idx, fidelity] = fitness
 
