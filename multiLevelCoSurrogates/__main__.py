@@ -166,14 +166,14 @@ def multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_a
     return results
 
 
-def singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_archive):
+def singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_archive, fidelity=None):
     # Pre-selection evolution control: Choose the best lambda from lambda_pre to be re-evaluated (otherwise: np.inf)
     indices = np.argsort(pre_results)
     results = [np.inf for _ in candidates]
     for index in indices[:lambda_]:
         res = fit_func(candidates[index])
         results[index] = res
-        cand_archive.addcandidate(candidates[index], res)
+        cand_archive.addcandidate(candidates[index], res, fidelity=fidelity)
     return results
 
 
@@ -285,7 +285,7 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
         surrogate = retrain(cand_archive, training_size, surrogate_name)
 
 
-def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep):
+def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size):
 
     fit_func = fit_funcs[fit_func_name]
     sigma = 0.5
@@ -295,7 +295,7 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep):
 
     # Set up the filename detailing all settings of the experiment
     fname = folder_name.format(ndim=ndim, func=fit_func_name, use='reg', surr='NoSurrogate')
-    fsuff = suffix.format(size=0, rep=rep)
+    fsuff = suffix.format(size=size, rep=rep)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
     guaranteeFolderExists(f'{data_dir}{fname}')
 
@@ -346,6 +346,67 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
         full_res_log.writeLine([x_fit])
 
 
+def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
+                                          fit_func_name, surrogate_name, rep, fit_scaling_param=True):
+
+    ### SETUP ###
+    fit_func = fit_funcs[fit_func_name]
+    sigma = 0.5
+    init_individual = [(u+l)/2 for u, l in zip(fit_func.u_bound, fit_func.l_bound)]
+    l_bound = np.array(fit_func.l_bound)
+    u_bound = np.array(fit_func.u_bound)
+
+    # Set up the filename detailing all settings of the experiment
+    fname = folder_name.format(ndim=ndim, func=fit_func_name,
+                               use=f"{'scaled-MF-bisurr' if fit_scaling_param else 'MF-bisurr'}", surr=surrogate_name)
+    fsuff = suffix.format(size=training_size, rep=rep)
+    filename_prefix = f'{data_dir}{fname}{fsuff}'
+    guaranteeFolderExists(f'{data_dir}{fname}')
+
+    surrogate, cand_archive = createCoSurrogate(ndim, init_sample_size, fit_func.low, fit_func.high, l_bound, u_bound, surrogate_name, fit_scaling_param)
+
+    init_candidates, results = cand_archive.getcandidates(fidelity='low')
+    surrogate_low = Surrogate.fromname(surrogate_name, init_candidates, results)
+    surrogate_low.train()
+
+    es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre*2, 'CMA_mu': mu, 'maxiter': 1000,
+                                                                  'verb_filenameprefix': filename_prefix})
+
+    full_res_log, pre_log, res_log, std_log = create_loggers(surrogate, filename_prefix)
+
+    ### OPTIMIZATION ###
+    while not es.stop():
+        # Obtain the list of lambda_pre candidates to evaluate
+        candidates = es.ask()
+        candidates = np.array([_keepInBounds(cand, l_bound, u_bound) for cand in candidates])
+
+        lowest_results = surrogate_low.predict(candidates)
+        low_results = singleFidelityPreSelection(candidates, lowest_results, lambda_pre, fit_func.low, cand_archive, fidelity='low')
+        low_errors = surrogate.predict(candidates)
+        pre_results = [a*surrogate.rho + b for a, b in zip(low_results, low_errors)]
+
+        results = multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_archive)
+        full_res_log.writeLine([fit_func.high(cand) for cand in candidates])
+
+        # Write data to disc to be plotted
+        if std_log:
+            pre_std = surrogate.predict(candidates, mode='std')
+            std_log.writeLine(pre_std)
+
+        pre_log.writeLine(pre_results)
+        res_log.writeLine(results)
+        es.logger.add()
+        # es.disp()
+
+        surrogate = retrainMultiFidelity(cand_archive, training_size, surrogate_name, fit_scaling_param)
+        new_results = surrogate.predict(candidates)
+        for i, res in enumerate(results):
+            if not np.isinf(res):
+                results[i] = new_results[i]
+
+        es.tell(candidates, results)
+
+
 def run():
     init_sample_size = 20
 
@@ -369,13 +430,15 @@ def run():
               Repetittion:        {rep}""")
 
         if surrogate_name == 'Kriging':
-            runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep)
+            runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size=training_size)
             runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
 
         runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
         runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True)
         runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False)
 
+        runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True)
+        runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False)
 
 if __name__ == "__main__":
     np.set_printoptions(linewidth=200)
