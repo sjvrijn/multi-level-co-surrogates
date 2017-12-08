@@ -19,6 +19,10 @@ from collections import Counter
 from pprint import pprint
 import numpy as np
 
+surrogates = ['Kriging', 'RBF', 'RandomForest', 'NoSurrogate']
+uses = ['reg', 'MF', 'scaled-MF']#, 'EGO-reg']
+
+
 
 def isTwoInts(value):
     """Returns True if the given value is a tuple or list consisting of exactly 2 integers"""
@@ -71,8 +75,8 @@ def plotSimpleComparisons(training_size):
 
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
-    surrogates = ['Kriging', 'RBF', 'RandomForest']
-    uses = ['reg', 'MF', 'scaled-MF']
+    # surrogates = ['Kriging', 'RBF', 'RandomForest']
+    # uses = ['reg', 'MF', 'scaled-MF']
     experiments = product(fit_func_names, surrogates, range(num_reps))
 
     for fit_func_name, surrogate_name, rep in experiments:
@@ -83,6 +87,12 @@ def plotSimpleComparisons(training_size):
         plt.figure()
 
         for use in uses:
+
+            if surrogate_name == 'NoSurrogate' and use is not 'reg':
+                continue
+            elif use == 'EGO-reg' and surrogate_name is not 'Kriging':
+                continue
+
             fname = folder_name.format(ndim=ndim, func=fit_func_name, use=use, surr=surrogate_name)
             filename_prefix = f'{data_dir}{fname}{fsuff}'
 
@@ -94,6 +104,8 @@ def plotSimpleComparisons(training_size):
         plot_folder = folder_name.format(ndim=ndim, func=fit_func_name, use='', surr=surrogate_name)
         plot_name_prefix = f'{plot_dir}{plot_folder}{fsuff}'
         guaranteeFolderExists(f'{plot_dir}{plot_folder}')
+        plt.xlabel('Evaluations')
+        plt.ylabel('Fitness value')
         plt.legend(loc=0)
         plt.savefig(plot_name_prefix + 'reslog.' + plot_ext)
         plt.close()
@@ -103,8 +115,8 @@ def plotMedianComparisons(training_size):
 
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
-    surrogates = ['Kriging', 'RBF', 'RandomForest']
-    uses = ['reg', 'MF', 'scaled-MF']
+    # surrogates = ['Kriging', 'RBF', 'RandomForest']
+    # uses = ['reg', 'MF', 'scaled-MF']
     experiments = product(fit_func_names, surrogates)
 
     for fit_func_name, surrogate_name in experiments:
@@ -114,6 +126,11 @@ def plotMedianComparisons(training_size):
         plt.figure()
 
         for use in uses:
+
+            if surrogate_name == 'NoSurrogate' and use is not 'reg':
+                continue
+            elif use == 'EGO-reg' and surrogate_name is not 'Kriging':
+                continue
 
             fname = folder_name.format(ndim=ndim, func=fit_func_name, use=use, surr=surrogate_name)
             total_data = []
@@ -134,6 +151,8 @@ def plotMedianComparisons(training_size):
         plot_folder = f'{fit_func_name}-{surrogate_name}-'
         plot_name_prefix = f'{plot_dir}{plot_folder}{fsuff}'
         guaranteeFolderExists(f'{plot_dir}')
+        plt.xlabel('Evaluations')
+        plt.ylabel('Fitness value')
         plt.yscale('log')
         plt.legend(loc=0)
         plt.savefig(plot_name_prefix + 'reslog.' + plot_ext)
@@ -154,8 +173,8 @@ def calcWinsPerStrategy(training_size):
 
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
-    surrogates = ['Kriging', 'RBF', 'RandomForest']
-    uses = ['reg', 'MF', 'scaled-MF']
+    # surrogates = ['Kriging', 'RBF', 'RandomForest']
+    # uses = ['reg', 'MF', 'scaled-MF']
     experiments = product(fit_func_names, surrogates)
 
     c = Counter()
@@ -262,8 +281,8 @@ def plotBoxPlots(training_size):
 
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
-    surrogates = ['Kriging', 'RBF', 'RandomForest']
-    uses = ['reg', 'MF', 'scaled-MF']
+    # surrogates = ['Kriging', 'RBF', 'RandomForest']
+    # uses = ['reg', 'MF', 'scaled-MF']
     experiments = product(fit_func_names, surrogates)
 
     for fit_func_name, surrogate_name in experiments:
@@ -276,6 +295,10 @@ def plotBoxPlots(training_size):
 
         for use in uses:
 
+            if surrogate_name == 'NoSurrogate' and use is not 'reg':
+                continue
+            if use == 'EGO-reg' and surrogate_name is not 'Kriging':
+                continue
             fname = folder_name.format(ndim=ndim, func=fit_func_name, use=use, surr=surrogate_name)
             total_data = []
             total_lengths = []
@@ -293,14 +316,21 @@ def plotBoxPlots(training_size):
             bests.append(np.array([dat[-1] for dat in total_data]))
             lengths.append(total_lengths)
 
+        if surrogate_name == 'Kriging':
+            labels = uses
+        elif surrogate_name == 'NoSurrogate':
+            labels = uses[:1]
+        else:
+            labels = uses[:3]
+
         plt.subplot(211)
         plt.title("Fitness values")
-        plt.boxplot(bests, labels=uses)
+        plt.boxplot(bests, labels=labels)
         plt.yscale('log')
 
         plt.subplot(212)
         plt.title("Time to convergence")
-        plt.boxplot(lengths, labels=uses)
+        plt.boxplot(lengths, labels=labels)
 
         plt.tight_layout()
         fsuff = suffix.format(size=training_size, rep='')
@@ -316,8 +346,8 @@ def plotBoxPlots(training_size):
 def run():
     for training_size in training_sizes:
         print(training_size)
-        plotSimpleComparisons(training_size)
-        plotMedianComparisons(training_size)
+        # plotSimpleComparisons(training_size)
+        # plotMedianComparisons(training_size)
         # calcWinsPerStrategy(training_size)
         plotBoxPlots(training_size)
 
