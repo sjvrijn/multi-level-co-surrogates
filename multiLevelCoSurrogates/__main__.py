@@ -82,6 +82,8 @@ def createScaledLHS(ndim, init_sample_size, l_bound, u_bound):
 
 def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, surrogate_name):
     """
+        Create a surrogate model on a Latin-Hypercube Sample within the given bounds.
+        Returns the trained surrogate, and candidate archive containing these initial points
 
         :param N:                   Dimensionality, length of the desired vectors
         :param init_sample_size:    Number of samples to return
@@ -108,6 +110,9 @@ def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, surrogate_n
 
 def createCoSurrogate(N, init_sample_size, fit_func_low, fit_func_high, l_bound, u_bound, surrogate_name, fit_scaling_param=True):
     """
+        Create a co-surrogate model on a Latin-Hypercube Sample within the given bounds.
+        This model will be trained on the error between fidelities 'high' and 'low'.
+        Returns the trained surrogate, and candidate archive containing these initial points
 
         :param N:                   Dimensionality, length of the desired vectors
         :param init_sample_size:    Number of samples to return
@@ -135,6 +140,15 @@ def createCoSurrogate(N, init_sample_size, fit_func_low, fit_func_high, l_bound,
 
 
 def retrainMultiFidelity(cand_archive, training_size, surrogate_name, fit_scaling_param=True):
+    """
+    Retrieve the last `training_size` candidates from the archive and create a new co-surrogate trained on that dataset
+
+    :param cand_archive:        CandidateArchive object
+    :param training_size:       Number of most recent candidates to use to retrain
+    :param surrogate_name:      Name of the surrogate type to re-initialize
+    :param fit_scaling_param:   Train on error after a linear regression fit between the two levels? (default: True)
+    :return:                    The newly retrained co-surrogate
+    """
     x, y = cand_archive.getcandidates(n=training_size, fidelity=['high', 'low'])
     y_high, y_low = y[:,0], y[:,1]
 
@@ -146,6 +160,14 @@ def retrainMultiFidelity(cand_archive, training_size, surrogate_name, fit_scalin
 
 
 def retrain(cand_archive, training_size, surrogate_name):
+    """
+    Retrieve the last `training_size` candidates from the archive and create a new surrogate trained on that dataset
+
+    :param cand_archive:        CandidateArchive object
+    :param training_size:       Number of most recent candidates to use to retrain
+    :param surrogate_name:      Name of the surrogate type to re-initialize
+    :return:                    The newly retrained surrogate
+    """
     x, y = cand_archive.getcandidates(n=training_size)
     surrogate = Surrogate.fromname(surrogate_name, x, y)
     surrogate.train()
@@ -153,6 +175,17 @@ def retrain(cand_archive, training_size, surrogate_name):
 
 
 def multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_archive):
+    """
+    Select the best `lambda_` candidates based on the `pre_results` and re-evaluate those using the actual fitness
+    function. These candidates are added to the archive
+
+    :param candidates:      Candidates of the current generation (Numpy array)
+    :param pre_results:     Estimated fitnesses according to some pre-evaluation method
+    :param lambda_:         Number of offspring to choose and evaluate on high fidelity
+    :param fit_func:        The fitness function to use
+    :param cand_archive:    CandidateArchive object
+    :return:                High fidelity fitness results (list)
+    """
     # Pre-selection evolution control: Choose the best lambda from lambda_pre to be re-evaluated (otherwise: np.inf)
     indices = np.argsort(pre_results)
     results = [np.inf for _ in candidates]
@@ -167,6 +200,18 @@ def multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_a
 
 
 def singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_archive, fidelity=None):
+    """
+    Select the best `lambda_` candidates based on the `pre_results` and re-evaluate those using the actual fitness
+    function. These candidates are added to the archive
+
+    :param candidates:      Candidates of the current generation (Numpy array)
+    :param pre_results:     Estimated fitnesses according to some pre-evaluation method
+    :param lambda_:         Number of offspring to choose and evaluate on high fidelity
+    :param fit_func:        The fitness function to use
+    :param cand_archive:    CandidateArchive object
+    :param fidelity:        Name of fidelity level to use when storing results in the candidate archive (optional)
+    :return:                High fidelity fitness results (list)
+    """
     # Pre-selection evolution control: Choose the best lambda from lambda_pre to be re-evaluated (otherwise: np.inf)
     indices = np.argsort(pre_results)
     results = [np.inf for _ in candidates]
@@ -178,6 +223,13 @@ def singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_
 
 
 def create_loggers(surrogate, filename_prefix):
+    """
+    Creates a standard set of Logger objects based on surrogate and desired filename prefix
+
+    :param surrogate:       Surrogate object, checked to see if a variance prediction log has to be created
+    :param filename_prefix: Common filename prefix to identify results by
+    :return:                A tuple of loggers with standard header texts
+    """
     pre_log = Logger(f'{filename_prefix}prelog.{data_ext}',
                      header="Pre-results, as predicted by the surrogate")
     res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
@@ -197,6 +249,20 @@ def create_loggers(surrogate, filename_prefix):
 
 def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
                                fit_func_name, surrogate_name, rep, fit_scaling_param=True):
+    """
+    Perform an optimization run on a multi-fidelity optimization function using a co-surrogate assisted CMA-ES
+
+    :param ndim:                Dimensionality of the fitness function
+    :param lambda_:             Offspring size of the CMA-ES
+    :param lambda_pre:          Number of offspring to use in the pre-selection step
+    :param mu:                  Population size of the CMA-ES
+    :param init_sample_size:    Number of candidates to generate as an initial sample
+    :param training_size:       Number of most recent candidates to use to retrain
+    :param fit_func_name:       Name of the fitness function to use
+    :param surrogate_name:      Name of the surrogate type to use
+    :param rep:                 Repetition number
+    :param fit_scaling_param:   Train on error after a linear regression fit between the two levels? (default: True)
+    """
 
     ### SETUP ###
     fit_func = fit_funcs[fit_func_name]
@@ -245,6 +311,19 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
 
 def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
                   fit_func_name, surrogate_name, rep):
+    """
+    Perform an optimization run on a given optimization function using a surrogate assisted CMA-ES
+
+    :param ndim:                Dimensionality of the fitness function
+    :param lambda_:             Offspring size of the CMA-ES
+    :param lambda_pre:          Number of offspring to use in the pre-selection step
+    :param mu:                  Population size of the CMA-ES
+    :param init_sample_size:    Number of candidates to generate as an initial sample
+    :param training_size:       Number of most recent candidates to use to retrain
+    :param fit_func_name:       Name of the fitness function to use
+    :param surrogate_name:      Name of the surrogate type to use
+    :param rep:                 Repetition number
+    """
 
     fit_func = fit_funcs[fit_func_name]
     sigma = 0.5
@@ -286,6 +365,17 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
 
 
 def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size):
+    """
+    Perform an optimization run on an optimization function using a regular CMA-ES
+
+
+    :param ndim:            Dimensionality of the fitness function
+    :param lambda_:         Offspring size of the CMA-ES
+    :param mu:              Population size of the CMA-ES
+    :param size:            <just an addition to the filename to make it easier for comparisons...>
+    :param fit_func_name:   Name of the fitness function to use
+    :param rep:             Repetition number
+    """
 
     fit_func = fit_funcs[fit_func_name]
     sigma = 0.5
@@ -317,6 +407,16 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size):
 
 
 def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep):
+    """
+    Perform an optimization run on an optimization function using an EGO approach
+
+    :param ndim:                Dimensionality of the fitness function
+    :param init_sample_size:    Number of candidates to generate as an initial sample
+    :param training_size:       Number of most recent candidates to use to retrain
+    :param fit_func_name:       Name of the fitness function to use
+    :param surrogate_name:      Name of the surrogate type to use
+    :param rep:                 Repetition number
+    """
 
     num_iters = 100
 
@@ -348,6 +448,21 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
 
 def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
                                           fit_func_name, surrogate_name, rep, fit_scaling_param=True):
+    """
+    Perform an optimization run on a multi-fidelity optimization function using a
+    two-level (co-)surrogate assisted CMA-ES
+
+    :param ndim:                Dimensionality of the fitness function
+    :param lambda_:             Offspring size of the CMA-ES
+    :param lambda_pre:          Number of offspring to use in the pre-selection step
+    :param mu:                  Population size of the CMA-ES
+    :param init_sample_size:    Number of candidates to generate as an initial sample
+    :param training_size:       Number of most recent candidates to use to retrain
+    :param fit_func_name:       Name of the fitness function to use
+    :param surrogate_name:      Name of the surrogate type to use
+    :param rep:                 Repetition number
+    :param fit_scaling_param:   Train on error after a linear regression fit between the two levels? (default: True)
+    """
 
     ### SETUP ###
     fit_func = fit_funcs[fit_func_name]
@@ -439,6 +554,7 @@ def run():
 
         runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True)
         runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False)
+
 
 if __name__ == "__main__":
     np.set_printoptions(linewidth=200)
