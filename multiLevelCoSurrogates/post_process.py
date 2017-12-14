@@ -72,6 +72,7 @@ def loadFitnessHistory(fname, column=None):
 
 
 def plotSimpleComparisons(training_size):
+    """Create and save plots comparing convergence of different uses of the same surrogate"""
 
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
@@ -112,6 +113,7 @@ def plotSimpleComparisons(training_size):
 
 
 def plotMedianComparisons(training_size):
+    """Create and save plots comparing the median convergence of `num_reps` runs for various uses of each surrogate"""
 
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
@@ -160,16 +162,15 @@ def plotMedianComparisons(training_size):
 
 
 def counterToFilledTupleList(counter):
+    """Transform a counter into a list of (entry, count)-tuples, explicitly keeping 0-counts"""
     result = []
     for usage in ['reg', 'MF', 'scaled-MF']:
-        if usage not in counter:
-            result.append((usage, 0))
-        else:
-            result.append((usage, counter[usage]))
+        result.append((usage, counter[usage]))
     return result
 
 
 def calcWinsPerStrategy(training_size):
+    """Compare the medians of `num_reps` runs of each use to determine 'wins', and plot these as a histogram"""
 
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
@@ -278,6 +279,7 @@ def calcWinsPerStrategy(training_size):
 
 
 def plotBoxPlots(training_size):
+    """Create and save boxplots for the final fitness levels and time to convergence"""
 
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
