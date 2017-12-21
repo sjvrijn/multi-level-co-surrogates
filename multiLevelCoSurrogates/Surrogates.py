@@ -109,12 +109,6 @@ class Surrogate:
     def train(self):
         raise NotImplementedError
 
-    def addPoint(self, point):
-        raise NotImplementedError
-
-    def addPoints(self, points):
-        for point in points:
-            self.addPoint(point)
 
     @classmethod
     def fromname(cls, name, X, y):
