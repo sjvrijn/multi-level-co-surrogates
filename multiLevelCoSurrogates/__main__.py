@@ -103,7 +103,7 @@ def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, surrogate_n
         cand_archive.addcandidate(cand, res)
 
     # Now that we have our initial data, we can create an instance of the surrogate model
-    surrogate = Surrogate.fromname(surrogate_name, init_candidates, results)
+    surrogate = Surrogate.fromname(surrogate_name, cand_archive, n=init_sample_size)
     surrogate.train()
     return surrogate, cand_archive
 
@@ -134,7 +134,8 @@ def createCoSurrogate(N, init_sample_size, fit_func_low, fit_func_high, l_bound,
         cand_archive.updatecandidate(cand, res_l, fidelity='low')
 
     # Now that we have our initial data, we can create an instance of the surrogate model
-    surrogate = CoSurrogate(surrogate_name, init_candidates, results_low, results_high, fit_scaling_param=fit_scaling_param)
+    surrogate = CoSurrogate(surrogate_name, cand_archive, fidelities=['high', 'low'], n=init_sample_size,
+                            fit_scaling_param=fit_scaling_param)
     surrogate.train()
     return surrogate, cand_archive
 
@@ -149,11 +150,7 @@ def retrainMultiFidelity(cand_archive, training_size, surrogate_name, fit_scalin
     :param fit_scaling_param:   Train on error after a linear regression fit between the two levels? (default: True)
     :return:                    The newly retrained co-surrogate
     """
-    x, y = cand_archive.getcandidates(n=training_size, fidelity=['high', 'low'])
-    y_high, y_low = y[:,0], y[:,1]
-
-    co_surrogate = CoSurrogate(surrogate_name, np.array(list(x)),
-                               np.array(list(y_low), ndmin=2).T, np.array(list(y_high), ndmin=2).T,
+    co_surrogate = CoSurrogate(surrogate_name, cand_archive, fidelities=['high', 'low'], n=training_size,
                                fit_scaling_param=fit_scaling_param)
     co_surrogate.train()
     return co_surrogate
@@ -168,8 +165,7 @@ def retrain(cand_archive, training_size, surrogate_name):
     :param surrogate_name:      Name of the surrogate type to re-initialize
     :return:                    The newly retrained surrogate
     """
-    x, y = cand_archive.getcandidates(n=training_size)
-    surrogate = Surrogate.fromname(surrogate_name, x, y)
+    surrogate = Surrogate.fromname(surrogate_name, cand_archive, n=training_size)
     surrogate.train()
     return surrogate
 
@@ -222,7 +218,7 @@ def singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_
     return results
 
 
-def create_loggers(surrogate, filename_prefix):
+def create_loggers(filename_prefix, surr_provides_std):
     """
     Creates a standard set of Logger objects based on surrogate and desired filename prefix
 
@@ -236,7 +232,7 @@ def create_loggers(surrogate, filename_prefix):
                      header="Fitness values from actual function, inf for any not pre-selected candidate")
     full_res_log = Logger(f'{filename_prefix}fullreslog.{data_ext}',
                           header="Fitness values from actual function, evaluated for all candidates")
-    if surrogate.provides_std:
+    if surr_provides_std:
         std_log = Logger(f'{filename_prefix}stdlog.{data_ext}',
                          header="Standard deviations associated with the pre-results,"
                                 " as predicted by the Kriging surrogate")
@@ -281,7 +277,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
-    full_res_log, pre_log, res_log, std_log = create_loggers(surrogate, filename_prefix)
+    full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surrogate.provides_std)
 
     ### OPTIMIZATION ###
     while not es.stop():
@@ -341,7 +337,7 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
-    full_res_log, pre_log, res_log, std_log = create_loggers(surrogate, filename_prefix)
+    full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surrogate.provides_std)
 
     while not es.stop():
         # Obtain the list of lambda_pre candidates to evaluate
@@ -392,8 +388,7 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size):
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
-    surrogate = Surrogate([[0],[1]], [[0],[1]])  # Just an empty surrogate
-    full_res_log, pre_log, res_log, std_log = create_loggers(surrogate, filename_prefix)
+    full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surr_provides_std=False)
 
     while not es.stop():
         # Obtain the list of lambda_pre candidates to evaluate
@@ -433,7 +428,7 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
     surrogate, cand_archive = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
     ego = EGO(surrogate, ndim, fit_func.u_bound, fit_func.l_bound)
 
-    full_res_log, pre_log, res_log, std_log = create_loggers(surrogate, filename_prefix)
+    full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surrogate.provides_std)
 
     for _ in range(num_iters):
 
@@ -479,15 +474,13 @@ def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sa
     guaranteeFolderExists(f'{data_dir}{fname}')
 
     surrogate, cand_archive = createCoSurrogate(ndim, init_sample_size, fit_func.low, fit_func.high, l_bound, u_bound, surrogate_name, fit_scaling_param)
-
-    init_candidates, results = cand_archive.getcandidates(fidelity='low')
-    surrogate_low = Surrogate.fromname(surrogate_name, init_candidates, results)
+    surrogate_low = Surrogate.fromname(surrogate_name, cand_archive, n=training_size, fidelity='low')
     surrogate_low.train()
 
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre*2, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_filenameprefix': filename_prefix})
 
-    full_res_log, pre_log, res_log, std_log = create_loggers(surrogate, filename_prefix)
+    full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surrogate.provides_std)
 
     ### OPTIMIZATION ###
     while not es.stop():

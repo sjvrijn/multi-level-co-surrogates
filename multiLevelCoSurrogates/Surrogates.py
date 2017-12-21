@@ -61,7 +61,9 @@ class Surrogate:
     """A generic interface to allow interchangeable use of various models such as RBF, SVM and Kriging"""
     provides_std = False
 
-    def __init__(self, X, y, *, normalized=True, normalize_target=(0.25, 0.75)):
+    def __init__(self, candidate_archive, n, *, fidelity=None, normalized=True, normalize_target=(0.25, 0.75)):
+        X, y = candidate_archive.getcandidates(n=n, fidelity=fidelity)
+
         self._surr = None
 
         self.normalized = normalized
@@ -111,13 +113,13 @@ class Surrogate:
 
 
     @classmethod
-    def fromname(cls, name, X, y):
+    def fromname(cls, name, candidate_archive, n, fidelity=None):
         if name == 'RBF':
-            return RBF(X, y)
+            return RBF(candidate_archive, n, fidelity)
         elif name == 'Kriging':
-            return Kriging(X, y)
+            return Kriging(candidate_archive, n, fidelity)
         elif name == 'RandomForest':
-            return RandomForest(X, y)
+            return RandomForest(candidate_archive, n, fidelity)
         else:
             raise ValueError(f"Unknown surrogate name '{name}'.")
 
@@ -125,7 +127,10 @@ class Surrogate:
 class CoSurrogate:
     """A generic interface for co-surrogates"""
 
-    def __init__(self, surrogate_name, X, y_low, y_high, fit_scaling_param=True):
+    def __init__(self, surrogate_name, candidate_archive, fidelities, n, fit_scaling_param=True):
+
+        X, y = candidate_archive.getcandidates(n=n, fidelity=fidelities)
+        y_high, y_low = y[:, 0], y[:, 1]
 
         self.X = X
         self.y_low = np.array(y_low)
@@ -134,7 +139,7 @@ class CoSurrogate:
         self.rho = self.determineScaleParameter() if fit_scaling_param else 1
         self.y = y_high - self.rho*y_low
 
-        self.surrogate = Surrogate.fromname(surrogate_name, X, self.y)
+        self.surrogate = Surrogate.fromname(surrogate_name, candidate_archive, n, fidelity=fidelity)
 
 
     def determineScaleParameter(self):
@@ -168,8 +173,8 @@ class RBF(Surrogate):
     """
     name = 'RBF'
 
-    def __init__(self, X, y):
-        super(self.__class__, self).__init__(X, y)
+    def __init__(self, candidate_archive, n, fidelity=None):
+        super(self.__class__, self).__init__(candidate_archive, n, fidelity=fidelity)
         self.is_trained = False
 
     def do_predict(self, X):
@@ -191,8 +196,8 @@ class Kriging(Surrogate):
     provides_std = True
     name = 'Kriging'
 
-    def __init__(self, X, y):
-        super(self.__class__, self).__init__(X, y)
+    def __init__(self, candidate_archive, n, fidelity=None):
+        super(self.__class__, self).__init__(candidate_archive, n, fidelity=fidelity)
         self._surr = GaussianProcessRegressor()
         self.is_trained = False
 
@@ -217,8 +222,8 @@ class RandomForest(Surrogate):
     provides_std = True
     name = 'RandomForest'
 
-    def __init__(self, X, y):
-        super(self.__class__, self).__init__(X, y)
+    def __init__(self, candidate_archive, n, fidelity=None):
+        super(self.__class__, self).__init__(candidate_archive, n, fidelity=fidelity)
         self._surr = RandomForestRegressor()
         self.is_trained = False
 
