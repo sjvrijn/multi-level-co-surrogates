@@ -520,7 +520,7 @@ def run():
 
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
-    surrogates = ['Kriging', 'RBF', 'RandomForest']
+    surrogates = ['Kriging', 'RBF', 'RandomForest', 'SVM']
     experiments = product(training_sizes, fit_func_names, surrogates, range(num_reps))
 
     for training_size, fit_func_name, surrogate_name, rep in experiments:

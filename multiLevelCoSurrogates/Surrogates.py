@@ -13,6 +13,7 @@ import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.svm import SVR
 from scipy.interpolate import Rbf
 
 
@@ -120,6 +121,8 @@ class Surrogate:
             return Kriging(candidate_archive, n, fidelity)
         elif name == 'RandomForest':
             return RandomForest(candidate_archive, n, fidelity)
+        elif name == 'SVM':
+            return SVM(candidate_archive, n, fidelity)
         else:
             raise ValueError(f"Unknown surrogate name '{name}'.")
 
@@ -145,7 +148,7 @@ class CoSurrogate:
     def determineScaleParameter(self):
         """ Determine the scaling parameter 'rho' between y_low and y_high using simple linear regression """
         regr = LinearRegression()
-        regr.fit(self.y_low, self.y_high)
+        regr.fit(self.y_low.reshape(-1, 1), self.y_high.reshape(-1, 1))
         return regr.coef_.flatten()[0]
 
 
@@ -240,3 +243,25 @@ class RandomForest(Surrogate):
             predictions = [est.predict(x.reshape(1, -1))[0] for est in self._surr.estimators_]
             stds.append(np.std(predictions))
         return np.array(stds)
+
+
+class SVM(Surrogate):
+    """Generic SVM regressor surrogate, implemented by sklearn.svm.SVR.
+
+    Assumes input and output are given as column vectors.
+    :param X: input coordinates
+    :param y: expected output values
+    """
+    name = 'SVM'
+
+    def __init__(self, candidate_archive, n, fidelity=None):
+        super(self.__class__, self).__init__(candidate_archive, n, fidelity=fidelity)
+        self._surr = SVR()
+        self.is_trained = False
+
+    def do_predict(self, X):
+        return self._surr.predict(X).reshape((-1, ))
+
+    def train(self):
+        self._surr.fit(self.X, self.y)
+        self.is_trained = True
