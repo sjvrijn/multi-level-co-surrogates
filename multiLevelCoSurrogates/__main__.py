@@ -129,7 +129,7 @@ def createCoSurrogate(N, init_sample_size, fit_func_low, fit_func_high, l_bound,
     results_low = np.array([fit_func_low(cand) for cand in init_candidates], ndmin=2).T
     results_high = np.array([fit_func_high(cand) for cand in init_candidates], ndmin=2).T
 
-    cand_archive = CandidateArchive(ndim=N, fidelities=['high', 'low'])
+    cand_archive = CandidateArchive(ndim=N, fidelities=['high', 'low', 'high-low'])
     for cand, res_h, res_l in zip(init_candidates, results_high, results_low):
         cand_archive.addcandidate(cand, res_h, fidelity='high')
         cand_archive.updatecandidate(cand, res_l, fidelity='low')

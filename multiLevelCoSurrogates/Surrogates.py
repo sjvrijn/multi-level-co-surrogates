@@ -142,7 +142,10 @@ class CoSurrogate:
         self.rho = self.determineScaleParameter() if fit_scaling_param else 1
         self.y = y_high - self.rho*y_low
 
-        self.surrogate = Surrogate.fromname(surrogate_name, candidate_archive, n, fidelity=fidelity)
+        for idx, x in enumerate(X):
+            candidate_archive.updatecandidate(x, self.y[idx], fidelity='high-low')
+
+        self.surrogate = Surrogate.fromname(surrogate_name, candidate_archive, n, fidelity='high-low')
 
 
     def determineScaleParameter(self):
