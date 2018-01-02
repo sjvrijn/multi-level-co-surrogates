@@ -26,6 +26,7 @@ from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
 def guaranteeFolderExists(path_name):
     """ Make sure the given path exists after this call """
     path = Path(path_name)
+    path.expanduser()
     path.mkdir(parents=True, exist_ok=True)
 
 
