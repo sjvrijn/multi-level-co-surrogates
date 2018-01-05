@@ -56,6 +56,30 @@ def _keepInBounds(x, l_bound, u_bound):
     return x
 
 
+def create_loggers(filename_prefix, surr_provides_std):
+    """
+    Creates a standard set of Logger objects based on surrogate and desired filename prefix
+
+    :param surrogate:       Surrogate object, checked to see if a variance prediction log has to be created
+    :param filename_prefix: Common filename prefix to identify results by
+    :return:                A tuple of loggers with standard header texts
+    """
+    pre_log = Logger(f'{filename_prefix}prelog.{data_ext}',
+                     header="Pre-results, as predicted by the surrogate")
+    res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
+                     header="Fitness values from actual function, inf for any not pre-selected candidate")
+    full_res_log = Logger(f'{filename_prefix}fullreslog.{data_ext}',
+                          header="Fitness values from actual function, evaluated for all candidates")
+    if surr_provides_std:
+        std_log = Logger(f'{filename_prefix}stdlog.{data_ext}',
+                         header="Standard deviations associated with the pre-results,"
+                                " as predicted by the Kriging surrogate")
+    else:
+        std_log = None
+
+    return full_res_log, pre_log, res_log, std_log
+
+
 def createScaledLHS(ndim, init_sample_size, l_bound, u_bound):
     """
         Return a sample of `init_sample_size` points in `ndim` dimensions, scaled to cover the
@@ -219,29 +243,141 @@ def singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_
     return results
 
 
-def create_loggers(filename_prefix, surr_provides_std):
+
+def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size):
     """
-    Creates a standard set of Logger objects based on surrogate and desired filename prefix
+    Perform an optimization run on an optimization function using a regular CMA-ES
 
-    :param surrogate:       Surrogate object, checked to see if a variance prediction log has to be created
-    :param filename_prefix: Common filename prefix to identify results by
-    :return:                A tuple of loggers with standard header texts
+
+    :param ndim:            Dimensionality of the fitness function
+    :param lambda_:         Offspring size of the CMA-ES
+    :param mu:              Population size of the CMA-ES
+    :param size:            <just an addition to the filename to make it easier for comparisons...>
+    :param fit_func_name:   Name of the fitness function to use
+    :param rep:             Repetition number
     """
-    pre_log = Logger(f'{filename_prefix}prelog.{data_ext}',
-                     header="Pre-results, as predicted by the surrogate")
-    res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
-                     header="Fitness values from actual function, inf for any not pre-selected candidate")
-    full_res_log = Logger(f'{filename_prefix}fullreslog.{data_ext}',
-                          header="Fitness values from actual function, evaluated for all candidates")
-    if surr_provides_std:
-        std_log = Logger(f'{filename_prefix}stdlog.{data_ext}',
-                         header="Standard deviations associated with the pre-results,"
-                                " as predicted by the Kriging surrogate")
-    else:
-        std_log = None
 
-    return full_res_log, pre_log, res_log, std_log
+    fit_func = fit_funcs[fit_func_name]
+    sigma = 0.5
+    init_individual = [(u + l) / 2 for u, l in zip(fit_func.u_bound, fit_func.l_bound)]
+    l_bound = np.array(fit_func.l_bound)
+    u_bound = np.array(fit_func.u_bound)
 
+    # Set up the filename detailing all settings of the experiment
+    fname = folder_name.format(ndim=ndim, func=fit_func_name, use='reg', surr='NoSurrogate')
+    fsuff = suffix.format(size=size, rep=rep)
+    filename_prefix = f'{data_dir}{fname}{fsuff}'
+    guaranteeFolderExists(f'{data_dir}{fname}')
+
+    es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_, 'CMA_mu': mu, 'maxiter': 1000,
+                                                                  'verb_filenameprefix': filename_prefix})
+
+    full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surr_provides_std=False)
+
+    while not es.stop():
+        # Obtain the list of lambda_pre candidates to evaluate
+        candidates = np.array([_keepInBounds(cand, l_bound, u_bound) for cand in es.ask()])
+        results = [fit_func.high(cand) for cand in candidates]
+        es.tell(candidates, results)
+        full_res_log.writeLine(results)
+        res_log.writeLine(results)
+
+        es.logger.add()
+
+
+def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
+                  fit_func_name, surrogate_name, rep):
+    """
+    Perform an optimization run on a given optimization function using a surrogate assisted CMA-ES
+
+    :param ndim:                Dimensionality of the fitness function
+    :param lambda_:             Offspring size of the CMA-ES
+    :param lambda_pre:          Number of offspring to use in the pre-selection step
+    :param mu:                  Population size of the CMA-ES
+    :param init_sample_size:    Number of candidates to generate as an initial sample
+    :param training_size:       Number of most recent candidates to use to retrain
+    :param fit_func_name:       Name of the fitness function to use
+    :param surrogate_name:      Name of the surrogate type to use
+    :param rep:                 Repetition number
+    """
+
+    fit_func = fit_funcs[fit_func_name]
+    sigma = 0.5
+    init_individual = [(u+l)/2 for u, l in zip(fit_func.u_bound, fit_func.l_bound)]
+    l_bound = np.array(fit_func.l_bound)
+    u_bound = np.array(fit_func.u_bound)
+
+    # Set up the filename detailing all settings of the experiment
+    fname = folder_name.format(ndim=ndim, func=fit_func_name, use='reg', surr=surrogate_name)
+    fsuff = suffix.format(size=lambda_pre, rep=rep)
+    filename_prefix = f'{data_dir}{fname}{fsuff}'
+    guaranteeFolderExists(f'{data_dir}{fname}')
+
+    surrogate, cand_archive = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
+    es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
+                                                                  'verb_filenameprefix': filename_prefix})
+
+    full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surrogate.provides_std)
+
+    while not es.stop():
+        # Obtain the list of lambda_pre candidates to evaluate
+        candidates = np.array([_keepInBounds(cand, l_bound, u_bound) for cand in es.ask()])
+        pre_results = surrogate.predict(candidates)
+        results = singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func.high, cand_archive)
+        es.tell(candidates, results)
+        full_res_log.writeLine([fit_func.high(cand) for cand in candidates])
+
+        # Write data to disc to be plotted
+        if std_log:
+            pre_std = surrogate.predict(candidates, mode='std')
+            std_log.writeLine(pre_std)
+
+        pre_log.writeLine(pre_results)
+        res_log.writeLine(results)
+        es.logger.add()
+        # es.disp()
+
+        surrogate = retrain(cand_archive, training_size, surrogate_name)
+
+
+def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, lambda_pre, rep):
+    """
+    Perform an optimization run on an optimization function using an EGO approach
+
+    :param ndim:                Dimensionality of the fitness function
+    :param init_sample_size:    Number of candidates to generate as an initial sample
+    :param training_size:       Number of most recent candidates to use to retrain
+    :param fit_func_name:       Name of the fitness function to use
+    :param surrogate_name:      Name of the surrogate type to use
+    :param rep:                 Repetition number
+    """
+
+    num_iters = 100
+
+    fit_func = fit_funcs[fit_func_name]
+    l_bound = np.array(fit_func.l_bound)
+    u_bound = np.array(fit_func.u_bound)
+
+    # Set up the filename detailing all settings of the experiment
+    fname = folder_name.format(ndim=ndim, func=fit_func_name, use='EGO-reg', surr=surrogate_name)
+    fsuff = suffix.format(size=lambda_pre, rep=rep)
+    filename_prefix = f'{data_dir}{fname}{fsuff}'
+    guaranteeFolderExists(f'{data_dir}{fname}')
+
+    surrogate, cand_archive = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
+    ego = EGO(surrogate, ndim, fit_func.u_bound, fit_func.l_bound)
+
+    full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surrogate.provides_std)
+
+    for _ in range(num_iters):
+
+        x, ei = ego.next_infill()
+        x_fit = fit_func.high(x)
+        cand_archive.addcandidate(x, x_fit)
+        ego.surrogate = retrain(cand_archive, training_size, surrogate_name)
+
+        res_log.writeLine([x_fit])
+        full_res_log.writeLine([x_fit])
 
 
 def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
@@ -270,7 +406,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
 
     # Set up the filename detailing all settings of the experiment
     fname = folder_name.format(ndim=ndim, func=fit_func_name, use=f"{'scaled-MF' if fit_scaling_param else 'MF'}", surr=surrogate_name)
-    fsuff = suffix.format(size=training_size, rep=rep)
+    fsuff = suffix.format(size=lambda_pre, rep=rep)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
     guaranteeFolderExists(f'{data_dir}{fname}')
 
@@ -306,142 +442,6 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
         surrogate = retrainMultiFidelity(cand_archive, training_size, surrogate_name, fit_scaling_param)
 
 
-def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
-                  fit_func_name, surrogate_name, rep):
-    """
-    Perform an optimization run on a given optimization function using a surrogate assisted CMA-ES
-
-    :param ndim:                Dimensionality of the fitness function
-    :param lambda_:             Offspring size of the CMA-ES
-    :param lambda_pre:          Number of offspring to use in the pre-selection step
-    :param mu:                  Population size of the CMA-ES
-    :param init_sample_size:    Number of candidates to generate as an initial sample
-    :param training_size:       Number of most recent candidates to use to retrain
-    :param fit_func_name:       Name of the fitness function to use
-    :param surrogate_name:      Name of the surrogate type to use
-    :param rep:                 Repetition number
-    """
-
-    fit_func = fit_funcs[fit_func_name]
-    sigma = 0.5
-    init_individual = [(u+l)/2 for u, l in zip(fit_func.u_bound, fit_func.l_bound)]
-    l_bound = np.array(fit_func.l_bound)
-    u_bound = np.array(fit_func.u_bound)
-
-    # Set up the filename detailing all settings of the experiment
-    fname = folder_name.format(ndim=ndim, func=fit_func_name, use='reg', surr=surrogate_name)
-    fsuff = suffix.format(size=training_size, rep=rep)
-    filename_prefix = f'{data_dir}{fname}{fsuff}'
-    guaranteeFolderExists(f'{data_dir}{fname}')
-
-    surrogate, cand_archive = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
-    es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
-                                                                  'verb_filenameprefix': filename_prefix})
-
-    full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surrogate.provides_std)
-
-    while not es.stop():
-        # Obtain the list of lambda_pre candidates to evaluate
-        candidates = np.array([_keepInBounds(cand, l_bound, u_bound) for cand in es.ask()])
-        pre_results = surrogate.predict(candidates)
-        results = singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func.high, cand_archive)
-        es.tell(candidates, results)
-        full_res_log.writeLine([fit_func.high(cand) for cand in candidates])
-
-        # Write data to disc to be plotted
-        if std_log:
-            pre_std = surrogate.predict(candidates, mode='std')
-            std_log.writeLine(pre_std)
-
-        pre_log.writeLine(pre_results)
-        res_log.writeLine(results)
-        es.logger.add()
-        # es.disp()
-
-        surrogate = retrain(cand_archive, training_size, surrogate_name)
-
-
-def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size):
-    """
-    Perform an optimization run on an optimization function using a regular CMA-ES
-
-
-    :param ndim:            Dimensionality of the fitness function
-    :param lambda_:         Offspring size of the CMA-ES
-    :param mu:              Population size of the CMA-ES
-    :param size:            <just an addition to the filename to make it easier for comparisons...>
-    :param fit_func_name:   Name of the fitness function to use
-    :param rep:             Repetition number
-    """
-
-    fit_func = fit_funcs[fit_func_name]
-    sigma = 0.5
-    init_individual = [(u+l)/2 for u, l in zip(fit_func.u_bound, fit_func.l_bound)]
-    l_bound = np.array(fit_func.l_bound)
-    u_bound = np.array(fit_func.u_bound)
-
-    # Set up the filename detailing all settings of the experiment
-    fname = folder_name.format(ndim=ndim, func=fit_func_name, use='reg', surr='NoSurrogate')
-    fsuff = suffix.format(size=size, rep=rep)
-    filename_prefix = f'{data_dir}{fname}{fsuff}'
-    guaranteeFolderExists(f'{data_dir}{fname}')
-
-    es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_, 'CMA_mu': mu, 'maxiter': 1000,
-                                                                  'verb_filenameprefix': filename_prefix})
-
-    full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surr_provides_std=False)
-
-    while not es.stop():
-        # Obtain the list of lambda_pre candidates to evaluate
-        candidates = np.array([_keepInBounds(cand, l_bound, u_bound) for cand in es.ask()])
-        results = [fit_func.high(cand) for cand in candidates]
-        es.tell(candidates, results)
-        full_res_log.writeLine(results)
-        res_log.writeLine(results)
-
-        es.logger.add()
-
-
-def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep):
-    """
-    Perform an optimization run on an optimization function using an EGO approach
-
-    :param ndim:                Dimensionality of the fitness function
-    :param init_sample_size:    Number of candidates to generate as an initial sample
-    :param training_size:       Number of most recent candidates to use to retrain
-    :param fit_func_name:       Name of the fitness function to use
-    :param surrogate_name:      Name of the surrogate type to use
-    :param rep:                 Repetition number
-    """
-
-    num_iters = 100
-
-    fit_func = fit_funcs[fit_func_name]
-    l_bound = np.array(fit_func.l_bound)
-    u_bound = np.array(fit_func.u_bound)
-
-    # Set up the filename detailing all settings of the experiment
-    fname = folder_name.format(ndim=ndim, func=fit_func_name, use='EGO-reg', surr=surrogate_name)
-    fsuff = suffix.format(size=training_size, rep=rep)
-    filename_prefix = f'{data_dir}{fname}{fsuff}'
-    guaranteeFolderExists(f'{data_dir}{fname}')
-
-    surrogate, cand_archive = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
-    ego = EGO(surrogate, ndim, fit_func.u_bound, fit_func.l_bound)
-
-    full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surrogate.provides_std)
-
-    for _ in range(num_iters):
-
-        x, ei = ego.next_infill()
-        x_fit = fit_func.high(x)
-        cand_archive.addcandidate(x, x_fit)
-        ego.surrogate = retrain(cand_archive, training_size, surrogate_name)
-
-        res_log.writeLine([x_fit])
-        full_res_log.writeLine([x_fit])
-
-
 def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
                                           fit_func_name, surrogate_name, rep, fit_scaling_param=True):
     """
@@ -470,7 +470,7 @@ def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sa
     # Set up the filename detailing all settings of the experiment
     fname = folder_name.format(ndim=ndim, func=fit_func_name,
                                use=f"{'scaled-MF-bisurr' if fit_scaling_param else 'MF-bisurr'}", surr=surrogate_name)
-    fsuff = suffix.format(size=training_size, rep=rep)
+    fsuff = suffix.format(size=lambda_pre, rep=rep)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
     guaranteeFolderExists(f'{data_dir}{fname}')
 
@@ -522,14 +522,16 @@ def run():
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
     surrogates = ['Kriging', 'RBF', 'RandomForest', 'SVM']
-    experiments = product(training_sizes, fit_func_names, surrogates, range(num_reps))
+    lambda_pres = [10, 20, 30, 40, 50]
+    experiments = product(lambda_pres, fit_func_names, surrogates, range(num_reps))
 
-    for training_size, fit_func_name, surrogate_name, rep in experiments:
+    for lambda_pre, fit_func_name, surrogate_name, rep in experiments:
 
         ndim = fit_func_dims[fit_func_name]
         lambda_ = 2      #4 + int(3 * np.log(ndim))
-        lambda_pre = 10  #2 * lambda_
+        # lambda_pre = 10  #2 * lambda_
         mu = lambda_ // 2
+        training_size = 0
 
         print(f"""
               ---------------------------------------------
@@ -539,8 +541,8 @@ def run():
               Repetittion:        {rep}""")
 
         if surrogate_name == 'Kriging':
-            runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size=training_size)
-            runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
+            runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size=lambda_pre)
+            runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, lambda_pre, rep)
 
         runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
         runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True)
