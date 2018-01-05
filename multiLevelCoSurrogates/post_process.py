@@ -62,7 +62,7 @@ def loadFitnessHistory(fname, column=None):
     start, end = interpretColumn(column)
 
     with open(fname, 'r') as f:
-        next(f)  # Skip the first line which header information
+        next(f)  # Skip the first line which only contains header information
         return [list(map(float, line.split(' ')[start:end])) for line in f]
 
 
@@ -147,7 +147,17 @@ def plotMedianComparisons(training_size):
                 total_data.append(data)
 
             min_idx = np.argmin(np.asarray([dat[-1] for dat in total_data]))
-            plt.plot(total_data[min_idx], label=use)
+            plt.plot(total_data[min_idx], label=f'median {use}')
+
+
+            # Make all arrays in total_data of equal length and calculate the average
+            max_len = max([len(dat) for dat in total_data])
+            new_data = []
+            for dat in total_data:
+                new_data.append(np.ma.append(dat, [dat[-1]] * (max_len - len(dat))))
+            plt.plot(np.mean(np.vstack(new_data), axis=0), label=f'mean {use}')
+
+
 
         fsuff = suffix.format(size=training_size, rep='')
         plot_folder = f'{fit_func_name}-{surrogate_name}-'
@@ -349,9 +359,9 @@ def run():
     for training_size in training_sizes:
         print(training_size)
         # plotSimpleComparisons(training_size)
-        # plotMedianComparisons(training_size)
+        plotMedianComparisons(training_size)
         # calcWinsPerStrategy(training_size)
-        plotBoxPlots(training_size)
+        # plotBoxPlots(training_size)
 
 
 if __name__ == '__main__':
