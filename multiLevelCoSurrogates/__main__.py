@@ -286,7 +286,7 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size):
 
 
 def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
-                  fit_func_name, surrogate_name, rep):
+                  fit_func_name, surrogate_name, rep, gen_interval=1):
     """
     Perform an optimization run on a given optimization function using a surrogate assisted CMA-ES
 
@@ -306,6 +306,7 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
     init_individual = [(u+l)/2 for u, l in zip(fit_func.u_bound, fit_func.l_bound)]
     l_bound = np.array(fit_func.l_bound)
     u_bound = np.array(fit_func.u_bound)
+    num_generations = 1
 
     # Set up the filename detailing all settings of the experiment
     fname = folder_name.format(ndim=ndim, func=fit_func_name, use='reg', surr=surrogate_name)
@@ -323,7 +324,12 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
         # Obtain the list of lambda_pre candidates to evaluate
         candidates = np.array([_keepInBounds(cand, l_bound, u_bound) for cand in es.ask()])
         pre_results = surrogate.predict(candidates)
-        results = singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func.high, cand_archive)
+
+        if num_generations % gen_interval == 0:
+            results = singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func.high, cand_archive)
+        else:
+            results = pre_results
+
         es.tell(candidates, results)
         full_res_log.writeLine([fit_func.high(cand) for cand in candidates])
 
@@ -338,6 +344,7 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
         # es.disp()
 
         surrogate = retrain(cand_archive, training_size, surrogate_name)
+        num_generations += 1
 
 
 def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, lambda_pre, rep):
@@ -381,7 +388,7 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
 
 
 def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
-                               fit_func_name, surrogate_name, rep, fit_scaling_param=True):
+                               fit_func_name, surrogate_name, rep, fit_scaling_param=True, gen_interval=1):
     """
     Perform an optimization run on a multi-fidelity optimization function using a co-surrogate assisted CMA-ES
 
@@ -403,6 +410,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
     init_individual = [(u+l)/2 for u, l in zip(fit_func.u_bound, fit_func.l_bound)]
     l_bound = np.array(fit_func.l_bound)
     u_bound = np.array(fit_func.u_bound)
+    num_generations = 1
 
     # Set up the filename detailing all settings of the experiment
     fname = folder_name.format(ndim=ndim, func=fit_func_name, use=f"{'scaled-MF' if fit_scaling_param else 'MF'}", surr=surrogate_name)
@@ -425,7 +433,10 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
         low_errors = surrogate.predict(candidates)
         pre_results = [a*surrogate.rho + b for a, b in zip(low_results, low_errors)]
 
-        results = multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_archive)
+        if num_generations % gen_interval == 0:
+            results = multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_archive)
+        else:
+            results = pre_results
         es.tell(candidates, results)
         full_res_log.writeLine([fit_func.high(cand) for cand in candidates])
 
@@ -440,10 +451,11 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
         # es.disp()
 
         surrogate = retrainMultiFidelity(cand_archive, training_size, surrogate_name, fit_scaling_param)
+        num_generations += 1
 
 
 def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
-                                          fit_func_name, surrogate_name, rep, fit_scaling_param=True):
+                                          fit_func_name, surrogate_name, rep, fit_scaling_param=True, gen_interval=1):
     """
     Perform an optimization run on a multi-fidelity optimization function using a
     two-level (co-)surrogate assisted CMA-ES
@@ -466,6 +478,7 @@ def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sa
     init_individual = [(u+l)/2 for u, l in zip(fit_func.u_bound, fit_func.l_bound)]
     l_bound = np.array(fit_func.l_bound)
     u_bound = np.array(fit_func.u_bound)
+    num_generations = 1
 
     # Set up the filename detailing all settings of the experiment
     fname = folder_name.format(ndim=ndim, func=fit_func_name,
@@ -494,7 +507,10 @@ def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sa
         low_errors = surrogate.predict(candidates)
         pre_results = [a*surrogate.rho + b for a, b in zip(low_results, low_errors)]
 
-        results = multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_archive)
+        if num_generations % gen_interval == 0:
+            results = multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_archive)
+        else:
+            results = pre_results
         full_res_log.writeLine([fit_func.high(cand) for cand in candidates])
 
         # Write data to disc to be plotted
@@ -508,12 +524,14 @@ def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sa
         # es.disp()
 
         surrogate = retrainMultiFidelity(cand_archive, training_size, surrogate_name, fit_scaling_param)
-        new_results = surrogate.predict(candidates)
+        new_errors = surrogate.predict(candidates)
+        new_results = [a*surrogate.rho + b for a, b in zip(low_results, new_errors)]
         for i, res in enumerate(results):
             if not np.isinf(res):
                 results[i] = new_results[i]
 
         es.tell(candidates, results)
+        num_generations += 1
 
 
 def run():
