@@ -547,10 +547,78 @@ def plot_by_genint(data):
     print("all plotted")
 
 
+def plot_by_surrogate(data):
+    """Create and save plots comparing the median convergence of `num_reps` runs for various uses of each surrogate"""
+
+    gen_intervals = [1, 2, 3, 5, 10, 20]
+    lambda_pre = 10
+    num_reps = experiment_repetitions
+    fit_func_names = ['borehole', 'park91a', 'park91b']
+
+    Index = namedtuple('Index', ['fitfunc', 'surrogate', 'usage', 'repetition', 'genint', 'lambda_pre'])
+
+    np.set_printoptions(precision=3, linewidth=2000)
+
+    for fit_func_name, use, gen_int in product(fit_func_names, uses, gen_intervals):
+        plt.figure(figsize=(16,9))
+
+        for surrogate_name in surrogates:
+            total_data = []
+
+            if surrogate_name == 'NoSurrogate' and use is not 'reg':
+                continue
+            elif use == 'EGO-reg' and surrogate_name is not 'Kriging':
+                continue
+
+            for rep in range(num_reps):
+
+                try:
+                    idx = Index(fit_func_name, surrogate_name, use, rep, gen_int, lambda_pre)
+                    dat = data[idx]
+                except:
+                    continue
+                dat = np.ma.masked_invalid(dat).min(axis=1)
+                dat = np.minimum.accumulate(dat)
+                total_data.append(dat)
+
+            if not total_data:
+                continue
+            minimum, mean, median, maximum = getplottingvalues(total_data)
+
+            plt.subplot(121)
+            plt.plot(median, label=f'{surrogate_name}')
+            plt.fill_between(np.arange(len(minimum)), minimum, maximum, interpolate=True, alpha=0.2)
+
+            plt.subplot(122)
+            plt.plot(mean, label=f'{surrogate_name}')
+            plt.fill_between(np.arange(len(minimum)), minimum, maximum, interpolate=True, alpha=0.2)
+
+
+        guaranteeFolderExists(f'{plot_dir}')
+        plt.subplot(121)
+        plt.title(f'{fit_func_name}-{use}-{gen_int} - Medians')
+        plt.xlabel('Evaluations')
+        plt.ylabel('Fitness value')
+        plt.yscale('log')
+        plt.legend(loc=0)
+
+        plt.subplot(122)
+        plt.title(f'{fit_func_name}-{use}-{gen_int} - Means')
+        plt.xlabel('Evaluations')
+        plt.ylabel('Fitness value')
+        plt.yscale('log')
+        plt.legend(loc=0)
+        plt.savefig(plot_dir + fit_func_name + '-' + use + '-' + str(gen_int) + '.' + plot_ext)
+        plt.close()
+
+    print("all plotted")
+
+
 def run():
     data = getdata()
     plot_by_use(data)
     plot_by_genint(data)
+    plot_by_surrogate(data)
 
     # for size in [10, 20, 30, 40, 50]:
     #     print(size)
