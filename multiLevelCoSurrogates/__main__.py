@@ -56,30 +56,6 @@ def _keepInBounds(x, l_bound, u_bound):
     return x
 
 
-def create_loggers(filename_prefix, surr_provides_std):
-    """
-    Creates a standard set of Logger objects based on surrogate and desired filename prefix
-
-    :param surrogate:       Surrogate object, checked to see if a variance prediction log has to be created
-    :param filename_prefix: Common filename prefix to identify results by
-    :return:                A tuple of loggers with standard header texts
-    """
-    pre_log = Logger(f'{filename_prefix}prelog.{data_ext}',
-                     header="Pre-results, as predicted by the surrogate")
-    res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
-                     header="Fitness values from actual function, inf for any not pre-selected candidate")
-    full_res_log = Logger(f'{filename_prefix}fullreslog.{data_ext}',
-                          header="Fitness values from actual function, evaluated for all candidates")
-    if surr_provides_std:
-        std_log = Logger(f'{filename_prefix}stdlog.{data_ext}',
-                         header="Standard deviations associated with the pre-results,"
-                                " as predicted by the Kriging surrogate")
-    else:
-        std_log = None
-
-    return full_res_log, pre_log, res_log, std_log
-
-
 def createScaledLHS(ndim, init_sample_size, l_bound, u_bound):
     """
         Return a sample of `init_sample_size` points in `ndim` dimensions, scaled to cover the
@@ -272,14 +248,14 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size):
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_log': 0})
 
-    full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surr_provides_std=False)
+    res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
+                     header="Fitness values from actual function, inf for any not pre-selected candidate")
 
     while not es.stop():
         # Obtain the list of lambda_pre candidates to evaluate
         candidates = np.array([_keepInBounds(cand, l_bound, u_bound) for cand in es.ask()])
         results = [fit_func.high(cand) for cand in candidates]
         es.tell(candidates, results)
-        full_res_log.writeLine(results)
         res_log.writeLine(results)
 
 
@@ -316,7 +292,8 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_log': 0})
 
-    full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surrogate.provides_std)
+    res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
+                     header="Fitness values from actual function, inf for any not pre-selected candidate")
 
     while not es.stop():
         # Obtain the list of lambda_pre candidates to evaluate
@@ -325,19 +302,11 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
 
         if num_generations % gen_interval == 0:
             results = singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func.high, cand_archive)
+            res_log.writeLine(results)
         else:
             results = pre_results
 
         es.tell(candidates, results)
-        full_res_log.writeLine([fit_func.high(cand) for cand in candidates])
-
-        # Write data to disc to be plotted
-        if std_log:
-            pre_std = surrogate.predict(candidates, mode='std')
-            std_log.writeLine(pre_std)
-
-        pre_log.writeLine(pre_results)
-        res_log.writeLine(results)
 
         surrogate = retrain(cand_archive, training_size, surrogate_name)
         num_generations += 1
@@ -370,7 +339,8 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
     surrogate, cand_archive = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
     ego = EGO(surrogate, ndim, fit_func.u_bound, fit_func.l_bound)
 
-    full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surrogate.provides_std)
+    res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
+                     header="Fitness values from actual function, inf for any not pre-selected candidate")
 
     for _ in range(num_iters):
 
@@ -380,7 +350,6 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
         ego.surrogate = retrain(cand_archive, training_size, surrogate_name)
 
         res_log.writeLine([x_fit])
-        full_res_log.writeLine([x_fit])
 
 
 def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
@@ -418,7 +387,8 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_log': 0})
 
-    full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surrogate.provides_std)
+    res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
+                     header="Fitness values from actual function, inf for any not pre-selected candidate")
 
     ### OPTIMIZATION ###
     while not es.stop():
@@ -431,18 +401,10 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
 
         if num_generations % gen_interval == 0:
             results = multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_archive)
+            res_log.writeLine(results)
         else:
             results = pre_results
         es.tell(candidates, results)
-        full_res_log.writeLine([fit_func.high(cand) for cand in candidates])
-
-        # Write data to disc to be plotted
-        if std_log:
-            pre_std = surrogate.predict(candidates, mode='std')
-            std_log.writeLine(pre_std)
-
-        pre_log.writeLine(pre_results)
-        res_log.writeLine(results)
 
         surrogate = retrainMultiFidelity(cand_archive, training_size, surrogate_name, fit_scaling_param)
         num_generations += 1
@@ -481,14 +443,15 @@ def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sa
     filename_prefix = f'{data_dir}{fname}{fsuff}'
     guaranteeFolderExists(f'{data_dir}{fname}')
 
+    res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
+                     header="Fitness values from actual function, inf for any not pre-selected candidate")
+
     surrogate, cand_archive = createCoSurrogate(ndim, init_sample_size, fit_func.low, fit_func.high, l_bound, u_bound, surrogate_name, fit_scaling_param)
     surrogate_low = Surrogate.fromname(surrogate_name, cand_archive, n=training_size, fidelity='low')
     surrogate_low.train()
 
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre*2, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_log': 0})
-
-    full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surrogate.provides_std)
 
     ### OPTIMIZATION ###
     while not es.stop():
@@ -503,17 +466,9 @@ def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sa
 
         if num_generations % gen_interval == 0:
             results = multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_archive)
+            res_log.writeLine(results)
         else:
             results = pre_results
-        full_res_log.writeLine([fit_func.high(cand) for cand in candidates])
-
-        # Write data to disc to be plotted
-        if std_log:
-            pre_std = surrogate.predict(candidates, mode='std')
-            std_log.writeLine(pre_std)
-
-        pre_log.writeLine(pre_results)
-        res_log.writeLine(results)
 
         surrogate = retrainMultiFidelity(cand_archive, training_size, surrogate_name, fit_scaling_param)
         new_errors = surrogate.predict(candidates)
