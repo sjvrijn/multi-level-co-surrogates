@@ -488,9 +488,9 @@ def run():
     fit_func_names = fit_funcs.keys()
     surrogates = ['Kriging', 'RBF', 'RandomForest', 'SVM']
     lambda_pres = [10, 20, 30, 40, 50]
-    experiments = product(lambda_pres, fit_func_names, surrogates, range(num_reps))
+    experiments = product(fit_func_names, lambda_pres, surrogates, range(num_reps))
 
-    for lambda_pre, fit_func_name, surrogate_name, rep in experiments:
+    for fit_func_name, lambda_pre, surrogate_name, rep in experiments:
 
         ndim = fit_func_dims[fit_func_name]
         lambda_ = 2      #4 + int(3 * np.log(ndim))
@@ -507,6 +507,8 @@ def run():
 
         if surrogate_name == 'Kriging':
             runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size=lambda_pre)
+
+        if surrogate_name in ['Kriging', 'RandomForest']:
             runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, lambda_pre, rep)
 
         runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
@@ -515,6 +517,30 @@ def run():
 
         runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True)
         runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False)
+
+
+
+
+    for fit_func_name, lambda_pre, surrogate_name, rep in experiments:
+
+        ndim = fit_func_dims[fit_func_name]
+        lambda_ = 2      #4 + int(3 * np.log(ndim))
+        # lambda_pre = 10  #2 * lambda_
+        mu = lambda_ // 2
+        training_size = 0
+
+        print(f"""
+              ---------------------------------------------
+              Training size:      {training_size}
+              Function:           {fit_func_name}
+              Surrogate:          {surrogate_name}
+              Repetittion:        {rep}""")
+
+        if surrogate_name == 'Kriging':
+            runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size=lambda_pre)
+
+        if surrogate_name in ['Kriging', 'RandomForest']:
+            runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, lambda_pre, rep)
 
 
 if __name__ == "__main__":
