@@ -270,7 +270,7 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size):
     guaranteeFolderExists(f'{data_dir}{fname}')
 
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_, 'CMA_mu': mu, 'maxiter': 1000,
-                                                                  'verb_filenameprefix': filename_prefix})
+                                                                  'verb_log': 0})
 
     full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surr_provides_std=False)
 
@@ -281,8 +281,6 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size):
         es.tell(candidates, results)
         full_res_log.writeLine(results)
         res_log.writeLine(results)
-
-        es.logger.add()
 
 
 def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
@@ -316,7 +314,7 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
 
     surrogate, cand_archive = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
-                                                                  'verb_filenameprefix': filename_prefix})
+                                                                  'verb_log': 0})
 
     full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surrogate.provides_std)
 
@@ -340,8 +338,6 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
 
         pre_log.writeLine(pre_results)
         res_log.writeLine(results)
-        es.logger.add()
-        # es.disp()
 
         surrogate = retrain(cand_archive, training_size, surrogate_name)
         num_generations += 1
@@ -420,7 +416,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
 
     surrogate, cand_archive = createCoSurrogate(ndim, init_sample_size, fit_func.low, fit_func.high, l_bound, u_bound, surrogate_name, fit_scaling_param)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
-                                                                  'verb_filenameprefix': filename_prefix})
+                                                                  'verb_log': 0})
 
     full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surrogate.provides_std)
 
@@ -447,8 +443,6 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
 
         pre_log.writeLine(pre_results)
         res_log.writeLine(results)
-        es.logger.add()
-        # es.disp()
 
         surrogate = retrainMultiFidelity(cand_archive, training_size, surrogate_name, fit_scaling_param)
         num_generations += 1
@@ -492,7 +486,7 @@ def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sa
     surrogate_low.train()
 
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre*2, 'CMA_mu': mu, 'maxiter': 1000,
-                                                                  'verb_filenameprefix': filename_prefix})
+                                                                  'verb_log': 0})
 
     full_res_log, pre_log, res_log, std_log = create_loggers(filename_prefix, surrogate.provides_std)
 
@@ -520,8 +514,6 @@ def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sa
 
         pre_log.writeLine(pre_results)
         res_log.writeLine(results)
-        es.logger.add()
-        # es.disp()
 
         surrogate = retrainMultiFidelity(cand_archive, training_size, surrogate_name, fit_scaling_param)
         new_errors = surrogate.predict(candidates)
