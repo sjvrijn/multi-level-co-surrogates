@@ -24,16 +24,16 @@ data_ext = 'dat'
 
 # Dictionary of available functions
 fit_funcs = {
-    'borehole': borehole,
-    # 'curretal88exp': curretal88exp,
-    'park91a': park91a,
-    'park91b': park91b,
     # 'oneDimensional': oneDimensional,
     'bohachevsky': bohachevsky,
     'branin': branin,
     'booth': booth,
     'himmelblau': himmelblau,
     'sixHumpCamelBack': sixHumpCamelBack,
+    # 'curretal88exp': curretal88exp,
+    'park91a': park91a,
+    'park91b': park91b,
+    'borehole': borehole,
 }
 
 fit_func_dims = {name: len(fit_funcs[name].u_bound) for name in fit_funcs.keys()}
