@@ -18,7 +18,7 @@ from .local import base_dir
 plot_dir = base_dir + 'plots/'
 data_dir = base_dir + 'data/'
 folder_name = '{ndim}D/{func}/{use}-{surr}/'
-suffix   = 's{size}-r{rep}-'
+suffix   = 's{size}-r{rep}-g{gen}-'
 plot_ext = 'png'  # Choose from: ['png', 'pdf']
 data_ext = 'dat'
 

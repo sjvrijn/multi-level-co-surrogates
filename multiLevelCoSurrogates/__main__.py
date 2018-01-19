@@ -220,7 +220,7 @@ def singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_
 
 
 
-def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size):
+def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep):
     """
     Perform an optimization run on an optimization function using a regular CMA-ES
 
@@ -241,7 +241,7 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size):
 
     # Set up the filename detailing all settings of the experiment
     fname = folder_name.format(ndim=ndim, func=fit_func_name, use='reg', surr='NoSurrogate')
-    fsuff = suffix.format(size=size, rep=rep)
+    fsuff = suffix.format(size=0, rep=rep, gen=0)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
     guaranteeFolderExists(f'{data_dir}{fname}')
 
@@ -312,7 +312,7 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
         num_generations += 1
 
 
-def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, lambda_pre, rep):
+def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep):
     """
     Perform an optimization run on an optimization function using an EGO approach
 
@@ -332,7 +332,7 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
 
     # Set up the filename detailing all settings of the experiment
     fname = folder_name.format(ndim=ndim, func=fit_func_name, use='EGO-reg', surr=surrogate_name)
-    fsuff = suffix.format(size=lambda_pre, rep=rep)
+    fsuff = suffix.format(size=0, rep=rep, gen=0)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
     guaranteeFolderExists(f'{data_dir}{fname}')
 
@@ -379,7 +379,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
 
     # Set up the filename detailing all settings of the experiment
     fname = folder_name.format(ndim=ndim, func=fit_func_name, use=f"{'scaled-MF' if fit_scaling_param else 'MF'}", surr=surrogate_name)
-    fsuff = suffix.format(size=lambda_pre, rep=rep)
+    fsuff = suffix.format(size=lambda_pre, rep=rep, gen=gen_interval)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
     guaranteeFolderExists(f'{data_dir}{fname}')
 
@@ -439,7 +439,7 @@ def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sa
     # Set up the filename detailing all settings of the experiment
     fname = folder_name.format(ndim=ndim, func=fit_func_name,
                                use=f"{'scaled-MF-bisurr' if fit_scaling_param else 'MF-bisurr'}", surr=surrogate_name)
-    fsuff = suffix.format(size=lambda_pre, rep=rep)
+    fsuff = suffix.format(size=lambda_pre, rep=rep, gen=gen_interval)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
     guaranteeFolderExists(f'{data_dir}{fname}')
 
@@ -488,40 +488,10 @@ def run():
     fit_func_names = fit_funcs.keys()
     surrogates = ['Kriging', 'RBF', 'RandomForest', 'SVM']
     lambda_pres = [10, 20, 30, 40, 50]
-    experiments = product(fit_func_names, lambda_pres, surrogates, range(num_reps))
+    gen_intervals = [1, 2, 3, 5, 10, 20]
+    experiments = product(fit_func_names, lambda_pres, surrogates, gen_intervals, range(num_reps))
 
-    for fit_func_name, lambda_pre, surrogate_name, rep in experiments:
-
-        ndim = fit_func_dims[fit_func_name]
-        lambda_ = 2      #4 + int(3 * np.log(ndim))
-        # lambda_pre = 10  #2 * lambda_
-        mu = lambda_ // 2
-        training_size = 0
-
-        print(f"""
-              ---------------------------------------------
-              Training size:      {training_size}
-              Function:           {fit_func_name}
-              Surrogate:          {surrogate_name}
-              Repetittion:        {rep}""")
-
-        if surrogate_name == 'Kriging':
-            runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size=lambda_pre)
-
-        if surrogate_name in ['Kriging', 'RandomForest']:
-            runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, lambda_pre, rep)
-
-        runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
-        runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True)
-        runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False)
-
-        runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True)
-        runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False)
-
-
-
-
-    for fit_func_name, lambda_pre, surrogate_name, rep in experiments:
+    for fit_func_name, lambda_pre, surrogate_name, gen_int, rep in experiments:
 
         ndim = fit_func_dims[fit_func_name]
         lambda_ = 2      #4 + int(3 * np.log(ndim))
@@ -536,11 +506,19 @@ def run():
               Surrogate:          {surrogate_name}
               Repetittion:        {rep}""")
 
-        if surrogate_name == 'Kriging':
-            runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep, size=lambda_pre)
+        if surrogate_name == 'Kriging' and lambda_pre == 10 and gen_int == 1:
+            runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep)
 
-        if surrogate_name in ['Kriging', 'RandomForest']:
-            runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, lambda_pre, rep)
+        if surrogate_name in ['Kriging', 'RandomForest'] and lambda_pre == 10 and gen_int == 1:
+            runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
+
+        runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, gen_interval=gen_int)
+        runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True, gen_interval=gen_int)
+        runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False, gen_interval=gen_int)
+
+        runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True, gen_interval=gen_int)
+        runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False, gen_interval=gen_int)
+
 
 
 if __name__ == "__main__":
