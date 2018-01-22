@@ -284,7 +284,7 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
 
     # Set up the filename detailing all settings of the experiment
     fname = folder_name.format(ndim=ndim, func=fit_func_name, use='reg', surr=surrogate_name)
-    fsuff = suffix.format(size=lambda_pre, rep=rep)
+    fsuff = suffix.format(size=lambda_pre, rep=rep, gen=gen_interval)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
     guaranteeFolderExists(f'{data_dir}{fname}')
 
