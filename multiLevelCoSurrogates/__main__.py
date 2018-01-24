@@ -499,12 +499,8 @@ def run():
         mu = lambda_ // 2
         training_size = 0
 
-        print(f"""
-              ---------------------------------------------
-              Training size:      {training_size}
-              Function:           {fit_func_name}
-              Surrogate:          {surrogate_name}
-              Repetittion:        {rep}""")
+        print(f"""--------------------------------------------------------------------------------
+{lambda_pre}-{gen_int}: {surrogate_name} for {fit_func_name} ({rep}/{num_reps})""")
 
         if surrogate_name == 'Kriging' and lambda_pre == 10 and gen_int == 1:
             runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep)
