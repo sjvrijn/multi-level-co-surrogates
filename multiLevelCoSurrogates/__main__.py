@@ -9,6 +9,7 @@ main.py: This file contains the actual optimization experiments
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
+import os
 import cma
 import numpy as np
 from pathlib import Path
@@ -245,6 +246,9 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep):
     filename_prefix = f'{data_dir}{fname}{fsuff}'
     guaranteeFolderExists(f'{data_dir}{fname}')
 
+    if f'{fsuff}reslog.{data_ext}' in os.listdir(f'{data_dir}{fname}'):
+        return
+
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_log': 0})
 
@@ -287,6 +291,9 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
     fsuff = suffix.format(size=lambda_pre, rep=rep, gen=gen_interval)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
     guaranteeFolderExists(f'{data_dir}{fname}')
+
+    if f'{fsuff}reslog.{data_ext}' in os.listdir(f'{data_dir}{fname}'):
+        return
 
     surrogate, cand_archive = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
@@ -336,6 +343,9 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
     filename_prefix = f'{data_dir}{fname}{fsuff}'
     guaranteeFolderExists(f'{data_dir}{fname}')
 
+    if f'{fsuff}reslog.{data_ext}' in os.listdir(f'{data_dir}{fname}'):
+        return
+
     surrogate, cand_archive = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
     ego = EGO(surrogate, ndim, fit_func.u_bound, fit_func.l_bound)
 
@@ -382,6 +392,9 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
     fsuff = suffix.format(size=lambda_pre, rep=rep, gen=gen_interval)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
     guaranteeFolderExists(f'{data_dir}{fname}')
+
+    if f'{fsuff}reslog.{data_ext}' in os.listdir(f'{data_dir}{fname}'):
+        return
 
     surrogate, cand_archive = createCoSurrogate(ndim, init_sample_size, fit_func.low, fit_func.high, l_bound, u_bound, surrogate_name, fit_scaling_param)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
@@ -443,6 +456,9 @@ def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sa
     filename_prefix = f'{data_dir}{fname}{fsuff}'
     guaranteeFolderExists(f'{data_dir}{fname}')
 
+    if f'{fsuff}reslog.{data_ext}' in os.listdir(f'{data_dir}{fname}'):
+        return
+
     res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
                      header="Fitness values from actual function, inf for any not pre-selected candidate")
 
@@ -486,16 +502,16 @@ def run():
 
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
-    surrogates = ['Kriging', 'RBF', 'RandomForest', 'SVM']
-    lambda_pres = [10, 20, 30, 40, 50]
-    gen_intervals = [1, 2, 3, 5, 10, 20]
+    surrogates = ['Kriging', 'RBF', 'RandomForest']  # , 'SVM']
+    lambda_pres = [10, 20, 40]  # , 30, 50]
+    gen_intervals = [1, 2, 3, 5, 10]  # , 20]
     experiments = product(fit_func_names, lambda_pres, surrogates, gen_intervals, range(num_reps))
 
     for fit_func_name, lambda_pre, surrogate_name, gen_int, rep in experiments:
 
         ndim = fit_func_dims[fit_func_name]
-        lambda_ = 2      #4 + int(3 * np.log(ndim))
-        # lambda_pre = 10  #2 * lambda_
+        lambda_ = 2        # 4 + int(3 * np.log(ndim))
+        # lambda_pre = 10  # 2 * lambda_
         mu = lambda_ // 2
         training_size = 0
 
@@ -505,8 +521,8 @@ def run():
         if surrogate_name == 'Kriging' and lambda_pre == 10 and gen_int == 1:
             runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep)
 
-        if surrogate_name in ['Kriging', 'RandomForest'] and lambda_pre == 10 and gen_int == 1:
-            runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
+        # if surrogate_name in ['Kriging', 'RandomForest'] and lambda_pre == 10 and gen_int == 1:
+        #     runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
 
         runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, gen_interval=gen_int)
         runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True, gen_interval=gen_int)
