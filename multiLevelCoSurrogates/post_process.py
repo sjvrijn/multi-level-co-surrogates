@@ -19,8 +19,10 @@ from collections import Counter, namedtuple
 from pprint import pprint
 import numpy as np
 
-surrogates = ['Kriging', 'RBF', 'RandomForest', 'SVM', 'NoSurrogate']
-uses = ['reg', 'MF', 'scaled-MF', 'MF-bisurr', 'EGO-reg']
+surrogates = ['Kriging', 'RBF', 'RandomForest', 'NoSurrogate']  # , 'SVM'
+uses = ['reg', 'MF', 'scaled-MF', 'MF-bisurr', 'scaled-MF-bisurr']  # , 'EGO-reg']
+gen_intervals = [0, 1, 2, 3, 5, 10, 20]
+lambda_pres = [0, 10, 20, 30, 40, 50]
 
 
 
@@ -74,11 +76,11 @@ def loadFitnessHistory(fname, column=None):
 def plotSimpleComparisons(training_size):
     """Create and save plots comparing convergence of different uses of the same surrogate"""
 
-    num_reps = experiment_repetitions
+    experiment_repetitions = experiment_repetitions
     fit_func_names = fit_funcs.keys()
     # surrogates = ['Kriging', 'RBF', 'RandomForest']
     # uses = ['reg', 'MF', 'scaled-MF']
-    experiments = product(fit_func_names, surrogates, range(num_reps))
+    experiments = product(fit_func_names, surrogates, range(experiment_repetitions))
 
     for fit_func_name, surrogate_name, rep in experiments:
         print(fit_func_name, surrogate_name, rep)
@@ -113,9 +115,9 @@ def plotSimpleComparisons(training_size):
 
 
 def plotMedianComparisons(training_size):
-    """Create and save plots comparing the median convergence of `num_reps` runs for various uses of each surrogate"""
+    """Create and save plots comparing the median convergence of `experiment_repetitions` runs for various uses of each surrogate"""
 
-    num_reps = experiment_repetitions
+    experiment_repetitions = experiment_repetitions
     fit_func_names = fit_funcs.keys()
     # surrogates = ['Kriging', 'RBF', 'RandomForest']
     # uses = ['reg', 'MF', 'scaled-MF']
@@ -137,7 +139,7 @@ def plotMedianComparisons(training_size):
             fname = folder_name.format(ndim=ndim, func=fit_func_name, use=use, surr=surrogate_name)
             total_data = []
 
-            for rep in range(num_reps):
+            for rep in range(experiment_repetitions):
                 fsuff = suffix.format(size=training_size, rep=rep)
                 filename_prefix = f'{data_dir}{fname}{fsuff}'
 
@@ -180,9 +182,9 @@ def counterToFilledTupleList(counter):
 
 
 def calcWinsPerStrategy(training_size):
-    """Compare the medians of `num_reps` runs of each use to determine 'wins', and plot these as a histogram"""
+    """Compare the medians of `experiment_repetitions` runs of each use to determine 'wins', and plot these as a histogram"""
 
-    num_reps = experiment_repetitions
+    experiment_repetitions = experiment_repetitions
     fit_func_names = fit_funcs.keys()
     # surrogates = ['Kriging', 'RBF', 'RandomForest']
     # uses = ['reg', 'MF', 'scaled-MF']
@@ -203,7 +205,7 @@ def calcWinsPerStrategy(training_size):
             fname = folder_name.format(ndim=ndim, func=fit_func_name, use=use, surr=surrogate_name)
             total_data = []
 
-            for rep in range(num_reps):
+            for rep in range(experiment_repetitions):
                 fsuff = suffix.format(size=training_size, rep=rep)
                 filename_prefix = f'{data_dir}{fname}{fsuff}'
 
@@ -291,7 +293,7 @@ def calcWinsPerStrategy(training_size):
 def plotBoxPlots(training_size):
     """Create and save boxplots for the final fitness levels and time to convergence"""
 
-    num_reps = experiment_repetitions
+    experiment_repetitions = experiment_repetitions
     fit_func_names = fit_funcs.keys()
     # surrogates = ['Kriging', 'RBF', 'RandomForest']
     # uses = ['reg', 'MF', 'scaled-MF']
@@ -315,7 +317,7 @@ def plotBoxPlots(training_size):
             total_data = []
             total_lengths = []
 
-            for rep in range(num_reps):
+            for rep in range(experiment_repetitions):
                 fsuff = suffix.format(size=training_size, rep=rep)
                 filename_prefix = f'{data_dir}{fname}{fsuff}'
 
@@ -356,11 +358,8 @@ def plotBoxPlots(training_size):
 
 def getdata():
 
-    gen_intervals = [1, 2, 3, 5, 10, 20]
-    lambda_pres = [10, 20, 30, 40, 50]
-    num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
-    experiments = product(fit_func_names, surrogates, uses, range(num_reps), gen_intervals, lambda_pres)
+    experiments = product(fit_func_names, surrogates, uses, range(experiment_repetitions), gen_intervals, lambda_pres)
 
     Index = namedtuple('Index', ['fitfunc', 'surrogate', 'usage', 'repetition', 'genint', 'lambda_pre'])
     data = {}
@@ -371,17 +370,20 @@ def getdata():
 
         if surrogate_name == 'NoSurrogate' and use is not 'reg':
             continue
-        elif use == 'EGO-reg' and surrogate_name is not 'Kriging':
+        elif use == 'EGO-reg' and surrogate_name not in ['Kriging', 'RandomForest']:
             continue
 
         fname = folder_name.format(ndim=ndim, func=fit_func_name, use=use, surr=surrogate_name)
-        fsuff = suffix.format(size=lambda_pre, rep=rep)
-        filename_prefix = f'{base_dir}mlcs-g{gen_int}/data/{fname}{fsuff}'
+        fsuff = suffix.format(size=lambda_pre, rep=rep, gen=gen_int)
+        filename_prefix = f'{base_dir}data/{fname}{fsuff}'
+
 
         try:
             data[idx] = np.array(loadFitnessHistory(filename_prefix + 'reslog.' + data_ext, column=(1, -1)))
             if fit_func_name == 'borehole':
                 data[idx] *= -1
+            elif fit_func_name == 'park91b':
+                data[idx] -= 0.666666666666  # Manually extracted minimum found value...
             print(fit_func_name, surrogate_name, use, rep, gen_int, lambda_pre)
         except:
             # print(fit_func_name, surrogate_name, use, rep, gen_int, lambda_pre, filename_prefix, "\tNOPE")
@@ -412,13 +414,11 @@ def getplottingvalues(total_data):
     return minimum, mean, median, maximum
 
 
-def plot_by_use(data):
-    """Create and save plots comparing the median convergence of `num_reps` runs for various uses of each surrogate"""
+def plot_by_genint(data):
+    """Create and save plots comparing the median convergence of `experiment_repetitions`
+     runs for various uses of each surrogate"""
 
-    gen_intervals = [1, 2, 3, 5, 10, 20]
-    lambda_pre = 10
-    num_reps = experiment_repetitions
-    fit_func_names = ['borehole', 'park91a', 'park91b']
+    fit_func_names = fit_funcs.keys()
 
     Index = namedtuple('Index', ['fitfunc', 'surrogate', 'usage', 'repetition', 'genint', 'lambda_pre'])
 
@@ -428,15 +428,16 @@ def plot_by_use(data):
 
         if surrogate_name == 'NoSurrogate' and use is not 'reg':
             continue
-        elif use == 'EGO-reg' and surrogate_name is not 'Kriging':
+        elif use == 'EGO-reg' and surrogate_name not in ['Kriging', 'RandomForest']:
             continue
 
         plt.figure(figsize=(16,9))
+        num_plotted = 0
 
-        for gen_int in gen_intervals:
+        for gen_int, lambda_pre in product(gen_intervals, lambda_pres):
             total_data = []
 
-            for rep in range(num_reps):
+            for rep in range(experiment_repetitions):
 
                 try:
                     idx = Index(fit_func_name, surrogate_name, use, rep, gen_int, lambda_pre)
@@ -452,15 +453,20 @@ def plot_by_use(data):
             minimum, mean, median, maximum = getplottingvalues(total_data)
 
             plt.subplot(121)
-            plt.plot(median, label=f'{use} {gen_int}')
+            plt.plot(median, label=f'{use} g{gen_int} l{lambda_pre}')
             plt.fill_between(np.arange(len(minimum)), minimum, maximum, interpolate=True, alpha=0.2)
 
             plt.subplot(122)
-            plt.plot(mean, label=f'{use} {gen_int}')
+            plt.plot(mean, label=f'{use} g{gen_int} l{lambda_pre}')
             plt.fill_between(np.arange(len(minimum)), minimum, maximum, interpolate=True, alpha=0.2)
+            num_plotted += 1
 
+        if num_plotted <= 1:
+            plt.close()
+            continue
 
         guaranteeFolderExists(f'{plot_dir}')
+        plt.suptitle('Generation Interval comparison')
         plt.subplot(121)
         plt.title(f'{fit_func_name}-{surrogate_name}-{use} - Medians')
         plt.xlabel('Evaluations')
@@ -469,24 +475,23 @@ def plot_by_use(data):
         plt.legend(loc=0)
 
         plt.subplot(122)
-        plt.title(f'{fit_func_name}-{surrogate_name}-{use} - Medians')
+        plt.title(f'{fit_func_name}-{surrogate_name}-{use} - Means')
         plt.xlabel('Evaluations')
         plt.ylabel('Fitness value')
         plt.yscale('log')
         plt.legend(loc=0)
+        plt.tight_layout()
         plt.savefig(plot_dir + fit_func_name + '-' + surrogate_name + '-' + use + '.' + plot_ext)
         plt.close()
 
     print("all plotted")
 
 
-def plot_by_genint(data):
-    """Create and save plots comparing the median convergence of `num_reps` runs for various uses of each surrogate"""
+def plot_by_use(data):
+    """Create and save plots comparing the median convergence of `experiment_repetitions`
+     runs for various uses of each surrogate"""
 
-    gen_intervals = [1, 2, 3, 5, 10, 20]
-    lambda_pre = 10
-    num_reps = experiment_repetitions
-    fit_func_names = ['borehole', 'park91a', 'park91b']
+    fit_func_names = fit_funcs.keys()
 
     Index = namedtuple('Index', ['fitfunc', 'surrogate', 'usage', 'repetition', 'genint', 'lambda_pre'])
 
@@ -494,16 +499,17 @@ def plot_by_genint(data):
 
     for fit_func_name, surrogate_name, gen_int in product(fit_func_names, surrogates, gen_intervals):
         plt.figure(figsize=(16,9))
+        num_plotted = 0
 
-        for use in uses:
+        for use, lambda_pre in product(uses, lambda_pres):
             total_data = []
 
             if surrogate_name == 'NoSurrogate' and use is not 'reg':
                 continue
-            elif use == 'EGO-reg' and surrogate_name is not 'Kriging':
+            elif use == 'EGO-reg' and surrogate_name not in ['Kriging', 'RandomForest']:
                 continue
 
-            for rep in range(num_reps):
+            for rep in range(experiment_repetitions):
 
                 try:
                     idx = Index(fit_func_name, surrogate_name, use, rep, gen_int, lambda_pre)
@@ -519,15 +525,20 @@ def plot_by_genint(data):
             minimum, mean, median, maximum = getplottingvalues(total_data)
 
             plt.subplot(121)
-            plt.plot(median, label=f'{use} {gen_int}')
+            plt.plot(median, label=f'{use} l{lambda_pre}')
             plt.fill_between(np.arange(len(minimum)), minimum, maximum, interpolate=True, alpha=0.2)
 
             plt.subplot(122)
-            plt.plot(mean, label=f'{use} {gen_int}')
+            plt.plot(mean, label=f'{use} l{lambda_pre}')
             plt.fill_between(np.arange(len(minimum)), minimum, maximum, interpolate=True, alpha=0.2)
+            num_plotted += 1
 
+        if num_plotted <= 1:
+            plt.close()
+            continue
 
         guaranteeFolderExists(f'{plot_dir}')
+        plt.suptitle('Use of Surrogate comparison')
         plt.subplot(121)
         plt.title(f'{fit_func_name}-{surrogate_name}-{gen_int} - Medians')
         plt.xlabel('Evaluations')
@@ -541,6 +552,7 @@ def plot_by_genint(data):
         plt.ylabel('Fitness value')
         plt.yscale('log')
         plt.legend(loc=0)
+        plt.tight_layout()
         plt.savefig(plot_dir + fit_func_name + '-' + surrogate_name + '-' + str(gen_int) + '.' + plot_ext)
         plt.close()
 
@@ -548,12 +560,10 @@ def plot_by_genint(data):
 
 
 def plot_by_surrogate(data):
-    """Create and save plots comparing the median convergence of `num_reps` runs for various uses of each surrogate"""
+    """Create and save plots comparing the median convergence of `experiment_repetitions`
+     runs for various uses of each surrogate"""
 
-    gen_intervals = [1, 2, 3, 5, 10, 20]
-    lambda_pre = 10
-    num_reps = experiment_repetitions
-    fit_func_names = ['borehole', 'park91a', 'park91b']
+    fit_func_names = fit_funcs.keys()
 
     Index = namedtuple('Index', ['fitfunc', 'surrogate', 'usage', 'repetition', 'genint', 'lambda_pre'])
 
@@ -561,16 +571,17 @@ def plot_by_surrogate(data):
 
     for fit_func_name, use, gen_int in product(fit_func_names, uses, gen_intervals):
         plt.figure(figsize=(16,9))
+        num_plotted = 0
 
-        for surrogate_name in surrogates:
+        for surrogate_name, lambda_pre in product(surrogates, lambda_pres):
             total_data = []
 
             if surrogate_name == 'NoSurrogate' and use is not 'reg':
                 continue
-            elif use == 'EGO-reg' and surrogate_name is not 'Kriging':
+            elif use == 'EGO-reg' and surrogate_name not in ['Kriging', 'RandomForest']:
                 continue
 
-            for rep in range(num_reps):
+            for rep in range(experiment_repetitions):
 
                 try:
                     idx = Index(fit_func_name, surrogate_name, use, rep, gen_int, lambda_pre)
@@ -586,15 +597,20 @@ def plot_by_surrogate(data):
             minimum, mean, median, maximum = getplottingvalues(total_data)
 
             plt.subplot(121)
-            plt.plot(median, label=f'{surrogate_name}')
+            plt.plot(median, label=f'{surrogate_name} l{lambda_pre}')
             plt.fill_between(np.arange(len(minimum)), minimum, maximum, interpolate=True, alpha=0.2)
 
             plt.subplot(122)
-            plt.plot(mean, label=f'{surrogate_name}')
+            plt.plot(mean, label=f'{surrogate_name} l{lambda_pre}')
             plt.fill_between(np.arange(len(minimum)), minimum, maximum, interpolate=True, alpha=0.2)
+            num_plotted += 1
 
+        if num_plotted <= 1:
+            plt.close()
+            continue
 
         guaranteeFolderExists(f'{plot_dir}')
+        plt.suptitle('Surrogate model comparison')
         plt.subplot(121)
         plt.title(f'{fit_func_name}-{use}-{gen_int} - Medians')
         plt.xlabel('Evaluations')
@@ -608,6 +624,7 @@ def plot_by_surrogate(data):
         plt.ylabel('Fitness value')
         plt.yscale('log')
         plt.legend(loc=0)
+        plt.tight_layout()
         plt.savefig(plot_dir + fit_func_name + '-' + use + '-' + str(gen_int) + '.' + plot_ext)
         plt.close()
 
