@@ -631,11 +631,55 @@ def plot_by_surrogate(data):
     print("all plotted")
 
 
+def make2dvisualizations():
+    from mpl_toolkits.mplot3d import Axes3D
+    from matplotlib import cm
+    from matplotlib.ticker import LinearLocator, FormatStrFormatter
+
+    # for angle in [45, 135, 225, 315]:
+    for fit_func_name in list(fit_funcs.keys())[:5]:
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+
+        x_min, y_min = fit_funcs[fit_func_name].l_bound
+        x_max, y_max = fit_funcs[fit_func_name].u_bound
+
+        # Make data.
+        X = np.arange(x_min, x_max, (x_max-x_min)/100)
+        Y = np.arange(y_min, y_max, (y_max-y_min)/100)
+        X, Y = np.meshgrid(X, Y)
+        fit_func = np.vectorize(lambda x, y: fit_funcs[fit_func_name].high((x,y)))
+        Z = fit_func(X, Y)
+
+        # Plot the surface.
+        surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,
+                               linewidth=0, antialiased=False)
+        ax.view_init(azim=45)
+        ax.set_title(f'{fit_func_name} (high fidelity)')
+
+        ax.set_xlabel('x1')
+        ax.set_ylabel('x2')
+        ax.set_zlabel('f')
+
+        # Customize the z axis.
+        ax.zaxis.set_major_locator(LinearLocator(10))
+        ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+
+        # Add a color bar which maps values to colors.
+        fig.colorbar(surf, shrink=0.5, aspect=5)
+
+        plt.tight_layout()
+        plt.savefig(f'{plot_dir}{fit_func_name}_2d.{plot_ext}')
+        # plt.show()
+
+
 def run():
     data = getdata()
     plot_by_use(data)
     plot_by_genint(data)
     plot_by_surrogate(data)
+
+    # make2dvisualizations()
 
     # for size in [10, 20, 30, 40, 50]:
     #     print(size)
