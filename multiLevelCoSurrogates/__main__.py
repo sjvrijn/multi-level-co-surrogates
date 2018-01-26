@@ -505,9 +505,9 @@ def run():
     surrogates = ['Kriging', 'RBF', 'RandomForest']  # , 'SVM']
     lambda_pres = [10, 20, 40]  # , 30, 50]
     gen_intervals = [1, 2, 3, 5, 10]  # , 20]
-    experiments = product(fit_func_names, lambda_pres, surrogates, gen_intervals, range(num_reps))
+    experiments = product(lambda_pres, gen_intervals, range(num_reps), fit_func_names, surrogates)
 
-    for fit_func_name, lambda_pre, surrogate_name, gen_int, rep in experiments:
+    for lambda_pre, gen_int, rep, fit_func_name, surrogate_name in experiments:
 
         ndim = fit_func_dims[fit_func_name]
         lambda_ = 2        # 4 + int(3 * np.log(ndim))
@@ -526,10 +526,10 @@ def run():
 
         runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, gen_interval=gen_int)
         runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True, gen_interval=gen_int)
-        runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False, gen_interval=gen_int)
+        # runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False, gen_interval=gen_int)
 
-        runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True, gen_interval=gen_int)
-        runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False, gen_interval=gen_int)
+        # runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True, gen_interval=gen_int)
+        # runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False, gen_interval=gen_int)
 
 
 
