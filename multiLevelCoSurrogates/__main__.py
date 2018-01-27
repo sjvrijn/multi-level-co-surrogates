@@ -266,7 +266,7 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep):
         es.tell(candidates, results)
         res_log.writeLine(results)
 
-    time_log.writeLine(time.time() - start_time)
+    time_log.writeLine([time.time() - start_time])
 
 
 def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
@@ -327,7 +327,7 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
         surrogate = retrain(cand_archive, training_size, surrogate_name)
         num_generations += 1
 
-    time_log.writeLine(time.time() - start_time)
+    time_log.writeLine([time.time() - start_time])
 
 
 def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep):
@@ -442,7 +442,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
         surrogate = retrainMultiFidelity(cand_archive, training_size, surrogate_name, fit_scaling_param)
         num_generations += 1
 
-    time_log.writeLine(time.time() - start_time)
+    time_log.writeLine([time.time() - start_time])
 
 
 def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
@@ -522,12 +522,11 @@ def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sa
 def run():
     init_sample_size = 20
 
-    num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
     surrogates = ['Kriging', 'RBF', 'RandomForest']  # , 'SVM']
     lambda_pres = [2, 4, 8]  # , 30, 50]
     gen_intervals = [1, 2, 3, 5, 10]  # , 20]
-    experiments = product(lambda_pres, gen_intervals, range(num_reps), fit_func_names, surrogates)
+    experiments = product(lambda_pres, gen_intervals, range(experiment_repetitions), fit_func_names, surrogates)
 
     for lambda_pre_mult, gen_int, rep, fit_func_name, surrogate_name in experiments:
 
@@ -538,7 +537,7 @@ def run():
         training_size = 0
 
         print(f"""--------------------------------------------------------------------------------
-{lambda_pre}-{gen_int}: {surrogate_name} for {fit_func_name} ({rep}/{num_reps})""")
+{lambda_pre}-{gen_int}: {surrogate_name} for {fit_func_name} ({rep}/{experiment_repetitions})""")
 
         if surrogate_name == 'Kriging' and lambda_pre_mult == 2 and gen_int == 1:
             runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep)
