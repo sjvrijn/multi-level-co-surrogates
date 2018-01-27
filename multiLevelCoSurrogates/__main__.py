@@ -525,22 +525,22 @@ def run():
     num_reps = experiment_repetitions
     fit_func_names = fit_funcs.keys()
     surrogates = ['Kriging', 'RBF', 'RandomForest']  # , 'SVM']
-    lambda_pres = [10, 20, 40]  # , 30, 50]
+    lambda_pres = [2, 4, 8]  # , 30, 50]
     gen_intervals = [1, 2, 3, 5, 10]  # , 20]
     experiments = product(lambda_pres, gen_intervals, range(num_reps), fit_func_names, surrogates)
 
-    for lambda_pre, gen_int, rep, fit_func_name, surrogate_name in experiments:
+    for lambda_pre_mult, gen_int, rep, fit_func_name, surrogate_name in experiments:
 
         ndim = fit_func_dims[fit_func_name]
-        lambda_ = 2        # 4 + int(3 * np.log(ndim))
-        # lambda_pre = 10  # 2 * lambda_
+        lambda_ = 4 + int(3 * np.log(ndim))
+        lambda_pre = lambda_pre_mult * lambda_
         mu = lambda_ // 2
         training_size = 0
 
         print(f"""--------------------------------------------------------------------------------
 {lambda_pre}-{gen_int}: {surrogate_name} for {fit_func_name} ({rep}/{num_reps})""")
 
-        if surrogate_name == 'Kriging' and lambda_pre == 10 and gen_int == 1:
+        if surrogate_name == 'Kriging' and lambda_pre_mult == 2 and gen_int == 1:
             runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep)
 
         # if surrogate_name in ['Kriging', 'RandomForest'] and lambda_pre == 10 and gen_int == 1:
