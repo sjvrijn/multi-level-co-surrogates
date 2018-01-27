@@ -12,6 +12,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 import os
 import cma
 import numpy as np
+import time
 from pathlib import Path
 from pyKriging.samplingplan import samplingplan
 from itertools import product
@@ -254,6 +255,9 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep):
 
     res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
                      header="Fitness values from actual function, inf for any not pre-selected candidate")
+    time_log = Logger(f'{filename_prefix}timelog.{data_ext}',
+                      header="Time spent on optimization process")
+    start_time = time.time()
 
     while not es.stop():
         # Obtain the list of lambda_pre candidates to evaluate
@@ -261,6 +265,8 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep):
         results = [fit_func.high(cand) for cand in candidates]
         es.tell(candidates, results)
         res_log.writeLine(results)
+
+    time_log.writeLine(time.time() - start_time)
 
 
 def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
@@ -301,6 +307,9 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
 
     res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
                      header="Fitness values from actual function, inf for any not pre-selected candidate")
+    time_log = Logger(f'{filename_prefix}timelog.{data_ext}',
+                      header="Time spent on optimization process")
+    start_time = time.time()
 
     while not es.stop():
         # Obtain the list of lambda_pre candidates to evaluate
@@ -318,6 +327,8 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
         surrogate = retrain(cand_archive, training_size, surrogate_name)
         num_generations += 1
 
+    time_log.writeLine(time.time() - start_time)
+
 
 def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep):
     """
@@ -331,6 +342,8 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
     :param rep:                 Repetition number
     """
 
+    from multiLevelCoSurrogates.post_process import make2dvisualizations
+
     num_iters = 100
 
     fit_func = fit_funcs[fit_func_name]
@@ -343,8 +356,8 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
     filename_prefix = f'{data_dir}{fname}{fsuff}'
     guaranteeFolderExists(f'{data_dir}{fname}')
 
-    if f'{fsuff}reslog.{data_ext}' in os.listdir(f'{data_dir}{fname}'):
-        return
+    # if f'{fsuff}reslog.{data_ext}' in os.listdir(f'{data_dir}{fname}'):
+    #     return
 
     surrogate, cand_archive = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
     ego = EGO(surrogate, ndim, fit_func.u_bound, fit_func.l_bound)
@@ -352,7 +365,11 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
     res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
                      header="Fitness values from actual function, inf for any not pre-selected candidate")
 
-    for _ in range(num_iters):
+    for i in range(num_iters):
+
+        print(i)
+        make2dvisualizations(lambda x, y: ego.surrogate.predict([[x], [y]])[0],
+                             l_bound, u_bound, f'{fit_func_name}_{surrogate_name}_landscape_{i}')
 
         x, ei = ego.next_infill()
         x_fit = fit_func.high(x)
@@ -402,6 +419,9 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
 
     res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
                      header="Fitness values from actual function, inf for any not pre-selected candidate")
+    time_log = Logger(f'{filename_prefix}timelog.{data_ext}',
+                      header="Time spent on optimization process")
+    start_time = time.time()
 
     ### OPTIMIZATION ###
     while not es.stop():
@@ -421,6 +441,8 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
 
         surrogate = retrainMultiFidelity(cand_archive, training_size, surrogate_name, fit_scaling_param)
         num_generations += 1
+
+    time_log.writeLine(time.time() - start_time)
 
 
 def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
