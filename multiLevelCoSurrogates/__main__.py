@@ -217,7 +217,7 @@ def singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_
     for index in indices[:lambda_]:
         res = fit_func(candidates[index])
         results[index] = res
-        cand_archive.addcandidate(candidates[index], res, fidelity=fidelity)
+        cand_archive.addcandidate(candidates[index], [res], fidelity=fidelity)
     return results
 
 
