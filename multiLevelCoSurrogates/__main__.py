@@ -523,10 +523,10 @@ def run():
     init_sample_size = 20
 
     fit_func_names = fit_funcs.keys()
-    surrogates = ['Kriging', 'RBF', 'RandomForest']  # , 'SVM']
-    lambda_pres = [2, 4, 8]  # , 30, 50]
+    surrogates = ['RandomForest']  # , 'SVM''Kriging', 'RBF', ]
+    lambda_pres = [2]  #, 4, 8]  # , 30, 50]
     gen_intervals = [1, 2, 3, 5, 10]  # , 20]
-    experiments = product(lambda_pres, gen_intervals, range(experiment_repetitions), fit_func_names, surrogates)
+    experiments = product(lambda_pres, gen_intervals, range(1), fit_func_names, surrogates)
 
     for lambda_pre_mult, gen_int, rep, fit_func_name, surrogate_name in experiments:
 
@@ -539,13 +539,13 @@ def run():
         print(f"""--------------------------------------------------------------------------------
 {lambda_pre}-{gen_int}: {surrogate_name} for {fit_func_name} ({rep}/{experiment_repetitions})""")
 
-        if surrogate_name == 'Kriging' and lambda_pre_mult == 2 and gen_int == 1:
-            runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep)
+        # if surrogate_name == 'Kriging' and lambda_pre_mult == 2 and gen_int == 1:
+        #     runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep)
 
         # if surrogate_name in ['Kriging', 'RandomForest'] and lambda_pre == 10 and gen_int == 1:
         #     runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
 
-        runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, gen_interval=gen_int)
+        # runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, gen_interval=gen_int)
         runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True, gen_interval=gen_int)
         # runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False, gen_interval=gen_int)
 
