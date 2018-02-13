@@ -18,6 +18,7 @@ from collections import Counter, namedtuple
 
 from pprint import pprint
 import numpy as np
+import pandas as pd
 
 surrogates = ['Kriging', 'RBF', 'RandomForest', 'NoSurrogate']  # , 'SVM'
 # uses = ['reg', 'EGO-reg', 'MF', 'scaled-MF', 'MF-bisurr', 'scaled-MF-bisurr']
@@ -26,6 +27,7 @@ gen_intervals = [0, 1, 2, 3, 5, 10, 20]
 lambda_pres = [0, 2]  # , 4, 8]
 figsize = (6, 4.5)
 
+TimingData = namedtuple('TimingData', ['function', 'surrogate', 'usage', 'repetition', 'gen_int', 'lambda_pre', 'time'])
 
 x_lims = {
     'bohachevsky': 100,
@@ -402,6 +404,39 @@ def getdata():
     return data
 
 
+def timingdatatocsv():
+
+    fit_func_names = fit_funcs.keys()
+    experiments = product(fit_func_names, surrogates, uses, range(experiment_repetitions), gen_intervals, lambda_pres)
+    data = []
+
+    for fit_func_name, surrogate_name, use, rep, gen_int, lambda_pre_mul in experiments:
+        ndim = fit_func_dims[fit_func_name]
+        lambda_pre = (4 + int(3 * np.log(ndim))) * lambda_pre_mul
+
+        if surrogate_name == 'NoSurrogate' and use is not 'reg':
+            continue
+        elif use == 'EGO-reg' and surrogate_name not in ['Kriging', 'RandomForest']:
+            continue
+
+        fname = folder_name.format(ndim=ndim, func=fit_func_name, use=use, surr=surrogate_name)
+        fsuff = suffix.format(size=lambda_pre, rep=rep, gen=gen_int)
+        filename_prefix = f'{data_dir}{fname}{fsuff}'
+
+        try:
+            # In this case, we only ever expect a single value per file
+            time = np.array(loadFitnessHistory(filename_prefix + 'timelog.' + data_ext, column=(1, -1)))[0][0]
+            tup = TimingData(fit_func_name, surrogate_name, use, rep, gen_int, lambda_pre_mul, time)
+            data.append(tup)
+        except:
+            pass
+
+    df = pd.DataFrame(data, columns=TimingData._fields)
+    df.to_csv(f'{data_dir}timing_summary.csv')
+
+    print("done")
+
+
 def getplottingvalues(total_data, min_perc=25, max_perc=75):
 
     max_len = max([len(dat) for dat in total_data])
@@ -642,16 +677,16 @@ def make2dvisualizations(function, l_bound, u_bound, name):
 
 
 def run():
-    data = getdata()
-    compare_by_use(data)
-    compare_by_genint(data)
-    compare_by_surrogate(data)
-
-    for fit_func_name in list(fit_funcs.keys())[:5]:
-        func = lambda x, y: fit_funcs[fit_func_name].high((x,y))
-        make2dvisualizations(func, fit_funcs[fit_func_name].l_bound, fit_funcs[fit_func_name].u_bound, fit_func_name)
-        func = lambda x, y: fit_funcs[fit_func_name].low((x,y))
-        make2dvisualizations(func, fit_funcs[fit_func_name].l_bound, fit_funcs[fit_func_name].u_bound, fit_func_name + '_low')
+    # data = getdata()
+    # compare_by_use(data)
+    # compare_by_genint(data)
+    # compare_by_surrogate(data)
+    #
+    # for fit_func_name in list(fit_funcs.keys())[:5]:
+    #     func = lambda x, y: fit_funcs[fit_func_name].high((x,y))
+    #     make2dvisualizations(func, fit_funcs[fit_func_name].l_bound, fit_funcs[fit_func_name].u_bound, fit_func_name)
+    #     func = lambda x, y: fit_funcs[fit_func_name].low((x,y))
+    #     make2dvisualizations(func, fit_funcs[fit_func_name].l_bound, fit_funcs[fit_func_name].u_bound, fit_func_name + '_low')
 
     # for size in [10, 20, 30, 40, 50]:
     #     print(size)
@@ -659,6 +694,8 @@ def run():
         # plotMedianComparisons(size)
         # calcWinsPerStrategy(size)
         # plotBoxPlots(size)
+
+    timingdatatocsv()
 
 
 if __name__ == '__main__':
