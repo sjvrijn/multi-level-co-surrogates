@@ -636,7 +636,7 @@ def compare_by_surrogate(data):
     print("all plotted")
 
 
-def make2dvisualizations(function, l_bound, u_bound, name):
+def make2dvisualizations(function, l_bound, u_bound, name, num_intervals=100):
     from mpl_toolkits.mplot3d import Axes3D
     from matplotlib import cm
     from matplotlib.ticker import LinearLocator, FormatStrFormatter
@@ -649,8 +649,8 @@ def make2dvisualizations(function, l_bound, u_bound, name):
     x_max, y_max = u_bound
 
     # Make data.
-    X = np.arange(x_min, x_max, (x_max-x_min)/100)
-    Y = np.arange(y_min, y_max, (y_max-y_min)/100)
+    X = np.arange(x_min, x_max, (x_max-x_min)/num_intervals)
+    Y = np.arange(y_min, y_max, (y_max-y_min)/num_intervals)
     X, Y = np.meshgrid(X, Y)
 
     Z = function(X, Y)
@@ -681,12 +681,24 @@ def run():
     # compare_by_use(data)
     # compare_by_genint(data)
     # compare_by_surrogate(data)
-    #
-    # for fit_func_name in list(fit_funcs.keys())[:5]:
-    #     func = lambda x, y: fit_funcs[fit_func_name].high((x,y))
-    #     make2dvisualizations(func, fit_funcs[fit_func_name].l_bound, fit_funcs[fit_func_name].u_bound, fit_func_name)
-    #     func = lambda x, y: fit_funcs[fit_func_name].low((x,y))
-    #     make2dvisualizations(func, fit_funcs[fit_func_name].l_bound, fit_funcs[fit_func_name].u_bound, fit_func_name + '_low')
+
+    for fit_func_name in list(fit_funcs.keys())[:5]:
+
+        l_bound = np.array(fit_funcs[fit_func_name].l_bound, dtype=np.float64)
+        u_bound = np.array(fit_funcs[fit_func_name].u_bound, dtype=np.float64)
+
+        func = lambda x, y: fit_funcs[fit_func_name].high((x,y))
+        make2dvisualizations(func, l_bound, u_bound, fit_func_name)
+        func = lambda x, y: fit_funcs[fit_func_name].low((x,y))
+        make2dvisualizations(func, l_bound, u_bound, fit_func_name + '_low')
+
+        # l_bound /= 33
+        # u_bound /= 33
+        #
+        # func = lambda x, y: fit_funcs[fit_func_name].high((x,y))
+        # make2dvisualizations(func, l_bound, u_bound, fit_func_name + '_small')
+        # func = lambda x, y: fit_funcs[fit_func_name].low((x,y))
+        # make2dvisualizations(func, l_bound, u_bound, fit_func_name + '_small_low')
 
     # for size in [10, 20, 30, 40, 50]:
     #     print(size)
@@ -695,7 +707,7 @@ def run():
         # calcWinsPerStrategy(size)
         # plotBoxPlots(size)
 
-    timingdatatocsv()
+    # timingdatatocsv()
 
 
 if __name__ == '__main__':
