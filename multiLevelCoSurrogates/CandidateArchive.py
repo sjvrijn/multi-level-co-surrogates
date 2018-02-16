@@ -16,6 +16,7 @@ import numpy as np
 from warnings import warn
 
 
+#TODO: add support for automatic difference columns
 class CandidateArchive:
 
     def __init__(self, ndim, fidelities=None):

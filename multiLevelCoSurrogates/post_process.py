@@ -211,9 +211,13 @@ def compare_by_genint(data):
                     dat = data[idx]
                 except:
                     continue
-                dat = np.ma.masked_invalid(dat).min(axis=1)
-                dat = np.minimum.accumulate(dat)
-                total_data.append(dat)
+                try:
+                    dat = np.ma.masked_invalid(dat).min(axis=1)
+                    dat = np.minimum.accumulate(dat)
+                    total_data.append(dat)
+                except Exception as e:
+                    print(idx)
+                    print(dat)
 
             if not total_data:
                 continue
@@ -323,9 +327,13 @@ def compare_by_surrogate(data):
                     dat = data[idx]
                 except:
                     continue
-                dat = np.ma.masked_invalid(dat).min(axis=1)
-                dat = np.minimum.accumulate(dat)
-                total_data.append(dat)
+                try:
+                    dat = np.ma.masked_invalid(dat).min(axis=1)
+                    dat = np.minimum.accumulate(dat)
+                    total_data.append(dat)
+                except Exception as e:
+                    print(idx)
+                    print(dat)
 
             if not total_data:
                 continue
@@ -389,14 +397,15 @@ def make2dvisualizations(func, l_bound, u_bound, name, num_intervals=100):
     fig.colorbar(surf, shrink=0.5, aspect=5)
 
     plt.tight_layout()
-    plt.savefig(f'{plot_dir}{name}_2d.{plot_ext}')
+    guaranteeFolderExists(f'{plot_dir}surfaces/')
+    plt.savefig(f'{plot_dir}surfaces/{name}_2d.{plot_ext}')
 
 
 def run():
-    # data = getdata()
-    # compare_by_use(data)
-    # compare_by_genint(data)
-    # compare_by_surrogate(data)
+    data = getdata()
+    compare_by_use(data)
+    compare_by_genint(data)
+    compare_by_surrogate(data)
 
     for fit_func_name in list(fit_funcs.keys())[:5]:
 
@@ -407,23 +416,17 @@ def run():
         make2dvisualizations(func, l_bound, u_bound, fit_func_name)
         func = lambda x, y: fit_funcs[fit_func_name].low((x,y))
         make2dvisualizations(func, l_bound, u_bound, fit_func_name + '_low')
+    #
+    #     l_bound /= 33
+    #     u_bound /= 33
+    #
+    #     func = lambda x, y: fit_funcs[fit_func_name].high((x,y))
+    #     make2dvisualizations(func, l_bound, u_bound, fit_func_name + '_small')
+    #     func = lambda x, y: fit_funcs[fit_func_name].low((x,y))
+    #     make2dvisualizations(func, l_bound, u_bound, fit_func_name + '_small_low')
 
-        # l_bound /= 33
-        # u_bound /= 33
-        #
-        # func = lambda x, y: fit_funcs[fit_func_name].high((x,y))
-        # make2dvisualizations(func, l_bound, u_bound, fit_func_name + '_small')
-        # func = lambda x, y: fit_funcs[fit_func_name].low((x,y))
-        # make2dvisualizations(func, l_bound, u_bound, fit_func_name + '_small_low')
 
-    # for size in [10, 20, 30, 40, 50]:
-    #     print(size)
-        # plotSimpleComparisons(size)
-        # plotMedianComparisons(size)
-        # calcWinsPerStrategy(size)
-        # plotBoxPlots(size)
-
-    # timingdatatocsv()
+    timingdatatocsv()
 
 
 if __name__ == '__main__':
