@@ -27,6 +27,7 @@ gen_intervals = [0, 1, 2, 3, 5, 10, 20]
 lambda_pres = [0, 2]  # , 4, 8]
 figsize = (6, 4.5)
 
+Index = namedtuple('Index', ['fitfunc', 'surrogate', 'usage', 'repetition', 'genint', 'lambda_pre'])
 TimingData = namedtuple('TimingData', ['function', 'surrogate', 'usage', 'repetition', 'gen_int', 'lambda_pre', 'time'])
 
 x_lims = {
@@ -83,288 +84,11 @@ def loadFitnessHistory(fname, column=None):
         return [list(map(float, line.split(' ')[start:end])) for line in f]
 
 
+
+#TODO: Rewrite all plotting functions to plot from a list of 'Index' namedtuples
 #=======================================================================================================================
 #=======================================================================================================================
 #=======================================================================================================================
-
-
-def plotSimpleComparisons(training_size):
-    """Create and save plots comparing convergence of different uses of the same surrogate"""
-
-    fit_func_names = fit_funcs.keys()
-    # surrogates = ['Kriging', 'RBF', 'RandomForest']
-    # uses = ['reg', 'MF', 'scaled-MF']
-    experiments = product(fit_func_names, surrogates, range(experiment_repetitions))
-
-    for fit_func_name, surrogate_name, rep in experiments:
-        print(fit_func_name, surrogate_name, rep)
-
-        ndim = fit_func_dims[fit_func_name]
-        fsuff = suffix.format(size=training_size, rep=rep)
-        plt.figure()
-
-        for use in uses:
-
-            if surrogate_name == 'NoSurrogate' and use is not 'reg':
-                continue
-            elif use == 'EGO-reg' and surrogate_name is not 'Kriging':
-                continue
-
-            fname = folder_name.format(ndim=ndim, func=fit_func_name, use=use, surr=surrogate_name)
-            filename_prefix = f'{data_dir}{fname}{fsuff}'
-
-            data = np.array(loadFitnessHistory(filename_prefix + 'reslog.' + data_ext, column=(1, -1)))
-            data = np.ma.masked_invalid(data).min(axis=1)
-            data = np.minimum.accumulate(data)
-            plt.plot(data, label=use)
-
-        plot_folder = folder_name.format(ndim=ndim, func=fit_func_name, use='', surr=surrogate_name)
-        plot_name_prefix = f'{plot_dir}{plot_folder}{fsuff}'
-        guaranteeFolderExists(f'{plot_dir}{plot_folder}')
-        plt.xlabel('Evaluations')
-        plt.ylabel('Fitness value')
-        plt.legend(loc=0)
-        plt.savefig(plot_name_prefix + 'reslog.' + plot_ext)
-        plt.close()
-
-
-def plotMedianComparisons(training_size):
-    """Create and save plots comparing the median convergence of `experiment_repetitions` runs for various uses of each surrogate"""
-
-    fit_func_names = fit_funcs.keys()
-    # surrogates = ['Kriging', 'RBF', 'RandomForest']
-    # uses = ['reg', 'MF', 'scaled-MF']
-    experiments = product(fit_func_names, surrogates)
-
-    for fit_func_name, surrogate_name in experiments:
-        print(fit_func_name, surrogate_name)
-
-        ndim = fit_func_dims[fit_func_name]
-        plt.figure()
-
-        for use in uses:
-
-            if surrogate_name == 'NoSurrogate' and use is not 'reg':
-                continue
-            elif use == 'EGO-reg' and surrogate_name is not 'Kriging':
-                continue
-
-            fname = folder_name.format(ndim=ndim, func=fit_func_name, use=use, surr=surrogate_name)
-            total_data = []
-
-            for rep in range(experiment_repetitions):
-                fsuff = suffix.format(size=training_size, rep=rep)
-                filename_prefix = f'{data_dir}{fname}{fsuff}'
-
-                data = np.array(loadFitnessHistory(filename_prefix + 'reslog.' + data_ext, column=(1, -1)))
-                data = np.ma.masked_invalid(data).min(axis=1)
-                data = np.minimum.accumulate(data)
-                total_data.append(data)
-
-            min_idx = np.argmin(np.asarray([dat[-1] for dat in total_data]))
-            plt.plot(total_data[min_idx], label=f'median {use}')
-
-
-            # Make all arrays in total_data of equal length and calculate the average
-            max_len = max([len(dat) for dat in total_data])
-            new_data = []
-            for dat in total_data:
-                new_data.append(np.ma.append(dat, [dat[-1]] * (max_len - len(dat))))
-            plt.plot(np.mean(np.vstack(new_data), axis=0), label=f'mean {use}')
-
-
-
-        fsuff = suffix.format(size=training_size, rep='')
-        plot_folder = f'{fit_func_name}-{surrogate_name}-'
-        plot_name_prefix = f'{plot_dir}{plot_folder}{fsuff}'
-        guaranteeFolderExists(f'{plot_dir}')
-        plt.xlabel('Evaluations')
-        plt.ylabel('Fitness value')
-        plt.yscale('log')
-        plt.legend(loc=0)
-        plt.savefig(plot_name_prefix + 'reslog.' + plot_ext)
-        plt.close()
-
-
-def counterToFilledTupleList(counter):
-    """Transform a counter into a list of (entry, count)-tuples, explicitly keeping 0-counts"""
-    result = []
-    for usage in ['reg', 'MF', 'scaled-MF']:
-        result.append((usage, counter[usage]))
-    return result
-
-
-def calcWinsPerStrategy(training_size):
-    """Compare the medians of `experiment_repetitions` runs of each use to determine 'wins', and plot these as a histogram"""
-
-    fit_func_names = fit_funcs.keys()
-    # surrogates = ['Kriging', 'RBF', 'RandomForest']
-    # uses = ['reg', 'MF', 'scaled-MF']
-    experiments = product(fit_func_names, surrogates)
-
-    c = Counter()
-    surr_c = {name: Counter() for name in surrogates}
-    func_c = {name: Counter() for name in fit_func_names}
-
-    for fit_func_name, surrogate_name in experiments:
-        print(fit_func_name, surrogate_name)
-
-        ndim = fit_func_dims[fit_func_name]
-        best_res = {}
-
-        for use in uses:
-
-            fname = folder_name.format(ndim=ndim, func=fit_func_name, use=use, surr=surrogate_name)
-            total_data = []
-
-            for rep in range(experiment_repetitions):
-                fsuff = suffix.format(size=training_size, rep=rep)
-                filename_prefix = f'{data_dir}{fname}{fsuff}'
-
-                data = np.array(loadFitnessHistory(filename_prefix + 'reslog.' + data_ext, column=(1, -1)))
-                data = np.ma.masked_invalid(data).min(axis=1)
-                data = np.minimum.accumulate(data)
-                total_data.append(data)
-
-            bests = np.asarray([dat[-1] for dat in total_data])
-            best_res[use] = np.argsort(bests)[len(bests) // 2]
-
-        if best_res['reg'] < best_res['MF'] and best_res['reg'] < best_res['scaled-MF']:
-            c['reg'] += 1
-            surr_c[surrogate_name]['reg'] += 1
-            func_c[fit_func_name]['reg'] += 1
-        elif best_res['MF'] < best_res['reg'] and best_res['MF'] < best_res['scaled-MF']:
-            c['MF'] += 1
-            surr_c[surrogate_name]['MF'] += 1
-            func_c[fit_func_name]['MF'] += 1
-        else:
-            c['scaled-MF'] += 1
-            surr_c[surrogate_name]['scaled-MF'] += 1
-            func_c[fit_func_name]['scaled-MF'] += 1
-
-    pprint(func_c)
-    print()
-    pprint(surr_c)
-    print()
-    pprint(c)
-
-    plt.figure(figsize=(4,4))
-    plt.suptitle(f'Wins per usage type, training size = {training_size}')
-    plt.subplot(211)
-    # plt.title('Combined wins per usage type')
-    # ids, vals = zip(*counterToFilledTupleList(c))
-    # plt.hist(range(len(ids)), weights=vals)
-    # plt.xticks(range(len(ids)), ids)
-
-    ax1 = plt.subplot(211)
-    ax1.set_title('by surrogate')
-    indices = []
-    values = []
-    labels = []
-    for name, counter in surr_c.items():
-        ids, vals = zip(*counterToFilledTupleList(counter))
-        indices.append(range(len(ids)))
-        values.append(vals)
-        labels.append(name)
-    ax1.hist(indices, bins=np.arange(4)-.5, weights=values, label=labels, stacked=True, align='mid', rwidth=.5)
-    ax1.set_xticks(range(len(ids)))
-    ax1.set_xticklabels(ids)
-
-    ax2 = plt.subplot(212)
-    ax2.set_title('by benchmark function')
-    indices = []
-    values = []
-    labels = []
-    for name, counter in func_c.items():
-        ids, vals = zip(*counterToFilledTupleList(counter))
-        indices.append(range(len(ids)))
-        values.append(vals)
-        labels.append(name)
-    ax2.hist(indices, bins=np.arange(4)-.5, weights=values, label=labels, stacked=True, align='mid', rwidth=.5)
-    ax2.set_xticks(range(len(ids)))
-    ax2.set_xticklabels(ids)
-
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    # plt.tight_layout()
-    #
-    # box = ax1.get_position()
-    # ax1.set_position([box.x0, box.y0, box.width * 0.65, box.height])
-    # ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    #
-    # box = ax2.get_position()
-    # ax2.set_position([box.x0, box.y0, box.width * 0.65, box.height])
-    # ax2.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-
-
-    fsuff = suffix.format(size=training_size, rep='')
-    plot_name_prefix = f'{plot_dir}{fsuff}'
-    guaranteeFolderExists(f'{plot_dir}')
-    plt.savefig(plot_name_prefix + 'reslog-histogram_no-legend.' + plot_ext)
-
-
-def plotBoxPlots(training_size):
-    """Create and save boxplots for the final fitness levels and time to convergence"""
-
-    fit_func_names = fit_funcs.keys()
-    # surrogates = ['Kriging', 'RBF', 'RandomForest']
-    # uses = ['reg', 'MF', 'scaled-MF']
-    experiments = product(fit_func_names, surrogates)
-
-    for fit_func_name, surrogate_name in experiments:
-        print(fit_func_name, surrogate_name)
-
-        plt.figure()
-        ndim = fit_func_dims[fit_func_name]
-        bests = []
-        lengths = []
-
-        for use in uses:
-
-            if surrogate_name == 'NoSurrogate' and use is not 'reg':
-                continue
-            if use == 'EGO-reg' and surrogate_name is not 'Kriging':
-                continue
-            fname = folder_name.format(ndim=ndim, func=fit_func_name, use=use, surr=surrogate_name)
-            total_data = []
-            total_lengths = []
-
-            for rep in range(experiment_repetitions):
-                fsuff = suffix.format(size=training_size, rep=rep)
-                filename_prefix = f'{data_dir}{fname}{fsuff}'
-
-                data = np.array(loadFitnessHistory(filename_prefix + 'reslog.' + data_ext, column=(1, -1)))
-                total_lengths.append(len(data))
-                data = np.ma.masked_invalid(data).min(axis=1)
-                data = np.minimum.accumulate(data)
-                total_data.append(data)
-
-            bests.append(np.array([dat[-1] for dat in total_data]))
-            lengths.append(total_lengths)
-
-        if surrogate_name == 'Kriging':
-            labels = uses
-        elif surrogate_name == 'NoSurrogate':
-            labels = uses[:1]
-        else:
-            labels = uses[:3]
-
-        plt.subplot(211)
-        plt.title("Fitness values")
-        plt.boxplot(bests, labels=labels)
-        plt.yscale('log')
-
-        plt.subplot(212)
-        plt.title("Time to convergence")
-        plt.boxplot(lengths, labels=labels)
-
-        plt.tight_layout()
-        fsuff = suffix.format(size=training_size, rep='')
-        plot_folder = f'{fit_func_name}-{surrogate_name}-'
-        plot_name_prefix = f'{plot_dir}{plot_folder}{fsuff}'
-        guaranteeFolderExists(f'{plot_dir}')
-        plt.savefig(plot_name_prefix + 'reslog-boxplot.' + plot_ext)
-        plt.close()
-
 
 
 def getdata():
@@ -372,7 +96,6 @@ def getdata():
     fit_func_names = fit_funcs.keys()
     experiments = product(fit_func_names, surrogates, uses, range(experiment_repetitions), gen_intervals, lambda_pres)
 
-    Index = namedtuple('Index', ['fitfunc', 'surrogate', 'usage', 'repetition', 'genint', 'lambda_pre'])
     data = {}
 
     for fit_func_name, surrogate_name, use, rep, gen_int, lambda_pre_mul in experiments:
@@ -389,6 +112,7 @@ def getdata():
         fsuff = suffix.format(size=lambda_pre, rep=rep, gen=gen_int)
         filename_prefix = f'{base_dir}data/{fname}{fsuff}'
 
+        #TODO: better determine optimal values for each function
         try:
             data[idx] = np.array(loadFitnessHistory(filename_prefix + 'reslog.' + data_ext, column=(1, -1)))
             if fit_func_name == 'borehole':
@@ -444,10 +168,8 @@ def getplottingvalues(total_data, min_perc=25, max_perc=75):
     new_data = np.stack(new_data)
 
     # Workaround to prevent negative values
-
     true_min = np.min(new_data)
     if true_min <= 0:
-        # print(true_min)
         positive = new_data > 0
         try:
             min_pos = np.min(new_data[positive])
@@ -469,11 +191,9 @@ def compare_by_genint(data):
      runs for various uses of each surrogate"""
 
     fit_func_names = fit_funcs.keys()
-    Index = namedtuple('Index', ['fitfunc', 'surrogate', 'usage', 'repetition', 'genint', 'lambda_pre'])
     np.set_printoptions(precision=3, linewidth=2000)
 
     for fit_func_name, surrogate_name, use in product(fit_func_names, surrogates, uses):
-
         if surrogate_name == 'NoSurrogate' and use is not 'reg':
             continue
         elif use == 'EGO-reg' and surrogate_name not in ['Kriging', 'RandomForest']:
@@ -526,7 +246,6 @@ def compare_by_use(data):
      runs for various uses of each surrogate"""
 
     fit_func_names = fit_funcs.keys()
-    Index = namedtuple('Index', ['fitfunc', 'surrogate', 'usage', 'repetition', 'genint', 'lambda_pre'])
     np.set_printoptions(precision=3, linewidth=2000)
 
     for fit_func_name, gen_int_ in product(fit_func_names, gen_intervals):
@@ -586,7 +305,6 @@ def compare_by_surrogate(data):
      runs for various uses of each surrogate"""
 
     fit_func_names = fit_funcs.keys()
-    Index = namedtuple('Index', ['fitfunc', 'surrogate', 'usage', 'repetition', 'genint', 'lambda_pre'])
     np.set_printoptions(precision=3, linewidth=2000)
 
     for fit_func_name, use, gen_int_ in product(fit_func_names, uses, gen_intervals):
@@ -636,12 +354,12 @@ def compare_by_surrogate(data):
     print("all plotted")
 
 
-def make2dvisualizations(function, l_bound, u_bound, name, num_intervals=100):
+def make2dvisualizations(func, l_bound, u_bound, name, num_intervals=100):
     from mpl_toolkits.mplot3d import Axes3D
     from matplotlib import cm
     from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
-    function = np.vectorize(function)
+    func = np.vectorize(func)
     fig = plt.figure()
     ax = fig.gca(projection='3d')
 
@@ -652,12 +370,10 @@ def make2dvisualizations(function, l_bound, u_bound, name, num_intervals=100):
     X = np.arange(x_min, x_max, (x_max-x_min)/num_intervals)
     Y = np.arange(y_min, y_max, (y_max-y_min)/num_intervals)
     X, Y = np.meshgrid(X, Y)
-
-    Z = function(X, Y)
+    Z = func(X, Y)
 
     # Plot the surface.
-    surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,
-                           linewidth=0, antialiased=False)
+    surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0, antialiased=False)
     ax.view_init(azim=45)
     ax.set_title(f'{name}')
 
