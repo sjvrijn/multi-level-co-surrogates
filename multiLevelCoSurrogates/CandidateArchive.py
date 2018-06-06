@@ -1,12 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
 
-
-'''
+"""
 CandidateArchive.py: Class to store candidate solutions in an optimization process with their respective
                      (multi-fidelity) fitness values
-'''
+"""
 
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
