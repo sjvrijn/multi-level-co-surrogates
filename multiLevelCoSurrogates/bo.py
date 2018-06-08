@@ -19,9 +19,22 @@ from bayes_opt import BayesianOptimization
 
 
 
-boha = fit_funcs['bohachevsky']
-bounds = {'x': (boha.l_bound[0]//20, boha.u_bound[0]//20),
-          'y': (boha.l_bound[1]//20, boha.u_bound[1]//20)}
+class CoSurrogate:
+
+    def __init__(self, surr_low, surr_diff, rho):
+        self.surr_low = surr_low
+        self.surr_diff = surr_diff
+        self.rho = rho
+
+    def predict(self, X, return_std=False):
+
+        scaled_low = self.rho*self.surr_low.predict(X, return_std=return_std)
+        diff = self.surr_diff.predict(X, return_std=return_std)
+
+        return scaled_low + diff
+
+
+
 
 
 
@@ -41,6 +54,9 @@ def plotstuff(fit_func, bo, count):
     ]
     plotsurfaces(funcs, titles, (2, 2))
 
+boha = fit_funcs['bohachevsky']
+bounds = {'x': (boha.l_bound[0]//20, boha.u_bound[0]//20),
+          'y': (boha.l_bound[1]//20, boha.u_bound[1]//20)}
 
 
 def boexample(num_init_points=5, num_iters=25):
