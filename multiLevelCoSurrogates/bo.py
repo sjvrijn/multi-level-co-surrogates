@@ -8,29 +8,20 @@ New attempt at using Bayesian optimization using the standard 'bayesian-optimiza
 import numpy as np
 from functools import partial
 
-from multiLevelCoSurrogates.Surrogates import Surrogate, CoSurrogate
-from multiLevelCoSurrogates.config import data_dir, folder_name, suffix, data_ext, fit_funcs, fit_func_dims
-from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
-from multiLevelCoSurrogates.__main__ import createScaledLHS
+from multiLevelCoSurrogates.config import fit_funcs, fit_func_dims
 from multiLevelCoSurrogates.Utils import plotsurfaces
-
-
-boha = fit_funcs['bohachevsky']
-bounds = {'x': (boha.l_bound[0]//20, boha.u_bound[0]//20),
-          'y': (boha.l_bound[1]//20, boha.u_bound[1]//20)}
-
-def fit_func(x, y):
-    return -boha.high([x, y])
-
-
-num_init_points = 5
-num_iters = 15
-num_next_iters = 5
 
 
 import sys
 sys.path.append("./")
 from bayes_opt import BayesianOptimization
+
+
+
+
+boha = fit_funcs['bohachevsky']
+bounds = {'x': (boha.l_bound[0]//20, boha.u_bound[0]//20),
+          'y': (boha.l_bound[1]//20, boha.u_bound[1]//20)}
 
 
 
@@ -52,51 +43,30 @@ def plotstuff(fit_func, bo, count):
 
 
 
+def boexample(num_init_points=5, num_iters=25):
+
+    def fit_func(x, y):
+        return -boha.high([x, y])
+
+    bo = BayesianOptimization(fit_func, bounds)
+    bo.explore({'x': [-1, 3], 'y': [-2, 2]}, eager=True)
+    bo.maximize(init_points=0, n_iter=0, kappa=2)
+
+    for count in range(1, num_init_points+1):
+        bo.explore_random(1, eager=True)
+        bo.gp.fit(bo.space.X, bo.space.Y)
+        plotstuff(fit_func, bo, count)
+
+    for count in range(num_init_points, num_init_points+num_iters+1):
+        bo.maximize(init_points=0, n_iter=1, kappa=2)
+        plotstuff(fit_func, bo, count)
+
+    # Finally, we take a look at the final results.
+    print(bo.res['max'])
+    print(bo.res['all'])
 
 
-bo = BayesianOptimization(fit_func, bounds)
 
-bo.explore({'x': [-1, 3], 'y': [-2, 2]}, eager=True)
-bo.maximize(init_points=0, n_iter=0, kappa=2, acq='ei')
-
-
-# bo.initialize(
-#     {
-#         'target': [-1, -1],
-#         'x': [1, 1],
-#         'y': [0, 2]
-#     }
-# )
-
-
-count = 0
-
-for i in range(num_init_points):
-    point = bo.space.random_points(1)[0]
-    bo.explore({'x': [point[0]], 'y': [point[1]]}, eager=True)
-    bo.gp.fit(bo.space.X, bo.space.Y)
-    plotstuff(fit_func, bo, count)
-    count += 1
-
-for i in range(num_iters):
-    bo.maximize(init_points=0, n_iter=1, kappa=2, acq='ei')
-    plotstuff(fit_func, bo, count)
-    count += 1
-
-
-# The output values can be accessed with self.res
-print(bo.res['max'])
-
-# Making changes to the gaussian process can impact the algorithm dramatically.
-gp_params = {'kernel': None,
-             'alpha': 1e-5}
-
-# Run it again with different acquisition function
-for i in range(num_iters):
-    bo.maximize(n_iter=1, acq='ei', **gp_params)
-    plotstuff(fit_func, bo, count)
-    count += 1
-
-# Finally, we take a look at the final results.
-print(bo.res['max'])
-print(bo.res['all'])
+if __name__ == "__main__":
+    np.set_printoptions(linewidth=200)
+    boexample()
