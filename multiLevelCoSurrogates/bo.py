@@ -83,6 +83,46 @@ def boexample(num_init_points=5, num_iters=25):
 
 
 
+# ------------------------------------------------------------------------------
+
+class BiFidBayesianOptimization:
+
+    def __init__(self, bayes_low, bayes_high, f_low, f_high, cand_arch):
+        self.bayes_low = bayes_low
+        self.bayes_high = bayes_high
+        self.f_low = f_low
+        self.f_high = f_high
+        self.cand_arch = cand_arch
+
+        self.bayes_diff = BayesianOptimization(lambda x: None, bounds)
+        self.rho = 1
+
+
+    def train_diff(self):
+        pass
+
+
+    def determine_rho(self):
+        pass
+
+
+    def predict_hierarchical(self, X, return_std=False, y_low=None):
+        if y_low is None:
+            y_low = self.bayes_low.predict(X, return_std=return_std)
+
+        return self.rho*y_low + self.bayes_diff.gp.predict(X, return_std=return_std)
+
+
+
+
+
+
+
+
+
+
+
+
 def bifid_boexample(num_init_points=5, num_iters=25):
 
     def fit_func_high(x, y):
