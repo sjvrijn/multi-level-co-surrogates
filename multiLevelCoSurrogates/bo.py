@@ -99,7 +99,13 @@ class BiFidBayesianOptimization:
 
 
     def train_diff(self):
-        pass
+        if self.cand_arch.num_fidelities != 2:
+            raise ValueError('Cannot work with anything other than 2 fidelities for now. Sorry :)')
+
+        candidates, fitnesses = self.cand_arch.getcandidates(n=0, fidelity=['high', 'low'])
+        diffs = fitnesses[:,0] - fitnesses[:,1]
+
+        self.bayes_diff.gp.fit(candidates, diffs)
 
 
     def determine_rho(self):
