@@ -27,7 +27,7 @@ def get_min_and_scale(values):
 
 
 def normalize(values, *, min_vals=None, scale=None, target_range=(0.25, 0.75)):
-    """Normalize the given values to target range (default: [0,1])"""
+    """Normalize the given values to target range (default: [0.25, 0.75])"""
 
     if (min_vals is not None) is not (scale is not None):  # x-or: if just one of them is None
         raise Exception("If specified, both 'min_vals' and 'scale' must be given.")
@@ -47,7 +47,7 @@ def normalize(values, *, min_vals=None, scale=None, target_range=(0.25, 0.75)):
 
 
 def denormalize(values, min_vals, scale, *, target_range=(0.25, 0.75)):
-    """Denormalize the given normalized values, default assumed normalization target is [0,1]"""
+    """Denormalize the given normalized values, default assumed normalization target is [0.25, 0.75]"""
 
     t_min, t_max = target_range
 
