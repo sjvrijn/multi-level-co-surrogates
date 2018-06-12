@@ -14,7 +14,6 @@ import numpy as np
 from warnings import warn
 
 
-#TODO: add support for automatic difference columns
 class CandidateArchive:
 
     def __init__(self, ndim, fidelities=None):
@@ -44,7 +43,6 @@ class CandidateArchive:
             raise ValueError('must specify fidelity level in multi-fidelity case')
 
         if type(fidelity) in [tuple, list]:
-            # TODO: Implement case for adding multiple fitnesses at the same time
             raise NotImplementedError
 
         if self.num_fidelities == 1:
