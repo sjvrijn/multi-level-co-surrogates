@@ -3,6 +3,7 @@
 
 from collections import namedtuple
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
@@ -34,7 +35,7 @@ def plotsurface(func, title=''):
     plt.show()
 
 
-def plotsurfaces(funcs, titles=None, shape=None):
+def plotsurfaces(funcs, titles=None, shape=None, figratio=(2,3)):
     if titles is None:
         titles = ['']*len(funcs)
 
@@ -46,7 +47,7 @@ def plotsurfaces(funcs, titles=None, shape=None):
         shape = (1, len(funcs))
 
 
-    fig, axes = plt.subplots(*shape, figsize=plt.figaspect(shape[0]/shape[1]), subplot_kw={'projection': '3d'})
+    fig, axes = plt.subplots(*shape, figsize=(shape[0]*figratio[0], shape[1]*figratio[1]), subplot_kw={'projection': '3d'})
 
     for ax, func, title in zip(axes.flatten(), funcs, titles):
         surface = plotfunctiononaxis(ax, func, title)
