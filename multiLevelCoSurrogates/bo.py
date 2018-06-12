@@ -7,9 +7,13 @@ New attempt at using Bayesian optimization using the standard 'bayesian-optimiza
 
 import numpy as np
 from functools import partial
+from pyDOE import lhs
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import MinMaxScaler
+from random import choice
 
 from multiLevelCoSurrogates.config import fit_funcs, fit_func_dims
+from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
 from multiLevelCoSurrogates.Utils import plotsurfaces
 
 
@@ -121,7 +125,7 @@ class BiFidBayesianOptimization:
 
 
 
-def bifid_boexample(num_init_points=5, num_iters=25):
+def bifid_boexample():
 
     def fit_func_high(x, y):
         return -boha.high([x, y])
@@ -129,22 +133,30 @@ def bifid_boexample(num_init_points=5, num_iters=25):
     def fit_func_low(x, y):
         return -boha.high([x, y])
 
+    ndim = 2
+    num_low_samples = 25
+    num_high_samples = 5
+    scaler = MinMaxScaler(feature_range=(-5, 5))
+
+
     bo_low = BayesianOptimization(fit_func_low, bounds)
-    bo_low.explore({'x': [-1, 3], 'y': [-2, 2]}, eager=True)
-    bo_low.maximize(init_points=0, n_iter=0, kappa=2)
+    bo_high = BayesianOptimization(fit_func_high, bounds)
+    archive = CandidateArchive(ndim, fidelities=['high', 'low'])
 
-    for count in range(1, num_init_points+1):
-        bo_low.explore_random(1, eager=True)
-        bo_low.gp.fit(bo_low.space.X, bo_low.space.Y)
-        plotstuff(fit_func_low, bo_low, count)
+    low_sample = scaler.inverse_transform(lhs(ndim, num_low_samples))
+    high_sample = choice(low_sample, size=num_high_samples, replace=False)
 
-    for count in range(num_init_points, num_init_points+num_iters+1):
-        bo_low.maximize(init_points=0, n_iter=1, kappa=2)
-        plotstuff(fit_func_low, bo_low, count)
+    low_out = [[fit_func_low(*sample)] for sample in low_sample]
+    high_out = [[fit_func_high(*sample)] for sample in high_sample]
 
-    # Finally, we take a look at the final results.
-    print(bo_low.res['max'])
-    print(bo_low.res['all'])
+    for sample, result in zip(low_sample, low_out):
+        archive.addcandidate(sample, result, fidelity='low')
+    for sample, result in zip(high_sample, high_out):
+        archive.addcandidate(sample, result, fidelity='high')
+
+    bifidbo = BiFidBayesianOptimization(bayes_low=bo_low, bayes_high=bo_high,
+                                        f_low=fit_func_low, f_high=fit_func_high,
+                                        cand_arch=archive)
 
 
 
