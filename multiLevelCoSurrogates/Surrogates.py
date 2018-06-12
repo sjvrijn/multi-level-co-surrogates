@@ -15,14 +15,15 @@ from sklearn.linear_model import LinearRegression
 from sklearn.svm import SVR
 from scipy.interpolate import Rbf
 
-from multiLevelCoSurrogates.Utils import get_min_and_scale, normalize, denormalize
+from multiLevelCoSurrogates.Utils import ValueRange, determinerange, linearscaletransform
 
 
 class Surrogate:
     """A generic interface to allow interchangeable use of various models such as RBF, SVM and Kriging"""
     provides_std = False
 
-    def __init__(self, candidate_archive, n, *, fidelity=None, normalized=True, normalize_target=(0.25, 0.75)):
+    def __init__(self, candidate_archive, n, *,
+                 fidelity=None, normalized=True, normalize_target=ValueRange(0.25, 0.75)):
         X, y = candidate_archive.getcandidates(n=n, fidelity=fidelity)
 
         self._surr = None
@@ -30,10 +31,10 @@ class Surrogate:
         self.normalized = normalized
         if normalized:
             self.normalize_target = normalize_target
-            self.Xmins, self.Xscales = get_min_and_scale(X)
-            self.ymin, self.yscale = get_min_and_scale(y)
-            X = normalize(X, target_range=normalize_target)
-            y = normalize(y, target_range=normalize_target)
+            self.Xrange = determinerange(X)
+            self.yrange = determinerange(y)
+            X = linearscaletransform(X, range_in=self.Xrange, range_out=normalize_target)
+            y = linearscaletransform(y, range_in=self.yrange, range_out=normalize_target)
 
         self.X = X
         self.y = y
@@ -52,13 +53,12 @@ class Surrogate:
             raise ValueError(f"Invalid prediction mode '{mode}'. Supported are: 'value', 'std'")
 
         if self.normalized:
-            X = normalize(X, min_vals=self.Xmins, scale=self.Xscales, target_range=self.normalize_target)
+            X = linearscaletransform(X, range_in=self.Xrange, range_out=self.normalize_target)
 
         prediction = predictor(X)
 
         if self.normalized and mode == 'value':
-            prediction = denormalize(prediction, min_vals=self.ymin, scale=self.yscale,
-                                     target_range=self.normalize_target)
+            prediction = linearscaletransform(prediction, range_in=self.normalize_target, range_out=self.yrange)
 
         return prediction
 

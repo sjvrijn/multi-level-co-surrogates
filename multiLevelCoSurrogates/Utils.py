@@ -10,51 +10,6 @@ import numpy as np
 from warnings import warn
 
 
-
-def get_min_and_scale(values):
-    """Determine the minimum value and scale (max - min) in each dimension"""
-    warn(DeprecationWarning('will be deprecated'))
-    min_vals = np.min(values, axis=0)
-    max_vals = np.max(values, axis=0)
-
-    scale = max_vals - min_vals
-
-    return min_vals, scale
-
-
-def normalize(values, *, min_vals=None, scale=None, target_range=(0.25, 0.75)):
-    """Normalize the given values to target range (default: [0.25, 0.75])"""
-    warn(DeprecationWarning('will be deprecated'))
-
-    if (min_vals is not None) is not (scale is not None):  # x-or: if just one of them is None
-        raise Exception("If specified, both 'min_vals' and 'scale' must be given.")
-    elif min_vals is None and scale is None:
-        min_vals, scale = get_min_and_scale(values)
-
-    if any(scale == 0):  # Hardcoded error prevention TODO: find better solution?!?
-        scale[scale == 0] = 1
-        # raise ValueError(f'Scale cannot be 0: {scale}')
-
-    t_min, t_max = target_range
-
-    normalized_values = (values - min_vals) / scale                    # Normalize to [0,1]
-    normalized_values = (normalized_values * (t_max - t_min)) + t_min  # Scale to [t_min, t_max]
-
-    return normalized_values
-
-
-def denormalize(values, min_vals, scale, *, target_range=(0.25, 0.75)):
-    """Denormalize the given normalized values, default assumed normalization target is [0.25, 0.75]"""
-    warn(DeprecationWarning('will be deprecated'))
-
-    t_min, t_max = target_range
-
-    denormalized_values = (values - t_min) / (t_max - t_min)         # Reverse [t_min, t_max] to [0,1] scale
-    denormalized_values = (denormalized_values * scale) + min_vals   # Denormalize to original range
-
-    return denormalized_values
-
-
 # ------------------------------------------------------------------------------
 
 ValueRange = namedtuple('ValueRange', ['min', 'max'])
