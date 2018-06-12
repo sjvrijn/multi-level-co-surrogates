@@ -7,6 +7,7 @@ New attempt at using Bayesian optimization using the standard 'bayesian-optimiza
 
 import numpy as np
 from functools import partial
+from sklearn.linear_model import LinearRegression
 
 from multiLevelCoSurrogates.config import fit_funcs, fit_func_dims
 from multiLevelCoSurrogates.Utils import plotsurfaces
@@ -15,25 +16,6 @@ from multiLevelCoSurrogates.Utils import plotsurfaces
 import sys
 sys.path.append("./")
 from bayes_opt import BayesianOptimization
-
-
-
-
-class CoSurrogate:
-
-    def __init__(self, surr_low, surr_diff, rho):
-        self.surr_low = surr_low
-        self.surr_diff = surr_diff
-        self.rho = rho
-
-    def predict(self, X, return_std=False):
-
-        scaled_low = self.rho*self.surr_low.predict(X, return_std=return_std)
-        diff = self.surr_diff.predict(X, return_std=return_std)
-
-        return scaled_low + diff
-
-
 
 
 
@@ -95,7 +77,10 @@ class BiFidBayesianOptimization:
         self.cand_arch = cand_arch
 
         self.bayes_diff = BayesianOptimization(lambda x: None, bounds)
-        self.rho = 1
+
+        candidates, fitnesses = self.cand_arch.getcandidates(n=0, fidelity=['high', 'low'])
+        y_high, y_low = fitnesses[:,0], fitnesses[:,1]
+        self.rho = self.determine_rho(y_high, y_low)
 
 
     def train_diff(self):
@@ -103,20 +88,27 @@ class BiFidBayesianOptimization:
             raise ValueError('Cannot work with anything other than 2 fidelities for now. Sorry :)')
 
         candidates, fitnesses = self.cand_arch.getcandidates(n=0, fidelity=['high', 'low'])
-        diffs = fitnesses[:,0] - fitnesses[:,1]
+        y_high, y_low = fitnesses[:,0], fitnesses[:,1]
 
+        self.determine_rho(y_high, y_low)
+
+        diffs = y_high - y_low
         self.bayes_diff.gp.fit(candidates, diffs)
 
 
-    def determine_rho(self):
-        pass
+    @staticmethod
+    def determine_rho(y_high, y_low):
+
+        regr = LinearRegression()
+        regr.fit(y_low.reshape(-1, 1), y_high.reshape(-1, 1))
+        return regr.coef_.flatten()[0]
 
 
     def predict_hierarchical(self, X, return_std=False, y_low=None):
         if y_low is None:
-            y_low = self.bayes_low.predict(X, return_std=return_std)
+            y_low = self.rho * self.bayes_low.predict(X, return_std=return_std)
 
-        return self.rho*y_low + self.bayes_diff.gp.predict(X, return_std=return_std)
+        return y_low + self.bayes_diff.gp.predict(X, return_std=return_std)
 
 
 
