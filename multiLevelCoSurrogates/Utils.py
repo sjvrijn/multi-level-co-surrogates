@@ -7,10 +7,84 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
+from warnings import warn
 
+
+
+def get_min_and_scale(values):
+    """Determine the minimum value and scale (max - min) in each dimension"""
+    warn(DeprecationWarning('will be deprecated'))
+    min_vals = np.min(values, axis=0)
+    max_vals = np.max(values, axis=0)
+
+    scale = max_vals - min_vals
+
+    return min_vals, scale
+
+
+def normalize(values, *, min_vals=None, scale=None, target_range=(0.25, 0.75)):
+    """Normalize the given values to target range (default: [0.25, 0.75])"""
+    warn(DeprecationWarning('will be deprecated'))
+
+    if (min_vals is not None) is not (scale is not None):  # x-or: if just one of them is None
+        raise Exception("If specified, both 'min_vals' and 'scale' must be given.")
+    elif min_vals is None and scale is None:
+        min_vals, scale = get_min_and_scale(values)
+
+    if any(scale == 0):  # Hardcoded error prevention TODO: find better solution?!?
+        scale[scale == 0] = 1
+        # raise ValueError(f'Scale cannot be 0: {scale}')
+
+    t_min, t_max = target_range
+
+    normalized_values = (values - min_vals) / scale                    # Normalize to [0,1]
+    normalized_values = (normalized_values * (t_max - t_min)) + t_min  # Scale to [t_min, t_max]
+
+    return normalized_values
+
+
+def denormalize(values, min_vals, scale, *, target_range=(0.25, 0.75)):
+    """Denormalize the given normalized values, default assumed normalization target is [0.25, 0.75]"""
+    warn(DeprecationWarning('will be deprecated'))
+
+    t_min, t_max = target_range
+
+    denormalized_values = (values - t_min) / (t_max - t_min)         # Reverse [t_min, t_max] to [0,1] scale
+    denormalized_values = (denormalized_values * scale) + min_vals   # Denormalize to original range
+
+    return denormalized_values
+
+
+# ------------------------------------------------------------------------------
+
+ValueRange = namedtuple('ValueRange', ['min', 'max'])
+
+def determinerange(values):
+    """Determine the range of values in each dimension"""
+    return ValueRange(np.min(values, axis=0), np.max(values, axis=0))
+
+
+def linearscaletransform(values, *, range_in=None, range_out=ValueRange(0, 1)):
+    """Perform a scale transformation of `values`: [range_in] --> [range_out]"""
+
+    if range_in is None:
+        range_in = determinerange(values)
+    elif not isinstance(range_in, ValueRange):
+        range_in = ValueRange(*range_in)
+
+    if not isinstance(range_out, ValueRange):
+        range_out = ValueRange(*range_out)
+
+    scale = range_out.max - range_out.min
+    scaled_values = (values - range_in.min) / (range_in.max - range_in.min)
+    scaled_values = (scaled_values * scale) + range_out[0]
+
+    return scaled_values
+
+
+# ------------------------------------------------------------------------------
 
 Surface = namedtuple('Surface', ['X', 'Y', 'Z'])
-
 
 def createsurface(l_bound, u_bound, step, func):
     X = np.arange(l_bound[0], u_bound[0], step[0])
