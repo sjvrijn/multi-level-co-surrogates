@@ -10,11 +10,10 @@ from functools import partial
 from pyDOE import lhs
 from pprint import pprint
 from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import MinMaxScaler
 
 from multiLevelCoSurrogates.config import fit_funcs, fit_func_dims
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
-from multiLevelCoSurrogates.Utils import plotsurfaces
+from multiLevelCoSurrogates.Utils import plotsurfaces, ValueRange, linearscaletransform
 
 
 import sys
@@ -189,7 +188,8 @@ def bifid_boexample():
     ndim = 2
     num_low_samples = 25
     num_high_samples = 5
-    # scaler = MinMaxScaler().fit([[-5,-5], [5,5]])
+    range_in = ValueRange(-5, 5)
+    range_lhs = ValueRange(0, 1)
 
 
     bo_low = BayesianOptimization(fit_func_low, bounds)
@@ -197,7 +197,8 @@ def bifid_boexample():
     archive = CandidateArchive(ndim, fidelities=['high', 'low'])
 
     low_sample = lhs(ndim, num_low_samples)
-    # low_sample = scaler.inverse_transform(low_sample)
+    low_sample = linearscaletransform(low_sample, range_in=range_lhs, range_out=range_in)
+
     high_sample = low_sample[np.random.choice(low_sample.shape[0], size=num_high_samples, replace=False), :]
 
     low_out = np.array([[fit_func_low(*x)] for x in low_sample])
