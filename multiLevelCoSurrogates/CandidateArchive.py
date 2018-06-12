@@ -89,8 +89,9 @@ class CandidateArchive:
             for idx in indices:
                 if np.isnan(fits[idx]):
                     break
-            candidates.append(list(candidate))
-            fitnesses.append([fits[idx] for idx in indices])
+            else:
+                candidates.append(list(candidate))
+                fitnesses.append([fits[idx] for idx in indices])
 
         candidates = np.array(candidates)
         fitnesses = np.array(fitnesses)
