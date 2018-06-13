@@ -13,7 +13,7 @@ from sklearn.linear_model import LinearRegression
 
 from multiLevelCoSurrogates.config import fit_funcs, fit_func_dims
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
-from multiLevelCoSurrogates.Utils import plotsurfaces, ValueRange, linearscaletransform
+from multiLevelCoSurrogates.Utils import createsurface, plotsurfaces, ValueRange, linearscaletransform
 
 
 import sys
@@ -40,23 +40,26 @@ def plotstuff(fit_func, bo, count):
     plotsurfaces(funcs, titles, (2, 2))
 
 
-def plotmorestuff(fit_func_high, fit_func_low, bifidbo, count):
+def gpplot(x, func, return_std=False):
+    idx = 1 if return_std else 0
+    return func(x, return_std=return_std)[idx]
+
+
+def plotmorestuff(surfaces, bifidbo, count):
     funcs = [
-        lambda x: fit_func_high(*x[0]),
-        lambda x: fit_func_low(*x[0]),
-        lambda x: fit_func_high(*x[0]) - fit_func_low(*x[0]),
+        *surfaces,
 
         partial(bifidbo.bo_high.util.utility, gp=bifidbo.bo_high.gp, y_max=bifidbo.bo_high.space.Y.max()),
-        lambda x: bifidbo.bo_high.gp.predict(x)[0],
-        lambda x: bifidbo.bo_high.gp.predict(x, return_std=True)[1],
+        partial(gpplot, func=bifidbo.bo_high.gp.predict),
+        partial(gpplot, func=bifidbo.bo_high.gp.predict, return_std=True),
 
         partial(bifidbo.bo_low.util.utility, gp=bifidbo.bo_low.gp, y_max=bifidbo.bo_low.space.Y.max()),
-        lambda x: bifidbo.bo_low.gp.predict(x)[0],
-        lambda x: bifidbo.bo_low.gp.predict(x, return_std=True)[1],
+        partial(gpplot, func=bifidbo.bo_low.gp.predict),
+        partial(gpplot, func=bifidbo.bo_low.gp.predict, return_std=True),
 
-        lambda x: bifidbo.utility(x),
-        lambda x: bifidbo.predict_hierarchical(x),
-        lambda x: bifidbo.predict_hierarchical(x, return_std=True),
+        bifidbo.utility,
+        bifidbo.predict_hierarchical,
+        partial(bifidbo.predict_hierarchical, return_std=True),
     ]
     titles = [
         f'Function high',
@@ -108,6 +111,9 @@ def boexample(num_init_points=5, num_iters=25):
 
 # ------------------------------------------------------------------------------
 
+def emptyfit(x):
+    return None
+
 class BiFidBayesianOptimization:
 
     def __init__(self, bo_low, bo_high, f_low, f_high, cand_arch):
@@ -117,7 +123,7 @@ class BiFidBayesianOptimization:
         self.f_high = f_high
         self.cand_arch = cand_arch
 
-        self.bo_diff = BayesianOptimization(lambda x: None, bounds)
+        self.bo_diff = BayesianOptimization(emptyfit, bounds)
 
         candidates, fitnesses = self.cand_arch.getcandidates(n=0, fidelity=['high', 'low'])
         y_high, y_low = fitnesses[:,0], fitnesses[:,1]
@@ -175,15 +181,21 @@ class BiFidBayesianOptimization:
 
 
 
+def fit_func_high(x, y):
+    return -boha.high([x, y])
+
+def fit_func_low(x, y):
+    return -boha.low([x, y])
 
 
 def bifid_boexample():
 
-    def fit_func_high(x, y):
-        return -boha.high([x, y])
-
-    def fit_func_low(x, y):
-        return -boha.low([x, y])
+    funcs = [
+        lambda x: fit_func_high(*x[0]),
+        lambda x: fit_func_low(*x[0]),
+        lambda x: fit_func_high(*x[0]) - fit_func_low(*x[0])
+    ]
+    surfaces = list(map(partial(createsurface, l_bound=[-5, -5], u_bound=[5,5], step=[0.1, 0.1]), funcs))
 
     ndim = 2
     num_low_samples = 25
@@ -228,7 +240,7 @@ def bifid_boexample():
     bo_low.maximize(0,0)
     bo_high.maximize(0,0)
 
-    plotmorestuff(fit_func_high, fit_func_low, bifidbo, 0)
+    plotmorestuff(surfaces, bifidbo, 0)
 
 
 
