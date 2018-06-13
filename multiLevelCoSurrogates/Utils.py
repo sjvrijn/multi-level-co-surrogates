@@ -94,18 +94,18 @@ def plotfunctiononaxis(ax, func, title, *, l_bound=None, u_bound=None, step=None
     u_bound = [5, 5] if u_bound is None else u_bound
     step = [0.1, 0.1] if step is None else step
 
-    surf = createsurface(l_bound=l_bound, u_bound=u_bound, step=step, func=func)
+    if not isinstance(func, Surface):
+        surf = createsurface(l_bound=l_bound, u_bound=u_bound, step=step, func=func)
+    else:
+        surf = func
 
     return plotsurfaceonaxis(ax, surf, title)
 
 
 def plotsurfaceonaxis(ax, surf, title):
 
-    # Plot the surface.
     surface = ax.plot_surface(surf.X, surf.Y, surf.Z, cmap=cm.plasma,
                               linewidth=0, antialiased=True)
-    # Customize the z axis.
-    # ax.set_zlim(-1.01, 1.01)
     ax.zaxis.set_major_locator(LinearLocator(10))
     ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
     ax.set_title(title)
