@@ -13,7 +13,8 @@ from sklearn.linear_model import LinearRegression
 
 from multiLevelCoSurrogates.config import fit_funcs, fit_func_dims
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
-from multiLevelCoSurrogates.Utils import createsurface, plotsurfaces, ValueRange, linearscaletransform
+from multiLevelCoSurrogates.Utils import createsurface, diffsurface, plotsurfaces, Surface, \
+    ValueRange, linearscaletransform
 
 
 import sys
@@ -193,9 +194,9 @@ def bifid_boexample():
     funcs = [
         lambda x: fit_func_high(*x[0]),
         lambda x: fit_func_low(*x[0]),
-        lambda x: fit_func_high(*x[0]) - fit_func_low(*x[0])
     ]
-    surfaces = list(map(partial(createsurface, l_bound=[-5, -5], u_bound=[5,5], step=[0.1, 0.1]), funcs))
+    surfaces = list(map(createsurface, funcs))
+    surfaces.append(diffsurface(surfaces[0], surfaces[1]))
 
     ndim = 2
     num_low_samples = 25
