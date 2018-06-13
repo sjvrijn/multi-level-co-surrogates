@@ -2,6 +2,7 @@
 
 
 from collections import namedtuple
+from multiprocessing import cpu_count, Pool
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
@@ -41,7 +42,14 @@ def linearscaletransform(values, *, range_in=None, range_out=ValueRange(0, 1)):
 
 Surface = namedtuple('Surface', ['X', 'Y', 'Z'])
 
-def createsurface(l_bound, u_bound, step, func):
+def createsurface(func, l_bound=None, u_bound=None, step=None):
+    if isinstance(func, Surface):
+        return func
+
+    l_bound = [-5, -5] if l_bound is None else l_bound
+    u_bound = [5, 5] if u_bound is None else u_bound
+    step = [0.1, 0.1] if step is None else step
+
     X = np.arange(l_bound[0], u_bound[0], step[0])
     Y = np.arange(l_bound[1], u_bound[1], step[1])
     X, Y = np.meshgrid(X, Y)
@@ -56,7 +64,8 @@ def plotsurface(func, title=''):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
 
-    surface = plotfunctiononaxis(ax, func, title)
+    surf = createsurface(func)
+    surface = plotsurfaceonaxis(ax, surf, title)
 
     # Add a color bar which maps values to colors.
     fig.colorbar(surface, shrink=0.5, aspect=5)
@@ -78,28 +87,14 @@ def plotsurfaces(funcs, titles=None, shape=None, figratio=(2,3)):
 
     fig, axes = plt.subplots(*shape, figsize=(shape[0]*figratio[0], shape[1]*figratio[1]), subplot_kw={'projection': '3d'})
 
-    for ax, func, title in zip(axes.flatten(), funcs, titles):
-        surface = plotfunctiononaxis(ax, func, title)
+    with Pool(cpu_count()) as p:
+        surfaces = p.map(createsurface, funcs)
 
-        # Add a color bar which maps values to colors.
+    for ax, surface, title in zip(axes.flatten(), surfaces, titles):
+        plotsurfaceonaxis(ax, surface, title)
         # fig.colorbar(surface, shrink=0.5, aspect=5)
 
     plt.show()
-
-
-
-def plotfunctiononaxis(ax, func, title, *, l_bound=None, u_bound=None, step=None):
-
-    l_bound = [-5, -5] if l_bound is None else l_bound
-    u_bound = [5, 5] if u_bound is None else u_bound
-    step = [0.1, 0.1] if step is None else step
-
-    if not isinstance(func, Surface):
-        surf = createsurface(l_bound=l_bound, u_bound=u_bound, step=step, func=func)
-    else:
-        surf = func
-
-    return plotsurfaceonaxis(ax, surf, title)
 
 
 def plotsurfaceonaxis(ax, surf, title):
