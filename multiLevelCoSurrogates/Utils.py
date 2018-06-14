@@ -77,7 +77,7 @@ def plotsurface(func, title=''):
     plt.show()
 
 
-def plotsurfaces(funcs, titles=None, shape=None, figratio=(2,3)):
+def plotsurfaces(funcs, titles=None, shape=None, figratio=(2,3), save_as=None):
     if titles is None:
         titles = ['']*len(funcs)
 
@@ -98,6 +98,9 @@ def plotsurfaces(funcs, titles=None, shape=None, figratio=(2,3)):
         plotsurfaceonaxis(ax, surface, title)
         # fig.colorbar(surface, shrink=0.5, aspect=5)
 
+    plt.tight_layout()
+    if save_as is not None:
+        plt.savefig(save_as)
     plt.show()
 
 
