@@ -43,7 +43,7 @@ def linearscaletransform(values, *, range_in=None, range_out=ValueRange(0, 1)):
 Surface = namedtuple('Surface', ['X', 'Y', 'Z'])
 
 def diffsurface(a, b):
-    return Surface(a.X, a.B, a.Z - b.Z)
+    return Surface(a.X, a.Y, a.Z - b.Z)
 
 
 def createsurface(func, l_bound=None, u_bound=None, step=None):
