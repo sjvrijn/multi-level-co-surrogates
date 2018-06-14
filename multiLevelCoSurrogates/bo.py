@@ -12,6 +12,7 @@ from pprint import pprint
 from sklearn.linear_model import LinearRegression
 
 from multiLevelCoSurrogates.config import fit_funcs, fit_func_dims
+from multiLevelCoSurrogates.local import base_dir
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
 from multiLevelCoSurrogates.Utils import createsurface, diffsurface, plotsurfaces, Surface, \
     ValueRange, linearscaletransform
@@ -19,7 +20,7 @@ from multiLevelCoSurrogates.Utils import createsurface, diffsurface, plotsurface
 
 import sys
 sys.path.append("./")
-from bayes_opt import BayesianOptimization
+from bayes_opt import BayesianOptimization, helpers
 
 
 
@@ -59,8 +60,8 @@ def plotmorestuff(surfaces, bifidbo, count):
         partial(gpplot, func=bifidbo.bo_low.gp.predict, return_std=True),
 
         bifidbo.utility,
-        bifidbo.predict_hierarchical,
-        partial(bifidbo.predict_hierarchical, return_std=True),
+        bifidbo.predict,
+        partial(bifidbo.predict, return_std=True),
     ]
     titles = [
         f'Function high',
@@ -79,7 +80,7 @@ def plotmorestuff(surfaces, bifidbo, count):
         f'Hierarchical GP {count}',
         f'Hierarchical GP var {count}',
     ]
-    plotsurfaces(funcs, titles, (4, 3))
+    plotsurfaces(funcs, titles, (4, 3), save_as=f'{base_dir}plotmorestuff_{count}.png')
 
 boha = fit_funcs['bohachevsky']
 bounds = {'x': (boha.l_bound[0]//20, boha.u_bound[0]//20),
@@ -161,7 +162,7 @@ class BiFidBayesianOptimization:
         return regr.coef_.flatten()[0]
 
 
-    def predict_hierarchical(self, X, return_std=False, y_low=None):
+    def predict(self, X, return_std=False, y_low=None):
         idx = 1 if return_std else 0
 
         if y_low is None:
@@ -170,10 +171,18 @@ class BiFidBayesianOptimization:
         return y_low + self.bo_diff.gp.predict(X, return_std=return_std)[idx]
 
 
-    def utility(self, X):
+    def utility(self, X, gp=None, y_max=None):
         util_low = self.rho * self.bo_low.util.utility(X, gp=self.bo_low.gp, y_max=self.bo_low.space.Y.max())
         util_diff = self.bo_diff.util.utility(X, gp=self.bo_diff.gp, y_max=self.bo_diff.space.Y.max())
         return util_low + util_diff
+
+
+    def acq_max(self):
+        return helpers.acq_max(ac=self.utility,
+                               gp=self,
+                               y_max=self.bo_high.space.Y.max(),
+                               bounds=self.bo_diff.space.bounds,
+                               random_state=self.bo_diff.random_state)
 
 
 
@@ -188,15 +197,15 @@ def fit_func_high(x, y):
 def fit_func_low(x, y):
     return -boha.low([x, y])
 
+funcs = [
+    lambda x: fit_func_high(*x[0]),
+    lambda x: fit_func_low(*x[0]),
+]
+surfaces = list(map(createsurface, funcs))
+surfaces.append(diffsurface(surfaces[0], surfaces[1]))
+
 
 def bifid_boexample():
-
-    funcs = [
-        lambda x: fit_func_high(*x[0]),
-        lambda x: fit_func_low(*x[0]),
-    ]
-    surfaces = list(map(createsurface, funcs))
-    surfaces.append(diffsurface(surfaces[0], surfaces[1]))
 
     ndim = 2
     num_low_samples = 25
@@ -242,9 +251,30 @@ def bifid_boexample():
     bo_high.maximize(0,0)
 
     plotmorestuff(surfaces, bifidbo, 0)
+    return bifidbo
+
+
+
+def optimize(bifidbo, surfs, num_steps=25):
+
+    for count in range(1, num_steps+1):
+        argmax = bifidbo.acq_max()
+        y = fit_func_low(*argmax)
+        bifidbo.cand_arch.addcandidate(argmax, y, fidelity='low')
+        bifidbo.bo_low.explore({
+            'x': [argmax[0]],
+            'y': [argmax[1]],
+        }, eager=True)
+        bifidbo.bo_low.maximize(0, 0)
+        plotmorestuff(surfs, bifidbo, count)
+
+
+
+
 
 
 
 if __name__ == "__main__":
     np.set_printoptions(linewidth=200)
-    bifid_boexample()
+    bifidbo = bifid_boexample()
+    optimize(bifidbo, surfaces)
