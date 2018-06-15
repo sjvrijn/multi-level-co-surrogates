@@ -15,7 +15,7 @@ from multiLevelCoSurrogates.config import fit_funcs, fit_func_dims
 from multiLevelCoSurrogates.local import base_dir
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
 from multiLevelCoSurrogates.Utils import createsurface, diffsurface, plotsurfaces, Surface, \
-    ValueRange, linearscaletransform
+    ValueRange, linearscaletransform, select_subsample
 
 
 import sys
@@ -88,7 +88,8 @@ def plotmorestuff(surfaces, bifidbo, count):
         f'Hierarchical GP {count}',
         f'Hierarchical GP var {count}',
     ]
-    plotsurfaces(funcs, titles, (5, 3), save_as=f'{base_dir}plotmorestuff_{count}.png')
+    plotsurfaces(funcs, titles, (5, 3), save_as=f'{base_dir}plotmorestuff_2d_{count}.png', as_3d=False)
+    plotsurfaces(funcs, titles, (5, 3), save_as=f'{base_dir}plotmorestuff_3d_{count}.png')
 
 boha = fit_funcs['bohachevsky']
 bounds = {'x': (boha.l_bound[0]//20, boha.u_bound[0]//20),
@@ -229,7 +230,7 @@ def bifid_boexample():
     low_sample = lhs(ndim, num_low_samples)
     low_sample = linearscaletransform(low_sample, range_in=range_lhs, range_out=range_in)
 
-    high_sample = low_sample[np.random.choice(low_sample.shape[0], size=num_high_samples, replace=False), :]
+    high_sample = select_subsample(low_sample.T, num_high_samples).T
 
     low_out = np.array([[fit_func_low(*x)] for x in low_sample])
     high_out = np.array([[fit_func_high(*x)] for x in high_sample])
