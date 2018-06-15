@@ -77,7 +77,7 @@ def plotsurface(func, title=''):
     plt.show()
 
 
-def plotsurfaces(funcs, titles=None, shape=None, figratio=(2,3), save_as=None):
+def plotsurfaces(funcs, titles=None, shape=None, figratio=None, save_as=None, as_3d=True):
     if titles is None:
         titles = ['']*len(funcs)
 
@@ -88,15 +88,25 @@ def plotsurfaces(funcs, titles=None, shape=None, figratio=(2,3), save_as=None):
     else:
         shape = (1, len(funcs))
 
+    if as_3d:
+        kwargs = {'projection': '3d'}
+        plot_func = plotsurfaceonaxis
+        figratio = (2,3) if figratio is None else figratio
+    else:
+        kwargs = dict()
+        plot_func = plotcmaponaxis
+        figratio = (1.5,3) if figratio is None else figratio
 
-    fig, axes = plt.subplots(*shape, figsize=(shape[0]*figratio[0], shape[1]*figratio[1]), subplot_kw={'projection': '3d'})
+
+    fig, axes = plt.subplots(*shape, figsize=(shape[0]*figratio[0], shape[1]*figratio[1]), subplot_kw=kwargs)
 
     with Pool(cpu_count()) as p:
         surfaces = p.map(createsurface, funcs)
 
     for ax, surface, title in zip(axes.flatten(), surfaces, titles):
-        plotsurfaceonaxis(ax, surface, title)
-        # fig.colorbar(surface, shrink=0.5, aspect=5)
+        plot = plot_func(ax, surface, title)
+        if not as_3d:
+            fig.colorbar(plot, ax=ax)
 
     plt.tight_layout()
     if save_as is not None:
@@ -110,5 +120,12 @@ def plotsurfaceonaxis(ax, surf, title):
                               linewidth=0, antialiased=True)
     ax.zaxis.set_major_locator(LinearLocator(10))
     ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+    ax.set_title(title)
+    return surface
+
+
+def plotcmaponaxis(ax, surf, title):
+
+    surface = ax.pcolor(surf.X, surf.Y, surf.Z, cmap=cm.plasma)
     ax.set_title(title)
     return surface
