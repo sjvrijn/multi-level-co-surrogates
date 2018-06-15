@@ -59,6 +59,10 @@ def plotmorestuff(surfaces, bifidbo, count):
         partial(gpplot, func=bifidbo.bo_low.gp.predict),
         partial(gpplot, func=bifidbo.bo_low.gp.predict, return_std=True),
 
+        partial(bifidbo.bo_diff.util.utility, gp=bifidbo.bo_diff.gp, y_max=bifidbo.bo_diff.space.Y.max()),
+        partial(gpplot, func=bifidbo.bo_diff.gp.predict),
+        partial(gpplot, func=bifidbo.bo_diff.gp.predict, return_std=True),
+
         bifidbo.utility,
         bifidbo.predict,
         partial(bifidbo.predict, return_std=True),
@@ -76,11 +80,15 @@ def plotmorestuff(surfaces, bifidbo, count):
         f'Low GP {count}',
         f'Low GP var {count}',
 
+        f'Diff ACQ:{bifidbo.bo_diff.util.kind} {count}',
+        f'Diff GP {count}',
+        f'Diff GP var {count}',
+
         f'Hierarchical ACQ:{bifidbo.bo_diff.util.kind} {count}',
         f'Hierarchical GP {count}',
         f'Hierarchical GP var {count}',
     ]
-    plotsurfaces(funcs, titles, (4, 3), save_as=f'{base_dir}plotmorestuff_{count}.png')
+    plotsurfaces(funcs, titles, (5, 3), save_as=f'{base_dir}plotmorestuff_{count}.png')
 
 boha = fit_funcs['bohachevsky']
 bounds = {'x': (boha.l_bound[0]//20, boha.u_bound[0]//20),
