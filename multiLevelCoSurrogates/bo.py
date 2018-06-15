@@ -20,22 +20,23 @@ from multiLevelCoSurrogates.Utils import createsurface, diffsurface, plotsurface
 
 import sys
 sys.path.append("./")
-from bayes_opt import BayesianOptimization, helpers
+import bayes_opt as bo
+from bayes_opt import BayesianOptimization
 
 
 
 
 
-def plotstuff(fit_func, bo, count):
+def plotstuff(fit_func, bopt, count):
     funcs = [
         lambda x: fit_func(*x[0]),
-        partial(bo.util.utility, gp=bo.gp, y_max=bo.space.Y.max()),
-        lambda x: bo.gp.predict(x)[0],
-        lambda x: bo.gp.predict(x, return_std=True)[1],
+        partial(bopt.util.utility, gp=bopt.gp, y_max=bopt.space.Y.max()),
+        lambda x: bopt.gp.predict(x)[0],
+        lambda x: bopt.gp.predict(x, return_std=True)[1],
     ]
     titles = [
         f'Function',
-        f'ACQ:{bo.util.kind} {count}',
+        f'ACQ:{bopt.util.kind} {count}',
         f'GP {count}',
         f'GP var {count}'
     ]
@@ -51,15 +52,15 @@ def plotmorestuff(surfaces, bifidbo, count):
     funcs = [
         *surfaces,
 
-        partial(bifidbo.bo_high.util.utility, gp=bifidbo.bo_high.gp, y_max=bifidbo.bo_high.space.Y.max()),
+        partial(bifidbo.acq.utility, gp=bifidbo.bo_high.gp, y_max=bifidbo.bo_high.space.Y.max()),
         partial(gpplot, func=bifidbo.bo_high.gp.predict),
         partial(gpplot, func=bifidbo.bo_high.gp.predict, return_std=True),
 
-        partial(bifidbo.bo_low.util.utility, gp=bifidbo.bo_low.gp, y_max=bifidbo.bo_low.space.Y.max()),
+        partial(bifidbo.acq.utility, gp=bifidbo.bo_low.gp, y_max=bifidbo.bo_low.space.Y.max()),
         partial(gpplot, func=bifidbo.bo_low.gp.predict),
         partial(gpplot, func=bifidbo.bo_low.gp.predict, return_std=True),
 
-        partial(bifidbo.bo_diff.util.utility, gp=bifidbo.bo_diff.gp, y_max=bifidbo.bo_diff.space.Y.max()),
+        partial(bifidbo.acq.utility, gp=bifidbo.bo_diff.gp, y_max=bifidbo.bo_diff.space.Y.max()),
         partial(gpplot, func=bifidbo.bo_diff.gp.predict),
         partial(gpplot, func=bifidbo.bo_diff.gp.predict, return_std=True),
 
@@ -72,19 +73,19 @@ def plotmorestuff(surfaces, bifidbo, count):
         f'Function low',
         f'Function diff',
 
-        f'High ACQ:{bifidbo.bo_high.util.kind} {count}',
+        f'High ACQ:{bifidbo.acq.kind} {count}',
         f'High GP {count}',
         f'High GP var {count}',
 
-        f'Low ACQ:{bifidbo.bo_low.util.kind} {count}',
+        f'Low ACQ:{bifidbo.acq.kind} {count}',
         f'Low GP {count}',
         f'Low GP var {count}',
 
-        f'Diff ACQ:{bifidbo.bo_diff.util.kind} {count}',
+        f'Diff ACQ:{bifidbo.acq.kind} {count}',
         f'Diff GP {count}',
         f'Diff GP var {count}',
 
-        f'Hierarchical ACQ:{bifidbo.bo_diff.util.kind} {count}',
+        f'Hierarchical ACQ:{bifidbo.acq.kind} {count}',
         f'Hierarchical GP {count}',
         f'Hierarchical GP var {count}',
     ]
@@ -101,22 +102,22 @@ def boexample(num_init_points=5, num_iters=25):
     def fit_func(x, y):
         return -boha.high([x, y])
 
-    bo = BayesianOptimization(fit_func, bounds)
-    bo.explore({'x': [-1, 3], 'y': [-2, 2]}, eager=True)
-    bo.maximize(init_points=0, n_iter=0, kappa=2)
+    bopt = BayesianOptimization(fit_func, bounds)
+    bopt.explore({'x': [-1, 3], 'y': [-2, 2]}, eager=True)
+    bopt.maximize(init_points=0, n_iter=0, kappa=2)
 
     for count in range(1, num_init_points+1):
-        bo.explore_random(1, eager=True)
-        bo.gp.fit(bo.space.X, bo.space.Y)
-        plotstuff(fit_func, bo, count)
+        bopt.explore_random(1, eager=True)
+        bopt.gp.fit(bopt.space.X, bopt.space.Y)
+        plotstuff(fit_func, bopt, count)
 
     for count in range(num_init_points, num_init_points+num_iters+1):
-        bo.maximize(init_points=0, n_iter=1, kappa=2)
-        plotstuff(fit_func, bo, count)
+        bopt.maximize(init_points=0, n_iter=1, kappa=2)
+        plotstuff(fit_func, bopt, count)
 
     # Finally, we take a look at the final results.
-    print(bo.res['max'])
-    print(bo.res['all'])
+    print(bopt.res['max'])
+    print(bopt.res['all'])
 
 
 
@@ -133,6 +134,8 @@ class BiFidBayesianOptimization:
         self.f_low = f_low
         self.f_high = f_high
         self.cand_arch = cand_arch
+
+        self.acq = bo.helpers.UtilityFunction(kind='ucb', kappa=2.576, xi=0.0)
 
         self.bo_diff = BayesianOptimization(emptyfit, bounds)
 
@@ -181,17 +184,17 @@ class BiFidBayesianOptimization:
 
 
     def utility(self, X, gp=None, y_max=None):
-        util_low = self.rho * self.bo_low.util.utility(X, gp=self.bo_low.gp, y_max=self.bo_low.space.Y.max())
-        util_diff = self.bo_diff.util.utility(X, gp=self.bo_diff.gp, y_max=self.bo_diff.space.Y.max())
+        util_low = self.rho * self.acq.utility(X, gp=self.bo_low.gp, y_max=self.bo_low.space.Y.max())
+        util_diff = self.acq.utility(X, gp=self.bo_diff.gp, y_max=self.bo_diff.space.Y.max())
         return util_low + util_diff
 
 
     def acq_max(self):
-        return helpers.acq_max(ac=self.utility,
-                               gp=self,
-                               y_max=self.bo_high.space.Y.max(),
-                               bounds=self.bo_diff.space.bounds,
-                               random_state=self.bo_diff.random_state)
+        return bo.helpers.acq_max(ac=self.utility,
+                                  gp=self,
+                                  y_max=self.bo_high.space.Y.max(),
+                                  bounds=self.bo_diff.space.bounds,
+                                  random_state=self.bo_diff.random_state)
 
 
 
@@ -255,7 +258,7 @@ def bifid_boexample():
         'target': high_out.flatten(),
     })
 
-
+    # Fit GP and setup Utility function
     bo_low.maximize(0,0)
     bo_high.maximize(0,0)
 
@@ -274,7 +277,7 @@ def optimize(bifidbo, surfs, num_steps=25):
             'x': [argmax[0]],
             'y': [argmax[1]],
         }, eager=True)
-        bifidbo.bo_low.maximize(0, 0)
+        bifidbo.bo_low.gp.fit(bifidbo.bo_low.space.X, bifidbo.bo_low.space.Y)
         plotmorestuff(surfs, bifidbo, count)
 
 
