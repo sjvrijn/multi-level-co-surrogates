@@ -4,11 +4,61 @@
 from collections import namedtuple
 from multiprocessing import cpu_count, Pool
 import matplotlib.pyplot as plt
+import scipy
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 from warnings import warn
+
+
+
+def select_subsample(xdata, num):
+    """
+    uniform selection of sub samples from a larger data set (only for input).
+    use it to create uniform smaple
+       inputs:
+          xdata  : inputs data set. each row is a dimension
+            num  : final (desired) number of samples
+
+    Based on : Rennen, G. (2008). "SUBSET SELECTION FROM LARGE DATASETS
+              FOR KRIGING MODELING.
+
+    Acknowledgement --- Code kindly provided by:
+        Koushyar Komeilizadeh, M.Sc.
+        Research Assistant
+        Associate Professorship of Computational Mechanics
+        Faculty of Civil, Geo and Environmental Engineering
+        Technical University of Munich
+    """
+    dim = xdata.shape[0]
+    num0 = xdata.shape[1]
+    # if initial sample number is large convert to float 32, otherwise distance
+    # matrix might not be calculated, # float 32 precision is 10^-6, foal 16 is 10^-3
+    if num0 * dim > 10000:
+        xdata = np.float32(xdata)
+    distm = scipy.spatial.distance.cdist(xdata.T, xdata.T, 'euclidean')
+    maxd = np.max(distm)
+    loc = np.where(distm == maxd)[0]
+    include = loc
+    si = np.arange(xdata.shape[1])
+    remain = np.delete(si, include)
+    for j in range(num - 2):
+        minr = np.zeros([np.size(remain)])
+        minrind = np.zeros([np.size(remain)])
+        for i, ind in enumerate(remain):
+            minr[i] = np.min((distm[ind, include.astype(int)]))
+            minrind[i] = ind
+        minminrind = np.argmax(minr)
+        include = np.append(include, minrind[minminrind])
+        remain = np.delete(si, include)
+    #         sub_x = np.zeros((num,xdata.shape[0]))
+    #         for i,ind in enumerate(include[0:num]):
+    #             sub_x[i] = xdata[:,np.int(ind)]
+    #         sub_x = sub_x.T
+    sub_x = xdata[:, list(map(int, include[0:num]))]
+
+    return sub_x
 
 
 # ------------------------------------------------------------------------------
