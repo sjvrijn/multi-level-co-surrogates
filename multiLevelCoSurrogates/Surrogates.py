@@ -49,6 +49,8 @@ class Surrogate:
             predictor = self.do_predict
         elif mode == 'std':
             predictor = self.do_predict_std
+        elif mode == 'both':
+            predictor = self.do_predict_both
         else:
             raise ValueError(f"Invalid prediction mode '{mode}'. Supported are: 'value', 'std'")
 
@@ -67,6 +69,9 @@ class Surrogate:
         raise NotImplementedError
 
     def do_predict_std(self, X):
+        raise NotImplementedError
+
+    def do_predict_both(self, X):
         raise NotImplementedError
 
     def train(self):
@@ -167,15 +172,18 @@ class Kriging(Surrogate):
         self._surr = GaussianProcessRegressor()
         self.is_trained = False
 
-    def do_predict(self, X):
-        return self._surr.predict(X).reshape((-1, ))
-
     def train(self):
         self._surr.fit(self.X, self.y)
         self.is_trained = True
 
+    def do_predict(self, X):
+        return self._surr.predict(X).reshape((-1, ))
+
     def do_predict_std(self, X):
         return self._surr.predict(X, return_std=True)[1]
+
+    def do_predict_both(self, X):
+        return self._surr.predict(X, return_std=True)
 
 
 class RandomForest(Surrogate):
@@ -193,12 +201,12 @@ class RandomForest(Surrogate):
         self._surr = RandomForestRegressor()
         self.is_trained = False
 
-    def do_predict(self, X):
-        return self._surr.predict(X).reshape((-1, ))
-
     def train(self):
         self._surr.fit(self.X, np.ravel(self.y))
         self.is_trained = True
+
+    def do_predict(self, X):
+        return self._surr.predict(X).reshape((-1, ))
 
     def do_predict_std(self, X):
         stds = []
@@ -206,6 +214,9 @@ class RandomForest(Surrogate):
             predictions = [est.predict(x.reshape(1, -1))[0] for est in self._surr.estimators_]
             stds.append(np.std(predictions))
         return np.array(stds)
+
+    def do_predict_both(self, X):
+        return [self.do_predict(X), self.do_predict_std(X)]
 
 
 class SVM(Surrogate):
