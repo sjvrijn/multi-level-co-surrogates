@@ -89,8 +89,12 @@ def plotmorestuff(surfaces, bifidbo, count):
         f'Hierarchical GP {count}',
         f'Hierarchical GP var {count}',
     ]
-    plotsurfaces(funcs, titles, (5, 3), save_as=f'{base_dir}plotmorestuff_2d_{count}.png', as_3d=False)
-    plotsurfaces(funcs, titles, (5, 3), save_as=f'{base_dir}plotmorestuff_3d_{count}.png')
+
+    # plotsurfaces(funcs, titles, (5, 3), save_as=f'{base_dir}plotmorestuff_2d_{count}.png', as_3d=False)
+    # plotsurfaces(funcs, titles, (5, 3), save_as=f'{base_dir}plotmorestuff_3d_{count}.png', as_3d=True)
+
+    plotsurfaces(funcs, titles, (5, 3), as_3d=False)
+    # plotsurfaces(funcs, titles, (5, 3), as_3d=True)
 
 boha = fit_funcs['bohachevsky']
 bounds = {'x': (boha.l_bound[0]//20, boha.u_bound[0]//20),
@@ -267,17 +271,13 @@ def bifid_boexample():
 
 
 
-def optimize(bifidbo, surfs, num_steps=25):
+def optimize(bifidbo, surfs, num_steps=10):
 
     for count in range(1, num_steps+1):
         argmax = bifidbo.acq_max()
-        y = fit_func_low(*argmax)
-        bifidbo.cand_arch.addcandidate(argmax, y, fidelity='low')
-        bifidbo.bo_low.explore({
-            'x': [argmax[0]],
-            'y': [argmax[1]],
-        }, eager=True)
-        bifidbo.bo_low.gp.fit(bifidbo.bo_low.space.X, bifidbo.bo_low.space.Y)
+        bifidbo.cand_arch.addcandidate(argmax, fit_func_low(*argmax), fidelity='low')
+        a, b = bifidbo.cand_arch.getcandidates(fidelity='low')
+        bifidbo.bo_low.gp.fit(a, b.ravel())
         plotmorestuff(surfs, bifidbo, count)
 
 
