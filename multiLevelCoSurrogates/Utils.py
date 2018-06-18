@@ -162,6 +162,7 @@ def plotsurfaces(funcs, titles=None, shape=None, figratio=None, save_as=None, as
     if save_as is not None:
         plt.savefig(save_as)
     plt.show()
+    plt.clf()
 
 
 def plotsurfaceonaxis(ax, surf, title):
