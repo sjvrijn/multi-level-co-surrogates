@@ -28,6 +28,8 @@ class CandidateArchive:
             self.fidelities = ['fitness']
 
         self.data = {}
+        self._max = {fid: -np.inf for fid in fidelities}
+        self._min = {fid: np.inf for fid in fidelities}
 
 
     def __len__(self):
@@ -52,6 +54,7 @@ class CandidateArchive:
             idx = self.fidelities.index(fidelity)
             fit_values[idx] = fitness
 
+        self.updateminmax(fidelity, fitness)
         self.data[tuple(candidate)] = fit_values
 
 
@@ -101,3 +104,18 @@ class CandidateArchive:
             fitnesses = fitnesses[-n:]
 
         return candidates, fitnesses
+
+
+    def updateminmax(self, fidelity, value):
+        if value > self._max[fidelity]:
+            self._max[fidelity] = value
+        elif value < self._min[fidelity]:
+            self._min[fidelity] = value
+
+
+    def max(self, fidelity):
+        return self._max[fidelity]
+
+
+    def min(self, fidelity):
+        return self._max[fidelity]
