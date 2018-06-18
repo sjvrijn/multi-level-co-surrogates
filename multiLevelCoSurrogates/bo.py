@@ -10,6 +10,8 @@ from functools import partial
 from pyDOE import lhs
 from pprint import pprint
 from sklearn.linear_model import LinearRegression
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import Matern
 
 from multiLevelCoSurrogates.config import fit_funcs, fit_func_dims
 from multiLevelCoSurrogates.local import base_dir
@@ -52,13 +54,13 @@ def plotmorestuff(surfaces, bifidbo, count):
     funcs = [
         *surfaces,
 
-        partial(bifidbo.acq.utility, gp=bifidbo.bo_high.gp, y_max=bifidbo.cand_arch.getcandidates(fidelity='high')[1].max()),
-        partial(gpplot, func=bifidbo.bo_high.gp.predict),
-        partial(gpplot, func=bifidbo.bo_high.gp.predict, return_std=True),
+        partial(bifidbo.acq.utility, gp=bifidbo.gp_high, y_max=bifidbo.cand_arch.getcandidates(fidelity='high')[1].max()),
+        partial(gpplot, func=bifidbo.gp_high.predict),
+        partial(gpplot, func=bifidbo.gp_high.predict, return_std=True),
 
-        partial(bifidbo.acq.utility, gp=bifidbo.bo_low.gp, y_max=bifidbo.cand_arch.getcandidates(fidelity='low')[1].max()),
-        partial(gpplot, func=bifidbo.bo_low.gp.predict),
-        partial(gpplot, func=bifidbo.bo_low.gp.predict, return_std=True),
+        partial(bifidbo.acq.utility, gp=bifidbo.gp_low, y_max=bifidbo.cand_arch.getcandidates(fidelity='low')[1].max()),
+        partial(gpplot, func=bifidbo.gp_low.predict),
+        partial(gpplot, func=bifidbo.gp_low.predict, return_std=True),
 
         partial(bifidbo.acq.utility, gp=bifidbo.bo_diff.gp, y_max=bifidbo.bo_diff.space.Y.max()),
         partial(gpplot, func=bifidbo.bo_diff.gp.predict),
@@ -132,9 +134,9 @@ def emptyfit(x):
 
 class BiFidBayesianOptimization:
 
-    def __init__(self, bo_low, bo_high, f_low, f_high, cand_arch):
-        self.bo_low = bo_low
-        self.bo_high = bo_high
+    def __init__(self, gp_low, gp_high, f_low, f_high, cand_arch):
+        self.gp_low = gp_low
+        self.gp_high = gp_high
         self.f_low = f_low
         self.f_high = f_high
         self.cand_arch = cand_arch
@@ -160,9 +162,9 @@ class BiFidBayesianOptimization:
     def train_gp(self, fidelity, n=None):
 
         if fidelity == 'low':
-            gp = self.bo_low.gp
+            gp = self.gp_low
         elif fidelity == 'high':
-            gp = self.bo_high.gp
+            gp = self.gp_high
         else:
             raise ValueError(f"Fidelity '{fidelity}' unknown, please choose 'high' or 'low'.")
 
@@ -195,13 +197,13 @@ class BiFidBayesianOptimization:
         idx = 1 if return_std else 0
 
         if y_low is None:
-            y_low = self.rho * self.bo_low.gp.predict(X, return_std=return_std)[idx]
+            y_low = self.rho * self.gp_low.predict(X, return_std=return_std)[idx]
 
         return y_low + self.bo_diff.gp.predict(X, return_std=return_std)[idx]
 
 
     def utility(self, X, gp=None, y_max=None):
-        util_low = self.rho * self.acq.utility(X, gp=self.bo_low.gp, y_max=self.cand_arch.getcandidates(fidelity='low')[1].max())
+        util_low = self.rho * self.acq.utility(X, gp=self.gp_low, y_max=self.cand_arch.getcandidates(fidelity='low')[1].max())
         util_diff = self.acq.utility(X, gp=self.bo_diff.gp, y_max=self.bo_diff.space.Y.max())
         return util_low + util_diff
 
@@ -243,8 +245,8 @@ def bifid_boexample():
     range_lhs = ValueRange(0, 1)
 
 
-    bo_low = BayesianOptimization(fit_func_low, bounds)
-    bo_high = BayesianOptimization(fit_func_high, bounds)
+    gp_low = GaussianProcessRegressor(kernel=Matern(nu=2.5), n_restarts_optimizer=25)
+    gp_high = GaussianProcessRegressor(kernel=Matern(nu=2.5), n_restarts_optimizer=25)
     archive = CandidateArchive(ndim, fidelities=['high', 'low'])
 
     low_sample = lhs(ndim, num_low_samples)
@@ -260,7 +262,7 @@ def bifid_boexample():
     for candidate, result in zip(high_sample, high_out):
         archive.updatecandidate(candidate, result, fidelity='high')
 
-    bifidbo = BiFidBayesianOptimization(bo_low=bo_low, bo_high=bo_high,
+    bifidbo = BiFidBayesianOptimization(gp_low=gp_low, gp_high=gp_high,
                                         f_low=fit_func_low, f_high=fit_func_high,
                                         cand_arch=archive)
 
