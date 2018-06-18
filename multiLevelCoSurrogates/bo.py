@@ -52,11 +52,11 @@ def plotmorestuff(surfaces, bifidbo, count):
     funcs = [
         *surfaces,
 
-        partial(bifidbo.acq.utility, gp=bifidbo.bo_high.gp, y_max=bifidbo.bo_high.space.Y.max()),
+        partial(bifidbo.acq.utility, gp=bifidbo.bo_high.gp, y_max=bifidbo.cand_arch.getcandidates(fidelity='high')[1].max()),
         partial(gpplot, func=bifidbo.bo_high.gp.predict),
         partial(gpplot, func=bifidbo.bo_high.gp.predict, return_std=True),
 
-        partial(bifidbo.acq.utility, gp=bifidbo.bo_low.gp, y_max=bifidbo.bo_low.space.Y.max()),
+        partial(bifidbo.acq.utility, gp=bifidbo.bo_low.gp, y_max=bifidbo.cand_arch.getcandidates(fidelity='low')[1].max()),
         partial(gpplot, func=bifidbo.bo_low.gp.predict),
         partial(gpplot, func=bifidbo.bo_low.gp.predict, return_std=True),
 
@@ -157,11 +157,24 @@ class BiFidBayesianOptimization:
         self.bo_diff.maximize(0,0)
 
 
-    def train_diff(self):
+    def train_gp(self, fidelity, n=None):
+
+        if fidelity == 'low':
+            gp = self.bo_low.gp
+        elif fidelity == 'high':
+            gp = self.bo_high.gp
+        else:
+            raise ValueError(f"Fidelity '{fidelity}' unknown, please choose 'high' or 'low'.")
+
+        a, b = self.cand_arch.getcandidates(n=n, fidelity=fidelity)
+        gp.fit(a, b.ravel())
+
+
+    def train_diff(self, n=None):
         if self.cand_arch.num_fidelities != 2:
             raise ValueError('Cannot work with anything other than 2 fidelities for now. Sorry :)')
 
-        candidates, fitnesses = self.cand_arch.getcandidates(n=0, fidelity=['high', 'low'])
+        candidates, fitnesses = self.cand_arch.getcandidates(n=n, fidelity=['high', 'low'])
         y_high, y_low = fitnesses[:,0], fitnesses[:,1]
 
         self.determine_rho(y_high, y_low)
@@ -188,7 +201,7 @@ class BiFidBayesianOptimization:
 
 
     def utility(self, X, gp=None, y_max=None):
-        util_low = self.rho * self.acq.utility(X, gp=self.bo_low.gp, y_max=self.bo_low.space.Y.max())
+        util_low = self.rho * self.acq.utility(X, gp=self.bo_low.gp, y_max=self.cand_arch.getcandidates(fidelity='low')[1].max())
         util_diff = self.acq.utility(X, gp=self.bo_diff.gp, y_max=self.bo_diff.space.Y.max())
         return util_low + util_diff
 
@@ -196,7 +209,7 @@ class BiFidBayesianOptimization:
     def acq_max(self):
         return bo.helpers.acq_max(ac=self.utility,
                                   gp=self,
-                                  y_max=self.bo_high.space.Y.max(),
+                                  y_max=self.cand_arch.getcandidates(fidelity='high')[1].max(),
                                   bounds=self.bo_diff.space.bounds,
                                   random_state=self.bo_diff.random_state)
 
@@ -251,20 +264,9 @@ def bifid_boexample():
                                         f_low=fit_func_low, f_high=fit_func_high,
                                         cand_arch=archive)
 
-    bo_low.initialize({
-        'x': low_sample[:,0].flatten(),
-        'y': low_sample[:,1].flatten(),
-        'target': low_out.flatten(),
-    })
-    bo_high.initialize({
-        'x': high_sample[:, 0].flatten(),
-        'y': high_sample[:, 1].flatten(),
-        'target': high_out.flatten(),
-    })
-
-    # Fit GP and setup Utility function
-    bo_low.maximize(0,0)
-    bo_high.maximize(0,0)
+    # Fit GP
+    bifidbo.train_gp(fidelity='low')
+    bifidbo.train_gp(fidelity='high')
 
     plotmorestuff(surfaces, bifidbo, 0)
     return bifidbo
@@ -276,8 +278,9 @@ def optimize(bifidbo, surfs, num_steps=10):
     for count in range(1, num_steps+1):
         argmax = bifidbo.acq_max()
         bifidbo.cand_arch.addcandidate(argmax, fit_func_low(*argmax), fidelity='low')
-        a, b = bifidbo.cand_arch.getcandidates(fidelity='low')
-        bifidbo.bo_low.gp.fit(a, b.ravel())
+
+        bifidbo.train_gp(fidelity='low')
+
         plotmorestuff(surfs, bifidbo, count)
 
 
