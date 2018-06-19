@@ -16,7 +16,7 @@ from sklearn.gaussian_process.kernels import Matern
 from multiLevelCoSurrogates.config import fit_funcs, fit_func_dims
 from multiLevelCoSurrogates.local import base_dir
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
-from multiLevelCoSurrogates.Utils import createsurface, diffsurface, plotsurfaces, Surface, \
+from multiLevelCoSurrogates.Utils import createsurface, diffsurface, plotsurfaces, \
     ValueRange, linearscaletransform, select_subsample
 
 
@@ -54,11 +54,11 @@ def plotmorestuff(surfaces, bifidbo, count):
     funcs = [
         *surfaces,
 
-        partial(bifidbo.acq.utility, gp=bifidbo.gp_high, y_max=bifidbo.cand_arch.max(fidelity='high')),
+        partial(bifidbo.acq.utility, gp=bifidbo.gp_high, y_max=bifidbo.cand_arch.max['high']),
         partial(gpplot, func=bifidbo.gp_high.predict),
         partial(gpplot, func=bifidbo.gp_high.predict, return_std=True),
 
-        partial(bifidbo.acq.utility, gp=bifidbo.gp_low, y_max=bifidbo.cand_arch.max(fidelity='low')),
+        partial(bifidbo.acq.utility, gp=bifidbo.gp_low, y_max=bifidbo.cand_arch.max['low']),
         partial(gpplot, func=bifidbo.gp_low.predict),
         partial(gpplot, func=bifidbo.gp_low.predict, return_std=True),
 
@@ -203,7 +203,7 @@ class BiFidBayesianOptimization:
 
 
     def utility(self, X, gp=None, y_max=None):
-        util_low = self.rho * self.acq.utility(X, gp=self.gp_low, y_max=self.cand_arch.max(fidelity='low'))
+        util_low = self.rho * self.acq.utility(X, gp=self.gp_low, y_max=self.cand_arch.max['low'])
         util_diff = self.acq.utility(X, gp=self.bo_diff.gp, y_max=self.bo_diff.space.Y.max())
         return util_low + util_diff
 
@@ -211,7 +211,7 @@ class BiFidBayesianOptimization:
     def acq_max(self):
         return bo.helpers.acq_max(ac=self.utility,
                                   gp=self,
-                                  y_max=self.cand_arch.max(fidelity='high'),
+                                  y_max=self.cand_arch.max['high'],
                                   bounds=self.bo_diff.space.bounds,
                                   random_state=self.bo_diff.random_state)
 
@@ -236,7 +236,7 @@ surfaces = list(map(createsurface, funcs))
 surfaces.append(diffsurface(surfaces[0], surfaces[1]))
 
 
-def bifid_boexample():
+def createbifidbo():
 
     ndim = 2
     num_low_samples = 25
@@ -293,5 +293,5 @@ def optimize(bifidbo, surfs, num_steps=10):
 
 if __name__ == "__main__":
     np.set_printoptions(linewidth=200)
-    bifidbo = bifid_boexample()
+    bifidbo = createbifidbo()
     optimize(bifidbo, surfaces)
