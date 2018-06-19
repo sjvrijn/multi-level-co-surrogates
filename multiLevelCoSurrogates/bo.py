@@ -9,6 +9,8 @@ import numpy as np
 from functools import partial
 from pyDOE import lhs
 from pprint import pprint
+from sklearn.utils import check_random_state
+from sklearn.metrics import mean_squared_error
 from sklearn.linear_model import LinearRegression
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import Matern
@@ -212,7 +214,7 @@ class BiFidBayesianOptimization:
         return bo.helpers.acq_max(ac=self.utility,
                                   gp=self,
                                   y_max=self.cand_arch.max['high'],
-                                  bounds=self.bo_diff.space.bounds,
+                                  bounds=np.array(list(bounds.values()), dtype=np.float),
                                   random_state=self.bo_diff.random_state)
 
 
@@ -245,8 +247,8 @@ def createbifidbo():
     range_lhs = ValueRange(0, 1)
 
 
-    gp_low = GaussianProcessRegressor(kernel=Matern(nu=2.5), n_restarts_optimizer=25)
-    gp_high = GaussianProcessRegressor(kernel=Matern(nu=2.5), n_restarts_optimizer=25)
+    gp_low = GaussianProcessRegressor(kernel=Matern(nu=2.5), n_restarts_optimizer=25, random_state=None)
+    gp_high = GaussianProcessRegressor(kernel=Matern(nu=2.5), n_restarts_optimizer=25, random_state=None)
     archive = CandidateArchive(ndim, fidelities=['high', 'low'])
 
     low_sample = lhs(ndim, num_low_samples)
@@ -286,9 +288,42 @@ def optimize(bifidbo, surfs, num_steps=10):
         plotmorestuff(surfs, bifidbo, count)
 
 
+def find_infill_and_retrain(bifidbo):
+    pass
 
 
+def infill_experiment(num_repetitions=10):
+    range_in = ValueRange(-5, 5)
+    range_lhs = ValueRange(0, 1)
+    test_sample = lhs(n=2, samples=250)
+    test_sample = linearscaletransform(test_sample, range_in=range_lhs, range_out=range_in)
 
+    test_values = [fit_func_high(*sample) for sample in test_sample]
+
+    for rep in range(num_repetitions):
+        bifidbo = createbifidbo()
+        low_predict_values = bifidbo.gp_low.predict(test_sample)
+        high_predict_values = bifidbo.gp_high.predict(test_sample)
+        hierarchical_predict_values = bifidbo.predict(test_sample)
+
+        pre_mse_low = mean_squared_error(test_values, low_predict_values)
+        pre_mse_high = mean_squared_error(test_values, high_predict_values)
+        pre_mse_hierarchical = mean_squared_error(test_values, hierarchical_predict_values)
+
+
+        find_infill_and_retrain(bifidbo)
+
+
+        low_predict_values = bifidbo.gp_low.predict(test_sample)
+        high_predict_values = bifidbo.gp_high.predict(test_sample)
+        hierarchical_predict_values = bifidbo.predict(test_sample)
+
+        post_mse_low = mean_squared_error(test_values, low_predict_values)
+        post_mse_high = mean_squared_error(test_values, high_predict_values)
+        post_mse_hierarchical = mean_squared_error(test_values, hierarchical_predict_values)
+
+    return ((pre_mse_low, pre_mse_high, pre_mse_hierarchical),
+            (post_mse_low, post_mse_high, post_mse_hierarchical))
 
 
 if __name__ == "__main__":
