@@ -145,7 +145,7 @@ class BiFidBayesianOptimization:
 
         self.acq = bo.helpers.UtilityFunction(kind='ucb', kappa=2.576, xi=0.0)
 
-        self.bo_diff = BayesianOptimization(emptyfit, bounds)
+        self.bo_diff = BayesianOptimization(emptyfit, bounds, verbose=False)
 
         candidates, fitnesses = self.cand_arch.getcandidates(n=0, fidelity=['high', 'low'])
         y_high, y_low = fitnesses[:,0], fitnesses[:,1]
@@ -196,12 +196,17 @@ class BiFidBayesianOptimization:
 
 
     def predict(self, X, return_std=False, y_low=None):
-        idx = 1 if return_std else 0
 
         if y_low is None:
-            y_low = self.rho * self.gp_low.predict(X, return_std=return_std)[idx]
+            low_pred = self.gp_low.predict(X, return_std=return_std)
+            if return_std:
+                low_pred = low_pred[1]
+            y_low = self.rho * low_pred
 
-        return y_low + self.bo_diff.gp.predict(X, return_std=return_std)[idx]
+        diff_pred = self.bo_diff.gp.predict(X, return_std=return_std)
+        if return_std:
+            diff_pred = diff_pred[1]
+        return y_low + diff_pred
 
 
     def utility(self, X, gp=None, y_max=None):
