@@ -243,7 +243,7 @@ surfaces = list(map(createsurface, funcs))
 surfaces.append(diffsurface(surfaces[0], surfaces[1]))
 
 
-def createbifidbo():
+def createbifidbo(plot_surfaces=False):
 
     ndim = 2
     num_low_samples = 25
@@ -277,7 +277,8 @@ def createbifidbo():
     bifidbo.train_gp(fidelity='low')
     bifidbo.train_gp(fidelity='high')
 
-    plotmorestuff(surfaces, bifidbo, 0)
+    if plot_surfaces:
+        plotmorestuff(surfaces, bifidbo, count=0)
     return bifidbo
 
 
