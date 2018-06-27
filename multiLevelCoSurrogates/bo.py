@@ -297,6 +297,18 @@ def optimize(bifidbo, surfs, num_steps=10):
 def find_infill_and_retrain(bifidbo, which_model='hierarchical', fidelity='low'):
     if which_model == 'hierarchical':
         infill_in = bifidbo.acq_max()
+    elif which_model == 'low':
+        infill_in = bo.helpers.acq_max(ac=bo.helpers.UtilityFunction('ucb', kappa=2.576, xi=0.0,).utility,
+                                       gp=bifidbo.gp_low,
+                                       y_max=bifidbo.cand_arch.max['low'],
+                                       bounds=np.array(list(bounds.values()), dtype=np.float),
+                                       random_state=bifidbo.bo_diff.random_state)
+    elif which_model == 'high':
+        infill_in = bo.helpers.acq_max(ac=bo.helpers.UtilityFunction('ucb', kappa=2.576, xi=0.0,).utility,
+                                       gp=bifidbo.gp_high,
+                                       y_max=bifidbo.cand_arch.max['high'],
+                                       bounds=np.array(list(bounds.values()), dtype=np.float),
+                                       random_state=bifidbo.bo_diff.random_state)
     else:
         raise NotImplementedError("Sorry, haven't gotten here yet...")
 
