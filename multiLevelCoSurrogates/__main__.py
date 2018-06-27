@@ -133,7 +133,7 @@ def createCoSurrogate(N, init_sample_size, fit_func_low, fit_func_high, l_bound,
     cand_archive = CandidateArchive(ndim=N, fidelities=['high', 'low', 'high-low'])
     for cand, res_h, res_l in zip(init_candidates, results_high, results_low):
         cand_archive.addcandidate(cand, res_h, fidelity='high')
-        cand_archive.updatecandidate(cand, res_l, fidelity='low')
+        cand_archive.addcandidate(cand, res_l, fidelity='low')
 
     # Now that we have our initial data, we can create an instance of the surrogate model
     surrogate = CoSurrogate(surrogate_name, cand_archive, fidelities=['high', 'low'], n=init_sample_size,
@@ -193,7 +193,7 @@ def multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_a
         results[index] = res_high
 
         cand_archive.addcandidate(candidates[index], res_high, 'high')
-        cand_archive.updatecandidate(candidates[index], res_low, 'low')
+        cand_archive.addcandidate(candidates[index], res_low, 'low')
     return results
 
 

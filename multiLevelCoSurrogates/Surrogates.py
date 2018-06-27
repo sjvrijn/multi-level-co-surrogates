@@ -108,7 +108,7 @@ class CoSurrogate:
         self.y = y_high - self.rho*y_low
 
         for idx, x in enumerate(X):
-            candidate_archive.updatecandidate(x, self.y[idx], fidelity='high-low')
+            candidate_archive.addcandidate(x, self.y[idx], fidelity='high-low')
 
         self.surrogate = Surrogate.fromname(surrogate_name, candidate_archive, n, fidelity='high-low')
 

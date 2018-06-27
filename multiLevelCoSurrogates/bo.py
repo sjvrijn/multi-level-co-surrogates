@@ -267,7 +267,7 @@ def createbifidbo(plot_surfaces=False):
     for candidate, result in zip(low_sample, low_out):
         archive.addcandidate(candidate, result, fidelity='low')
     for candidate, result in zip(high_sample, high_out):
-        archive.updatecandidate(candidate, result, fidelity='high')
+        archive.addcandidate(candidate, result, fidelity='high')
 
     bifidbo = BiFidBayesianOptimization(gp_low=gp_low, gp_high=gp_high,
                                         f_low=fit_func_low, f_high=fit_func_high,

@@ -36,6 +36,12 @@ class CandidateArchive:
         return len(self.data)
 
 
+    def addcandidates(self, candidates, fitnesses, fidelity=None, *, verbose=False):
+        """"""
+        for cand, fit in zip(candidates, fitnesses):
+            self.addcandidate(cand, fit, fidelity=fidelity, verbose=verbose)
+
+
     def addcandidate(self, candidate, fitness, fidelity=None, *, verbose=False):
         """"""
 
@@ -44,9 +50,21 @@ class CandidateArchive:
         elif self.num_fidelities > 1 and fidelity is None:
             raise ValueError('must specify fidelity level in multi-fidelity case')
 
-        if type(fidelity) in [tuple, list]:
-            raise NotImplementedError
+        # Checking types to make sure they are iterable in the right way
+        if isinstance(fitness, np.float64):
+            fitness = [fitness]
 
+        if isinstance(fidelity, str):
+            fidelity = [fidelity]
+
+        for fid, fit in zip(fidelity, list(fitness)):
+            if tuple(candidate) not in self.data:
+                self._addnewcandidate(candidate, fit, fid, verbose=verbose)
+            else:
+                self._updatecandidate(candidate, fit, fid, verbose=verbose)
+
+
+    def _addnewcandidate(self, candidate, fitness, fidelity=None, *, verbose=False):
         if self.num_fidelities == 1:
             fit_values = fitness
         else:
@@ -58,7 +76,7 @@ class CandidateArchive:
         self.data[tuple(candidate)] = fit_values
 
 
-    def updatecandidate(self, candidate, fitness, fidelity=None, *, verbose=False):
+    def _updatecandidate(self, candidate, fitness, fidelity=None, *, verbose=False):
         """"""
 
         fit_values = self.data[tuple(candidate)]
@@ -72,6 +90,7 @@ class CandidateArchive:
             warn(f"overwriting existing value '{self.data[idx, fidelity]}' with '{fitness}'", RuntimeWarning)
 
         fit_values[fid_idx] = fitness
+        self.updateminmax(fidelity, fitness)
 
 
     def getcandidates(self, n=None, fidelity=None):
