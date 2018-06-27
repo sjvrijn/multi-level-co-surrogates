@@ -321,10 +321,14 @@ def infill_experiment(num_repetitions=10, verbose=False):
     test_values = np.array([fit_func_high(*sample) for sample in test_sample])
     test_mse = partial(mean_squared_error, y_pred=test_values)
 
-    print('Low               High              Hierarchical')
+    if verbose:
+        print('Low               High              Hierarchical')
+    pre_mse = []
+    post_mse = []
 
     for rep in range(num_repetitions):
         if verbose:
+            print(f'Iteration {rep}:')
             print('Creating Bi-Fid BO')
         bifidbo = createbifidbo()
 
@@ -340,9 +344,10 @@ def infill_experiment(num_repetitions=10, verbose=False):
         pre_mse_high = test_mse(high_predict_values)
         pre_mse_hierarchical = test_mse(hierarchical_predict_values)
 
-        print(pre_mse_low, pre_mse_high, pre_mse_hierarchical)
+        pre_mse.append([pre_mse_low, pre_mse_high, pre_mse_hierarchical])
 
         if verbose:
+            print(pre_mse_low, pre_mse_high, pre_mse_hierarchical)
             print('Finding infill...')
         find_infill_and_retrain(bifidbo)
 
@@ -359,13 +364,29 @@ def infill_experiment(num_repetitions=10, verbose=False):
         post_mse_high = test_mse(high_predict_values)
         post_mse_hierarchical = test_mse(hierarchical_predict_values)
 
-        print(post_mse_low, post_mse_high, post_mse_hierarchical)
-        print(pre_mse_low - post_mse_low,
-              pre_mse_high - post_mse_high,
-              pre_mse_hierarchical - post_mse_hierarchical)
-        print()
+        post_mse.append([post_mse_low, post_mse_high, post_mse_hierarchical])
+        if verbose:
+            print(post_mse_low, post_mse_high, post_mse_hierarchical)
+            print(pre_mse_low - post_mse_low,
+                  pre_mse_high - post_mse_high,
+                  pre_mse_hierarchical - post_mse_hierarchical)
+            print()
+
+    pre_mse = np.array(pre_mse)
+    post_mse = np.array(post_mse)
+    improvements = pre_mse - post_mse
+
+    print('mean')
+    print(improvements.mean(axis=0))
+    print('std')
+    print(improvements.std(axis=0))
+    print()
+    print('95% confidence interval (mean +- 1.96*std)')
+    print(improvements.mean(axis=0) - 1.96*improvements.std(axis=0))
+    print(improvements.mean(axis=0) + 1.96*improvements.std(axis=0))
+
 
 
 if __name__ == "__main__":
     np.set_printoptions(linewidth=200)
-    infill_experiment()
+    infill_experiment(num_repetitions=10)
