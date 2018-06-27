@@ -294,45 +294,78 @@ def optimize(bifidbo, surfs, num_steps=10):
         plotmorestuff(surfs, bifidbo, count)
 
 
-def find_infill_and_retrain(bifidbo):
-    pass
+def find_infill_and_retrain(bifidbo, which_model='hierarchical', fidelity='low'):
+    if which_model == 'hierarchical':
+        infill_in = bifidbo.acq_max()
+    else:
+        raise NotImplementedError("Sorry, haven't gotten here yet...")
+
+    if fidelity == 'low':
+        infill_out = fit_func_low(*infill_in)
+    elif fidelity == 'high':
+        infill_out = fit_func_high(*infill_in)
+    else:
+        raise ValueError(f"fidelity '{fidelity}' not recognized")
+
+    bifidbo.cand_arch.addcandidate(candidate=infill_in, fitness=infill_out, fidelity=fidelity)
+    bifidbo.train_gp(fidelity=fidelity)
 
 
-def infill_experiment(num_repetitions=10):
+
+def infill_experiment(num_repetitions=10, verbose=False):
     range_in = ValueRange(-5, 5)
     range_lhs = ValueRange(0, 1)
     test_sample = lhs(n=2, samples=250)
     test_sample = linearscaletransform(test_sample, range_in=range_lhs, range_out=range_in)
 
-    test_values = [fit_func_high(*sample) for sample in test_sample]
+    test_values = np.array([fit_func_high(*sample) for sample in test_sample])
+    test_mse = partial(mean_squared_error, y_pred=test_values)
+
+    print('Low               High              Hierarchical')
 
     for rep in range(num_repetitions):
+        if verbose:
+            print('Creating Bi-Fid BO')
         bifidbo = createbifidbo()
+
+        if verbose:
+            print('Predicting...')
         low_predict_values = bifidbo.gp_low.predict(test_sample)
         high_predict_values = bifidbo.gp_high.predict(test_sample)
         hierarchical_predict_values = bifidbo.predict(test_sample)
 
-        pre_mse_low = mean_squared_error(test_values, low_predict_values)
-        pre_mse_high = mean_squared_error(test_values, high_predict_values)
-        pre_mse_hierarchical = mean_squared_error(test_values, hierarchical_predict_values)
+        if verbose:
+            print('Calculating MSE...')
+        pre_mse_low = test_mse(low_predict_values)
+        pre_mse_high = test_mse(high_predict_values)
+        pre_mse_hierarchical = test_mse(hierarchical_predict_values)
 
+        print(pre_mse_low, pre_mse_high, pre_mse_hierarchical)
 
+        if verbose:
+            print('Finding infill...')
         find_infill_and_retrain(bifidbo)
 
 
+        if verbose:
+            print('Predicting...')
         low_predict_values = bifidbo.gp_low.predict(test_sample)
         high_predict_values = bifidbo.gp_high.predict(test_sample)
         hierarchical_predict_values = bifidbo.predict(test_sample)
 
-        post_mse_low = mean_squared_error(test_values, low_predict_values)
-        post_mse_high = mean_squared_error(test_values, high_predict_values)
-        post_mse_hierarchical = mean_squared_error(test_values, hierarchical_predict_values)
+        if verbose:
+            print('Calculating MSE...')
+        post_mse_low = test_mse(low_predict_values)
+        post_mse_high = test_mse(high_predict_values)
+        post_mse_hierarchical = test_mse(hierarchical_predict_values)
 
-    return ((pre_mse_low, pre_mse_high, pre_mse_hierarchical),
-            (post_mse_low, post_mse_high, post_mse_hierarchical))
+        print(post_mse_low, post_mse_high, post_mse_hierarchical)
+        print(pre_mse_low - post_mse_low,
+              pre_mse_high - post_mse_high,
+              pre_mse_hierarchical - post_mse_hierarchical)
+        print()
 
 
 if __name__ == "__main__":
     np.set_printoptions(linewidth=200)
-    bifidbo = createbifidbo()
-    optimize(bifidbo, surfaces)
+    infill_experiment()
