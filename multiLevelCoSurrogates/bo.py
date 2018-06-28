@@ -167,6 +167,10 @@ class BiFidBayesianOptimization:
             gp = self.gp_low
         elif fidelity == 'high':
             gp = self.gp_high
+        elif isinstance(fidelity, list):
+            for fid in fidelity:
+                self.train_gp(fid, n=n)
+            return
         else:
             raise ValueError(f"Fidelity '{fidelity}' unknown, please choose 'high' or 'low'.")
 
@@ -316,6 +320,9 @@ def find_infill_and_retrain(bifidbo, which_model='hierarchical', fidelity='low')
         infill_out = fit_func_low(*infill_in)
     elif fidelity == 'high':
         infill_out = fit_func_high(*infill_in)
+    elif fidelity == 'both':
+        infill_out = fit_func_low(*infill_in), fit_func_high(*infill_in)
+        fidelity = ['low', 'high']
     else:
         raise ValueError(f"fidelity '{fidelity}' not recognized")
 
@@ -324,7 +331,7 @@ def find_infill_and_retrain(bifidbo, which_model='hierarchical', fidelity='low')
 
 
 
-def infill_experiment(num_repetitions=10, verbose=False):
+def infill_experiment(num_repetitions=10, verbose=False, which_model='hierarchical', fidelity='low'):
     range_in = ValueRange(-5, 5)
     range_lhs = ValueRange(0, 1)
     test_sample = lhs(n=2, samples=250)
@@ -361,7 +368,7 @@ def infill_experiment(num_repetitions=10, verbose=False):
         if verbose:
             print(pre_mse_low, pre_mse_high, pre_mse_hierarchical)
             print('Finding infill...')
-        find_infill_and_retrain(bifidbo)
+        find_infill_and_retrain(bifidbo, which_model=which_model, fidelity=fidelity)
 
 
         if verbose:
@@ -388,6 +395,7 @@ def infill_experiment(num_repetitions=10, verbose=False):
     post_mse = np.array(post_mse)
     improvements = pre_mse - post_mse
 
+    print(f'Model: {which_model}, Fidelity: {fidelity}, num_repetitions: {num_repetitions}')
     print('mean')
     print(improvements.mean(axis=0))
     print('std')
@@ -396,9 +404,18 @@ def infill_experiment(num_repetitions=10, verbose=False):
     print('95% confidence interval (mean +- 1.96*std)')
     print(improvements.mean(axis=0) - 1.96*improvements.std(axis=0))
     print(improvements.mean(axis=0) + 1.96*improvements.std(axis=0))
+    print()
 
 
 
 if __name__ == "__main__":
     np.set_printoptions(linewidth=200)
-    infill_experiment(num_repetitions=10)
+    infill_experiment(num_repetitions=1000, which_model='hierarchical', fidelity='low')
+    infill_experiment(num_repetitions=1000, which_model='low', fidelity='low')
+    infill_experiment(num_repetitions=1000, which_model='high', fidelity='low')
+    infill_experiment(num_repetitions=1000, which_model='hierarchical', fidelity='high')
+    infill_experiment(num_repetitions=1000, which_model='low', fidelity='high')
+    infill_experiment(num_repetitions=1000, which_model='high', fidelity='high')
+    infill_experiment(num_repetitions=1000, which_model='hierarchical', fidelity='both')
+    infill_experiment(num_repetitions=1000, which_model='low', fidelity='both')
+    infill_experiment(num_repetitions=1000, which_model='high', fidelity='both')
