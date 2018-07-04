@@ -6,6 +6,8 @@ New attempt at using Bayesian optimization using the standard 'bayesian-optimiza
 """
 
 import numpy as np
+import pandas as pd
+from collections import namedtuple
 from functools import partial
 from pyDOE import lhs
 from pprint import pprint
@@ -298,7 +300,7 @@ def optimize(bifidbo, surfs, num_steps=10):
         plotmorestuff(surfs, bifidbo, count)
 
 
-def find_infill_and_retrain(bifidbo, which_model='hierarchical', fidelity='low'):
+def find_infill(bifidbo, which_model):
     if which_model == 'hierarchical':
         infill_in = bifidbo.acq_max()
     elif which_model == 'low':
@@ -315,6 +317,11 @@ def find_infill_and_retrain(bifidbo, which_model='hierarchical', fidelity='low')
                                        random_state=bifidbo.bo_diff.random_state)
     else:
         raise NotImplementedError("Sorry, haven't gotten here yet...")
+    return infill_in
+
+
+def find_infill_and_retrain(bifidbo, which_model='hierarchical', fidelity='low'):
+    infill_in = find_infill(bifidbo, which_model)
 
     if fidelity == 'low':
         infill_out = fit_func_low(*infill_in)
@@ -330,8 +337,31 @@ def find_infill_and_retrain(bifidbo, which_model='hierarchical', fidelity='low')
     bifidbo.train_gp(fidelity=fidelity)
 
 
+def calc_mse(bifidbo, test_mse, test_sample, verbose):
+    if verbose:
+        print('        Predicting...')
+    low_predict_values = bifidbo.gp_low.predict(test_sample)
+    high_predict_values = bifidbo.gp_high.predict(test_sample)
+    hierarchical_predict_values = bifidbo.predict(test_sample)
+    if verbose:
+        print('        Calculating MSE...')
+    mse_low = test_mse(low_predict_values)
+    mse_high = test_mse(high_predict_values)
+    mse_hierarchical = test_mse(hierarchical_predict_values)
+    return mse_hierarchical, mse_high, mse_low
 
-def infill_experiment(num_repetitions=10, verbose=False, which_model='hierarchical', fidelity='low'):
+
+
+MSERecord = namedtuple('MSERecord', ['which_model', 'fidelity', 'repetition', 'iteration',
+                                     'mse_high', 'mse_low', 'mse_diff'])
+
+def infill_experiment(num_repetitions=10, num_iterations=1, verbose=False, which_model='hierarchical', fidelity='low'):
+
+    if verbose:
+        print(f'--------------------------------------------------------------------------------\n'
+              f'Updating {fidelity} {num_iterations} steps, based on {which_model}, repeated {num_repetitions} times.\n'
+              f'---')
+
     range_in = ValueRange(-5, 5)
     range_lhs = ValueRange(0, 1)
     test_sample = lhs(n=2, samples=250)
@@ -340,82 +370,46 @@ def infill_experiment(num_repetitions=10, verbose=False, which_model='hierarchic
     test_values = np.array([fit_func_high(*sample) for sample in test_sample])
     test_mse = partial(mean_squared_error, y_pred=test_values)
 
-    if verbose:
-        print('Low               High              Hierarchical')
-    pre_mse = []
-    post_mse = []
+    records = []
 
     for rep in range(num_repetitions):
+
         if verbose:
-            print(f'Iteration {rep}:')
-            print('Creating Bi-Fid BO')
+            print(f'Repetition {rep}/{num_repetitions}:')
+            print('    Creating Bi-Fid BO')
         bifidbo = createbifidbo()
 
-        if verbose:
-            print('Predicting...')
-        low_predict_values = bifidbo.gp_low.predict(test_sample)
-        high_predict_values = bifidbo.gp_high.predict(test_sample)
-        hierarchical_predict_values = bifidbo.predict(test_sample)
+        mse_hierarchical, mse_high, mse_low = calc_mse(bifidbo, test_mse, test_sample, verbose)
+        records.append(MSERecord(which_model, fidelity, rep, iteration=0,
+                                 mse_low=mse_low, mse_high=mse_high, mse_diff=mse_hierarchical))
+
+        for i in range(1, num_iterations+1):
+
+            if verbose:
+                # print(mse_low, mse_high, mse_hierarchical)
+                print(f'    Iteration {i}/{num_iterations}')
+                print('        Finding infill...')
+            find_infill_and_retrain(bifidbo, which_model=which_model, fidelity=fidelity)
+
+            mse_hierarchical, mse_high, mse_low = calc_mse(bifidbo, test_mse, test_sample, verbose)
+            records.append(MSERecord(which_model, fidelity, rep, iteration=i,
+                                     mse_low=mse_low, mse_high=mse_high, mse_diff=mse_hierarchical))
 
         if verbose:
-            print('Calculating MSE...')
-        pre_mse_low = test_mse(low_predict_values)
-        pre_mse_high = test_mse(high_predict_values)
-        pre_mse_hierarchical = test_mse(hierarchical_predict_values)
-
-        pre_mse.append([pre_mse_low, pre_mse_high, pre_mse_hierarchical])
-
-        if verbose:
-            print(pre_mse_low, pre_mse_high, pre_mse_hierarchical)
-            print('Finding infill...')
-        find_infill_and_retrain(bifidbo, which_model=which_model, fidelity=fidelity)
-
-
-        if verbose:
-            print('Predicting...')
-        low_predict_values = bifidbo.gp_low.predict(test_sample)
-        high_predict_values = bifidbo.gp_high.predict(test_sample)
-        hierarchical_predict_values = bifidbo.predict(test_sample)
-
-        if verbose:
-            print('Calculating MSE...')
-        post_mse_low = test_mse(low_predict_values)
-        post_mse_high = test_mse(high_predict_values)
-        post_mse_hierarchical = test_mse(hierarchical_predict_values)
-
-        post_mse.append([post_mse_low, post_mse_high, post_mse_hierarchical])
-        if verbose:
-            print(post_mse_low, post_mse_high, post_mse_hierarchical)
-            print(pre_mse_low - post_mse_low,
-                  pre_mse_high - post_mse_high,
-                  pre_mse_hierarchical - post_mse_hierarchical)
             print()
 
-    pre_mse = np.array(pre_mse)
-    post_mse = np.array(post_mse)
-    improvements = pre_mse - post_mse
-
-    print(f'Model: {which_model}, Fidelity: {fidelity}, num_repetitions: {num_repetitions}')
-    print('mean')
-    print(improvements.mean(axis=0))
-    print('std')
-    print(improvements.std(axis=0))
-    print()
-    print('95% confidence interval (mean +- 1.96*std)')
-    print(improvements.mean(axis=0) - 1.96*improvements.std(axis=0))
-    print(improvements.mean(axis=0) + 1.96*improvements.std(axis=0))
-    print()
-
+    return records
 
 
 if __name__ == "__main__":
     np.set_printoptions(linewidth=200)
-    infill_experiment(num_repetitions=1000, which_model='hierarchical', fidelity='low')
-    infill_experiment(num_repetitions=1000, which_model='low', fidelity='low')
-    infill_experiment(num_repetitions=1000, which_model='high', fidelity='low')
-    infill_experiment(num_repetitions=1000, which_model='hierarchical', fidelity='high')
-    infill_experiment(num_repetitions=1000, which_model='low', fidelity='high')
-    infill_experiment(num_repetitions=1000, which_model='high', fidelity='high')
-    infill_experiment(num_repetitions=1000, which_model='hierarchical', fidelity='both')
-    infill_experiment(num_repetitions=1000, which_model='low', fidelity='both')
-    infill_experiment(num_repetitions=1000, which_model='high', fidelity='both')
+
+    records = []
+
+    records.extend(infill_experiment(num_repetitions=100, num_iterations=25, fidelity='high', which_model='hierarchical'))
+    records.extend(infill_experiment(num_repetitions=100, num_iterations=25, fidelity='high', which_model='high'))
+    records.extend(infill_experiment(num_repetitions=100, num_iterations=25, fidelity='both', which_model='hierarchical'))
+    records.extend(infill_experiment(num_repetitions=100, num_iterations=25, fidelity='both', which_model='high'))
+
+    df = pd.DataFrame(records)
+    df.to_csv(base_dir+'records.csv', index_label='index')
