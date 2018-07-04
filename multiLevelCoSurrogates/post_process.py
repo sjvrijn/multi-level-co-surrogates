@@ -34,10 +34,10 @@ x_lims = {
     'branin': 500,
     'booth': 250,
     'himmelblau': 500,
-    'sixHumpCamelBack': 750,
+    'sixHumpCamelBack': 50,
     'park91a': 500,
     'park91b': 500,
-    'borehole': 300,
+    'borehole': 50,
 }
 
 
@@ -48,7 +48,7 @@ def isTwoInts(value):
            and all(isinstance(val, int) for val in value)
 
 
-#TODO: rewrite to use slice()
+# TODO: rewrite to use slice()
 def interpretColumn(column):
     """Interprets the 'column' argument of loadFitnessHistory into a start, end value pair"""
     if column is None:  # No specific column is requested, return everything
@@ -84,10 +84,10 @@ def loadFitnessHistory(fname, column=None):
 
 
 
-#TODO: Rewrite all plotting functions to plot from a list of 'Index' namedtuples
-#=======================================================================================================================
-#=======================================================================================================================
-#=======================================================================================================================
+# TODO: Rewrite all plotting functions to plot from a list of 'Index' namedtuples
+# ======================================================================================================================
+# ======================================================================================================================
+# ======================================================================================================================
 
 
 def getdata():
@@ -111,7 +111,7 @@ def getdata():
         fsuff = suffix.format(size=lambda_pre, rep=rep, gen=gen_int)
         filename_prefix = f'{base_dir}data/{fname}{fsuff}'
 
-        #TODO: better determine optimal values for each function
+        # TODO: better determine optimal values for each function
         try:
             data[idx] = np.array(loadFitnessHistory(filename_prefix + 'reslog.' + data_ext, column=(1, -1)))
             if fit_func_name == 'borehole':
@@ -231,7 +231,7 @@ def compare_by_genint(data):
 
         guaranteeFolderExists(f'{plot_dir}by_genint/')
         plt.title(f'{fit_func_name}')
-        plt.xlabel('Evaluations')
+        plt.xlabel('High Fidelity Evaluations')
         plt.xlim(0, x_lims[fit_func_name])
         plt.ylabel('Fitness value')
         plt.yscale('log')
@@ -290,7 +290,7 @@ def compare_by_use(data):
 
         guaranteeFolderExists(f'{plot_dir}by_use/')
         plt.title(f'{fit_func_name}')
-        plt.xlabel('Evaluations')
+        plt.xlabel('High Fidelity Evaluations')
         plt.xlim(0, x_lims[fit_func_name])
         plt.ylabel('Fitness value')
         plt.yscale('log')
@@ -348,7 +348,7 @@ def compare_by_surrogate(data):
 
         guaranteeFolderExists(f'{plot_dir}by_surrogate/')
         plt.title(f'{fit_func_name}')
-        plt.xlabel('Evaluations')
+        plt.xlabel('High Fidelity Evaluations')
         plt.xlim(0, x_lims[fit_func_name])
         plt.ylabel('Fitness value')
         plt.yscale('log')
@@ -406,15 +406,15 @@ def run():
     compare_by_genint(data)
     compare_by_surrogate(data)
 
-    for fit_func_name in list(fit_funcs.keys())[:5]:
-
-        l_bound = np.array(fit_funcs[fit_func_name].l_bound, dtype=np.float64)
-        u_bound = np.array(fit_funcs[fit_func_name].u_bound, dtype=np.float64)
-
-        func = lambda x, y: fit_funcs[fit_func_name].high((x,y))
-        make2dvisualizations(func, l_bound, u_bound, fit_func_name)
-        func = lambda x, y: fit_funcs[fit_func_name].low((x,y))
-        make2dvisualizations(func, l_bound, u_bound, fit_func_name + '_low')
+    # for fit_func_name in list(fit_funcs.keys())[:5]:
+    #
+    #     l_bound = np.array(fit_funcs[fit_func_name].l_bound, dtype=np.float64)
+    #     u_bound = np.array(fit_funcs[fit_func_name].u_bound, dtype=np.float64)
+    #
+    #     func = lambda x, y: fit_funcs[fit_func_name].high((x,y))
+    #     make2dvisualizations(func, l_bound, u_bound, fit_func_name)
+    #     func = lambda x, y: fit_funcs[fit_func_name].low((x,y))
+    #     make2dvisualizations(func, l_bound, u_bound, fit_func_name + '_low')
     #
     #     l_bound /= 33
     #     u_bound /= 33
