@@ -385,39 +385,44 @@ def infill_experiment(num_repetitions=10, num_iterations=1, verbose=False, which
     else:
         interval = None
 
-    for rep in range(num_repetitions):
+    import progressbar
 
-        if verbose:
-            print(f'Repetition {rep}/{num_repetitions}:')
-            print('    Creating Bi-Fid BO')
-        bifidbo = createbifidbo()
+    with progressbar.ProgressBar(max_value=num_repetitions*(num_iterations+1)) as bar:
+        for rep in range(num_repetitions):
 
-        mse_hierarchical, mse_high, mse_low = calc_mse(bifidbo, test_mse, test_sample, verbose)
-        records.append(MSERecord(which_model, fidelity, rep, iteration=0,
-                                 mse_low=mse_low, mse_high=mse_high, mse_diff=mse_hierarchical))
-
-        for i in range(1, num_iterations+1):
-
+            bar.update(rep*num_repetitions + 0)
             if verbose:
-                print(f'    Iteration {i}/{num_iterations}')
-                print('        Finding infill...')
-
-            if interval is None:
-                fid = fidelity
-            else:
-                if i % interval == 0:
-                    fid = 'both'
-                else:
-                    fid = 'low'
-
-            find_infill_and_retrain(bifidbo, which_model=which_model, fidelity=fid)
+                print(f'Repetition {rep}/{num_repetitions}:')
+                print('    Creating Bi-Fid BO')
+            bifidbo = createbifidbo()
 
             mse_hierarchical, mse_high, mse_low = calc_mse(bifidbo, test_mse, test_sample, verbose)
-            records.append(MSERecord(which_model, fidelity, rep, iteration=i,
+            records.append(MSERecord(which_model, fidelity, rep, iteration=0,
                                      mse_low=mse_low, mse_high=mse_high, mse_diff=mse_hierarchical))
 
-        if verbose:
-            print()
+            for i in range(1, num_iterations+1):
+                bar.update(rep*num_repetitions + i)
+
+                if verbose:
+                    print(f'    Iteration {i}/{num_iterations}')
+                    print('        Finding infill...')
+
+                if interval is None:
+                    fid = fidelity
+                else:
+                    if i % interval == 0:
+                        fid = 'both'
+                    else:
+                        fid = 'low'
+
+                find_infill_and_retrain(bifidbo, which_model=which_model, fidelity=fid)
+
+                mse_hierarchical, mse_high, mse_low = calc_mse(bifidbo, test_mse, test_sample, verbose)
+                records.append(MSERecord(which_model, fidelity, rep, iteration=i,
+                                         mse_low=mse_low, mse_high=mse_high, mse_diff=mse_hierarchical))
+
+            if verbose:
+                print()
 
     return records
 
@@ -425,12 +430,21 @@ def infill_experiment(num_repetitions=10, num_iterations=1, verbose=False, which
 if __name__ == "__main__":
     np.set_printoptions(linewidth=200)
 
-    records = []
+    run_opts = {
+        'num_repetitions': 30,
+        'num_iterations': 50,
+    }
 
-    records.extend(infill_experiment(num_repetitions=100, num_iterations=25, fidelity='high', which_model='hierarchical'))
-    records.extend(infill_experiment(num_repetitions=100, num_iterations=25, fidelity='high', which_model='high'))
-    records.extend(infill_experiment(num_repetitions=100, num_iterations=25, fidelity='both', which_model='hierarchical'))
-    records.extend(infill_experiment(num_repetitions=100, num_iterations=25, fidelity='both', which_model='high'))
+    records = [
+        infill_experiment(fidelity='high', which_model='hierarchical', **run_opts),
+        infill_experiment(fidelity='high', which_model='high', **run_opts),
+        infill_experiment(fidelity='both 1', which_model='hierarchical', **run_opts),
+        infill_experiment(fidelity='both 1', which_model='high', **run_opts),
+        infill_experiment(fidelity='both 2', which_model='hierarchical', **run_opts),
+        infill_experiment(fidelity='both 3', which_model='hierarchical', **run_opts),
+        infill_experiment(fidelity='both 4', which_model='hierarchical', **run_opts),
+        infill_experiment(fidelity='both 5', which_model='hierarchical', **run_opts),
+    ]
 
     df = pd.DataFrame(records)
     df.to_csv(base_dir+'records.csv', index_label='index')
