@@ -175,6 +175,8 @@ class BiFidBayesianOptimization:
             gp = self.gp_low
         elif fidelity == 'high':
             gp = self.gp_high
+        elif fidelity == 'diff':
+            return self.train_diff(n=n)
         elif isinstance(fidelity, list):
             for fid in fidelity:
                 self.train_gp(fid, n=n)
@@ -335,7 +337,7 @@ def find_infill_and_retrain(bifidbo, which_model='hierarchical', fidelity='low')
         infill_out = fit_func_high(*infill_in)
     elif fidelity == 'both':
         infill_out = fit_func_low(*infill_in), fit_func_high(*infill_in)
-        fidelity = ['low', 'high']
+        fidelity = ['low', 'high', 'diff']
     else:
         raise ValueError(f"fidelity '{fidelity}' not recognized")
 
