@@ -336,7 +336,7 @@ def find_infill_and_retrain(bifidbo, which_model='hierarchical', fidelity='low')
     elif fidelity == 'high':
         infill_out = fit_func_high(*infill_in)
     elif fidelity == 'both':
-        infill_out = fit_func_low(*infill_in), fit_func_high(*infill_in)
+        infill_out = [fit_func_low(*infill_in), fit_func_high(*infill_in)]
         fidelity = ['low', 'high', 'diff']
     else:
         raise ValueError(f"fidelity '{fidelity}' not recognized")
@@ -380,6 +380,11 @@ def infill_experiment(num_repetitions=10, num_iterations=1, verbose=False, which
 
     records = []
 
+    if 'both' in fidelity:
+        interval = max(int(fidelity[4:]), 1)
+    else:
+        interval = None
+
     for rep in range(num_repetitions):
 
         if verbose:
@@ -394,10 +399,18 @@ def infill_experiment(num_repetitions=10, num_iterations=1, verbose=False, which
         for i in range(1, num_iterations+1):
 
             if verbose:
-                # print(mse_low, mse_high, mse_hierarchical)
                 print(f'    Iteration {i}/{num_iterations}')
                 print('        Finding infill...')
-            find_infill_and_retrain(bifidbo, which_model=which_model, fidelity=fidelity)
+
+            if interval is None:
+                fid = fidelity
+            else:
+                if i % interval == 0:
+                    fid = 'both'
+                else:
+                    fid = 'low'
+
+            find_infill_and_retrain(bifidbo, which_model=which_model, fidelity=fid)
 
             mse_hierarchical, mse_high, mse_low = calc_mse(bifidbo, test_mse, test_sample, verbose)
             records.append(MSERecord(which_model, fidelity, rep, iteration=i,
