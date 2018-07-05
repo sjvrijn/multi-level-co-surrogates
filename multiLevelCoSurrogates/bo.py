@@ -54,7 +54,7 @@ def gpplot(x, func, return_std=False):
     return func(x, return_std=return_std)[idx]
 
 
-def plotmorestuff(surfaces, bifidbo, count):
+def plotmorestuff(surfaces, bifidbo, *, count='', save_as=None, plot_2d=True, plot_3d=False):
     funcs = [
         *surfaces,
 
@@ -96,11 +96,17 @@ def plotmorestuff(surfaces, bifidbo, count):
         f'Hierarchical GP var {count}',
     ]
 
-    # plotsurfaces(funcs, titles, (5, 3), save_as=f'{base_dir}plotmorestuff_2d_{count}.png', as_3d=False)
-    # plotsurfaces(funcs, titles, (5, 3), save_as=f'{base_dir}plotmorestuff_3d_{count}.png', as_3d=True)
+    if save_as:
+        savename_2d = f'{base_dir}{save_as}_2d_{count}.png'
+        savename_3d = f'{base_dir}{save_as}_3d_{count}.png'
+    else:
+        savename_2d = savename_3d = None
 
-    plotsurfaces(funcs, titles, (5, 3), as_3d=False)
-    # plotsurfaces(funcs, titles, (5, 3), as_3d=True)
+    if plot_2d:
+        plotsurfaces(funcs, titles, (5, 3), save_as=savename_2d, as_3d=False)
+    if plot_3d:
+        plotsurfaces(funcs, titles, (5, 3), save_as=savename_3d, as_3d=True)
+
 
 boha = fit_funcs['bohachevsky']
 bounds = {'x': (boha.l_bound[0]//20, boha.u_bound[0]//20),
@@ -297,7 +303,7 @@ def optimize(bifidbo, surfs, num_steps=10):
 
         bifidbo.train_gp(fidelity='low')
 
-        plotmorestuff(surfs, bifidbo, count)
+        plotmorestuff(surfs, bifidbo, count=count)
 
 
 def find_infill(bifidbo, which_model):
