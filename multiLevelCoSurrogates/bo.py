@@ -7,6 +7,7 @@ New attempt at using Bayesian optimization using the standard 'bayesian-optimiza
 
 import numpy as np
 import pandas as pd
+import warnings
 from collections import namedtuple
 from functools import partial
 from pyDOE import lhs
@@ -339,13 +340,13 @@ def find_infill_and_retrain(bifidbo, which_model='hierarchical', fidelity='low')
     bifidbo.train_gp(fidelity=fidelity)
 
 
-def calc_mse(bifidbo, test_mse, test_sample, verbose):
-    if verbose:
+def calc_mse(bifidbo, test_mse, test_sample, verbosity=0):
+    if verbosity > 0:
         print('        Predicting...')
     low_predict_values = bifidbo.gp_low.predict(test_sample)
     high_predict_values = bifidbo.gp_high.predict(test_sample)
     hierarchical_predict_values = bifidbo.predict(test_sample)
-    if verbose:
+    if verbosity > 0:
         print('        Calculating MSE...')
     mse_low = test_mse(low_predict_values)
     mse_high = test_mse(high_predict_values)
@@ -357,9 +358,9 @@ def calc_mse(bifidbo, test_mse, test_sample, verbose):
 MSERecord = namedtuple('MSERecord', ['which_model', 'fidelity', 'repetition', 'iteration',
                                      'mse_high', 'mse_low', 'mse_diff'])
 
-def infill_experiment(num_repetitions=10, num_iterations=1, verbose=False, which_model='hierarchical', fidelity='low'):
+def infill_experiment(num_repetitions=10, num_iterations=1, verbosity=0, which_model='hierarchical', fidelity='low'):
 
-    if verbose:
+    if verbosity > 0:
         print(f'--------------------------------------------------------------------------------\n'
               f'Updating {fidelity} {num_iterations} steps, based on {which_model}, repeated {num_repetitions} times.\n'
               f'---')
@@ -385,19 +386,20 @@ def infill_experiment(num_repetitions=10, num_iterations=1, verbose=False, which
         for rep in range(num_repetitions):
 
             bar.update(rep*num_repetitions + 0)
-            if verbose:
+            if verbosity > 1:
                 print(f'Repetition {rep}/{num_repetitions}:')
                 print('    Creating Bi-Fid BO')
             bifidbo = createbifidbo()
 
-            mse_hierarchical, mse_high, mse_low = calc_mse(bifidbo, test_mse, test_sample, verbose)
+            mse_hierarchical, mse_high, mse_low = calc_mse(bifidbo, test_mse, test_sample, verbosity=verbosity-2)
             records.append(MSERecord(which_model, fidelity, rep, iteration=0,
                                      mse_low=mse_low, mse_high=mse_high, mse_diff=mse_hierarchical))
+            # plotmorestuff(surfaces, bifidbo, count=0, save_as='promo', plot_3d=True)
 
             for i in range(1, num_iterations+1):
                 bar.update(rep*num_repetitions + i)
 
-                if verbose:
+                if verbosity > 2:
                     print(f'    Iteration {i}/{num_iterations}')
                     print('        Finding infill...')
 
@@ -411,14 +413,19 @@ def infill_experiment(num_repetitions=10, num_iterations=1, verbose=False, which
 
                 find_infill_and_retrain(bifidbo, which_model=which_model, fidelity=fid)
 
-                mse_hierarchical, mse_high, mse_low = calc_mse(bifidbo, test_mse, test_sample, verbose)
+                mse_hierarchical, mse_high, mse_low = calc_mse(bifidbo, test_mse, test_sample, verbosity=verbosity-3)
                 records.append(MSERecord(which_model, fidelity, rep, iteration=i,
                                          mse_low=mse_low, mse_high=mse_high, mse_diff=mse_hierarchical))
+                # plotmorestuff(surfaces, bifidbo, count=i, save_as='promo', plot_3d=True)
 
-            if verbose:
+            if verbosity > 0:
                 print()
 
     return records
+
+
+def flatten(iterable):
+    return [x for y in iterable for x in y]
 
 
 if __name__ == "__main__":
@@ -427,18 +434,20 @@ if __name__ == "__main__":
     run_opts = {
         'num_repetitions': 30,
         'num_iterations': 50,
+        'verbosity': 1,
     }
 
-    records = [
-        infill_experiment(fidelity='high', which_model='hierarchical', **run_opts),
-        infill_experiment(fidelity='high', which_model='high', **run_opts),
-        infill_experiment(fidelity='both 1', which_model='hierarchical', **run_opts),
-        infill_experiment(fidelity='both 1', which_model='high', **run_opts),
-        infill_experiment(fidelity='both 2', which_model='hierarchical', **run_opts),
-        infill_experiment(fidelity='both 3', which_model='hierarchical', **run_opts),
-        infill_experiment(fidelity='both 4', which_model='hierarchical', **run_opts),
-        infill_experiment(fidelity='both 5', which_model='hierarchical', **run_opts),
-    ]
+    with warnings.catch_warnings():
+        records = [
+            infill_experiment(fidelity='high', which_model='hierarchical', **run_opts),
+            infill_experiment(fidelity='high', which_model='high', **run_opts),
+            infill_experiment(fidelity='both 1', which_model='hierarchical', **run_opts),
+            infill_experiment(fidelity='both 1', which_model='high', **run_opts),
+            infill_experiment(fidelity='both 2', which_model='hierarchical', **run_opts),
+            infill_experiment(fidelity='both 3', which_model='hierarchical', **run_opts),
+            infill_experiment(fidelity='both 4', which_model='hierarchical', **run_opts),
+            infill_experiment(fidelity='both 5', which_model='hierarchical', **run_opts),
+        ]
 
-    df = pd.DataFrame(records)
+    df = pd.DataFrame(flatten(records))
     df.to_csv(base_dir+'records.csv', index_label='index')
