@@ -156,7 +156,7 @@ class BiFidBayesianOptimization:
         self.f_high = f_high
         self.cand_arch = cand_arch
 
-        self.acq = bo.helpers.UtilityFunction(kind='ucb', kappa=2.576, xi=0.0)
+        self.acq = bo.helpers.UtilityFunction(kind='ucb', kappa=2.576, xi=0.0).utility
 
         self.bo_diff = BayesianOptimization(emptyfit, bounds, verbose=False)
 
@@ -172,8 +172,6 @@ class BiFidBayesianOptimization:
             'target': diffs.flatten(),
         })
         self.bo_diff.maximize(0,0)
-
-        self._util = bo.helpers.UtilityFunction('ucb', kappa=2.576, xi=0.0,).utility
 
 
     def train_gp(self, fidelity, n=None):
@@ -231,8 +229,8 @@ class BiFidBayesianOptimization:
 
 
     def utility(self, X, gp=None, y_max=None):
-        util_low = self.rho * self.acq.utility(X, gp=self.gp_low, y_max=self.cand_arch.max['low'])
-        util_diff = self.acq.utility(X, gp=self.bo_diff.gp, y_max=self.bo_diff.space.Y.max())
+        util_low = self.rho * self.acq(X, gp=self.gp_low, y_max=self.cand_arch.max['low'])
+        util_diff = self.acq(X, gp=self.bo_diff.gp, y_max=self.bo_diff.space.Y.max())
         return util_low + util_diff
 
 
@@ -248,12 +246,12 @@ class BiFidBayesianOptimization:
             kwargs['y_max'] = self.cand_arch.max['high']
 
         elif which_model == 'low':
-            kwargs['ac'] = self._util
+            kwargs['ac'] = self.acq
             kwargs['gp'] = self.gp_low
             kwargs['y_max'] = self.cand_arch.max['low']
 
         elif which_model == 'high':
-            kwargs['ac'] = self._util
+            kwargs['ac'] = self.acq
             kwargs['gp'] = self.gp_high
             kwargs['y_max'] = self.cand_arch.max['high']
 
