@@ -5,9 +5,18 @@
 New attempt at using Bayesian optimization using the standard 'bayesian-optimization' package.
 """
 
+import sys
+sys.path.append("./")
+sys.path.append("../")
+import bayes_opt as bo
+from bayes_opt import BayesianOptimization
+
+
+
 import numpy as np
 import pandas as pd
 import warnings
+warnings.filterwarnings("ignore")
 from collections import namedtuple
 from functools import partial
 from pyDOE import lhs
@@ -24,11 +33,6 @@ from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
 from multiLevelCoSurrogates.Utils import createsurface, diffsurface, plotsurfaces, \
     ValueRange, linearscaletransform, select_subsample
 
-
-import sys
-sys.path.append("./")
-import bayes_opt as bo
-from bayes_opt import BayesianOptimization
 
 
 
@@ -418,7 +422,7 @@ def infill_experiment(num_repetitions=10, num_iterations=1, verbosity=0, which_m
                                          mse_low=mse_low, mse_high=mse_high, mse_diff=mse_hierarchical))
                 # plotmorestuff(surfaces, bifidbo, count=i, save_as='promo', plot_3d=True)
 
-            if verbosity > 0:
+            if verbosity > 1:
                 print()
 
     return records
