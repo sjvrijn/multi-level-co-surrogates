@@ -127,7 +127,7 @@ def plotsurface(func, title=''):
     plt.show()
 
 
-def plotsurfaces(funcs, titles=None, shape=None, figratio=None, save_as=None, as_3d=True):
+def plotsurfaces(funcs, titles=None, shape=None, figratio=None, save_as=None, as_3d=True, show=True):
     if titles is None:
         titles = ['']*len(funcs)
 
@@ -161,7 +161,8 @@ def plotsurfaces(funcs, titles=None, shape=None, figratio=None, save_as=None, as
     plt.tight_layout()
     if save_as is not None:
         plt.savefig(save_as)
-    plt.show()
+    if show:
+        plt.show()
     plt.clf()
 
 

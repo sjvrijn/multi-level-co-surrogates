@@ -31,13 +31,21 @@ TimingData = namedtuple('TimingData', ['function', 'surrogate', 'usage', 'repeti
 
 x_lims = {
     'bohachevsky': 100,
-    'branin': 500,
     'booth': 250,
+    'branin': 500,
     'himmelblau': 500,
     'sixHumpCamelBack': 50,
     'park91a': 500,
     'park91b': 500,
     'borehole': 50,
+}
+
+z_lims = {
+    'bohachevsky': 75,
+    'booth': 1500,
+    # 'branin': 1500,
+    'himmelblau': 250,
+    'sixHumpCamelBack': 50,
 }
 
 
@@ -381,6 +389,7 @@ def make2dvisualizations(func, l_bound, u_bound, name, num_intervals=100):
 
     # Plot the surface.
     surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+    # surf = ax.pcolor(X, Y, Z, cmap=cm.coolwarm)
     ax.view_init(azim=45)
     ax.set_title(f'{name}')
 
@@ -400,32 +409,28 @@ def make2dvisualizations(func, l_bound, u_bound, name, num_intervals=100):
     plt.savefig(f'{plot_dir}surfaces/{name}_2d.{plot_ext}')
 
 
+def plot_function_surfaces():
+
+    for fit_func_name in list(fit_funcs.keys())[:5]:
+
+        l_bound = np.array(fit_funcs[fit_func_name].l_bound, dtype=np.float64)
+        u_bound = np.array(fit_funcs[fit_func_name].u_bound, dtype=np.float64)
+
+        func = lambda x, y: fit_funcs[fit_func_name].high((x,y))
+        make2dvisualizations(func, l_bound, u_bound, fit_func_name)
+        func = lambda x, y: fit_funcs[fit_func_name].low((x,y))
+        make2dvisualizations(func, l_bound, u_bound, fit_func_name + '_low')
+
+
 def run():
-    data = getdata()
-    compare_by_use(data)
-    compare_by_genint(data)
-    compare_by_surrogate(data)
+    # data = getdata()
+    # compare_by_use(data)
+    # compare_by_genint(data)
+    # compare_by_surrogate(data)
 
-    # for fit_func_name in list(fit_funcs.keys())[:5]:
-    #
-    #     l_bound = np.array(fit_funcs[fit_func_name].l_bound, dtype=np.float64)
-    #     u_bound = np.array(fit_funcs[fit_func_name].u_bound, dtype=np.float64)
-    #
-    #     func = lambda x, y: fit_funcs[fit_func_name].high((x,y))
-    #     make2dvisualizations(func, l_bound, u_bound, fit_func_name)
-    #     func = lambda x, y: fit_funcs[fit_func_name].low((x,y))
-    #     make2dvisualizations(func, l_bound, u_bound, fit_func_name + '_low')
-    #
-    #     l_bound /= 33
-    #     u_bound /= 33
-    #
-    #     func = lambda x, y: fit_funcs[fit_func_name].high((x,y))
-    #     make2dvisualizations(func, l_bound, u_bound, fit_func_name + '_small')
-    #     func = lambda x, y: fit_funcs[fit_func_name].low((x,y))
-    #     make2dvisualizations(func, l_bound, u_bound, fit_func_name + '_small_low')
+    plot_function_surfaces()
 
-
-    timingdatatocsv()
+    # timingdatatocsv()
 
 
 if __name__ == '__main__':
