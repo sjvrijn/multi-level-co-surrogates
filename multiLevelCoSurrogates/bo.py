@@ -126,17 +126,24 @@ def emptyfit(x):
 
 class BiFidBayesianOptimization:
 
-    def __init__(self, gp_low, gp_high, f_low, f_high, cand_arch):
+    def __init__(self, gp_low, gp_high, f_low, f_high, cand_arch, acq=None):
         self.gp_low = gp_low
         self.gp_high = gp_high
         self.f_low = f_low
         self.f_high = f_high
         self.cand_arch = cand_arch
 
-        self.kind = 'ucb'
+        kind, kappa, xi = 'ucb', 2.576, 0.0
 
-        self.acq = bo.helpers.UtilityFunction(kind=self.kind, kappa=2.576, xi=0.0).utility
+        if acq is not None:
+            kind, param = acq
+            if kind == 'ucb':
+                kappa = param
+            elif kind == 'ei':
+                xi = param
+        self.kind = kind
 
+        self.acq = bo.helpers.UtilityFunction(kind=kind, kappa=kappa, xi=xi).utility
         self.bo_diff = BayesianOptimization(emptyfit, bounds, verbose=False)
 
         candidates, fitnesses = self.cand_arch.getcandidates(n=0, fidelity=['high', 'low'])
@@ -253,7 +260,7 @@ surfaces = list(map(createsurface, funcs))
 surfaces.append(diffsurface(surfaces[0], surfaces[1]))
 
 
-def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False):
+def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False, acq=None):
 
     ndim = 2
     range_in = ValueRange(-5, 5)
@@ -279,7 +286,7 @@ def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False):
 
     bifidbo = BiFidBayesianOptimization(gp_low=gp_low, gp_high=gp_high,
                                         f_low=fit_func_low, f_high=fit_func_high,
-                                        cand_arch=archive)
+                                        cand_arch=archive, acq=acq)
 
     # Fit GP
     bifidbo.train_gp(fidelity='low')
@@ -337,7 +344,7 @@ def calc_mse(bifidbo, test_mse, test_sample, verbosity=0):
 MSERecord = namedtuple('MSERecord', ['which_model', 'fidelity', 'repetition', 'iteration',
                                      'mse_high', 'mse_low', 'mse_diff'])
 
-def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarchical', fidelity='low',
+def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarchical', fidelity='low', acq=None,
                       *, verbosity=0, make_plots=False):
 
     if verbosity > 0:
@@ -370,7 +377,7 @@ def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarc
             if verbosity > 1:
                 print(f'Repetition {rep}/{num_repetitions}:')
                 print('    Creating Bi-Fid BO')
-            bifidbo = createbifidbo(num_low_samples=5, num_high_samples=2)
+            bifidbo = createbifidbo(num_low_samples=5, num_high_samples=2, acq=acq)
 
             mse_hierarchical, mse_high, mse_low = calc_mse(bifidbo, test_mse, test_sample, verbosity=verbosity-2)
             records.append(MSERecord(which_model, fidelity, rep, iteration=0,
@@ -415,23 +422,35 @@ if __name__ == "__main__":
     np.set_printoptions(linewidth=200)
 
     run_opts = {
-        'num_repetitions': 1,
+        'num_repetitions': 3,
         'num_iterations': 25,
         'verbosity': 1,
-        'make_plots': True,
+        'make_plots': False,
     }
 
-    with warnings.catch_warnings():
+    acqs = [
+        ('ucb', 1.5),
+        ('ucb', 2.5),
+        ('ucb', 3.5),
+        ('ei', 0.0),
+        ('ei', 0.5),
+        ('ei', 1.0),
+        ('poi', None),
+    ]
+
+    print(acqs)
+    for acq in acqs:
+        run_opts['acq'] = acq
+        print(acq)
         records = [
-            # infill_experiment(fidelity='high', which_model='hierarchical', **run_opts),
+
             infill_experiment(fidelity='high', which_model='high', **run_opts),
+            infill_experiment(fidelity='low', which_model='hierarchical', **run_opts),
             infill_experiment(fidelity='both 1', which_model='hierarchical', **run_opts),
-            # infill_experiment(fidelity='both 1', which_model='high', **run_opts),
-            # infill_experiment(fidelity='both 2', which_model='hierarchical', **run_opts),
             infill_experiment(fidelity='both 3', which_model='hierarchical', **run_opts),
-            # infill_experiment(fidelity='both 4', which_model='hierarchical', **run_opts),
             infill_experiment(fidelity='both 5', which_model='hierarchical', **run_opts),
         ]
 
-    df = pd.DataFrame(flatten(records))
-    df.to_csv(base_dir+'records.csv', index_label='index')
+        df = pd.DataFrame(flatten(records))
+        name, param = acq
+        df.to_csv(base_dir+f"{name}{param if param is not None else ''}_records.csv", index_label='index')
