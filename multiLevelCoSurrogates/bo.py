@@ -63,15 +63,15 @@ def plotmorestuff(surfaces, bifidbo, *, count='', save_as=None, plot_2d=True, pl
     funcs = [
         *surfaces,
 
-        partial(bifidbo.acq.utility, gp=bifidbo.gp_high, y_max=bifidbo.cand_arch.max['high']),
+        partial(bifidbo.acq, gp=bifidbo.gp_high, y_max=bifidbo.cand_arch.max['high']),
         partial(gpplot, func=bifidbo.gp_high.predict),
         partial(gpplot, func=bifidbo.gp_high.predict, return_std=True),
 
-        partial(bifidbo.acq.utility, gp=bifidbo.gp_low, y_max=bifidbo.cand_arch.max['low']),
+        partial(bifidbo.acq, gp=bifidbo.gp_low, y_max=bifidbo.cand_arch.max['low']),
         partial(gpplot, func=bifidbo.gp_low.predict),
         partial(gpplot, func=bifidbo.gp_low.predict, return_std=True),
 
-        partial(bifidbo.acq.utility, gp=bifidbo.bo_diff.gp, y_max=bifidbo.bo_diff.space.Y.max()),
+        partial(bifidbo.acq, gp=bifidbo.bo_diff.gp, y_max=bifidbo.bo_diff.space.Y.max()),
         partial(gpplot, func=bifidbo.bo_diff.gp.predict),
         partial(gpplot, func=bifidbo.bo_diff.gp.predict, return_std=True),
 
@@ -84,19 +84,19 @@ def plotmorestuff(surfaces, bifidbo, *, count='', save_as=None, plot_2d=True, pl
         f'Function low',
         f'Function diff',
 
-        f'High ACQ:{bifidbo.acq.kind} {count}',
+        f'High ACQ:{bifidbo.kind} {count}',
         f'High GP {count}',
         f'High GP var {count}',
 
-        f'Low ACQ:{bifidbo.acq.kind} {count}',
+        f'Low ACQ:{bifidbo.kind} {count}',
         f'Low GP {count}',
         f'Low GP var {count}',
 
-        f'Diff ACQ:{bifidbo.acq.kind} {count}',
+        f'Diff ACQ:{bifidbo.kind} {count}',
         f'Diff GP {count}',
         f'Diff GP var {count}',
 
-        f'Hierarchical ACQ:{bifidbo.acq.kind} {count}',
+        f'Hierarchical ACQ:{bifidbo.kind} {count}',
         f'Hierarchical GP {count}',
         f'Hierarchical GP var {count}',
     ]
@@ -113,32 +113,9 @@ def plotmorestuff(surfaces, bifidbo, *, count='', save_as=None, plot_2d=True, pl
         plotsurfaces(funcs, titles, (5, 3), save_as=savename_3d, as_3d=True)
 
 
-boha = fit_funcs['bohachevsky']
-bounds = {'x': (boha.l_bound[0]//20, boha.u_bound[0]//20),
-          'y': (boha.l_bound[1]//20, boha.u_bound[1]//20)}
-
-
-def boexample(num_init_points=5, num_iters=25):
-
-    def fit_func(x, y):
-        return -boha.high([x, y])
-
-    bopt = BayesianOptimization(fit_func, bounds)
-    bopt.explore({'x': [-1, 3], 'y': [-2, 2]}, eager=True)
-    bopt.maximize(init_points=0, n_iter=0, kappa=2)
-
-    for count in range(1, num_init_points+1):
-        bopt.explore_random(1, eager=True)
-        bopt.gp.fit(bopt.space.X, bopt.space.Y)
-        plotstuff(fit_func, bopt, count)
-
-    for count in range(num_init_points, num_init_points+num_iters+1):
-        bopt.maximize(init_points=0, n_iter=1, kappa=2)
-        plotstuff(fit_func, bopt, count)
-
-    # Finally, we take a look at the final results.
-    print(bopt.res['max'])
-    print(bopt.res['all'])
+boha = fit_funcs['himmelblau']
+bounds = {'x': (boha.l_bound[0], boha.u_bound[0]),
+          'y': (boha.l_bound[1], boha.u_bound[1])}
 
 
 
@@ -156,7 +133,9 @@ class BiFidBayesianOptimization:
         self.f_high = f_high
         self.cand_arch = cand_arch
 
-        self.acq = bo.helpers.UtilityFunction(kind='ucb', kappa=2.576, xi=0.0).utility
+        self.kind = 'ucb'
+
+        self.acq = bo.helpers.UtilityFunction(kind=self.kind, kappa=2.576, xi=0.0).utility
 
         self.bo_diff = BayesianOptimization(emptyfit, bounds, verbose=False)
 
@@ -274,11 +253,9 @@ surfaces = list(map(createsurface, funcs))
 surfaces.append(diffsurface(surfaces[0], surfaces[1]))
 
 
-def createbifidbo(plot_surfaces=False):
+def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False):
 
     ndim = 2
-    num_low_samples = 25
-    num_high_samples = 5
     range_in = ValueRange(-5, 5)
     range_lhs = ValueRange(0, 1)
 
@@ -360,7 +337,8 @@ def calc_mse(bifidbo, test_mse, test_sample, verbosity=0):
 MSERecord = namedtuple('MSERecord', ['which_model', 'fidelity', 'repetition', 'iteration',
                                      'mse_high', 'mse_low', 'mse_diff'])
 
-def infill_experiment(num_repetitions=10, num_iterations=1, verbosity=0, which_model='hierarchical', fidelity='low'):
+def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarchical', fidelity='low',
+                      *, verbosity=0, make_plots=False):
 
     if verbosity > 0:
         print(f'--------------------------------------------------------------------------------\n'
@@ -383,6 +361,7 @@ def infill_experiment(num_repetitions=10, num_iterations=1, verbosity=0, which_m
         interval = None
 
     import progressbar
+    save_as = f'promo_{fidelity}_{which_model}'
 
     with progressbar.ProgressBar(max_value=num_repetitions*(num_iterations+1)) as bar:
         for rep in range(num_repetitions):
@@ -391,12 +370,13 @@ def infill_experiment(num_repetitions=10, num_iterations=1, verbosity=0, which_m
             if verbosity > 1:
                 print(f'Repetition {rep}/{num_repetitions}:')
                 print('    Creating Bi-Fid BO')
-            bifidbo = createbifidbo()
+            bifidbo = createbifidbo(num_low_samples=5, num_high_samples=2)
 
             mse_hierarchical, mse_high, mse_low = calc_mse(bifidbo, test_mse, test_sample, verbosity=verbosity-2)
             records.append(MSERecord(which_model, fidelity, rep, iteration=0,
                                      mse_low=mse_low, mse_high=mse_high, mse_diff=mse_hierarchical))
-            # plotmorestuff(surfaces, bifidbo, count=0, save_as='promo', plot_3d=True)
+            if make_plots:
+                plotmorestuff(surfaces, bifidbo, count=0, save_as=save_as, plot_3d=False)
 
             for i in range(1, num_iterations+1):
                 bar.update(rep*num_repetitions + i)
@@ -418,7 +398,8 @@ def infill_experiment(num_repetitions=10, num_iterations=1, verbosity=0, which_m
                 mse_hierarchical, mse_high, mse_low = calc_mse(bifidbo, test_mse, test_sample, verbosity=verbosity-3)
                 records.append(MSERecord(which_model, fidelity, rep, iteration=i,
                                          mse_low=mse_low, mse_high=mse_high, mse_diff=mse_hierarchical))
-                # plotmorestuff(surfaces, bifidbo, count=i, save_as='promo', plot_3d=True)
+                if make_plots:
+                    plotmorestuff(surfaces, bifidbo, count=i, save_as=save_as, plot_3d=False)
 
             if verbosity > 1:
                 print()
@@ -434,20 +415,21 @@ if __name__ == "__main__":
     np.set_printoptions(linewidth=200)
 
     run_opts = {
-        'num_repetitions': 30,
-        'num_iterations': 50,
+        'num_repetitions': 1,
+        'num_iterations': 25,
         'verbosity': 1,
+        'make_plots': True,
     }
 
     with warnings.catch_warnings():
         records = [
-            infill_experiment(fidelity='high', which_model='hierarchical', **run_opts),
+            # infill_experiment(fidelity='high', which_model='hierarchical', **run_opts),
             infill_experiment(fidelity='high', which_model='high', **run_opts),
             infill_experiment(fidelity='both 1', which_model='hierarchical', **run_opts),
-            infill_experiment(fidelity='both 1', which_model='high', **run_opts),
-            infill_experiment(fidelity='both 2', which_model='hierarchical', **run_opts),
+            # infill_experiment(fidelity='both 1', which_model='high', **run_opts),
+            # infill_experiment(fidelity='both 2', which_model='hierarchical', **run_opts),
             infill_experiment(fidelity='both 3', which_model='hierarchical', **run_opts),
-            infill_experiment(fidelity='both 4', which_model='hierarchical', **run_opts),
+            # infill_experiment(fidelity='both 4', which_model='hierarchical', **run_opts),
             infill_experiment(fidelity='both 5', which_model='hierarchical', **run_opts),
         ]
 
