@@ -57,7 +57,7 @@ def sixHumpCamelBack_lf(xx):
     return term1 + term2
 
 
-l_bound = [-2, -2]
-u_bound = [ 2,  2]
+l_bound = [-3, -3]
+u_bound = [ 3,  3]
 
 sixHumpCamelBack = BiFidelityFunction(u_bound, l_bound, sixHumpCamelBack_hf, sixHumpCamelBack_lf)

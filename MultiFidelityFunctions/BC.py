@@ -58,7 +58,7 @@ def bohachevsky_lf(xx):
     return term1 + term2
 
 
-l_bound = [-100, -100]
-u_bound = [ 100,  100]
+l_bound = [-5, -5]
+u_bound = [ 5,  5]
 
 bohachevsky = BiFidelityFunction(u_bound, l_bound, bohachevsky_hf, bohachevsky_lf)
