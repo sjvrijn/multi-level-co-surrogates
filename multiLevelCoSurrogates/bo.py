@@ -24,12 +24,12 @@ from pprint import pprint
 from sklearn.utils import check_random_state
 from sklearn.metrics import mean_squared_error
 from sklearn.linear_model import LinearRegression
-from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import Matern
 
 from multiLevelCoSurrogates.config import fit_funcs, fit_func_dims
 from multiLevelCoSurrogates.local import base_dir
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
+from multiLevelCoSurrogates.Surrogates import Kriging
 from multiLevelCoSurrogates.Utils import createsurface, diffsurface, plotsurfaces, \
     ValueRange, linearscaletransform, select_subsample
 
@@ -76,8 +76,8 @@ def plotmorestuff(surfaces, bifidbo, *, count='', save_as=None, plot_2d=True, pl
         partial(gpplot, func=bifidbo.bo_diff.gp.predict, return_std=True),
 
         partial(bifidbo.acq, gp=bifidbo, y_max=bifidbo.bo_diff.space.Y.max()),
-        bifidbo.predict,
-        partial(bifidbo.predict, return_std=True),
+        partial(gpplot, func=bifidbo.predict),
+        partial(gpplot, func=bifidbo.predict, return_std=True),
     ]
     titles = [
         f'Function high',
@@ -145,6 +145,7 @@ class BiFidBayesianOptimization:
 
         self.acq = bo.helpers.UtilityFunction(kind=kind, kappa=kappa, xi=xi).utility
         self.bo_diff = BayesianOptimization(emptyfit, bounds, verbose=False)
+        self.bo_diff.gp = Kriging(candidate_archive=None, n=0, kernel=Matern(nu=2.5), n_restarts_optimizer=25, random_state=None)
 
         candidates, fitnesses = self.cand_arch.getcandidates(n=0, fidelity=['high', 'low'])
         y_high, y_low = fitnesses[:,0], fitnesses[:,1]
@@ -204,13 +205,15 @@ class BiFidBayesianOptimization:
         if y_low is None:
             low_pred = self.gp_low.predict(X, return_std=return_std)
             if return_std:
-                low_pred = low_pred[1]
+                low_std = low_pred[1]
+                low_pred = low_pred[0]
             y_low = self.rho * low_pred
 
         diff_pred = self.bo_diff.gp.predict(X, return_std=return_std)
         if return_std:
-            diff_pred = diff_pred[1]
-            result = np.sqrt(y_low**2 + diff_pred**2)
+            diff_std = diff_pred[1]
+            diff_pred = diff_pred[0]
+            result = y_low + diff_pred, np.sqrt(low_std**2 + diff_std**2)
         else:
             result = y_low + diff_pred
         return result
@@ -262,9 +265,8 @@ def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False, a
     range_in = ValueRange(-5, 5)
     range_lhs = ValueRange(0, 1)
 
-    # TODO: WHY ARE ABSOLUTE VARIANCES SO SURPRISINGLY LOW?!
-    gp_low = GaussianProcessRegressor(kernel=Matern(nu=2.5), n_restarts_optimizer=25, random_state=None)
-    gp_high = GaussianProcessRegressor(kernel=Matern(nu=2.5), n_restarts_optimizer=25, random_state=None)
+    gp_low = Kriging(candidate_archive=None, n=0, kernel=Matern(nu=2.5), n_restarts_optimizer=25, random_state=None)
+    gp_high = Kriging(candidate_archive=None, n=0, kernel=Matern(nu=2.5), n_restarts_optimizer=25, random_state=None)
     archive = CandidateArchive(ndim, fidelities=['high', 'low'])
 
     low_sample = lhs(ndim, num_low_samples)
@@ -427,13 +429,17 @@ if __name__ == "__main__":
     }
 
     acqs = [
+        ('ucb', 0.5),
+        ('ucb', 1.0),
         ('ucb', 1.5),
-        ('ucb', 2.5),
-        ('ucb', 3.5),
+        ('ucb', 2.0),
+        ('ucb', 3.0),
+        ('ucb', 4.0),
+        ('ucb', 5.0),
         ('ei', 0.0),
         ('ei', 0.5),
         ('ei', 1.0),
-        ('poi', None),
+        # ('poi', None),
     ]
 
     print(acqs)
