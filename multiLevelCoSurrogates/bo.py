@@ -75,7 +75,7 @@ def plotmorestuff(surfaces, bifidbo, *, count='', save_as=None, plot_2d=True, pl
         partial(gpplot, func=bifidbo.bo_diff.gp.predict),
         partial(gpplot, func=bifidbo.bo_diff.gp.predict, return_std=True),
 
-        bifidbo.utility,
+        partial(bifidbo.acq, gp=bifidbo, y_max=bifidbo.bo_diff.space.Y.max()),
         bifidbo.predict,
         partial(bifidbo.predict, return_std=True),
     ]
@@ -201,7 +201,6 @@ class BiFidBayesianOptimization:
 
 
     def predict(self, X, return_std=False, y_low=None):
-
         if y_low is None:
             low_pred = self.gp_low.predict(X, return_std=return_std)
             if return_std:
@@ -211,33 +210,30 @@ class BiFidBayesianOptimization:
         diff_pred = self.bo_diff.gp.predict(X, return_std=return_std)
         if return_std:
             diff_pred = diff_pred[1]
-        return y_low + diff_pred
-
-
-    def utility(self, X, gp=None, y_max=None):
-        util_low = self.rho * self.acq(X, gp=self.gp_low, y_max=self.cand_arch.max['low'])
-        util_diff = self.acq(X, gp=self.bo_diff.gp, y_max=self.bo_diff.space.Y.max())
-        return util_low + util_diff
+            result = np.sqrt(y_low**2 + diff_pred**2)
+        else:
+            result = y_low + diff_pred
+        return result
 
 
     def acq_max(self, which_model):
-        kwargs = {'bounds': np.array(list(bounds.values()), dtype=np.float),
-                  'random_state': self.bo_diff.random_state,
-                  'n_warmup': 1000,
-                  'n_iter': 50}
+        kwargs = {
+            'ac': self.acq,
+            'bounds': np.array(list(bounds.values()), dtype=np.float),
+            'random_state': self.bo_diff.random_state,
+            'n_warmup': 1000,
+            'n_iter': 50
+        }
 
         if which_model == 'hierarchical':
-            kwargs['ac'] = self.utility
             kwargs['gp'] = self
             kwargs['y_max'] = self.cand_arch.max['high']
 
         elif which_model == 'low':
-            kwargs['ac'] = self.acq
             kwargs['gp'] = self.gp_low
             kwargs['y_max'] = self.cand_arch.max['low']
 
         elif which_model == 'high':
-            kwargs['ac'] = self.acq
             kwargs['gp'] = self.gp_high
             kwargs['y_max'] = self.cand_arch.max['high']
 
@@ -266,7 +262,7 @@ def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False, a
     range_in = ValueRange(-5, 5)
     range_lhs = ValueRange(0, 1)
 
-
+    # TODO: WHY ARE ABSOLUTE VARIANCES SO SURPRISINGLY LOW?!
     gp_low = GaussianProcessRegressor(kernel=Matern(nu=2.5), n_restarts_optimizer=25, random_state=None)
     gp_high = GaussianProcessRegressor(kernel=Matern(nu=2.5), n_restarts_optimizer=25, random_state=None)
     archive = CandidateArchive(ndim, fidelities=['high', 'low'])
@@ -445,7 +441,7 @@ if __name__ == "__main__":
         run_opts['acq'] = acq
         print(acq)
         records = [
-
+            # TODO: make initial sample depend on an optional random seed
             infill_experiment(fidelity='high', which_model='high', **run_opts),
             infill_experiment(fidelity='low', which_model='hierarchical', **run_opts),
             infill_experiment(fidelity='both 1', which_model='hierarchical', **run_opts),
