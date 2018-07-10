@@ -23,27 +23,40 @@ class Surrogate:
     provides_std = False
 
     def __init__(self, candidate_archive, n, *,
-                 fidelity=None, normalized=True, normalize_target=ValueRange(0.25, 0.75)):
-        X, y = candidate_archive.getcandidates(n=n, fidelity=fidelity)
-
-        self._surr = None
+                 fidelity=None, normalized=True, normalize_target=ValueRange(0, 1)):
 
         self.normalized = normalized
-        if normalized:
-            self.normalize_target = normalize_target
-            self.Xrange = determinerange(X)
-            self.yrange = determinerange(y)
-            X = linearscaletransform(X, range_in=self.Xrange, range_out=normalize_target)
-            y = linearscaletransform(y, range_in=self.yrange, range_out=normalize_target)
-
-        self.X = X
-        self.y = y
+        self._surr = None
         self.is_trained = False
+        self.normalize_target = normalize_target
 
-    def predict(self, X, *, mode='value'):
+        if candidate_archive is not None:
+            X, y = candidate_archive.getcandidates(n=n, fidelity=fidelity)
+
+            if normalized:
+                self.Xrange = determinerange(X)
+                self.yrange = determinerange(y)
+                X = linearscaletransform(X, range_in=self.Xrange, range_out=normalize_target)
+                y = linearscaletransform(y, range_in=self.yrange, range_out=normalize_target)
+
+            self.X = X
+            self.y = y
+        else:
+            self.X = None
+            self.y = None
+            self.Xrange = None
+            self.yrange = None
+
+
+    def predict(self, X, *, mode='value', return_std=None):
         """Public prediction function. Available modes: 'value' and 'std'"""
         if not self.is_trained:
             raise Exception("Cannot predict: surrogate is not trained yet.")
+
+        if return_std is True:
+            mode = 'both'
+        elif return_std is False:
+            mode = 'value'
 
         if mode == 'value':
             predictor = self.do_predict
@@ -59,8 +72,19 @@ class Surrogate:
 
         prediction = predictor(X)
 
-        if self.normalized and mode == 'value':
-            prediction = linearscaletransform(prediction, range_in=self.normalize_target, range_out=self.yrange)
+        if self.normalized:
+            if mode == 'both':
+                value, std = prediction
+            else:
+                value = prediction
+
+            value = linearscaletransform(value, range_in=self.normalize_target, range_out=self.yrange)
+
+            if mode == 'both':
+                std = linearscaletransform(std, range_in=self.normalize_target, range_out=self.yrange, scale_only=True)
+                prediction = value, std
+            else:
+                prediction = value
 
         return prediction
 
@@ -167,14 +191,29 @@ class Kriging(Surrogate):
     provides_std = True
     name = 'Kriging'
 
-    def __init__(self, candidate_archive, n, fidelity=None):
+    def __init__(self, candidate_archive, n, fidelity=None, **kwargs):
         super(self.__class__, self).__init__(candidate_archive, n, fidelity=fidelity)
-        self._surr = GaussianProcessRegressor()
+        self._surr = GaussianProcessRegressor(**kwargs)
         self.is_trained = False
 
     def train(self):
         self._surr.fit(self.X, self.y)
         self.is_trained = True
+
+    def fit(self, X, y):
+
+        if self.normalized:
+            self.Xrange = determinerange(X)
+            self.yrange = determinerange(y)
+            X = linearscaletransform(X, range_in=self.Xrange, range_out=self.normalize_target)
+            y = linearscaletransform(y, range_in=self.yrange, range_out=self.normalize_target)
+        self.X = X
+        self.y = y
+
+        self.train()
+
+    def set_params(self, **kwargs):
+        return self._surr.set_params(**kwargs)
 
     def do_predict(self, X):
         return self._surr.predict(X).reshape((-1, ))
