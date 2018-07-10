@@ -368,7 +368,9 @@ def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarc
         interval = None
 
     import progressbar
-    save_as = f'promo_{fidelity}_{which_model}'
+    save_as = f"{acq[0]}{acq[1] if acq[1] is not None else ''}_{fidelity}_{which_model}"
+    plot_2d = True
+    plot_3d = False
 
     with progressbar.ProgressBar(max_value=num_repetitions*(num_iterations+1)) as bar:
         for rep in range(num_repetitions):
@@ -383,7 +385,7 @@ def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarc
             records.append(MSERecord(which_model, fidelity, rep, iteration=0,
                                      mse_low=mse_low, mse_high=mse_high, mse_diff=mse_hierarchical))
             if make_plots:
-                plotmorestuff(surfaces, bifidbo, count=0, save_as=save_as, plot_3d=False)
+                plotmorestuff(surfaces, bifidbo, count=0, save_as=save_as, plot_2d=plot_2d, plot_3d=plot_3d)
 
             for i in range(1, num_iterations+1):
                 bar.update(rep*num_repetitions + i)
@@ -406,7 +408,7 @@ def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarc
                 records.append(MSERecord(which_model, fidelity, rep, iteration=i,
                                          mse_low=mse_low, mse_high=mse_high, mse_diff=mse_hierarchical))
                 if make_plots:
-                    plotmorestuff(surfaces, bifidbo, count=i, save_as=save_as, plot_3d=False)
+                    plotmorestuff(surfaces, bifidbo, count=i, save_as=save_as, plot_2d=plot_2d, plot_3d=plot_3d)
 
             if verbosity > 1:
                 print()
