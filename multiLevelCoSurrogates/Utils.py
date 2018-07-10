@@ -70,7 +70,7 @@ def determinerange(values):
     return ValueRange(np.min(values, axis=0), np.max(values, axis=0))
 
 
-def linearscaletransform(values, *, range_in=None, range_out=ValueRange(0, 1)):
+def linearscaletransform(values, *, range_in=None, range_out=ValueRange(0, 1), scale_only=False):
     """Perform a scale transformation of `values`: [range_in] --> [range_out]"""
 
     if range_in is None:
@@ -81,9 +81,14 @@ def linearscaletransform(values, *, range_in=None, range_out=ValueRange(0, 1)):
     if not isinstance(range_out, ValueRange):
         range_out = ValueRange(*range_out)
 
-    scale = range_out.max - range_out.min
-    scaled_values = (values - range_in.min) / (range_in.max - range_in.min)
-    scaled_values = (scaled_values * scale) + range_out[0]
+    scale_out = range_out.max - range_out.min
+    scale_in = range_in.max - range_in.min
+
+    if scale_only:
+        scaled_values = (values / scale_in) * scale_out
+    else:
+        scaled_values = (values - range_in.min) / scale_in
+        scaled_values = (scaled_values * scale_out) + range_out[0]
 
     return scaled_values
 
