@@ -48,46 +48,32 @@ z_lims = {
 }
 
 
-def isTwoInts(value):
-    """Returns True if the given value is a tuple or list consisting of exactly 2 integers"""
-    return isinstance(value, (tuple, list)) \
-           and len(value) == 2 \
-           and all(isinstance(val, int) for val in value)
-
-
-# TODO: rewrite to use slice()
-def interpretColumn(column):
-    """Interprets the 'column' argument of loadFitnessHistory into a start, end value pair"""
+def interpret_as_slice(column):
+    """Interprets the 'column' argument of loadFitnessHistory into a slice()"""
     if column is None:  # No specific column is requested, return everything
-        start = 0
-        end = None
+        return slice(None)
     elif isinstance(column, int):  # One specific column is requested
-        start = column
-        end = column + 1
-    elif isTwoInts(column):  # Multiple columns are requested
-        start = column[0]
-        end = column[1] + 1 if column[1] != -1 else None  # if -1 is given, we want up to and incl. the last column
+        return slice(column, column + 1)
+    elif len(column) == 2 and all(isinstance(val, int) for val in column):  # Multiple columns are requested
+        return slice(*column)
     else:  # 'column' does not match expected format
         raise Exception("Invalid format for 'column': {col}".format(col=column))
 
-    return start, end
 
-
-def loadFitnessHistory(fname, column=None):
+# TODO: replace by regular/proper csv files...
+def load_fitnesshistory(fname, column=None):
     """
     Return the data stored in the given filename as float values.
     Optionally, only data from a single, or range of columns can be selected.
 
-    :param fname: The name of the file to retrieve the data from
-    :param column:   Single or double integer to indicate desired column (optional)
-    :return:         (Selected) data from the given file in 2D list format
+    :param fname:   The name of the file to retrieve the data from
+    :param column:  Single or double integer to indicate desired column (optional)
+    :return:        (Selected) data from the given file in 2D list format
     """
-
-    start, end = interpretColumn(column)
 
     with open(fname, 'r') as f:
         next(f)  # Skip the first line which only contains header information
-        return [list(map(float, line.split(' ')[start:end])) for line in f]
+        return [list(map(float, line.split(' ')[interpret_as_slice(column)])) for line in f]
 
 
 
@@ -120,7 +106,7 @@ def getdata():
 
         # TODO: better determine optimal values for each function
         try:
-            data[idx] = np.array(loadFitnessHistory(filename_prefix + 'reslog.' + data_ext, column=(1, -1)))
+            data[idx] = np.array(load_fitnesshistory(filename_prefix + 'reslog.' + data_ext, column=(1, -1)))
             if fit_func_name == 'borehole':
                 data[idx] *= -1
             elif fit_func_name == 'park91b':
@@ -155,7 +141,7 @@ def timingdatatocsv():
 
         try:
             # In this case, we only ever expect a single value per file
-            time = np.array(loadFitnessHistory(filename_prefix + 'timelog.' + data_ext, column=(1, -1)))[0][0]
+            time = np.array(load_fitnesshistory(filename_prefix + 'timelog.' + data_ext, column=(1, -1)))[0][0]
             tup = TimingData(fit_func_name, surrogate_name, use, rep, gen_int, lambda_pre_mul, time)
             data.append(tup)
         except:
