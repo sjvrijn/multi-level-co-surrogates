@@ -20,13 +20,12 @@ warnings.filterwarnings("ignore")
 from collections import namedtuple
 from functools import partial
 from pyDOE import lhs
-from pprint import pprint
 from sklearn.utils import check_random_state
 from sklearn.metrics import mean_squared_error
 from sklearn.linear_model import LinearRegression
 from sklearn.gaussian_process.kernels import Matern
 
-from multiLevelCoSurrogates.config import fit_funcs, fit_func_dims
+from multiLevelCoSurrogates.config import fit_funcs
 from multiLevelCoSurrogates.local import base_dir
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
 from multiLevelCoSurrogates.Surrogates import Kriging
@@ -340,7 +339,7 @@ def calc_mse(bifidbo, test_mse, test_sample, verbosity=0):
 
 
 MSERecord = namedtuple('MSERecord', ['which_model', 'fidelity', 'repetition', 'iteration',
-                                     'mse_high', 'mse_low', 'mse_diff'])
+                                     'mse_high', 'mse_low', 'mse_hier'])
 
 def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarchical', fidelity='low', acq=None,
                       *, verbosity=0, make_plots=False):
@@ -381,7 +380,7 @@ def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarc
 
             mse_hierarchical, mse_high, mse_low = calc_mse(bifidbo, test_mse, test_sample, verbosity=verbosity-2)
             records.append(MSERecord(which_model, fidelity, rep, iteration=0,
-                                     mse_low=mse_low, mse_high=mse_high, mse_diff=mse_hierarchical))
+                                     mse_low=mse_low, mse_high=mse_high, mse_hier=mse_hierarchical))
             if make_plots:
                 plotmorestuff(surfaces, bifidbo, count=0, save_as=save_as, plot_2d=plot_2d, plot_3d=plot_3d)
 
@@ -404,7 +403,7 @@ def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarc
 
                 mse_hierarchical, mse_high, mse_low = calc_mse(bifidbo, test_mse, test_sample, verbosity=verbosity-3)
                 records.append(MSERecord(which_model, fidelity, rep, iteration=i,
-                                         mse_low=mse_low, mse_high=mse_high, mse_diff=mse_hierarchical))
+                                         mse_low=mse_low, mse_high=mse_high, mse_hier=mse_hierarchical))
                 if make_plots:
                     plotmorestuff(surfaces, bifidbo, count=i, save_as=save_as, plot_2d=plot_2d, plot_3d=plot_3d)
 

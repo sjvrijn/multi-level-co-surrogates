@@ -13,9 +13,8 @@ from multiLevelCoSurrogates.config import experiment_repetitions, fit_funcs, fit
 from multiLevelCoSurrogates.__main__ import guaranteeFolderExists
 from itertools import product
 from matplotlib import pyplot as plt
-from collections import Counter, namedtuple
+from collections import namedtuple
 
-from pprint import pprint
 import numpy as np
 import pandas as pd
 
@@ -44,8 +43,8 @@ z_lims = {
     'bohachevsky': 75,
     'booth': 1500,
     # 'branin': 1500,
-    'himmelblau': 250,
-    'sixHumpCamelBack': 50,
+    'himmelblau': 600,
+    'sixHumpCamelBack': 150,
 }
 
 
