@@ -118,6 +118,12 @@ def createsurface(func, l_bound=None, u_bound=None, step=None):
     return Surface(X, Y, Z)
 
 
+def createsurfaces(funcs):
+    with Pool(cpu_count()) as p:
+        surfaces = p.map(createsurface, funcs)
+    return surfaces
+
+
 def plotsurface(func, title=''):
 
     fig = plt.figure()
@@ -132,16 +138,16 @@ def plotsurface(func, title=''):
     plt.show()
 
 
-def plotsurfaces(funcs, titles=None, shape=None, figratio=None, save_as=None, as_3d=True, show=True):
+def plotsurfaces(surfaces, titles=None, shape=None, figratio=None, save_as=None, as_3d=True, show=True):
     if titles is None:
-        titles = ['']*len(funcs)
+        titles = ['']*len(surfaces)
 
     if shape is not None:
-        if np.product(shape) != len(funcs):
+        if np.product(shape) != len(surfaces):
             raise ValueError(f"Given shape 'np.product({shape})={np.product(shape)}'"
-                             f" does not match number of functions '{len(funcs)}' given.")
+                             f" does not match number of functions '{len(surfaces)}' given.")
     else:
-        shape = (1, len(funcs))
+        shape = (1, len(surfaces))
 
     if as_3d:
         kwargs = {'projection': '3d'}
@@ -154,10 +160,6 @@ def plotsurfaces(funcs, titles=None, shape=None, figratio=None, save_as=None, as
 
 
     fig, axes = plt.subplots(*shape, figsize=(shape[0]*figratio[0], shape[1]*figratio[1]), subplot_kw=kwargs)
-
-    with Pool(cpu_count()) as p:
-        surfaces = p.map(createsurface, funcs)
-
     for ax, surface, title in zip(axes.flatten(), surfaces, titles):
         plot = plot_func(ax, surface, title)
         if not as_3d:

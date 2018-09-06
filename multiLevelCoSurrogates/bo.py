@@ -29,7 +29,7 @@ from multiLevelCoSurrogates.config import fit_funcs
 from multiLevelCoSurrogates.local import base_dir
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
 from multiLevelCoSurrogates.Surrogates import Kriging
-from multiLevelCoSurrogates.Utils import createsurface, diffsurface, plotsurfaces, \
+from multiLevelCoSurrogates.Utils import createsurfaces, diffsurface, plotsurfaces, \
     ValueRange, linearscaletransform, select_subsample
 
 
@@ -50,7 +50,8 @@ def plotstuff(fit_func, bopt, count):
         f'GP {count}',
         f'GP var {count}'
     ]
-    plotsurfaces(funcs, titles, (2, 2))
+    surfaces = createsurfaces(funcs)
+    plotsurfaces(surfaces, titles, (2, 2))
 
 
 def gpplot(x, func, return_std=False):
@@ -99,6 +100,7 @@ def plotmorestuff(surfaces, bifidbo, *, count='', save_as=None, plot_2d=True, pl
         f'Hierarchical GP {count}',
         f'Hierarchical GP var {count}',
     ]
+    surfaces = createsurfaces(funcs)
 
     if save_as:
         savename_2d = f'{base_dir}{save_as}_2d_{count}.png'
@@ -107,9 +109,9 @@ def plotmorestuff(surfaces, bifidbo, *, count='', save_as=None, plot_2d=True, pl
         savename_2d = savename_3d = None
 
     if plot_2d:
-        plotsurfaces(funcs, titles, (5, 3), save_as=savename_2d, as_3d=False)
+        plotsurfaces(surfaces, titles, (5, 3), save_as=savename_2d, as_3d=False)
     if plot_3d:
-        plotsurfaces(funcs, titles, (5, 3), save_as=savename_3d, as_3d=True)
+        plotsurfaces(surfaces, titles, (5, 3), save_as=savename_3d, as_3d=True)
 
 
 boha = fit_funcs['himmelblau']
@@ -254,7 +256,7 @@ funcs = [
     lambda x: fit_func_high(*x[0]),
     lambda x: fit_func_low(*x[0]),
 ]
-surfaces = list(map(createsurface, funcs))
+surfaces = createsurfaces(funcs)
 surfaces.append(diffsurface(surfaces[0], surfaces[1]))
 
 
@@ -346,7 +348,7 @@ def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarc
 
     if verbosity > 0:
         print(f'--------------------------------------------------------------------------------\n'
-              f'Updating {fidelity} {num_iterations} steps, based on {which_model}, repeated {num_repetitions} times.\n'
+              f'Updating {fidelity} for {num_iterations} steps, based on {which_model}, repeated {num_repetitions} times.\n'
               f'---')
 
     range_in = ValueRange(-5, 5)
