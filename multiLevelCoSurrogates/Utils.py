@@ -1,16 +1,10 @@
-
-
-
 from collections import namedtuple
-from multiprocessing import cpu_count, Pool
 import matplotlib.pyplot as plt
 import scipy
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
-from warnings import warn
-
 
 
 def select_subsample(xdata, num):
@@ -107,38 +101,25 @@ def createsurface(func, l_bound=None, u_bound=None, step=None):
 
     l_bound = [-5, -5] if l_bound is None else l_bound
     u_bound = [5, 5] if u_bound is None else u_bound
-    step = [0.1, 0.1] if step is None else step
+    step = [0.2, 0.2] if step is None else step
 
     X = np.arange(l_bound[0], u_bound[0], step[0])
     Y = np.arange(l_bound[1], u_bound[1], step[1])
     X, Y = np.meshgrid(X, Y)
-    shape = X.shape
-    Z = np.array([func([[x, y]]) for x, y in zip(X.flatten(), Y.flatten())]).reshape(shape)
+    X_Y = np.array([[[x,y]] for x, y in zip(X.flatten(), Y.flatten())])
+    Z = np.array([func(x_y) for x_y in X_Y]).reshape(X.shape)
 
     return Surface(X, Y, Z)
 
 
 def createsurfaces(funcs):
-    with Pool(cpu_count()) as p:
-        surfaces = p.map(createsurface, funcs)
+    surfaces = [createsurface(func) for func in funcs]
     return surfaces
 
 
-def plotsurface(func, title=''):
+# ------------------------------------------------------------------------------
 
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-
-    surf = createsurface(func)
-    surface = plotsurfaceonaxis(ax, surf, title)
-
-    # Add a color bar which maps values to colors.
-    fig.colorbar(surface, shrink=0.5, aspect=5)
-
-    plt.show()
-
-
-def plotsurfaces(surfaces, titles=None, shape=None, figratio=None, save_as=None, as_3d=True, show=True):
+def plotsurfaces(surfaces, *, titles=None, shape=None, figratio=None, save_as=None, as_3d=True, show=True):
     if titles is None:
         titles = ['']*len(surfaces)
 
@@ -175,7 +156,7 @@ def plotsurfaces(surfaces, titles=None, shape=None, figratio=None, save_as=None,
 
 def plotsurfaceonaxis(ax, surf, title):
 
-    surface = ax.plot_surface(surf.X, surf.Y, surf.Z, cmap=cm.plasma,
+    surface = ax.plot_surface(surf.X, surf.Y, surf.Z, cmap=cm.viridis,
                               linewidth=0, antialiased=True)
     ax.zaxis.set_major_locator(LinearLocator(10))
     ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
@@ -185,6 +166,6 @@ def plotsurfaceonaxis(ax, surf, title):
 
 def plotcmaponaxis(ax, surf, title):
 
-    surface = ax.pcolor(surf.X, surf.Y, surf.Z, cmap=cm.plasma)
+    surface = ax.pcolor(surf.X, surf.Y, surf.Z, cmap=cm.viridis)
     ax.set_title(title)
     return surface

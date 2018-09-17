@@ -51,7 +51,7 @@ def plotstuff(fit_func, bopt, count):
         f'GP var {count}'
     ]
     surfaces = createsurfaces(funcs)
-    plotsurfaces(surfaces, titles, (2, 2))
+    plotsurfaces(surfaces, titles=titles, shape=(2, 2))
 
 
 def gpplot(x, func, return_std=False):
@@ -109,9 +109,9 @@ def plotmorestuff(surfaces, bifidbo, *, count='', save_as=None, plot_2d=True, pl
         savename_2d = savename_3d = None
 
     if plot_2d:
-        plotsurfaces(surfaces, titles, (5, 3), save_as=savename_2d, as_3d=False)
+        plotsurfaces(surfaces, titles=titles, shape=(5, 3), save_as=savename_2d, as_3d=False)
     if plot_3d:
-        plotsurfaces(surfaces, titles, (5, 3), save_as=savename_3d, as_3d=True)
+        plotsurfaces(surfaces, titles=titles, shape=(5, 3), save_as=savename_3d, as_3d=True)
 
 
 boha = fit_funcs['himmelblau']
@@ -246,15 +246,16 @@ class BiFidBayesianOptimization:
 
 
 
-def fit_func_high(x, y):
-    return -boha.high([x, y])
+def fit_func_high(x):
+    return -boha.high(x[0])
 
-def fit_func_low(x, y):
-    return -boha.low([x, y])
+def fit_func_low(x):
+    return -boha.low(x[0])
+
 
 funcs = [
-    lambda x: fit_func_high(*x[0]),
-    lambda x: fit_func_low(*x[0]),
+    fit_func_high,
+    fit_func_low,
 ]
 surfaces = createsurfaces(funcs)
 surfaces.append(diffsurface(surfaces[0], surfaces[1]))
@@ -275,8 +276,8 @@ def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False, a
 
     high_sample = select_subsample(low_sample.T, num_high_samples).T
 
-    low_out = np.array([[fit_func_low(*x)] for x in low_sample])
-    high_out = np.array([[fit_func_high(*x)] for x in high_sample])
+    low_out = np.array([[fit_func_low([x])] for x in low_sample])
+    high_out = np.array([[fit_func_high([x])] for x in high_sample])
 
     for candidate, result in zip(low_sample, low_out):
         archive.addcandidate(candidate, result, fidelity='low')
@@ -312,11 +313,11 @@ def find_infill_and_retrain(bifidbo, which_model='hierarchical', fidelity='low')
     infill_in = bifidbo.acq_max(which_model=which_model)
 
     if fidelity == 'low':
-        infill_out = fit_func_low(*infill_in)
+        infill_out = fit_func_low([infill_in])
     elif fidelity == 'high':
-        infill_out = fit_func_high(*infill_in)
+        infill_out = fit_func_high([infill_in])
     elif fidelity == 'both':
-        infill_out = [fit_func_low(*infill_in), fit_func_high(*infill_in)]
+        infill_out = [fit_func_low([infill_in]), fit_func_high([infill_in])]
         fidelity = ['low', 'high', 'diff']
     else:
         raise ValueError(f"fidelity '{fidelity}' not recognized")
@@ -344,7 +345,7 @@ MSERecord = namedtuple('MSERecord', ['which_model', 'fidelity', 'repetition', 'i
                                      'mse_high', 'mse_low', 'mse_hier'])
 
 def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarchical', fidelity='low', acq=None,
-                      *, verbosity=0, make_plots=False):
+                      *, verbosity=0, make_plots=False, plot_2d=True, plot_3d=False):
 
     if verbosity > 0:
         print(f'--------------------------------------------------------------------------------\n'
@@ -356,7 +357,7 @@ def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarc
     test_sample = lhs(n=2, samples=250)
     test_sample = linearscaletransform(test_sample, range_in=range_lhs, range_out=range_in)
 
-    test_values = np.array([fit_func_high(*sample) for sample in test_sample])
+    test_values = np.array([fit_func_high([sample]) for sample in test_sample])
     test_mse = partial(mean_squared_error, y_pred=test_values)
 
     records = []
@@ -368,8 +369,6 @@ def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarc
 
     import progressbar
     save_as = f"{acq[0]}{acq[1] if acq[1] is not None else ''}_{fidelity}_{which_model}"
-    plot_2d = True
-    plot_3d = False
 
     with progressbar.ProgressBar(max_value=num_repetitions*(num_iterations+1)) as bar:
         for rep in range(num_repetitions):
@@ -426,7 +425,9 @@ if __name__ == "__main__":
         'num_repetitions': 3,
         'num_iterations': 25,
         'verbosity': 1,
-        'make_plots': False,
+        'make_plots': True,
+        'plot_2d': True,
+        'plot_3d': False,
     }
 
     acqs = [
