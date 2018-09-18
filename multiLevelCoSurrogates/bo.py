@@ -59,7 +59,10 @@ def gpplot(x, func, return_std=False):
     return func(x, return_std=return_std)[idx]
 
 
-def plotmorestuff(surfaces, bifidbo, *, count='', save_as=None, plot_2d=True, plot_3d=False):
+def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
+    if count is None:
+        count = ''
+
     funcs = [
         *surfaces,
 
@@ -102,20 +105,31 @@ def plotmorestuff(surfaces, bifidbo, *, count='', save_as=None, plot_2d=True, pl
     ]
     surfaces = createsurfaces(funcs)
 
+    p_high = bifidbo.cand_arch.getcandidates(fidelity='high')
+    p_low = bifidbo.cand_arch.getcandidates(fidelity='low')
+    p_both = None
+    points = [
+        p_high, p_low, p_both,
+        p_high, p_high, p_high,
+        p_low, p_low, p_low,
+        p_both, p_both, p_both,
+        p_both, p_both, p_both,
+    ]
+
     if save_as:
         savename_2d = f'{base_dir}{save_as}_2d_{count}.png'
         savename_3d = f'{base_dir}{save_as}_3d_{count}.png'
     else:
         savename_2d = savename_3d = None
 
-    if plot_2d:
-        plotsurfaces(surfaces, points=bifidbo.cand_arch.getcandidates(fidelity='high'),
+    if plot_opts.get('plot_2d', False):
+        plotsurfaces(surfaces, all_points=points,
                      titles=titles, shape=(5, 3),
-                     save_as=savename_2d, as_3d=False)
-    if plot_3d:
-        plotsurfaces(surfaces, points=bifidbo.cand_arch.getcandidates(fidelity='high'),
+                     save_as=savename_2d, as_3d=False, **plot_opts)
+    if plot_opts.get('plot_3d', False):
+        plotsurfaces(surfaces, all_points=points,
                      titles=titles, shape=(5, 3),
-                     save_as=savename_3d, as_3d=True)
+                     save_as=savename_3d, as_3d=True, **plot_opts)
 
 
 boha = fit_funcs['himmelblau']
@@ -349,12 +363,14 @@ MSERecord = namedtuple('MSERecord', ['which_model', 'fidelity', 'repetition', 'i
                                      'mse_high', 'mse_low', 'mse_hier'])
 
 def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarchical', fidelity='low', acq=None,
-                      *, verbosity=0, make_plots=False, plot_2d=True, plot_3d=False):
+                      *, verbosity=0, **plot_opts):
 
     if verbosity > 0:
         print(f'--------------------------------------------------------------------------------\n'
               f'Updating {fidelity} for {num_iterations} steps, based on {which_model}, repeated {num_repetitions} times.\n'
               f'---')
+
+    make_plots = plot_opts.get('plot_2d', False) or plot_opts.get('plot_3d', False)
 
     range_in = ValueRange(-5, 5)
     range_lhs = ValueRange(0, 1)
@@ -387,7 +403,7 @@ def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarc
             records.append(MSERecord(which_model, fidelity, rep, iteration=0,
                                      mse_low=mse_low, mse_high=mse_high, mse_hier=mse_hierarchical))
             if make_plots:
-                plotmorestuff(surfaces, bifidbo, count=0, save_as=save_as, plot_2d=plot_2d, plot_3d=plot_3d)
+                plotmorestuff(surfaces, bifidbo, count=0, save_as=save_as, **plot_opts)
 
             for i in range(1, num_iterations+1):
                 bar.update(rep*num_repetitions + i)
@@ -410,7 +426,7 @@ def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarc
                 records.append(MSERecord(which_model, fidelity, rep, iteration=i,
                                          mse_low=mse_low, mse_high=mse_high, mse_hier=mse_hierarchical))
                 if make_plots:
-                    plotmorestuff(surfaces, bifidbo, count=i, save_as=save_as, plot_2d=plot_2d, plot_3d=plot_3d)
+                    plotmorestuff(surfaces, bifidbo, count=i, save_as=save_as, **plot_opts)
 
             if verbosity > 1:
                 print()
@@ -429,9 +445,11 @@ if __name__ == "__main__":
         'num_repetitions': 3,
         'num_iterations': 25,
         'verbosity': 1,
-        'make_plots': True,
+    }
+    plot_opts = {
         'plot_2d': True,
         'plot_3d': False,
+        'show': False,
     }
 
     acqs = [
@@ -454,11 +472,11 @@ if __name__ == "__main__":
         print(acq)
         records = [
             # TODO: make initial sample depend on an optional random seed
-            infill_experiment(fidelity='high', which_model='high', **run_opts),
-            infill_experiment(fidelity='low', which_model='hierarchical', **run_opts),
-            infill_experiment(fidelity='both 1', which_model='hierarchical', **run_opts),
-            infill_experiment(fidelity='both 3', which_model='hierarchical', **run_opts),
-            infill_experiment(fidelity='both 5', which_model='hierarchical', **run_opts),
+            infill_experiment(fidelity='high', which_model='high', **run_opts, **plot_opts),
+            infill_experiment(fidelity='low', which_model='hierarchical', **run_opts, **plot_opts),
+            infill_experiment(fidelity='both 1', which_model='hierarchical', **run_opts, **plot_opts),
+            infill_experiment(fidelity='both 3', which_model='hierarchical', **run_opts, **plot_opts),
+            infill_experiment(fidelity='both 5', which_model='hierarchical', **run_opts, **plot_opts),
         ]
 
         df = pd.DataFrame(flatten(records))

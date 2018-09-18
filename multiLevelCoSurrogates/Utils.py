@@ -119,7 +119,7 @@ def createsurfaces(funcs):
 
 # ------------------------------------------------------------------------------
 
-def plotsurfaces(surfaces, *, points=None, titles=None, shape=None, figratio=None, save_as=None, as_3d=True, show=True):
+def plotsurfaces(surfaces, *, all_points=None, titles=None, shape=None, figratio=None, save_as=None, as_3d=True, show=True, **_):
     if titles is None:
         titles = ['']*len(surfaces)
 
@@ -139,9 +139,11 @@ def plotsurfaces(surfaces, *, points=None, titles=None, shape=None, figratio=Non
         plot_func = plotcmaponaxis
         figratio = (1.5,3) if figratio is None else figratio
 
+    if all_points is None:
+        all_points = [None] * len(surfaces)
 
     fig, axes = plt.subplots(*shape, figsize=(shape[0]*figratio[0], shape[1]*figratio[1]), subplot_kw=kwargs)
-    for ax, surface, title in zip(axes.flatten(), surfaces, titles):
+    for ax, surface, title, points in zip(axes.flatten(), surfaces, titles, all_points):
         plot = plot_func(ax, surface, title, points)
         if not as_3d:
             fig.colorbar(plot, ax=ax)
