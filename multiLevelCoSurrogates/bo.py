@@ -109,9 +109,13 @@ def plotmorestuff(surfaces, bifidbo, *, count='', save_as=None, plot_2d=True, pl
         savename_2d = savename_3d = None
 
     if plot_2d:
-        plotsurfaces(surfaces, titles=titles, shape=(5, 3), save_as=savename_2d, as_3d=False)
+        plotsurfaces(surfaces, points=bifidbo.cand_arch.getcandidates(fidelity='high'),
+                     titles=titles, shape=(5, 3),
+                     save_as=savename_2d, as_3d=False)
     if plot_3d:
-        plotsurfaces(surfaces, titles=titles, shape=(5, 3), save_as=savename_3d, as_3d=True)
+        plotsurfaces(surfaces, points=bifidbo.cand_arch.getcandidates(fidelity='high'),
+                     titles=titles, shape=(5, 3),
+                     save_as=savename_3d, as_3d=True)
 
 
 boha = fit_funcs['himmelblau']

@@ -119,7 +119,7 @@ def createsurfaces(funcs):
 
 # ------------------------------------------------------------------------------
 
-def plotsurfaces(surfaces, *, titles=None, shape=None, figratio=None, save_as=None, as_3d=True, show=True):
+def plotsurfaces(surfaces, *, points=None, titles=None, shape=None, figratio=None, save_as=None, as_3d=True, show=True):
     if titles is None:
         titles = ['']*len(surfaces)
 
@@ -142,7 +142,7 @@ def plotsurfaces(surfaces, *, titles=None, shape=None, figratio=None, save_as=No
 
     fig, axes = plt.subplots(*shape, figsize=(shape[0]*figratio[0], shape[1]*figratio[1]), subplot_kw=kwargs)
     for ax, surface, title in zip(axes.flatten(), surfaces, titles):
-        plot = plot_func(ax, surface, title)
+        plot = plot_func(ax, surface, title, points)
         if not as_3d:
             fig.colorbar(plot, ax=ax)
 
@@ -154,18 +154,22 @@ def plotsurfaces(surfaces, *, titles=None, shape=None, figratio=None, save_as=No
     plt.clf()
 
 
-def plotsurfaceonaxis(ax, surf, title):
+def plotsurfaceonaxis(ax, surf, title, points=None):
 
     surface = ax.plot_surface(surf.X, surf.Y, surf.Z, cmap=cm.viridis,
                               linewidth=0, antialiased=True)
+    if points:
+        ax.scatter(points[0][:,0], points[0][:,1], points[1], marker='+', color='red')
     ax.zaxis.set_major_locator(LinearLocator(10))
     ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
     ax.set_title(title)
     return surface
 
 
-def plotcmaponaxis(ax, surf, title):
+def plotcmaponaxis(ax, surf, title, points=None):
 
     surface = ax.pcolor(surf.X, surf.Y, surf.Z, cmap=cm.viridis)
+    if points:
+        ax.scatter(points[0][:,0], points[0][:,1], marker='+', color='red')
     ax.set_title(title)
     return surface
