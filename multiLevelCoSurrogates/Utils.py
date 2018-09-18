@@ -156,22 +156,24 @@ def plotsurfaces(surfaces, *, all_points=None, titles=None, shape=None, figratio
     plt.clf()
 
 
-def plotsurfaceonaxis(ax, surf, title, points=None):
+def plotsurfaceonaxis(ax, surf, title, point_sets=None):
 
     surface = ax.plot_surface(surf.X, surf.Y, surf.Z, cmap=cm.viridis,
                               linewidth=0, antialiased=True)
-    if points:
-        ax.scatter(points[0][:,0], points[0][:,1], points[1], marker='+', color='red')
+    if point_sets:
+        for point_set, style in point_sets:
+            ax.scatter(point_set[0][:, 0], point_set[0][:, 1], point_set[1], **style)
     ax.zaxis.set_major_locator(LinearLocator(10))
     ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
     ax.set_title(title)
     return surface
 
 
-def plotcmaponaxis(ax, surf, title, points=None):
+def plotcmaponaxis(ax, surf, title, point_sets=None):
 
     surface = ax.pcolor(surf.X, surf.Y, surf.Z, cmap=cm.viridis)
-    if points:
-        ax.scatter(points[0][:,0], points[0][:,1], marker='+', color='red')
+    if point_sets:
+        for point_set, style in point_sets:
+            ax.scatter(point_set[0][:, 0], point_set[0][:, 1], **style)
     ax.set_title(title)
     return surface

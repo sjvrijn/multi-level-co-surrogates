@@ -105,9 +105,12 @@ def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
     ]
     surfaces = createsurfaces(funcs)
 
-    p_high = bifidbo.cand_arch.getcandidates(fidelity='high')
-    p_low = bifidbo.cand_arch.getcandidates(fidelity='low')
-    p_both = None
+    p_high = [(bifidbo.cand_arch.getcandidates(fidelity='high'), {'marker': 'o', 'facecolors': 'none', 'color': 'red'})]
+    p_low = [(bifidbo.cand_arch.getcandidates(fidelity='low'), {'marker': '+', 'color': 'red'})]
+    p_both = [
+        p_high[0],
+        p_low[0],
+    ]
     points = [
         p_high, p_low, p_both,
         p_high, p_high, p_high,
