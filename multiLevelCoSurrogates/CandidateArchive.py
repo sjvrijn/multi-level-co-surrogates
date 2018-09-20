@@ -5,6 +5,7 @@
 CandidateArchive.py: Class to store candidate solutions in an optimization process with their respective
                      (multi-fidelity) fitness values
 """
+from collections import namedtuple
 
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
@@ -12,6 +13,9 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 import numpy as np
 from warnings import warn
+
+
+CandidateSet = namedtuple('CandidateSet', ['candidates', 'fitnesses'])
 
 
 class CandidateArchive:
@@ -122,7 +126,7 @@ class CandidateArchive:
             candidates = candidates[-n:]
             fitnesses = fitnesses[-n:]
 
-        return candidates, fitnesses
+        return CandidateSet(candidates, fitnesses)
 
 
     def updateminmax(self, fidelity, value):
