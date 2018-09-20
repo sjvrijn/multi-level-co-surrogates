@@ -59,6 +59,9 @@ def gpplot(x, func, return_std=False):
     return func(x, return_std=return_std)[idx]
 
 
+ScatterPoints = namedtuple('ScatterPoints', ['x_y', 'z', 'style'])
+
+
 def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
     if count is None:
         count = ''
@@ -105,8 +108,10 @@ def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
     ]
     surfaces = createsurfaces(funcs)
 
-    p_high = [(bifidbo.cand_arch.getcandidates(fidelity='high'), {'marker': 'o', 'facecolors': 'none', 'color': 'red'})]
-    p_low = [(bifidbo.cand_arch.getcandidates(fidelity='low'), {'marker': '+', 'color': 'red'})]
+    p_high = [ScatterPoints(*bifidbo.cand_arch.getcandidates(fidelity='high'),
+                            style={'marker': 'o', 'facecolors': 'none', 'color': 'red'})]
+    p_low = [ScatterPoints(*bifidbo.cand_arch.getcandidates(fidelity='low'),
+                           style={'marker': '+', 'color': 'red'})]
     p_both = [
         p_high[0],
         p_low[0],
@@ -417,11 +422,10 @@ def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarc
 
                 if interval is None:
                     fid = fidelity
+                elif i % interval == 0:
+                    fid = 'both'
                 else:
-                    if i % interval == 0:
-                        fid = 'both'
-                    else:
-                        fid = 'low'
+                    fid = 'low'
 
                 find_infill_and_retrain(bifidbo, which_model=which_model, fidelity=fid)
 

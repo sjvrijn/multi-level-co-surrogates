@@ -161,8 +161,8 @@ def plotsurfaceonaxis(ax, surf, title, point_sets=None):
     surface = ax.plot_surface(surf.X, surf.Y, surf.Z, cmap=cm.viridis,
                               linewidth=0, antialiased=True)
     if point_sets:
-        for point_set, style in point_sets:
-            ax.scatter(point_set[0][:, 0], point_set[0][:, 1], point_set[1], **style)
+        for x_y, z, style in point_sets:
+            ax.scatter(x_y[:, 0], x_y[:, 1], z[1], **style)
     ax.zaxis.set_major_locator(LinearLocator(10))
     ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
     ax.set_title(title)
@@ -173,7 +173,7 @@ def plotcmaponaxis(ax, surf, title, point_sets=None):
 
     surface = ax.pcolor(surf.X, surf.Y, surf.Z, cmap=cm.viridis)
     if point_sets:
-        for point_set, style in point_sets:
-            ax.scatter(point_set[0][:, 0], point_set[0][:, 1], **style)
+        for x_y, z, style in point_sets:
+            ax.scatter(x_y[:, 0], x_y[:, 1], **style)
     ax.set_title(title)
     return surface
