@@ -458,7 +458,7 @@ if __name__ == "__main__":
 
     run_opts = {
         'num_repetitions': 1,
-        'num_iterations': 100,
+        'num_iters': 100,
         'verbosity': 1,
     }
     plot_opts = {
