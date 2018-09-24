@@ -145,11 +145,11 @@ def plotsurfaces(surfaces, *, all_points=None, titles=None, shape=None, figratio
     if as_3d:
         kwargs = {'projection': '3d'}
         plot_func = plotsurfaceonaxis
-        figratio = (2,3) if figratio is None else figratio
+        figratio = (3,4.5) if figratio is None else figratio
     else:
         kwargs = dict()
         plot_func = plotcmaponaxis
-        figratio = (1.5,3) if figratio is None else figratio
+        figratio = (2.25,4.5) if figratio is None else figratio
 
     if all_points is None:
         all_points = [None] * len(surfaces)

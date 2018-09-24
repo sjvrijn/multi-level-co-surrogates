@@ -131,7 +131,7 @@ def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
     else:
         savename_2d = savename_3d = None
 
-    plot_shape = (7.5, 4.5)
+    plot_shape = (5, 3)
 
     if plot_opts.get('plot_2d', False):
         plotsurfaces(surfaces, all_points=points,
