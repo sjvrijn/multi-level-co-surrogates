@@ -96,7 +96,7 @@ def diffsurface(a, b):
 
 
 def calc_numsteps(low, high, step):
-    return (high - low[0]) / step + 1
+    return (high - low) / step + 1
 
 
 def create_wide_meshgrid(l_bound, step, u_bound):
