@@ -95,6 +95,19 @@ def diffsurface(a, b):
     return Surface(a.X, a.Y, a.Z - b.Z)
 
 
+def calc_numsteps(low, high, step):
+    return (high - low[0]) / step + 1
+
+
+def create_wide_meshgrid(l_bound, step, u_bound):
+    num_steps_x = calc_numsteps(l_bound[0] - step[0], u_bound[0] + step[0], step[0])
+    num_steps_y = calc_numsteps(l_bound[1] - step[1], u_bound[1] + step[1], step[1])
+    X = np.linspace(l_bound[0] - step[0], u_bound[0] + step[0], num_steps_x)
+    Y = np.linspace(l_bound[1] - step[1], u_bound[1] + step[1], num_steps_y)
+    X, Y = np.meshgrid(X, Y)
+    return X, Y
+
+
 def createsurface(func, l_bound=None, u_bound=None, step=None):
     if isinstance(func, Surface):
         return func
@@ -103,9 +116,8 @@ def createsurface(func, l_bound=None, u_bound=None, step=None):
     u_bound = [5, 5] if u_bound is None else u_bound
     step = [0.2, 0.2] if step is None else step
 
-    X = np.arange(l_bound[0], u_bound[0], step[0])
-    Y = np.arange(l_bound[1], u_bound[1], step[1])
-    X, Y = np.meshgrid(X, Y)
+    X, Y = create_wide_meshgrid(l_bound, step, u_bound)
+
     X_Y = np.array([[[x,y]] for x, y in zip(X.flatten(), Y.flatten())])
     Z = np.array([func(x_y) for x_y in X_Y]).reshape(X.shape)
 
