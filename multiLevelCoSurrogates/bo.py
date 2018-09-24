@@ -267,6 +267,11 @@ class BiFidBayesianOptimization:
             kwargs['gp'] = self.gp_high
             kwargs['y_max'] = self.cand_arch.max['high']
 
+        elif which_model == 'diff':
+            kwargs['gp'] = self.bo_diff.gp
+            kwargs['y_max'] = self.bo_diff.space.Y.max()
+
+
         return bo.helpers.acq_max(**kwargs)
 
 
@@ -449,8 +454,8 @@ if __name__ == "__main__":
     np.set_printoptions(linewidth=200)
 
     run_opts = {
-        'num_repetitions': 3,
-        'num_iterations': 25,
+        'num_repetitions': 1,
+        'num_iterations': 100,
         'verbosity': 1,
     }
     plot_opts = {
@@ -462,11 +467,11 @@ if __name__ == "__main__":
     acqs = [
         ('ucb', 0.5),
         ('ucb', 1.0),
-        ('ucb', 1.5),
+        # ('ucb', 1.5),
         ('ucb', 2.0),
-        ('ucb', 3.0),
-        ('ucb', 4.0),
-        ('ucb', 5.0),
+        # ('ucb', 3.0),
+        # ('ucb', 4.0),
+        # ('ucb', 5.0),
         ('ei', 0.0),
         ('ei', 0.5),
         ('ei', 1.0),
@@ -486,6 +491,14 @@ if __name__ == "__main__":
             infill_experiment(fidelity='both 5', which_model='hierarchical', **run_opts, **plot_opts),
         ]
 
+            # infill_experiment(fidelity='high', which_model='diff', **run_opts, **plot_opts),
+            # infill_experiment(fidelity='low', which_model='diff', **run_opts, **plot_opts),
+            # infill_experiment(fidelity='both 1', which_model='diff', **run_opts, **plot_opts),
+            # infill_experiment(fidelity='both 3', which_model='diff', **run_opts, **plot_opts),
+            # infill_experiment(fidelity='both 5', which_model='diff', **run_opts, **plot_opts),
+        # ]
+
         df = pd.DataFrame(flatten(records))
         name, param = acq
         df.to_csv(base_dir+f"{name}{param if param is not None else ''}_records.csv", index_label='index')
+        # df.to_csv(base_dir+f"{name}{param if param is not None else ''}_diff_records.csv", index_label='index')
