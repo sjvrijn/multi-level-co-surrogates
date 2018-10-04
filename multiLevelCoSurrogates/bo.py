@@ -182,7 +182,7 @@ class BiFidBayesianOptimization:
         self.rho = self.determine_rho(y_high, y_low)
         self.train_diff()
 
-        diffs = y_high-y_low
+        diffs = y_high-self.rho*y_low
         self.bo_diff.initialize({
             'x': candidates[:, 0].flatten(),
             'y': candidates[:, 1].flatten(),
@@ -217,9 +217,9 @@ class BiFidBayesianOptimization:
         candidates, fitnesses = self.cand_arch.getcandidates(n=n, fidelity=['high', 'low'])
         y_high, y_low = fitnesses[:,0], fitnesses[:,1]
 
-        self.determine_rho(y_high, y_low)
+        self.rho = self.determine_rho(y_high, y_low)
 
-        diffs = y_high - y_low
+        diffs = y_high - self.rho*y_low
         self.bo_diff.gp.fit(candidates, diffs)
 
 
