@@ -10,6 +10,7 @@ sys.path.append("./")
 sys.path.append("../")
 import bayes_opt as bo
 from bayes_opt import BayesianOptimization
+from itertools import product
 
 
 
@@ -130,13 +131,15 @@ def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
     else:
         savename_2d = savename_3d = None
 
+    plot_shape = (5, 3)
+
     if plot_opts.get('plot_2d', False):
         plotsurfaces(surfaces, all_points=points,
-                     titles=titles, shape=(5, 3),
+                     titles=titles, shape=plot_shape,
                      save_as=savename_2d, as_3d=False, **plot_opts)
     if plot_opts.get('plot_3d', False):
         plotsurfaces(surfaces, all_points=points,
-                     titles=titles, shape=(5, 3),
+                     titles=titles, shape=plot_shape,
                      save_as=savename_3d, as_3d=True, **plot_opts)
 
 
@@ -375,12 +378,12 @@ def calc_mse(bifidbo, test_mse, test_sample, verbosity=0):
 MSERecord = namedtuple('MSERecord', ['which_model', 'fidelity', 'repetition', 'iteration',
                                      'mse_high', 'mse_low', 'mse_hier'])
 
-def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarchical', fidelity='low', acq=None,
+def infill_experiment(num_repetitions=10, num_iters=1, which_model='hierarchical', fidelity='low', acq=None,
                       *, verbosity=0, **plot_opts):
 
     if verbosity > 0:
         print(f'--------------------------------------------------------------------------------\n'
-              f'Updating {fidelity} for {num_iterations} steps, based on {which_model}, repeated {num_repetitions} times.\n'
+              f'Updating {fidelity} for {num_iters} steps, based on {which_model}, repeated {num_repetitions} times.\n'
               f'---')
 
     make_plots = plot_opts.get('plot_2d', False) or plot_opts.get('plot_3d', False)
@@ -403,7 +406,7 @@ def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarc
     import progressbar
     save_as = f"{acq[0]}{acq[1] if acq[1] is not None else ''}_{fidelity}_{which_model}"
 
-    with progressbar.ProgressBar(max_value=num_repetitions*(num_iterations+1)) as bar:
+    with progressbar.ProgressBar(max_value=num_repetitions*(num_iters + 1)) as bar:
         for rep in range(num_repetitions):
 
             bar.update(rep*num_repetitions + 0)
@@ -416,13 +419,13 @@ def infill_experiment(num_repetitions=10, num_iterations=1, which_model='hierarc
             records.append(MSERecord(which_model, fidelity, rep, iteration=0,
                                      mse_low=mse_low, mse_high=mse_high, mse_hier=mse_hierarchical))
             if make_plots:
-                plotmorestuff(surfaces, bifidbo, count=0, save_as=save_as, **plot_opts)
+                plotmorestuff(surfaces, bifidbo, count=0, save_as=save_as+f'_r{rep}', **plot_opts)
 
-            for i in range(1, num_iterations+1):
+            for i in range(1, num_iters + 1):
                 bar.update(rep*num_repetitions + i)
 
                 if verbosity > 2:
-                    print(f'    Iteration {i}/{num_iterations}')
+                    print(f'    Iteration {i}/{num_iters}')
                     print('        Finding infill...')
 
                 if interval is None:
@@ -455,7 +458,7 @@ if __name__ == "__main__":
 
     run_opts = {
         'num_repetitions': 1,
-        'num_iterations': 100,
+        'num_iters': 100,
         'verbosity': 1,
     }
     plot_opts = {
@@ -465,7 +468,7 @@ if __name__ == "__main__":
     }
 
     acqs = [
-        ('ucb', 0.5),
+        # ('ucb', 0.5),
         ('ucb', 1.0),
         # ('ucb', 1.5),
         ('ucb', 2.0),
@@ -473,32 +476,28 @@ if __name__ == "__main__":
         # ('ucb', 4.0),
         # ('ucb', 5.0),
         ('ei', 0.0),
-        ('ei', 0.5),
+        # ('ei', 0.5),
         ('ei', 1.0),
         # ('poi', None),
     ]
 
+    fids_and_models = [
+        ('high', 'high'),
+        ('both 1', 'hierarchical'),
+        ('both 3', 'hierarchical'),
+        ('both 1', 'diff'),
+        ('both 3', 'diff'),
+    ]
+
     print(acqs)
-    for acq in acqs:
+    records = []
+    for acq, fid_and_model in product(acqs, fids_and_models):
+        fid, model = fid_and_model
         run_opts['acq'] = acq
-        print(acq)
-        records = [
-            # TODO: make initial sample depend on an optional random seed
-            infill_experiment(fidelity='high', which_model='high', **run_opts, **plot_opts),
-            infill_experiment(fidelity='low', which_model='hierarchical', **run_opts, **plot_opts),
-            infill_experiment(fidelity='both 1', which_model='hierarchical', **run_opts, **plot_opts),
-            infill_experiment(fidelity='both 3', which_model='hierarchical', **run_opts, **plot_opts),
-            infill_experiment(fidelity='both 5', which_model='hierarchical', **run_opts, **plot_opts),
-        ]
+        print(acq, fid, model)
+        # TODO: make initial sample depend on an optional random seed
+        records.append(infill_experiment(fidelity=fid, which_model=model, **run_opts, **plot_opts))
 
-            # infill_experiment(fidelity='high', which_model='diff', **run_opts, **plot_opts),
-            # infill_experiment(fidelity='low', which_model='diff', **run_opts, **plot_opts),
-            # infill_experiment(fidelity='both 1', which_model='diff', **run_opts, **plot_opts),
-            # infill_experiment(fidelity='both 3', which_model='diff', **run_opts, **plot_opts),
-            # infill_experiment(fidelity='both 5', which_model='diff', **run_opts, **plot_opts),
-        # ]
-
-        df = pd.DataFrame(flatten(records))
-        name, param = acq
-        df.to_csv(base_dir+f"{name}{param if param is not None else ''}_records.csv", index_label='index')
-        # df.to_csv(base_dir+f"{name}{param if param is not None else ''}_diff_records.csv", index_label='index')
+    df = pd.DataFrame(flatten(records))
+    df.to_csv(base_dir+f"_records.csv", index_label='index')
+    # df.to_csv(base_dir+f"{name}{param if param is not None else ''}_diff_records.csv", index_label='index')
