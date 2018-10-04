@@ -175,7 +175,9 @@ class BiFidBayesianOptimization:
 
         self.acq = bo.helpers.UtilityFunction(kind=kind, kappa=kappa, xi=xi).utility
         self.bo_diff = BayesianOptimization(emptyfit, bounds, verbose=False)
-        self.bo_diff.gp = Kriging(candidate_archive=None, n=0, kernel=Matern(nu=2.5), n_restarts_optimizer=25, random_state=None)
+        self.bo_diff.gp = Kriging(candidate_archive=None, n=0,
+                                  kernel=Matern(nu=2.5), n_restarts_optimizer=25,
+                                  random_state=None)
 
         candidates, fitnesses = self.cand_arch.getcandidates(n=0, fidelity=['high', 'low'])
         y_high, y_low = fitnesses[:,0], fitnesses[:,1]
@@ -441,7 +443,7 @@ def infill_experiment(num_repetitions=10, num_iters=1, which_model='hierarchical
                 records.append(MSERecord(which_model, fidelity, rep, iteration=i,
                                          mse_low=mse_low, mse_high=mse_high, mse_hier=mse_hierarchical))
                 if make_plots:
-                    plotmorestuff(surfaces, bifidbo, count=i, save_as=save_as, **plot_opts)
+                    plotmorestuff(surfaces, bifidbo, count=i, save_as=save_as+f'_r{rep}', **plot_opts)
 
             if verbosity > 1:
                 print()
