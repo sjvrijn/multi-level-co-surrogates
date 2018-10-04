@@ -72,13 +72,13 @@ def createScaledLHS(ndim, init_sample_size, l_bound, u_bound):
     try:
         sp = samplingplan(ndim)
         sample = sp.optimallhc(init_sample_size)
-        sample = (sample*space) + l_bound
     except IndexError as e:
         if ndim < 2:
-            raise ValueError(f'LHS can only be defined for >= 2 dimensions (N={ndim} given)')
+            sample = np.linspace(0, 1, num=init_sample_size)
         else:
             raise e
 
+    sample = (sample*space) + l_bound
     return sample
 
 
