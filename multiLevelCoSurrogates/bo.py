@@ -36,24 +36,7 @@ from multiLevelCoSurrogates.Utils import createsurfaces, diffsurface, plotsurfac
 
 
 
-
-
-def plotstuff(fit_func, bopt, count):
-    funcs = [
-        lambda x: fit_func(*x[0]),
-        partial(bopt.util.utility, gp=bopt.gp, y_max=bopt.space.Y.max()),
-        lambda x: bopt.gp.predict(x)[0],
-        lambda x: bopt.gp.predict(x, return_std=True)[1],
-    ]
-    titles = [
-        f'Function',
-        f'ACQ:{bopt.util.kind} {count}',
-        f'GP {count}',
-        f'GP var {count}'
-    ]
-    surfaces = createsurfaces(funcs)
-    plotsurfaces(surfaces, titles=titles, shape=(2, 2))
-
+N_RESTARTS = 100
 
 def gpplot(x, func, return_std=False):
     idx = 1 if return_std else 0
@@ -144,14 +127,16 @@ def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
 
 
 boha = fit_funcs['himmelblau']
-bounds = {'x': (boha.l_bound[0], boha.u_bound[0]),
-          'y': (boha.l_bound[1], boha.u_bound[1])}
+bounds = {
+    'x': (boha.l_bound[0], boha.u_bound[0]),
+    'y': (boha.l_bound[1], boha.u_bound[1]),
+}
 
 
 
 # ------------------------------------------------------------------------------
 
-def emptyfit(x):
+def blank_fitness(x):
     return None
 
 class BiFidBayesianOptimization:
@@ -174,9 +159,9 @@ class BiFidBayesianOptimization:
         self.kind = kind
 
         self.acq = bo.helpers.UtilityFunction(kind=kind, kappa=kappa, xi=xi).utility
-        self.bo_diff = BayesianOptimization(emptyfit, bounds, verbose=False)
+        self.bo_diff = BayesianOptimization(blank_fitness, bounds, verbose=False)
         self.bo_diff.gp = Kriging(candidate_archive=None, n=0,
-                                  kernel=Matern(nu=2.5), n_restarts_optimizer=25,
+                                  kernel=Matern(nu=2.5), n_restarts_optimizer=N_RESTARTS,
                                   random_state=None)
 
         candidates, fitnesses = self.cand_arch.getcandidates(n=0, fidelity=['high', 'low'])
@@ -303,8 +288,10 @@ def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False, a
     range_in = ValueRange(-5, 5)
     range_lhs = ValueRange(0, 1)
 
-    gp_low = Kriging(candidate_archive=None, n=0, kernel=Matern(nu=2.5), n_restarts_optimizer=25, random_state=None)
-    gp_high = Kriging(candidate_archive=None, n=0, kernel=Matern(nu=2.5), n_restarts_optimizer=25, random_state=None)
+    gp_low = Kriging(candidate_archive=None, n=0, kernel=Matern(nu=2.5),
+                     n_restarts_optimizer=N_RESTARTS, random_state=None)
+    gp_high = Kriging(candidate_archive=None, n=0, kernel=Matern(nu=2.5),
+                      n_restarts_optimizer=N_RESTARTS, random_state=None)
     archive = CandidateArchive(ndim, fidelities=['high', 'low'])
 
     low_sample = lhs(ndim, num_low_samples)
@@ -392,7 +379,7 @@ def infill_experiment(num_repetitions=10, num_iters=1, which_model='hierarchical
 
     range_in = ValueRange(-5, 5)
     range_lhs = ValueRange(0, 1)
-    test_sample = lhs(n=2, samples=250)
+    test_sample = lhs(n=2, samples=1000)  # TODO: is 5k samples good/enough?
     test_sample = linearscaletransform(test_sample, range_in=range_lhs, range_out=range_in)
 
     test_values = np.array([fit_func_high([sample]) for sample in test_sample])
