@@ -167,7 +167,6 @@ class BiFidBayesianOptimization:
         candidates, fitnesses = self.cand_arch.getcandidates(n=0, fidelity=['high', 'low'])
         y_high, y_low = fitnesses[:,0], fitnesses[:,1]
         self.rho = self.determine_rho(y_high, y_low)
-        self.train_diff()
 
         diffs = y_high-self.rho*y_low
         self.bo_diff.initialize({
@@ -175,6 +174,7 @@ class BiFidBayesianOptimization:
             'y': candidates[:, 1].flatten(),
             'target': diffs.flatten(),
         })
+        self.train_diff()
         self.bo_diff.maximize(0,0)
 
 
@@ -266,12 +266,22 @@ class BiFidBayesianOptimization:
 
 
 
+def row_vectorize(func):
+    def new_func(X):
+        try:
+            return np.array([func(row) for row in X])
+        except TypeError:
+            return func(X)
+    return new_func
+
 
 def fit_func_high(x):
-    return -boha.high(x[0])
+    high = row_vectorize(boha.high)
+    return -high(x)
 
 def fit_func_low(x):
-    return -boha.low(x[0])
+    low = row_vectorize(boha.low)
+    return -low(x)
 
 
 funcs = [
@@ -283,6 +293,11 @@ surfaces.append(diffsurface(surfaces[0], surfaces[1]))
 
 
 def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False, acq=None):
+
+    if num_high_samples < 3:
+        raise ValueError('At least 3 high-fidelity datapoints are needed to avoid numerical instability')
+    if num_low_samples <= num_high_samples:
+        raise ValueError('Please provide more low-fidelity than high-fidelity samples')
 
     ndim = 2
     range_in = ValueRange(-5, 5)
@@ -299,8 +314,8 @@ def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False, a
 
     high_sample = select_subsample(low_sample.T, num_high_samples).T
 
-    low_out = np.array([[fit_func_low([x])] for x in low_sample])
-    high_out = np.array([[fit_func_high([x])] for x in high_sample])
+    low_out = np.array([[fit_func_low(x)] for x in low_sample])
+    high_out = np.array([[fit_func_high(x)] for x in high_sample])
 
     for candidate, result in zip(low_sample, low_out):
         archive.addcandidate(candidate, result, fidelity='low')
@@ -402,7 +417,7 @@ def infill_experiment(num_repetitions=10, num_iters=1, which_model='hierarchical
             if verbosity > 1:
                 print(f'Repetition {rep}/{num_repetitions}:')
                 print('    Creating Bi-Fid BO')
-            bifidbo = createbifidbo(num_low_samples=5, num_high_samples=2, acq=acq)
+            bifidbo = createbifidbo(num_low_samples=5, num_high_samples=3, acq=acq)
 
             mse_hierarchical, mse_high, mse_low = calc_mse(bifidbo, test_mse, test_sample, verbosity=verbosity-2)
             records.append(MSERecord(which_model, fidelity, rep, iteration=0,
@@ -451,7 +466,7 @@ if __name__ == "__main__":
         'verbosity': 1,
     }
     plot_opts = {
-        'plot_2d': True,
+        'plot_2d': False,
         'plot_3d': False,
         'show': False,
     }
