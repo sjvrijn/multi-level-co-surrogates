@@ -314,8 +314,8 @@ def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False, a
 
     high_sample = select_subsample(low_sample.T, num_high_samples).T
 
-    low_out = np.array([[fit_func_low(x)] for x in low_sample])
-    high_out = np.array([[fit_func_high(x)] for x in high_sample])
+    low_out = fit_func_low(low_sample)
+    high_out = fit_func_high(high_sample)
 
     for candidate, result in zip(low_sample, low_out):
         archive.addcandidate(candidate, result, fidelity='low')
@@ -335,27 +335,15 @@ def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False, a
     return bifidbo
 
 
-
-def optimize(bifidbo, surfs, num_steps=10):
-
-    for count in range(1, num_steps+1):
-        argmax = bifidbo.acq_max()
-        bifidbo.cand_arch.addcandidate(argmax, fit_func_low(*argmax), fidelity='low')
-
-        bifidbo.train_gp(fidelity='low')
-
-        plotmorestuff(surfs, bifidbo, count=count)
-
-
 def find_infill_and_retrain(bifidbo, which_model='hierarchical', fidelity='low'):
     infill_in = bifidbo.acq_max(which_model=which_model)
 
     if fidelity == 'low':
-        infill_out = fit_func_low([infill_in])
+        infill_out = fit_func_low(infill_in)
     elif fidelity == 'high':
-        infill_out = fit_func_high([infill_in])
+        infill_out = fit_func_high(infill_in)
     elif fidelity == 'both':
-        infill_out = [fit_func_low([infill_in]), fit_func_high([infill_in])]
+        infill_out = [fit_func_low(infill_in), fit_func_high(infill_in)]
         fidelity = ['low', 'high', 'diff']
     else:
         raise ValueError(f"fidelity '{fidelity}' not recognized")
@@ -397,7 +385,7 @@ def infill_experiment(num_repetitions=10, num_iters=1, which_model='hierarchical
     test_sample = lhs(n=2, samples=1000)  # TODO: is 5k samples good/enough?
     test_sample = linearscaletransform(test_sample, range_in=range_lhs, range_out=range_in)
 
-    test_values = np.array([fit_func_high([sample]) for sample in test_sample])
+    test_values = fit_func_high(test_sample)
     test_mse = partial(mean_squared_error, y_pred=test_values)
 
     records = []
