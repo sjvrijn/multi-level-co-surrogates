@@ -16,12 +16,11 @@ import pandas as pd
 from pyDOE import lhs
 from sklearn.metrics import mean_squared_error
 
-from multiLevelCoSurrogates.config import fit_funcs
-from multiLevelCoSurrogates.local import base_dir
-from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
-from multiLevelCoSurrogates.Utils import createsurfaces, plotsurfaces, \
-    ValueRange, linearscaletransform, select_subsample
-from multiLevelCoSurrogates.bifidbo import BiFidBayesianOptimization
+from .config import fit_funcs
+from .local import base_dir
+from .CandidateArchive import CandidateArchive
+from .Utils import createsurfaces, plotsurfaces, ValueRange, linearscaletransform, select_subsample
+from .bifidbo import BiFidBayesianOptimization
 
 
 def gpplot(x, func, return_std=False):

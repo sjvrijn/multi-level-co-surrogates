@@ -16,12 +16,12 @@ from pathlib import Path
 from pyKriging.samplingplan import samplingplan
 from itertools import product
 
-from multiLevelCoSurrogates.Surrogates import Surrogate, CoSurrogate
-from multiLevelCoSurrogates.Logger import Logger
-from multiLevelCoSurrogates.config import data_dir, folder_name, suffix, data_ext, fit_funcs, fit_func_dims
-from multiLevelCoSurrogates.config import experiment_repetitions, training_sizes
-from multiLevelCoSurrogates.BayesianOptimization import EGO
-from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
+from .Surrogates import Surrogate, CoSurrogate
+from .Logger import Logger
+from .config import data_dir, folder_name, suffix, data_ext, fit_funcs, fit_func_dims
+from .config import experiment_repetitions, training_sizes
+from .BayesianOptimization import EGO
+from .CandidateArchive import CandidateArchive
 
 
 def guaranteeFolderExists(path_name):

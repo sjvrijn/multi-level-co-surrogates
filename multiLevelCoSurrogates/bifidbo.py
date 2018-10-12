@@ -13,7 +13,7 @@ import bayes_opt as bo
 from bayes_opt import BayesianOptimization
 from sklearn.linear_model import LinearRegression
 from sklearn.gaussian_process.kernels import Matern
-from multiLevelCoSurrogates.Surrogates import Kriging
+from .Surrogates import Kriging
 
 
 

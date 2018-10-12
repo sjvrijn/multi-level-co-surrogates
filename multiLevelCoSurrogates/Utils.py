@@ -1,5 +1,4 @@
 from collections import namedtuple
-from operator import mul
 import matplotlib.pyplot as plt
 import scipy
 from mpl_toolkits.mplot3d import Axes3D

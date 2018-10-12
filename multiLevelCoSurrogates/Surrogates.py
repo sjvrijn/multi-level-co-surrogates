@@ -15,7 +15,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.svm import SVR
 from scipy.interpolate import Rbf
 
-from multiLevelCoSurrogates.Utils import ValueRange, determinerange, linearscaletransform
+from .Utils import ValueRange, determinerange, linearscaletransform
 
 
 class Surrogate:
