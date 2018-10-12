@@ -26,9 +26,7 @@ def blank_fitness(x):
 
 class BiFidBayesianOptimization:
 
-    def __init__(self, gp_low, gp_high, f_low, f_high, cand_arch, acq=None, bounds=None):
-        self.gp_low = gp_low
-        self.gp_high = gp_high
+    def __init__(self, f_low, f_high, cand_arch, acq=None, bounds=None):
         self.f_low = f_low
         self.f_high = f_high
         self.cand_arch = cand_arch
@@ -46,9 +44,18 @@ class BiFidBayesianOptimization:
 
         self.acq = bo.helpers.UtilityFunction(kind=kind, kappa=kappa, xi=xi).utility
         self.bo_diff = BayesianOptimization(blank_fitness, self.bounds, verbose=False)
-        self.bo_diff.gp = Kriging(candidate_archive=None, n=0,
-                                  kernel=Matern(nu=2.5), n_restarts_optimizer=N_RESTARTS,
-                                  random_state=None)
+
+        gp_opts = {
+            'n': 0,
+            'kernel': Matern(nu=2.5),
+            'random_state': None,
+            'candidate_archive': None,
+            'n_restarts_optimizer': N_RESTARTS,
+        }
+
+        self.gp_low = Kriging(**gp_opts)
+        self.gp_high = Kriging(**gp_opts)
+        self.bo_diff.gp = Kriging(**gp_opts)
 
         candidates, fitnesses = self.cand_arch.getcandidates(n=0, fidelity=['high', 'low'])
         y_high, y_low = fitnesses[:,0], fitnesses[:,1]

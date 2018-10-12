@@ -15,18 +15,14 @@ import numpy as np
 import pandas as pd
 from pyDOE import lhs
 from sklearn.metrics import mean_squared_error
-from sklearn.gaussian_process.kernels import Matern
 
 from multiLevelCoSurrogates.config import fit_funcs
 from multiLevelCoSurrogates.local import base_dir
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
-from multiLevelCoSurrogates.Surrogates import Kriging
 from multiLevelCoSurrogates.Utils import createsurfaces, diffsurface, plotsurfaces, \
     ValueRange, linearscaletransform, select_subsample
 from multiLevelCoSurrogates.bifidbo import BiFidBayesianOptimization
 
-
-N_RESTARTS = 100
 
 def gpplot(x, func, return_std=False):
     idx = 1 if return_std else 0
@@ -160,10 +156,6 @@ def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False, a
     range_in = ValueRange(-5, 5)
     range_lhs = ValueRange(0, 1)
 
-    gp_low = Kriging(candidate_archive=None, n=0, kernel=Matern(nu=2.5),
-                     n_restarts_optimizer=N_RESTARTS, random_state=None)
-    gp_high = Kriging(candidate_archive=None, n=0, kernel=Matern(nu=2.5),
-                      n_restarts_optimizer=N_RESTARTS, random_state=None)
     archive = CandidateArchive(ndim, fidelities=['high', 'low'])
 
     low_sample = lhs(ndim, num_low_samples)
@@ -171,16 +163,10 @@ def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False, a
 
     high_sample = select_subsample(low_sample.T, num_high_samples).T
 
-    low_out = fit_func_low(low_sample)
-    high_out = fit_func_high(high_sample)
-
-    for candidate, result in zip(low_sample, low_out):
-        archive.addcandidate(candidate, result, fidelity='low')
-    for candidate, result in zip(high_sample, high_out):
-        archive.addcandidate(candidate, result, fidelity='high')
+    archive.addcandidates(low_sample, fit_func_low(low_sample), fidelity='low')
+    archive.addcandidates(high_sample, fit_func_high(high_sample), fidelity='high')
 
     bifidbo = BiFidBayesianOptimization(
-        gp_low=gp_low, gp_high=gp_high,
         f_low=fit_func_low, f_high=fit_func_high,
         cand_arch=archive, acq=acq, bounds=bounds
     )
