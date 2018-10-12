@@ -30,7 +30,7 @@ class BiFidBayesianOptimization:
         self.f_low = f_low
         self.f_high = f_high
         self.cand_arch = cand_arch
-        self.bounds = {'x': (-5,5), 'y':(-5,5)} if bounds is None else bounds
+        self.bounds = {'x': (-5,5), 'y': (-5,5)} if bounds is None else bounds
 
         kind, kappa, xi = 'ucb', 2.576, 0.0
 

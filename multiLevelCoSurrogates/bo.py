@@ -19,7 +19,7 @@ from sklearn.metrics import mean_squared_error
 from multiLevelCoSurrogates.config import fit_funcs
 from multiLevelCoSurrogates.local import base_dir
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
-from multiLevelCoSurrogates.Utils import createsurfaces, diffsurface, plotsurfaces, \
+from multiLevelCoSurrogates.Utils import createsurfaces, plotsurfaces, \
     ValueRange, linearscaletransform, select_subsample
 from multiLevelCoSurrogates.bifidbo import BiFidBayesianOptimization
 
@@ -136,13 +136,8 @@ def fit_func_low(x):
     low = row_vectorize(boha.low)
     return -low(x)
 
-
-funcs = [
-    fit_func_high,
-    fit_func_low,
-]
-surfaces = createsurfaces(funcs)
-surfaces.append(diffsurface(surfaces[0], surfaces[1]))
+surfaces = createsurfaces([fit_func_high, fit_func_low])
+surfaces.append(surfaces[0] - surfaces[1])
 
 
 def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False, acq=None):
@@ -156,13 +151,11 @@ def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False, a
     range_in = ValueRange(-5, 5)
     range_lhs = ValueRange(0, 1)
 
-    archive = CandidateArchive(ndim, fidelities=['high', 'low'])
-
     low_sample = lhs(ndim, num_low_samples)
     low_sample = linearscaletransform(low_sample, range_in=range_lhs, range_out=range_in)
-
     high_sample = select_subsample(low_sample.T, num_high_samples).T
 
+    archive = CandidateArchive(ndim, fidelities=['high', 'low'])
     archive.addcandidates(low_sample, fit_func_low(low_sample), fidelity='low')
     archive.addcandidates(high_sample, fit_func_high(high_sample), fidelity='high')
 
@@ -170,13 +163,12 @@ def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False, a
         f_low=fit_func_low, f_high=fit_func_high,
         cand_arch=archive, acq=acq, bounds=bounds
     )
-
-    # Fit GP
     bifidbo.train_gp(fidelity='low')
     bifidbo.train_gp(fidelity='high')
 
     if plot_surfaces:
         plotmorestuff(surfaces, bifidbo, count=0)
+
     return bifidbo
 
 

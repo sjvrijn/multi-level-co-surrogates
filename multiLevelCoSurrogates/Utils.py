@@ -84,9 +84,14 @@ def linearscaletransform(values, *, range_in=None, range_out=ValueRange(0, 1), s
 
 Surface = namedtuple('Surface', ['X', 'Y', 'Z'])
 
-def diffsurface(a, b):
-    """Calculate the difference/response surface between surfaces a and b"""
+def add_surface(a, b):
+    return Surface(a.X, a.Y, a.Z + b.Z)
+
+def subtract_surface(a, b):
     return Surface(a.X, a.Y, a.Z - b.Z)
+
+Surface.__add__ = add_surface
+Surface.__sub__ = subtract_surface
 
 
 def calc_numsteps(low, high, step, endpoint=True):
