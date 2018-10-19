@@ -9,7 +9,8 @@ post_process.py: This file is intended to perform some simple post-processing
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-from multiLevelCoSurrogates.config import experiment_repetitions, fit_funcs, fit_func_dims, folder_name, suffix, data_ext, plot_ext, data_dir, plot_dir, base_dir
+from multiLevelCoSurrogates.config import experiment_repetitions, fit_funcs, fit_func_dims, folder_name
+from multiLevelCoSurrogates.config import suffix, data_ext, plot_ext, data_dir, plot_dir, base_dir
 from multiLevelCoSurrogates.__main__ import guaranteeFolderExists
 from multiLevelCoSurrogates.Utils import createsurface, plotsurfaces, Surface
 from itertools import product
@@ -27,7 +28,8 @@ lambda_pres = [0, 2]  # , 4, 8]
 figsize = (6, 4.5)
 
 Index = namedtuple('Index', ['fitfunc', 'surrogate', 'usage', 'repetition', 'genint', 'lambda_pre'])
-TimingData = namedtuple('TimingData', ['function', 'surrogate', 'usage', 'repetition', 'gen_int', 'lambda_pre', 'time'])
+TimingData = namedtuple('TimingData', ['function', 'surrogate', 'usage', 'repetition',
+                                       'gen_int', 'lambda_pre', 'time'])
 
 x_lims = {
     'bohachevsky': 100,
@@ -79,15 +81,13 @@ def load_fitnesshistory(fname, column=None):
 
 
 # TODO: Rewrite all plotting functions to plot from a list of 'Index' namedtuples
-# ======================================================================================================================
-# ======================================================================================================================
-# ======================================================================================================================
 
 
 def getdata():
 
     fit_func_names = fit_funcs.keys()
-    experiments = product(fit_func_names, surrogates, uses, range(experiment_repetitions), gen_intervals, lambda_pres)
+    experiments = product(fit_func_names, surrogates, uses,
+                          range(experiment_repetitions), gen_intervals, lambda_pres)
 
     data = {}
 
@@ -107,7 +107,7 @@ def getdata():
 
         # TODO: better determine optimal values for each function
         try:
-            data[idx] = np.array(load_fitnesshistory(filename_prefix + 'reslog.' + data_ext, column=(1, -1)))
+            data[idx] = np.array(load_fitnesshistory(f"{filename_prefix}reslog.{data_ext}", column=(1, -1)))
             if fit_func_name == 'borehole':
                 data[idx] *= -1
             elif fit_func_name == 'park91b':
@@ -124,7 +124,8 @@ def getdata():
 def timingdatatocsv():
 
     fit_func_names = fit_funcs.keys()
-    experiments = product(fit_func_names, surrogates, uses, range(experiment_repetitions), gen_intervals, lambda_pres)
+    experiments = product(fit_func_names, surrogates, uses,
+                          range(experiment_repetitions), gen_intervals, lambda_pres)
     data = []
 
     for fit_func_name, surrogate_name, use, rep, gen_int, lambda_pre_mul in experiments:
@@ -142,7 +143,7 @@ def timingdatatocsv():
 
         try:
             # In this case, we only ever expect a single value per file
-            time = np.array(load_fitnesshistory(filename_prefix + 'timelog.' + data_ext, column=(1, -1)))[0][0]
+            time = np.array(load_fitnesshistory(f"{filename_prefix}timelog.{data_ext}", column=(1, -1)))[0][0]
             tup = TimingData(fit_func_name, surrogate_name, use, rep, gen_int, lambda_pre_mul, time)
             data.append(tup)
         except:
@@ -232,7 +233,7 @@ def compare_by_genint(data):
         plt.legend(loc=0)
 
         plt.tight_layout()
-        plt.savefig(plot_dir + 'by_genint/' + fit_func_name + '-' + surrogate_name + '-' + use + '.' + plot_ext)
+        plt.savefig(f"{plot_dir}by_genint/{fit_func_name}-{surrogate_name}-{use}.{plot_ext}")
         plt.close()
 
     print("all plotted")
@@ -291,7 +292,7 @@ def compare_by_use(data):
         plt.legend(loc=0)
 
         plt.tight_layout()
-        plt.savefig(plot_dir + 'by_use/' + fit_func_name + '-' + '-' + str(gen_int_) + '.' + plot_ext)
+        plt.savefig(f"{plot_dir}by_use/{fit_func_name}--{str(gen_int_)}.{plot_ext}")
         plt.close()
 
     print("all plotted")
@@ -349,7 +350,7 @@ def compare_by_surrogate(data):
         plt.legend(loc=0)
 
         plt.tight_layout()
-        plt.savefig(plot_dir + 'by_surrogate/' + fit_func_name + '-' + use + '-' + str(gen_int) + '.' + plot_ext)
+        plt.savefig(f"{plot_dir}by_surrogate/{fit_func_name}-{use}-{str(gen_int)}.{plot_ext}")
         plt.close()
 
     print("all plotted")
