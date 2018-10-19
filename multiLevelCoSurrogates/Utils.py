@@ -47,17 +47,17 @@ def select_subsample(xdata, num):
     return sub_x
 
 
-def sample_by_function(func, n_samples, ndim, value_range, u_bound, l_bound, min_probability=0.0):
+def sample_by_function(func, n_samples, ndim, range_in, range_out, min_probability=0.0):
     oversampling_factor = 2.5
     new_sample = np.array([]).reshape((0, ndim))
     sample_shape = (int(n_samples * oversampling_factor), ndim)
 
     while len(new_sample) < n_samples:
-        raw_sample = np.random.uniform(high=u_bound, low=l_bound, size=sample_shape)
+        raw_sample = np.random.uniform(high=range_in.max, low=range_in.min, size=sample_shape)
 
         f_values = -func(raw_sample)  # TODO: this is a hardcoded inversion of a minimization to maximization problem
 
-        f_probabilities = linearscaletransform(f_values, range_in=value_range)
+        f_probabilities = linearscaletransform(f_values, range_in=range_out)
         f_probabilities = (1 - min_probability) * f_probabilities + min_probability
 
         check_values = np.random.uniform(size=f_probabilities.shape)
