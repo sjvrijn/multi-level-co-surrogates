@@ -47,8 +47,22 @@ def select_subsample(xdata, num):
     return sub_x
 
 
-def sample_by_function(func, n_samples, ndim, range_in, range_out, min_probability=0.0):
-    oversampling_factor = 2.5
+def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
+                       min_probability=0.0, oversampling_factor=2.5):
+    """ Create a sample of points, such that they are more likely to have a
+    better fitness value according to the given function.
+
+    First a larger uniform sample (default oversampling_factor=2.5) is
+    created and evaluated on the given function. These values are then
+    scaled from `range_out` to [min_probability,1], where `min_probability`
+    defaults  to 0.0. Each of these values is then 'tested' against a new
+    uniformly random value between [0,1] to determine whether the sampled
+    point is kept or not.
+
+    If enough valid samples remain, return them, otherwise extends the set
+    of valid samples by repeating the above process until enough valid
+    samples have been generated.
+    """
     new_sample = np.array([]).reshape((0, ndim))
     sample_shape = (int(n_samples * oversampling_factor), ndim)
 
