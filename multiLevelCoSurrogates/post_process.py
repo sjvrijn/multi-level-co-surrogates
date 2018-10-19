@@ -9,8 +9,9 @@ post_process.py: This file is intended to perform some simple post-processing
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-from .config import experiment_repetitions, fit_funcs, fit_func_dims, folder_name, suffix, data_ext, plot_ext, data_dir, plot_dir, base_dir
-from .__main__ import guaranteeFolderExists
+from multiLevelCoSurrogates.config import experiment_repetitions, fit_funcs, fit_func_dims, folder_name, suffix, data_ext, plot_ext, data_dir, plot_dir, base_dir
+from multiLevelCoSurrogates.__main__ import guaranteeFolderExists
+from multiLevelCoSurrogates.Utils import createsurface, plotsurfaces, Surface
 from itertools import product
 from matplotlib import pyplot as plt
 from collections import namedtuple
@@ -354,57 +355,26 @@ def compare_by_surrogate(data):
     print("all plotted")
 
 
-def make2dvisualizations(func, l_bound, u_bound, name, num_intervals=100):
-    from mpl_toolkits.mplot3d import Axes3D
-    from matplotlib import cm
-    from matplotlib.ticker import LinearLocator, FormatStrFormatter
+def make2dvisualizations(func, l_bound, u_bound, name, num_intervals=200):
 
-    func = np.vectorize(func)
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    surface = createsurface(func, l_bound, u_bound, step=(u_bound - l_bound) / num_intervals)
+    surface = Surface(surface.X, surface.Y, -surface.Z)
 
-    x_min, y_min = l_bound
-    x_max, y_max = u_bound
+    save_name = f'{plot_dir}surfaces/{name}_2d.{plot_ext}'
+    plotsurfaces([surface], titles=[name], figratio=(6,4), save_as=save_name, show=True)
 
-    # Make data.
-    X = np.arange(x_min, x_max, (x_max-x_min)/num_intervals)
-    Y = np.arange(y_min, y_max, (y_max-y_min)/num_intervals)
-    X, Y = np.meshgrid(X, Y)
-    Z = func(X, Y)
-
-    # Plot the surface.
-    surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0, antialiased=False)
-    # surf = ax.pcolor(X, Y, Z, cmap=cm.coolwarm)
-    ax.view_init(azim=45)
-    ax.set_title(f'{name}')
-
-    ax.set_xlabel('x1')
-    ax.set_ylabel('x2')
-    ax.set_zlabel('f')
-
-    # Customize the z axis.
-    ax.zaxis.set_major_locator(LinearLocator(10))
-    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
-
-    # Add a color bar which maps values to colors.
-    fig.colorbar(surf, shrink=0.5, aspect=5)
-
-    plt.tight_layout()
-    guaranteeFolderExists(f'{plot_dir}surfaces/')
-    plt.savefig(f'{plot_dir}surfaces/{name}_2d.{plot_ext}')
 
 
 def plot_function_surfaces():
 
-    for fit_func_name in list(fit_funcs.keys())[:5]:
+    for name, fit_func in list(fit_funcs.items())[:5]:
 
-        l_bound = np.array(fit_funcs[fit_func_name].l_bound, dtype=np.float64)
-        u_bound = np.array(fit_funcs[fit_func_name].u_bound, dtype=np.float64)
+        #TODO: make bounds np.arrays in the function package?
+        l_bound = np.array(fit_func.l_bound, dtype=np.float64)
+        u_bound = np.array(fit_func.u_bound, dtype=np.float64)
 
-        func = lambda x, y: fit_funcs[fit_func_name].high((x,y))
-        make2dvisualizations(func, l_bound, u_bound, fit_func_name)
-        func = lambda x, y: fit_funcs[fit_func_name].low((x,y))
-        make2dvisualizations(func, l_bound, u_bound, fit_func_name + '_low')
+        make2dvisualizations(fit_func.high, l_bound, u_bound, name)
+        make2dvisualizations(fit_func.low, l_bound, u_bound, name + '_low')
 
 
 def run():
