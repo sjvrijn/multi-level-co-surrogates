@@ -150,8 +150,8 @@ def createsurface(func, l_bound=None, u_bound=None, step=None):
     if isinstance(func, Surface):
         return func
 
-    l_bound = [-5, -5] if l_bound is None else l_bound
-    u_bound = [5, 5] if u_bound is None else u_bound
+    l_bound = np.array([-5, -5]) if l_bound is None else l_bound
+    u_bound = np.array([5, 5]) if u_bound is None else u_bound
     step = [0.2, 0.2] if step is None else step
 
     X, Y = create_wide_meshgrid(l_bound, step, u_bound)
@@ -162,9 +162,9 @@ def createsurface(func, l_bound=None, u_bound=None, step=None):
     return Surface(X, Y, Z)
 
 
-def createsurfaces(funcs):
+def createsurfaces(funcs, *args, **kwargs):
     """Create Surface objects for each function in the list `funcs` using the default parameters"""
-    return [createsurface(func) for func in funcs]
+    return [createsurface(func, *args, **kwargs) for func in funcs]
 
 
 # ------------------------------------------------------------------------------
@@ -194,7 +194,12 @@ def plotsurfaces(surfaces, *, all_points=None, titles=None, shape=None, figratio
         all_points = [None] * len(surfaces)
 
     fig, axes = plt.subplots(*shape, figsize=(shape[0]*figratio[0], shape[1]*figratio[1]), subplot_kw=kwargs)
-    for ax, surface, title, points in zip(axes.flatten(), surfaces, titles, all_points):
+    try:
+        axes = axes.flatten()
+    except AttributeError:
+        axes = [axes]
+
+    for ax, surface, title, points in zip(axes, surfaces, titles, all_points):
         plot = plot_func(ax, surface, title, points)
         if not as_3d:
             fig.colorbar(plot, ax=ax)
