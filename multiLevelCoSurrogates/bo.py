@@ -119,22 +119,11 @@ bounds = {
 }
 
 
-def row_vectorize(func):
-    def new_func(X):
-        try:
-            return np.array([func(row) for row in X])
-        except TypeError:
-            return func(X)
-    return new_func
-
-
 def fit_func_high(x):
-    high = row_vectorize(boha.high)
-    return -high(x)
+    return -boha.high(x)
 
 def fit_func_low(x):
-    low = row_vectorize(boha.low)
-    return -low(x)
+    return -boha.low(x)
 
 surfaces = createsurfaces([fit_func_high, fit_func_low])
 surfaces.append(surfaces[0] - surfaces[1])
