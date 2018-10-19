@@ -21,7 +21,7 @@ N_RESTARTS = 100
 
 
 
-def blank_fitness(x):
+def blank_fitness(_):
     return None
 
 class BiFidBayesianOptimization:

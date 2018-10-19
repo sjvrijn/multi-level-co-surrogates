@@ -12,23 +12,17 @@ import os
 import cma
 import numpy as np
 import time
-from pathlib import Path
 from pyKriging.samplingplan import samplingplan
+from pyDOE import lhs
 from itertools import product
 
 from .Surrogates import Surrogate, CoSurrogate
 from .Logger import Logger
 from .config import data_dir, folder_name, suffix, data_ext, fit_funcs, fit_func_dims
-from .config import experiment_repetitions, training_sizes
+from .config import experiment_repetitions
 from .BayesianOptimization import EGO
 from .CandidateArchive import CandidateArchive
-
-
-def guaranteeFolderExists(path_name):
-    """ Make sure the given path exists after this call """
-    path = Path(path_name)
-    path.expanduser()
-    path.mkdir(parents=True, exist_ok=True)
+from .Utils import guaranteeFolderExists, ValueRange, linearscaletransform
 
 
 def _keepInBounds(x, l_bound, u_bound):
@@ -57,31 +51,6 @@ def _keepInBounds(x, l_bound, u_bound):
     return x
 
 
-def createScaledLHS(ndim, init_sample_size, l_bound, u_bound):
-    """
-        Return a sample of `init_sample_size` points in `ndim` dimensions, scaled to cover the
-        search space defined by `l_bound` and `u_bound`.
-
-        :param ndim:                Dimensionality, length of the desired vectors
-        :param init_sample_size:    Number of samples to return
-        :param l_bound:             Lower bound of the search space (numpy array)
-        :param u_bound:             Upper bound of the search space (numpy array)
-        :return:                    Sample (2D numpy array)
-    """
-    space = u_bound - l_bound
-    try:
-        sp = samplingplan(ndim)
-        sample = sp.optimallhc(init_sample_size)
-    except IndexError as e:
-        if ndim < 2:
-            sample = np.linspace(0, 1, num=init_sample_size)
-        else:
-            raise e
-
-    sample = (sample*space) + l_bound
-    return sample
-
-
 def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, surrogate_name):
     """
         Create a surrogate model on a Latin-Hypercube Sample within the given bounds.
@@ -96,7 +65,10 @@ def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, surrogate_n
         :return:                    Trained and initialized surrogate of desired type
     """
 
-    init_candidates = createScaledLHS(N, init_sample_size, l_bound, u_bound)
+    sample = lhs(N, init_sample_size)
+    init_candidates = linearscaletransform(sample, range_in=ValueRange(0,1),
+                                           range_out=ValueRange(l_bound, u_bound))
+
     results = [fit_func(cand) for cand in init_candidates]
     results = np.array(results, ndmin=2).T
 
@@ -126,7 +98,10 @@ def createCoSurrogate(N, init_sample_size, fit_func_low, fit_func_high, l_bound,
         :return:                    Trained and initialized surrogate of desired type
     """
 
-    init_candidates = createScaledLHS(N, init_sample_size, l_bound, u_bound)
+    sample = lhs(N, init_sample_size)
+    init_candidates = linearscaletransform(sample, range_in=ValueRange(0,1),
+                                           range_out=ValueRange(l_bound, u_bound))
+
     results_low = np.array([fit_func_low(cand) for cand in init_candidates], ndmin=2).T
     results_high = np.array([fit_func_high(cand) for cand in init_candidates], ndmin=2).T
 

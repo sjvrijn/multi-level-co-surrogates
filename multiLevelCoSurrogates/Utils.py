@@ -5,6 +5,15 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
+from pathlib import Path
+
+
+
+def guaranteeFolderExists(path_name):
+    """ Make sure the given path exists after this call """
+    path = Path(path_name)
+    path.expanduser()
+    path.mkdir(parents=True, exist_ok=True)
 
 
 def select_subsample(xdata, num):
