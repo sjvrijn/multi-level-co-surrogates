@@ -16,11 +16,12 @@ import pandas as pd
 from pyDOE import lhs
 from sklearn.metrics import mean_squared_error
 
-from .config import fit_funcs
-from .local import base_dir
-from .CandidateArchive import CandidateArchive
-from .Utils import createsurfaces, plotsurfaces, ValueRange, linearscaletransform, select_subsample
-from .bifidbo import BiFidBayesianOptimization
+from multiLevelCoSurrogates.config import fit_funcs
+from multiLevelCoSurrogates.local import base_dir
+from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
+from multiLevelCoSurrogates.Utils import createsurfaces, plotsurfaces, ValueRange, linearscaletransform
+from multiLevelCoSurrogates.Utils import select_subsample, sample_by_function
+from multiLevelCoSurrogates.bifidbo import BiFidBayesianOptimization
 
 
 def gpplot(x, func, return_std=False):
@@ -188,24 +189,28 @@ def find_infill_and_retrain(bifidbo, which_model='hierarchical', fidelity='low')
     bifidbo.train_gp(fidelity=fidelity)
 
 
+MSECollection = namedtuple('MSECollection', ['high', 'low', 'hier', 'low_on_high', 'diff'])
+
 def calc_mse(bifidbo, test_mse_high, test_mse_low, test_sample, verbosity=0):
     if verbosity > 0:
         print('        Predicting...')
     low_predict_values = bifidbo.gp_low.predict(test_sample)
     high_predict_values = bifidbo.gp_high.predict(test_sample)
     hierarchical_predict_values = bifidbo.predict(test_sample)
+
     if verbosity > 0:
         print('        Calculating MSE...')
     mse_low = test_mse_low(low_predict_values)
     mse_high = test_mse_high(high_predict_values)
     mse_hierarchical = test_mse_high(hierarchical_predict_values)
     mse_low_on_high = test_mse_high(low_predict_values)
-    return mse_hierarchical, mse_high, mse_low, mse_low_on_high
 
+    return MSECollection(high=mse_high, low=mse_low, hier=mse_hierarchical,
+                         low_on_high=mse_low_on_high, diff=0)
 
 
 MSERecord = namedtuple('MSERecord', ['which_model', 'fidelity', 'repetition', 'iteration',
-                                     'mse_high', 'mse_low', 'mse_hier', 'mse_low_on_high'])
+                                     *('mse_' + mse for mse in MSECollection._fields)])
 
 def infill_experiment(num_repetitions=10, num_iters=1, which_model='hierarchical', fidelity='low', acq=None,
                       *, verbosity=0, **plot_opts):
@@ -219,9 +224,14 @@ def infill_experiment(num_repetitions=10, num_iters=1, which_model='hierarchical
 
     range_in = ValueRange(-5, 5)
     range_lhs = ValueRange(0, 1)
+    range_out = ValueRange(-450, 0)
 
-    # TODO: is 1k samples good/enough?
-    test_sample = linearscaletransform(lhs(n=2, samples=1000), range_in=range_lhs, range_out=range_in)
+    n_samples = 1000
+    ndim = 2
+
+    sample_points = sample_by_function(fit_func_high, n_samples=n_samples, ndim=ndim,
+                                       range_in=range_in, range_out=range_out)
+    test_sample = linearscaletransform(sample_points, range_in=range_lhs, range_out=range_in)
 
     test_mse_high = partial(mean_squared_error, y_pred=fit_func_high(test_sample))
     test_mse_low = partial(mean_squared_error, y_pred=fit_func_low(test_sample))
@@ -245,9 +255,8 @@ def infill_experiment(num_repetitions=10, num_iters=1, which_model='hierarchical
                 print('    Creating Bi-Fid BO')
             bifidbo = createbifidbo(num_low_samples=5, num_high_samples=3, acq=acq)
 
-            mse_hierarchical, mse_high, mse_low, mse_low_on_high = calc_mse(bifidbo, test_mse_high, test_mse_low, test_sample, verbosity=verbosity-2)
-            records.append(MSERecord(which_model, fidelity, rep, iteration=0,
-                                     mse_low=mse_low, mse_high=mse_high, mse_hier=mse_hierarchical, mse_low_on_high=mse_low_on_high))
+            MSEs = calc_mse(bifidbo, test_mse_high, test_mse_low, test_sample, verbosity=verbosity-2)
+            records.append(MSERecord(which_model, fidelity, rep, iteration=0, *MSEs))
             if make_plots:
                 plotmorestuff(surfaces, bifidbo, count=0, save_as=save_as+f'_r{rep}', **plot_opts)
 
@@ -267,9 +276,8 @@ def infill_experiment(num_repetitions=10, num_iters=1, which_model='hierarchical
 
                 find_infill_and_retrain(bifidbo, which_model=which_model, fidelity=fid)
 
-                mse_hierarchical, mse_high, mse_low, mse_low_on_high = calc_mse(bifidbo, test_mse_high, test_mse_low, test_sample, verbosity=verbosity-3)
-                records.append(MSERecord(which_model, fidelity, rep, iteration=i,
-                                         mse_low=mse_low, mse_high=mse_high, mse_hier=mse_hierarchical, mse_low_on_high=mse_low_on_high))
+                MSEs = calc_mse(bifidbo, test_mse_high, test_mse_low, test_sample, verbosity=verbosity-3)
+                records.append(MSERecord(which_model, fidelity, rep, iteration=i, *MSEs))
                 if make_plots:
                     plotmorestuff(surfaces, bifidbo, count=i, save_as=save_as+f'_r{rep}', **plot_opts)
 

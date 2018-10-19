@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-main.py: This file contains the actual optimization experiments
+__main__.py: This file contains the actual optimization experiments
 """
 
 __author__ = 'Sander van Rijn'
