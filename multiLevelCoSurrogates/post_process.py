@@ -358,9 +358,7 @@ def compare_by_surrogate(data):
 def make2dvisualizations(func, l_bound, u_bound, name, num_intervals=200):
 
     surface = createsurface(func, l_bound, u_bound, step=(u_bound - l_bound) / num_intervals)
-    surface = Surface(surface.X, surface.Y, -surface.Z)
-
-    save_name = f'{plot_dir}surfaces/{name}_2d.{plot_ext}'
+    save_name = f'{plot_dir}surfaces/{name}.{plot_ext}'
     plotsurfaces([surface], titles=[name], figratio=(6,4), save_as=save_name, show=True)
 
 
@@ -373,9 +371,9 @@ def plot_function_surfaces():
         l_bound = np.array(fit_func.l_bound, dtype=np.float64)
         u_bound = np.array(fit_func.u_bound, dtype=np.float64)
 
-        make2dvisualizations(fit_func.high, l_bound, u_bound, name)
-        make2dvisualizations(fit_func.low, l_bound, u_bound, name + '_low')
-
+        for fid in fit_func.fidelity_names:
+            func = getattr(fit_func, fid)
+            make2dvisualizations(func, l_bound, u_bound, '_'.join((name, fid)))
 
 def run():
     # data = getdata()

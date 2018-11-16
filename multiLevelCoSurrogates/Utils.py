@@ -224,13 +224,20 @@ def plotsurfaces(surfaces, *, all_points=None, titles=None, shape=None, figratio
 def plotsurfaceonaxis(ax, surf, title, point_sets=None):
     """Plot a Surface as 3D surface on a given matplotlib Axis"""
 
-    surface = ax.plot_surface(surf.X, surf.Y, surf.Z, cmap=cm.viridis,
+    rows, cols = surf.X.shape
+    offset = np.min(surf.Z)
+
+    surface = ax.plot_surface(surf.X, surf.Y, surf.Z, cmap='viridis_r', rcount=rows, ccount=cols,
                               linewidth=0, antialiased=True)
+    ax.contour(surf.X, surf.Y, surf.Z, zdir='z', levels=33,
+               offset=offset, cmap='viridis_r')
     if point_sets:
         for x_y, z, style in point_sets:
             ax.scatter(x_y[:, 0], x_y[:, 1], z[1], **style)
     ax.zaxis.set_major_locator(LinearLocator(10))
     ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
     ax.set_title(title)
     return surface
 
@@ -242,5 +249,7 @@ def plotcmaponaxis(ax, surf, title, point_sets=None):
     if point_sets:
         for x_y, z, style in point_sets:
             ax.scatter(x_y[:, 0], x_y[:, 1], **style)
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
     ax.set_title(title)
     return surface
