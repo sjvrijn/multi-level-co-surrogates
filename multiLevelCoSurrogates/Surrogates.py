@@ -165,6 +165,107 @@ class CoSurrogate:
         return self.surrogate.train()
 
 
+class HierarchicalSurrogate:
+    """A generic interface for hierarchical surrogates"""
+
+    def __init__(self, surrogate_name, lower_fidelity_model, candidate_archive, fidelities, *,
+                 num_points=None, fit_scaling_param=True):
+
+        self.diff_type = surrogate_name
+        self.low_model = lower_fidelity_model
+        self.archive = candidate_archive
+        self.fidelities = fidelities
+        self.n = num_points
+        self.fit_scaling_param = fit_scaling_param
+
+        self.diff_fidelity = f'{fidelities[0]}-{fidelities[1]}'
+        if self.archive is not None and len(self.archive) > 0:
+            self.X, self.y_low, self.y_high = self.update_training_values()
+            self.rho = self.determineScaleParameter() if fit_scaling_param else 1
+            self.y_diff = self.y_high - self.rho * self.y_low
+            self.archive.addcandidates(self.X, self.y_diff, fidelity=self.diff_fidelity)
+        else:
+            self.X = self.y_low = self.y_high = None
+            self.rho = None
+            self.y_diff = None
+
+        self.diff_model = Surrogate.fromname(surrogate_name, candidate_archive, num_points, fidelity=self.diff_fidelity)
+
+
+    def predict(self, X, *, mode='value'):
+        diff_prediction = self.diff_model.predict(X, mode=mode)
+        low_prediction = self.low_model.predict(X, mode=mode)
+
+        if mode == 'value':
+            diff_value = diff_prediction
+            low_value = low_prediction
+            diff_std = low_std = 0
+        elif mode == 'std':
+            diff_std = diff_prediction
+            low_std = low_prediction
+            diff_value = low_value = 0
+        elif mode == 'both':
+            diff_value, diff_std = diff_prediction
+            low_value, low_std = low_prediction
+        else:
+            raise ValueError(f'Invalid mode {mode}')
+
+        prediction_value = diff_value + self.rho*low_value
+        prediction_std = np.sqrt(diff_std**2, low_std**2)
+
+        if mode == 'value':
+            return prediction_value
+        elif mode == 'std':
+            return prediction_std
+        elif mode == 'both':
+            return prediction_value, prediction_std
+
+
+    def train(self):
+        self.diff_model.train()
+        self.low_model.train()
+
+
+    def retrain(self):
+        """Automatically retrain all relevant/required models based on the
+        associated CandidateArchive.
+        """
+        self.X, self.y_low, self.y_high = self.update_training_values()
+        self.rho = self.determineScaleParameter() if self.fit_scaling_param else 1
+        self.y_diff = self.y_high - self.rho * self.y_low
+
+        self.archive.addcandidates(self.X, self.y_diff, fidelity=self.diff_fidelity)
+
+
+    def determineScaleParameter(self):
+        """ Determine the scaling parameter 'rho' between y_low and y_high using simple linear regression """
+        regr = LinearRegression()
+        regr.fit(self.y_low.reshape(-1, 1), self.y_high.reshape(-1, 1))
+        return regr.coef_.flatten()[0]
+
+
+    def update_training_values(self):
+        assert len(self.fidelities) == 2
+        X, y = self.archive.getcandidates(num_recent_candidates=self.n, fidelity=self.fidelities)
+        y_high, y_low = y[:, 0], y[:, 1]
+        return X,  np.array(y_low), np.array(y_high)
+
+
+    @property
+    def is_trained(self):
+        return self.diff_model.is_trained and self.low_model.is_trained
+
+    @property
+    def provides_std(self):
+        return self.diff_model.provides_std and self.low_model.provides_std
+
+
+
+# =============================================================================
+# ==================== Specific Surrogates Implementations ====================
+# =============================================================================
+
+
 class RBF(Surrogate):
     """Generic RBF surrogate, implemented by scipy.interpolate.
 
