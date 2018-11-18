@@ -95,12 +95,12 @@ class CandidateArchive:
         self._updateminmax(fidelity, fitness)
 
 
-    def getcandidates(self, n=None, fidelity=None):
+    def getcandidates(self, num_recent_candidates=None, fidelity=None):
         """Retrieve candidates and fitnesses from the archive.
 
-        :param n:         (optional) Only return the last `n` candidates added to the archive
-        :param fidelity:  (optional) Only return candidate and fitness information for the specified fidelities
-        :return:          Candidates, Fitnesses (tuple of numpy arrays)
+        :param num_recent_candidates:   (optional) Only return the last `n` candidates added to the archive
+        :param fidelity:                (optional) Only return candidate and fitness information for the specified fidelities
+        :return:                        Candidates, Fitnesses (tuple of numpy arrays)
         """
 
         if type(fidelity) in [tuple, list]:
@@ -125,9 +125,9 @@ class CandidateArchive:
         candidates = np.array(candidates)
         fitnesses = np.array(fitnesses)
 
-        if n is not None:
-            candidates = candidates[-n:]
-            fitnesses = fitnesses[-n:]
+        if num_recent_candidates is not None:
+            candidates = candidates[-num_recent_candidates:]
+            fitnesses = fitnesses[-num_recent_candidates:]
 
         return CandidateSet(candidates, fitnesses)
 

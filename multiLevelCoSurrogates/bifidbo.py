@@ -57,7 +57,7 @@ class BiFidBayesianOptimization:
         self.gp_high = Kriging(**gp_opts)
         self.bo_diff.gp = Kriging(**gp_opts)
 
-        candidates, fitnesses = self.cand_arch.getcandidates(n=0, fidelity=['high', 'low'])
+        candidates, fitnesses = self.cand_arch.getcandidates(num_recent_candidates=0, fidelity=['high', 'low'])
         y_high, y_low = fitnesses[:,0], fitnesses[:,1]
         self.rho = self.determine_rho(y_high, y_low)
 
@@ -86,7 +86,7 @@ class BiFidBayesianOptimization:
         else:
             raise ValueError(f"Fidelity '{fidelity}' unknown, please choose 'high' or 'low'.")
 
-        a, b = self.cand_arch.getcandidates(n=n, fidelity=fidelity)
+        a, b = self.cand_arch.getcandidates(num_recent_candidates=n, fidelity=fidelity)
         gp.fit(a, b.ravel())
 
 
@@ -94,7 +94,7 @@ class BiFidBayesianOptimization:
         if self.cand_arch.num_fidelities != 2:
             raise ValueError('Cannot work with anything other than 2 fidelities for now. Sorry :)')
 
-        candidates, fitnesses = self.cand_arch.getcandidates(n=n, fidelity=['high', 'low'])
+        candidates, fitnesses = self.cand_arch.getcandidates(num_recent_candidates=n, fidelity=['high', 'low'])
         y_high, y_low = fitnesses[:,0], fitnesses[:,1]
 
         self.rho = self.determine_rho(y_high, y_low)
