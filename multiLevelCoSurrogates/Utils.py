@@ -1,22 +1,25 @@
-
-
-
 from collections import namedtuple
-from multiprocessing import cpu_count, Pool
 import matplotlib.pyplot as plt
 import scipy
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
-from warnings import warn
+from pathlib import Path
 
+
+
+def guaranteeFolderExists(path_name):
+    """ Make sure the given path exists after this call """
+    path = Path(path_name)
+    path.expanduser()
+    path.mkdir(parents=True, exist_ok=True)
 
 
 def select_subsample(xdata, num):
     """
     uniform selection of sub samples from a larger data set (only for input).
-    use it to create uniform smaple
+    use it to create uniform sample
        inputs:
           xdata  : inputs data set. each row is a dimension
             num  : final (desired) number of samples
@@ -31,16 +34,12 @@ def select_subsample(xdata, num):
         Faculty of Civil, Geo and Environmental Engineering
         Technical University of Munich
     """
-    dim = xdata.shape[0]
-    num0 = xdata.shape[1]
     # if initial sample number is large convert to float 32, otherwise distance
-    # matrix might not be calculated, # float 32 precision is 10^-6, foal 16 is 10^-3
-    if num0 * dim > 10000:
+    # matrix might not be calculated, # float 32 precision is 10^-6, float 16 is 10^-3
+    if xdata.size > 10000:
         xdata = np.float32(xdata)
     distm = scipy.spatial.distance.cdist(xdata.T, xdata.T, 'euclidean')
-    maxd = np.max(distm)
-    loc = np.where(distm == maxd)[0]
-    include = loc
+    include = np.where(distm == np.max(distm))[0]
     si = np.arange(xdata.shape[1])
     remain = np.delete(si, include)
     for j in range(num - 2):
@@ -52,13 +51,43 @@ def select_subsample(xdata, num):
         minminrind = np.argmax(minr)
         include = np.append(include, minrind[minminrind])
         remain = np.delete(si, include)
-    #         sub_x = np.zeros((num,xdata.shape[0]))
-    #         for i,ind in enumerate(include[0:num]):
-    #             sub_x[i] = xdata[:,np.int(ind)]
-    #         sub_x = sub_x.T
-    sub_x = xdata[:, list(map(int, include[0:num]))]
+    sub_x = xdata[:, list(map(int, include[:num]))]
 
     return sub_x
+
+
+def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
+                       min_probability=0.0, oversampling_factor=2.5):
+    """ Create a sample of points, such that they are more likely to have a
+    better fitness value according to the given function.
+
+    First a larger uniform sample (default oversampling_factor=2.5) is
+    created and evaluated on the given function. These values are then
+    scaled from `range_out` to [min_probability,1], where `min_probability`
+    defaults  to 0.0. Each of these values is then 'tested' against a new
+    uniformly random value between [0,1] to determine whether the sampled
+    point is kept or not.
+
+    If enough valid samples remain, return them, otherwise extends the set
+    of valid samples by repeating the above process until enough valid
+    samples have been generated.
+    """
+    new_sample = np.array([]).reshape((0, ndim))
+    sample_shape = (int(n_samples * oversampling_factor), ndim)
+
+    while len(new_sample) < n_samples:
+        raw_sample = np.random.uniform(high=range_in.max, low=range_in.min, size=sample_shape)
+
+        f_values = -func(raw_sample)  # TODO: this is a hardcoded inversion of a minimization to maximization problem
+
+        f_probabilities = linearscaletransform(f_values, range_in=range_out)
+        f_probabilities = (1 - min_probability) * f_probabilities + min_probability
+
+        check_values = np.random.uniform(size=f_probabilities.shape)
+        sample_filter = f_probabilities > check_values
+        new_sample = np.vstack((new_sample, raw_sample[sample_filter]))
+
+    return new_sample[:n_samples]
 
 
 # ------------------------------------------------------------------------------
@@ -97,69 +126,90 @@ def linearscaletransform(values, *, range_in=None, range_out=ValueRange(0, 1), s
 
 Surface = namedtuple('Surface', ['X', 'Y', 'Z'])
 
-def diffsurface(a, b):
+def add_surface(a, b):
+    return Surface(a.X, a.Y, a.Z + b.Z)
+
+def subtract_surface(a, b):
     return Surface(a.X, a.Y, a.Z - b.Z)
+
+Surface.__add__ = add_surface
+Surface.__sub__ = subtract_surface
+
+
+def calc_numsteps(low, high, step, endpoint=True):
+    """Calculate the number of 'step' steps between 'low' and 'high'"""
+    num_steps = (high - low) / step
+    if endpoint:
+        num_steps += 1
+    return num_steps
+
+
+def create_wide_meshgrid(l_bound, step, u_bound):
+    """Create a meshgrid that extends 1 step in each direction beyond the original bounds"""
+    num_steps_x = calc_numsteps(l_bound[0], u_bound[0], step[0]) + 2
+    num_steps_y = calc_numsteps(l_bound[1], u_bound[1], step[1]) + 2
+    X = np.linspace(l_bound[0] - step[0], u_bound[0] + step[0], num_steps_x)
+    Y = np.linspace(l_bound[1] - step[1], u_bound[1] + step[1], num_steps_y)
+    X, Y = np.meshgrid(X, Y)
+    return X, Y
 
 
 def createsurface(func, l_bound=None, u_bound=None, step=None):
+    """Create a Surface(X, Y, Z) by evaluating `func` on a (wide) grid ranging from l_bound to u_bound"""
     if isinstance(func, Surface):
         return func
 
-    l_bound = [-5, -5] if l_bound is None else l_bound
-    u_bound = [5, 5] if u_bound is None else u_bound
-    step = [0.1, 0.1] if step is None else step
+    l_bound = np.array([-5, -5]) if l_bound is None else l_bound
+    u_bound = np.array([5, 5]) if u_bound is None else u_bound
+    step = [0.2, 0.2] if step is None else step
 
-    X = np.arange(l_bound[0], u_bound[0], step[0])
-    Y = np.arange(l_bound[1], u_bound[1], step[1])
-    X, Y = np.meshgrid(X, Y)
-    shape = X.shape
-    Z = np.array([func([[x, y]]) for x, y in zip(X.flatten(), Y.flatten())]).reshape(shape)
+    X, Y = create_wide_meshgrid(l_bound, step, u_bound)
+
+    X_Y = np.array([[[x,y]] for x, y in zip(X.flatten(), Y.flatten())])
+    Z = np.array([func(x_y) for x_y in X_Y]).reshape(X.shape)
 
     return Surface(X, Y, Z)
 
 
-def plotsurface(func, title=''):
-
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-
-    surf = createsurface(func)
-    surface = plotsurfaceonaxis(ax, surf, title)
-
-    # Add a color bar which maps values to colors.
-    fig.colorbar(surface, shrink=0.5, aspect=5)
-
-    plt.show()
+def createsurfaces(funcs, *args, **kwargs):
+    """Create Surface objects for each function in the list `funcs` using the default parameters"""
+    return [createsurface(func, *args, **kwargs) for func in funcs]
 
 
-def plotsurfaces(funcs, titles=None, shape=None, figratio=None, save_as=None, as_3d=True, show=True):
+# ------------------------------------------------------------------------------
+
+def plotsurfaces(surfaces, *, all_points=None, titles=None, shape=None, figratio=None, save_as=None, as_3d=True, show=True, **_):
+    """Plot a set of surfaces as subfigures in a single figure"""
     if titles is None:
-        titles = ['']*len(funcs)
+        titles = ['']*len(surfaces)
 
     if shape is not None:
-        if np.product(shape) != len(funcs):
+        if np.product(shape) != len(surfaces):
             raise ValueError(f"Given shape 'np.product({shape})={np.product(shape)}'"
-                             f" does not match number of functions '{len(funcs)}' given.")
+                             f" does not match number of functions '{len(surfaces)}' given.")
     else:
-        shape = (1, len(funcs))
+        shape = (1, len(surfaces))
 
     if as_3d:
         kwargs = {'projection': '3d'}
         plot_func = plotsurfaceonaxis
-        figratio = (2,3) if figratio is None else figratio
+        figratio = (3,4.5) if figratio is None else figratio
     else:
         kwargs = dict()
         plot_func = plotcmaponaxis
-        figratio = (1.5,3) if figratio is None else figratio
+        figratio = (2.25,4.5) if figratio is None else figratio
 
+    if all_points is None:
+        all_points = [None] * len(surfaces)
 
     fig, axes = plt.subplots(*shape, figsize=(shape[0]*figratio[0], shape[1]*figratio[1]), subplot_kw=kwargs)
+    try:
+        axes = axes.flatten()
+    except AttributeError:
+        axes = [axes]
 
-    with Pool(cpu_count()) as p:
-        surfaces = p.map(createsurface, funcs)
-
-    for ax, surface, title in zip(axes.flatten(), surfaces, titles):
-        plot = plot_func(ax, surface, title)
+    for ax, surface, title, points in zip(axes, surfaces, titles, all_points):
+        plot = plot_func(ax, surface, title, points)
         if not as_3d:
             fig.colorbar(plot, ax=ax)
 
@@ -171,18 +221,35 @@ def plotsurfaces(funcs, titles=None, shape=None, figratio=None, save_as=None, as
     plt.clf()
 
 
-def plotsurfaceonaxis(ax, surf, title):
+def plotsurfaceonaxis(ax, surf, title, point_sets=None):
+    """Plot a Surface as 3D surface on a given matplotlib Axis"""
 
-    surface = ax.plot_surface(surf.X, surf.Y, surf.Z, cmap=cm.plasma,
+    rows, cols = surf.X.shape
+    offset = np.min(surf.Z)
+
+    surface = ax.plot_surface(surf.X, surf.Y, surf.Z, cmap='viridis_r', rcount=rows, ccount=cols,
                               linewidth=0, antialiased=True)
+    ax.contour(surf.X, surf.Y, surf.Z, zdir='z', levels=33,
+               offset=offset, cmap='viridis_r')
+    if point_sets:
+        for x_y, z, style in point_sets:
+            ax.scatter(x_y[:, 0], x_y[:, 1], z[1], **style)
     ax.zaxis.set_major_locator(LinearLocator(10))
     ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
     ax.set_title(title)
     return surface
 
 
-def plotcmaponaxis(ax, surf, title):
+def plotcmaponaxis(ax, surf, title, point_sets=None):
+    """Plot a Surface as 2D heatmap on a given matplotlib Axis"""
 
-    surface = ax.pcolor(surf.X, surf.Y, surf.Z, cmap=cm.plasma)
+    surface = ax.pcolor(surf.X, surf.Y, surf.Z, cmap=cm.viridis)
+    if point_sets:
+        for x_y, z, style in point_sets:
+            ax.scatter(x_y[:, 0], x_y[:, 1], **style)
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
     ax.set_title(title)
     return surface

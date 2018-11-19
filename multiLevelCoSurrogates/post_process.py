@@ -9,13 +9,13 @@ post_process.py: This file is intended to perform some simple post-processing
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-from multiLevelCoSurrogates.config import experiment_repetitions, fit_funcs, fit_func_dims, folder_name, suffix, data_ext, plot_ext, data_dir, plot_dir, base_dir
-from multiLevelCoSurrogates.__main__ import guaranteeFolderExists
+from multiLevelCoSurrogates.config import experiment_repetitions, fit_funcs, fit_func_dims, folder_name
+from multiLevelCoSurrogates.config import suffix, data_ext, plot_ext, data_dir, plot_dir, base_dir
+from multiLevelCoSurrogates.Utils import guaranteeFolderExists, createsurface, plotsurfaces, Surface
 from itertools import product
 from matplotlib import pyplot as plt
-from collections import Counter, namedtuple
+from collections import namedtuple
 
-from pprint import pprint
 import numpy as np
 import pandas as pd
 
@@ -27,7 +27,8 @@ lambda_pres = [0, 2]  # , 4, 8]
 figsize = (6, 4.5)
 
 Index = namedtuple('Index', ['fitfunc', 'surrogate', 'usage', 'repetition', 'genint', 'lambda_pre'])
-TimingData = namedtuple('TimingData', ['function', 'surrogate', 'usage', 'repetition', 'gen_int', 'lambda_pre', 'time'])
+TimingData = namedtuple('TimingData', ['function', 'surrogate', 'usage', 'repetition',
+                                       'gen_int', 'lambda_pre', 'time'])
 
 x_lims = {
     'bohachevsky': 100,
@@ -44,64 +45,48 @@ z_lims = {
     'bohachevsky': 75,
     'booth': 1500,
     # 'branin': 1500,
-    'himmelblau': 250,
-    'sixHumpCamelBack': 50,
+    'himmelblau': 600,
+    'sixHumpCamelBack': 150,
 }
 
 
-def isTwoInts(value):
-    """Returns True if the given value is a tuple or list consisting of exactly 2 integers"""
-    return isinstance(value, (tuple, list)) \
-           and len(value) == 2 \
-           and all(isinstance(val, int) for val in value)
-
-
-# TODO: rewrite to use slice()
-def interpretColumn(column):
-    """Interprets the 'column' argument of loadFitnessHistory into a start, end value pair"""
+def interpret_as_slice(column):
+    """Interprets the 'column' argument of loadFitnessHistory into a slice()"""
     if column is None:  # No specific column is requested, return everything
-        start = 0
-        end = None
+        return slice(None)
     elif isinstance(column, int):  # One specific column is requested
-        start = column
-        end = column + 1
-    elif isTwoInts(column):  # Multiple columns are requested
-        start = column[0]
-        end = column[1] + 1 if column[1] != -1 else None  # if -1 is given, we want up to and incl. the last column
+        return slice(column, column + 1)
+    elif len(column) == 2 and all(isinstance(val, int) for val in column):  # Multiple columns are requested
+        return slice(*column)
     else:  # 'column' does not match expected format
         raise Exception("Invalid format for 'column': {col}".format(col=column))
 
-    return start, end
 
-
-def loadFitnessHistory(fname, column=None):
+# TODO: replace by regular/proper csv files...
+def load_fitnesshistory(fname, column=None):
     """
     Return the data stored in the given filename as float values.
     Optionally, only data from a single, or range of columns can be selected.
 
-    :param fname: The name of the file to retrieve the data from
-    :param column:   Single or double integer to indicate desired column (optional)
-    :return:         (Selected) data from the given file in 2D list format
+    :param fname:   The name of the file to retrieve the data from
+    :param column:  Single or double integer to indicate desired column (optional)
+    :return:        (Selected) data from the given file in 2D list format
     """
-
-    start, end = interpretColumn(column)
 
     with open(fname, 'r') as f:
         next(f)  # Skip the first line which only contains header information
-        return [list(map(float, line.split(' ')[start:end])) for line in f]
+        return [list(map(float, line.split(' ')[interpret_as_slice(column)])) for line in f]
 
 
 
 # TODO: Rewrite all plotting functions to plot from a list of 'Index' namedtuples
-# ======================================================================================================================
-# ======================================================================================================================
-# ======================================================================================================================
 
 
 def getdata():
 
     fit_func_names = fit_funcs.keys()
-    experiments = product(fit_func_names, surrogates, uses, range(experiment_repetitions), gen_intervals, lambda_pres)
+    experiments = product(fit_func_names, surrogates, uses,
+                          range(experiment_repetitions), gen_intervals, lambda_pres)
 
     data = {}
 
@@ -121,7 +106,7 @@ def getdata():
 
         # TODO: better determine optimal values for each function
         try:
-            data[idx] = np.array(loadFitnessHistory(filename_prefix + 'reslog.' + data_ext, column=(1, -1)))
+            data[idx] = np.array(load_fitnesshistory(f"{filename_prefix}reslog.{data_ext}", column=(1, -1)))
             if fit_func_name == 'borehole':
                 data[idx] *= -1
             elif fit_func_name == 'park91b':
@@ -138,7 +123,8 @@ def getdata():
 def timingdatatocsv():
 
     fit_func_names = fit_funcs.keys()
-    experiments = product(fit_func_names, surrogates, uses, range(experiment_repetitions), gen_intervals, lambda_pres)
+    experiments = product(fit_func_names, surrogates, uses,
+                          range(experiment_repetitions), gen_intervals, lambda_pres)
     data = []
 
     for fit_func_name, surrogate_name, use, rep, gen_int, lambda_pre_mul in experiments:
@@ -156,7 +142,7 @@ def timingdatatocsv():
 
         try:
             # In this case, we only ever expect a single value per file
-            time = np.array(loadFitnessHistory(filename_prefix + 'timelog.' + data_ext, column=(1, -1)))[0][0]
+            time = np.array(load_fitnesshistory(f"{filename_prefix}timelog.{data_ext}", column=(1, -1)))[0][0]
             tup = TimingData(fit_func_name, surrogate_name, use, rep, gen_int, lambda_pre_mul, time)
             data.append(tup)
         except:
@@ -246,7 +232,7 @@ def compare_by_genint(data):
         plt.legend(loc=0)
 
         plt.tight_layout()
-        plt.savefig(plot_dir + 'by_genint/' + fit_func_name + '-' + surrogate_name + '-' + use + '.' + plot_ext)
+        plt.savefig(f"{plot_dir}by_genint/{fit_func_name}-{surrogate_name}-{use}.{plot_ext}")
         plt.close()
 
     print("all plotted")
@@ -305,7 +291,7 @@ def compare_by_use(data):
         plt.legend(loc=0)
 
         plt.tight_layout()
-        plt.savefig(plot_dir + 'by_use/' + fit_func_name + '-' + '-' + str(gen_int_) + '.' + plot_ext)
+        plt.savefig(f"{plot_dir}by_use/{fit_func_name}--{str(gen_int_)}.{plot_ext}")
         plt.close()
 
     print("all plotted")
@@ -363,64 +349,31 @@ def compare_by_surrogate(data):
         plt.legend(loc=0)
 
         plt.tight_layout()
-        plt.savefig(plot_dir + 'by_surrogate/' + fit_func_name + '-' + use + '-' + str(gen_int) + '.' + plot_ext)
+        plt.savefig(f"{plot_dir}by_surrogate/{fit_func_name}-{use}-{str(gen_int)}.{plot_ext}")
         plt.close()
 
     print("all plotted")
 
 
-def make2dvisualizations(func, l_bound, u_bound, name, num_intervals=100):
-    from mpl_toolkits.mplot3d import Axes3D
-    from matplotlib import cm
-    from matplotlib.ticker import LinearLocator, FormatStrFormatter
+def make2dvisualizations(func, l_bound, u_bound, name, num_intervals=200):
 
-    func = np.vectorize(func)
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    surface = createsurface(func, l_bound, u_bound, step=(u_bound - l_bound) / num_intervals)
+    save_name = f'{plot_dir}surfaces/{name}.{plot_ext}'
+    plotsurfaces([surface], titles=[name], figratio=(6,4), save_as=save_name, show=True)
 
-    x_min, y_min = l_bound
-    x_max, y_max = u_bound
-
-    # Make data.
-    X = np.arange(x_min, x_max, (x_max-x_min)/num_intervals)
-    Y = np.arange(y_min, y_max, (y_max-y_min)/num_intervals)
-    X, Y = np.meshgrid(X, Y)
-    Z = func(X, Y)
-
-    # Plot the surface.
-    surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0, antialiased=False)
-    # surf = ax.pcolor(X, Y, Z, cmap=cm.coolwarm)
-    ax.view_init(azim=45)
-    ax.set_title(f'{name}')
-
-    ax.set_xlabel('x1')
-    ax.set_ylabel('x2')
-    ax.set_zlabel('f')
-
-    # Customize the z axis.
-    ax.zaxis.set_major_locator(LinearLocator(10))
-    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
-
-    # Add a color bar which maps values to colors.
-    fig.colorbar(surf, shrink=0.5, aspect=5)
-
-    plt.tight_layout()
-    guaranteeFolderExists(f'{plot_dir}surfaces/')
-    plt.savefig(f'{plot_dir}surfaces/{name}_2d.{plot_ext}')
 
 
 def plot_function_surfaces():
 
-    for fit_func_name in list(fit_funcs.keys())[:5]:
+    for name, fit_func in list(fit_funcs.items())[:5]:
 
-        l_bound = np.array(fit_funcs[fit_func_name].l_bound, dtype=np.float64)
-        u_bound = np.array(fit_funcs[fit_func_name].u_bound, dtype=np.float64)
+        #TODO: make bounds np.arrays in the function package?
+        l_bound = np.array(fit_func.l_bound, dtype=np.float64)
+        u_bound = np.array(fit_func.u_bound, dtype=np.float64)
 
-        func = lambda x, y: fit_funcs[fit_func_name].high((x,y))
-        make2dvisualizations(func, l_bound, u_bound, fit_func_name)
-        func = lambda x, y: fit_funcs[fit_func_name].low((x,y))
-        make2dvisualizations(func, l_bound, u_bound, fit_func_name + '_low')
-
+        for fid in fit_func.fidelity_names:
+            func = getattr(fit_func, fid)
+            make2dvisualizations(func, l_bound, u_bound, '_'.join((name, fid)))
 
 def run():
     # data = getdata()

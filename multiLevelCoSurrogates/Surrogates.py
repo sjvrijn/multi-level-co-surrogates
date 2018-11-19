@@ -15,23 +15,27 @@ from sklearn.linear_model import LinearRegression
 from sklearn.svm import SVR
 from scipy.interpolate import Rbf
 
-from multiLevelCoSurrogates.Utils import ValueRange, determinerange, linearscaletransform
+from .Utils import ValueRange, determinerange, linearscaletransform
 
 
 class Surrogate:
     """A generic interface to allow interchangeable use of various models such as RBF, SVM and Kriging"""
     provides_std = False
 
-    def __init__(self, candidate_archive, n, *,
-                 fidelity=None, normalized=True, normalize_target=ValueRange(0, 1)):
+    def __init__(self, candidate_archive, *,
+                 num_points=None, fidelity=None, normalized=True, normalize_target=ValueRange(0, 1)):
 
+        self.archive = candidate_archive
+        self.num_points = num_points
+        self.fidelity = fidelity
         self.normalized = normalized
-        self._surr = None
-        self.is_trained = False
         self.normalize_target = normalize_target
 
-        if candidate_archive is not None:
-            X, y = candidate_archive.getcandidates(n=n, fidelity=fidelity)
+        self._surr = None
+        self.is_trained = False
+
+        if self.archive is not None and len(self.archive) > 0:
+            X, y = self.archive.getcandidates(num_recent_candidates=num_points, fidelity=fidelity)
 
             if normalized:
                 self.Xrange = determinerange(X)
@@ -49,7 +53,9 @@ class Surrogate:
 
 
     def predict(self, X, *, mode='value', return_std=None):
-        """Public prediction function. Available modes: 'value' and 'std'"""
+        """Public prediction function.
+        Available modes: 'value', 'std' and 'both'
+        """
         if not self.is_trained:
             raise Exception("Cannot predict: surrogate is not trained yet.")
 
@@ -65,7 +71,7 @@ class Surrogate:
         elif mode == 'both':
             predictor = self.do_predict_both
         else:
-            raise ValueError(f"Invalid prediction mode '{mode}'. Supported are: 'value', 'std'")
+            raise ValueError(f"Invalid prediction mode '{mode}'. Supported are: 'value', 'std', 'both'")
 
         if self.normalized:
             X = linearscaletransform(X, range_in=self.Xrange, range_out=self.normalize_target)
@@ -121,7 +127,7 @@ class CoSurrogate:
 
     def __init__(self, surrogate_name, candidate_archive, fidelities, n, fit_scaling_param=True):
 
-        X, y = candidate_archive.getcandidates(n=n, fidelity=fidelities)
+        X, y = candidate_archive.getcandidates(num_recent_candidates=n, fidelity=fidelities)
         y_high, y_low = y[:, 0], y[:, 1]
 
         self.X = X
@@ -159,6 +165,107 @@ class CoSurrogate:
         return self.surrogate.train()
 
 
+class HierarchicalSurrogate:
+    """A generic interface for hierarchical surrogates"""
+
+    def __init__(self, surrogate_name, lower_fidelity_model, candidate_archive, fidelities, *,
+                 num_points=None, fit_scaling_param=True):
+
+        self.diff_type = surrogate_name
+        self.low_model = lower_fidelity_model
+        self.archive = candidate_archive
+        self.fidelities = fidelities
+        self.n = num_points
+        self.fit_scaling_param = fit_scaling_param
+
+        self.diff_fidelity = f'{fidelities[0]}-{fidelities[1]}'
+        if self.archive is not None and len(self.archive) > 0:
+            self.X, self.y_low, self.y_high = self.update_training_values()
+            self.rho = self.determineScaleParameter() if fit_scaling_param else 1
+            self.y_diff = self.y_high - self.rho * self.y_low
+            self.archive.addcandidates(self.X, self.y_diff, fidelity=self.diff_fidelity)
+        else:
+            self.X = self.y_low = self.y_high = None
+            self.rho = None
+            self.y_diff = None
+
+        self.diff_model = Surrogate.fromname(surrogate_name, candidate_archive, num_points, fidelity=self.diff_fidelity)
+
+
+    def predict(self, X, *, mode='value'):
+        diff_prediction = self.diff_model.predict(X, mode=mode)
+        low_prediction = self.low_model.predict(X, mode=mode)
+
+        if mode == 'value':
+            diff_value = diff_prediction
+            low_value = low_prediction
+            diff_std = low_std = 0
+        elif mode == 'std':
+            diff_std = diff_prediction
+            low_std = low_prediction
+            diff_value = low_value = 0
+        elif mode == 'both':
+            diff_value, diff_std = diff_prediction
+            low_value, low_std = low_prediction
+        else:
+            raise ValueError(f'Invalid mode {mode}')
+
+        prediction_value = diff_value + self.rho*low_value
+        prediction_std = np.sqrt(diff_std**2, low_std**2)
+
+        if mode == 'value':
+            return prediction_value
+        elif mode == 'std':
+            return prediction_std
+        elif mode == 'both':
+            return prediction_value, prediction_std
+
+
+    def train(self):
+        self.diff_model.train()
+        self.low_model.train()
+
+
+    def retrain(self):
+        """Automatically retrain all relevant/required models based on the
+        associated CandidateArchive.
+        """
+        self.X, self.y_low, self.y_high = self.update_training_values()
+        self.rho = self.determineScaleParameter() if self.fit_scaling_param else 1
+        self.y_diff = self.y_high - self.rho * self.y_low
+
+        self.archive.addcandidates(self.X, self.y_diff, fidelity=self.diff_fidelity)
+
+
+    def determineScaleParameter(self):
+        """ Determine the scaling parameter 'rho' between y_low and y_high using simple linear regression """
+        regr = LinearRegression()
+        regr.fit(self.y_low.reshape(-1, 1), self.y_high.reshape(-1, 1))
+        return regr.coef_.flatten()[0]
+
+
+    def update_training_values(self):
+        assert len(self.fidelities) == 2
+        X, y = self.archive.getcandidates(num_recent_candidates=self.n, fidelity=self.fidelities)
+        y_high, y_low = y[:, 0], y[:, 1]
+        return X,  np.array(y_low), np.array(y_high)
+
+
+    @property
+    def is_trained(self):
+        return self.diff_model.is_trained and self.low_model.is_trained
+
+    @property
+    def provides_std(self):
+        return self.diff_model.provides_std and self.low_model.provides_std
+
+
+
+# =============================================================================
+# ==================== Specific Surrogates Implementations ====================
+# =============================================================================
+
+
 class RBF(Surrogate):
     """Generic RBF surrogate, implemented by scipy.interpolate.
 
@@ -168,8 +275,8 @@ class RBF(Surrogate):
     """
     name = 'RBF'
 
-    def __init__(self, candidate_archive, n, fidelity=None):
-        super(self.__class__, self).__init__(candidate_archive, n, fidelity=fidelity)
+    def __init__(self, candidate_archive, num_points=None, fidelity=None):
+        super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity)
         self.is_trained = False
 
     def do_predict(self, X):
@@ -191,8 +298,8 @@ class Kriging(Surrogate):
     provides_std = True
     name = 'Kriging'
 
-    def __init__(self, candidate_archive, n, fidelity=None, **kwargs):
-        super(self.__class__, self).__init__(candidate_archive, n, fidelity=fidelity)
+    def __init__(self, candidate_archive, num_points=None, fidelity=None, **kwargs):
+        super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity)
         self._surr = GaussianProcessRegressor(**kwargs)
         self.is_trained = False
 
@@ -235,8 +342,8 @@ class RandomForest(Surrogate):
     provides_std = True
     name = 'RandomForest'
 
-    def __init__(self, candidate_archive, n, fidelity=None):
-        super(self.__class__, self).__init__(candidate_archive, n, fidelity=fidelity)
+    def __init__(self, candidate_archive, num_points=None, fidelity=None):
+        super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity)
         self._surr = RandomForestRegressor()
         self.is_trained = False
 
@@ -267,8 +374,8 @@ class SVM(Surrogate):
     """
     name = 'SVM'
 
-    def __init__(self, candidate_archive, n, fidelity=None):
-        super(self.__class__, self).__init__(candidate_archive, n, fidelity=fidelity)
+    def __init__(self, candidate_archive, num_points=None, fidelity=None):
+        super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity)
         self._surr = SVR()
         self.is_trained = False
 
