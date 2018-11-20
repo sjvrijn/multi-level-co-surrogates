@@ -34,22 +34,27 @@ class Surrogate:
         self._surr = None
         self.is_trained = False
 
+        self.X = None
+        self.y = None
+        self.Xrange = None
+        self.yrange = None
+
         if self.archive is not None and len(self.archive) > 0:
-            X, y = self.archive.getcandidates(num_recent_candidates=num_points, fidelity=fidelity)
+            self._updatevalues()
 
-            if normalized:
-                self.Xrange = determinerange(X)
-                self.yrange = determinerange(y)
-                X = linearscaletransform(X, range_in=self.Xrange, range_out=normalize_target)
-                y = linearscaletransform(y, range_in=self.yrange, range_out=normalize_target)
 
-            self.X = X
-            self.y = y
-        else:
-            self.X = None
-            self.y = None
-            self.Xrange = None
-            self.yrange = None
+    def _updatevalues(self):
+
+        X, y = self.archive.getcandidates(num_recent_candidates=self.num_points, fidelity=self.fidelity)
+
+        if self.normalized:
+            self.Xrange = determinerange(X)
+            self.yrange = determinerange(y)
+            X = linearscaletransform(X, range_in=self.Xrange, range_out=self.normalize_target)
+            y = linearscaletransform(y, range_in=self.yrange, range_out=self.normalize_target)
+
+        self.X = X
+        self.y = y
 
 
     def predict(self, X, *, mode='value', return_std=None):
@@ -192,7 +197,13 @@ class HierarchicalSurrogate:
         self.diff_model = Surrogate.fromname(surrogate_name, candidate_archive, num_points, fidelity=self.diff_fidelity)
 
 
-    def predict(self, X, *, mode='value'):
+    def predict(self, X, *, mode='value', return_std=None):
+
+        if return_std is True:
+            mode = 'both'
+        elif return_std is False:
+            mode = 'value'
+
         diff_prediction = self.diff_model.predict(X, mode=mode)
         low_prediction = self.low_model.predict(X, mode=mode)
 
@@ -211,6 +222,7 @@ class HierarchicalSurrogate:
             raise ValueError(f'Invalid mode {mode}')
 
         prediction_value = diff_value + self.rho*low_value
+        # print(diff_std, low_std)
         prediction_std = np.sqrt(diff_std**2, low_std**2)
 
         if mode == 'value':
@@ -283,6 +295,7 @@ class RBF(Surrogate):
         return self._surr(*X.T)
 
     def train(self):
+        self._updatevalues()
         rbf_args = np.hstack((self.X, self.y))
         self._surr = Rbf(*rbf_args.T)
         self.is_trained = True
@@ -304,20 +317,9 @@ class Kriging(Surrogate):
         self.is_trained = False
 
     def train(self):
+        self._updatevalues()
         self._surr.fit(self.X, self.y)
         self.is_trained = True
-
-    def fit(self, X, y):
-
-        if self.normalized:
-            self.Xrange = determinerange(X)
-            self.yrange = determinerange(y)
-            X = linearscaletransform(X, range_in=self.Xrange, range_out=self.normalize_target)
-            y = linearscaletransform(y, range_in=self.yrange, range_out=self.normalize_target)
-        self.X = X
-        self.y = y
-
-        self.train()
 
     def set_params(self, **kwargs):
         return self._surr.set_params(**kwargs)
@@ -348,6 +350,7 @@ class RandomForest(Surrogate):
         self.is_trained = False
 
     def train(self):
+        self._updatevalues()
         self._surr.fit(self.X, np.ravel(self.y))
         self.is_trained = True
 
@@ -383,5 +386,6 @@ class SVM(Surrogate):
         return self._surr.predict(X).reshape((-1, ))
 
     def train(self):
+        self._updatevalues()
         self._surr.fit(self.X, self.y)
         self.is_trained = True
