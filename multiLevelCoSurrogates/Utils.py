@@ -182,6 +182,8 @@ def plotsurfaces(surfaces, *, all_points=None, titles=None, shape=None, figratio
     """Plot a set of surfaces as subfigures in a single figure"""
     if titles is None:
         titles = ['']*len(surfaces)
+    elif len(titles) < len(surfaces):
+        titles.extend([''] * (len(surfaces) - len(titles)))
 
     if shape is not None:
         if np.product(shape) != len(surfaces):
@@ -190,19 +192,24 @@ def plotsurfaces(surfaces, *, all_points=None, titles=None, shape=None, figratio
     else:
         shape = (1, len(surfaces))
 
+    figratio = (3,4.5) if figratio is None else figratio
     if as_3d:
         kwargs = {'projection': '3d'}
         plot_func = plotsurfaceonaxis
-        figratio = (3,4.5) if figratio is None else figratio
     else:
         kwargs = dict()
         plot_func = plotcmaponaxis
-        figratio = (2.25,4.5) if figratio is None else figratio
+        # figratio = (2.25,4.5) if figratio is None else figratio
 
     if all_points is None:
         all_points = [None] * len(surfaces)
 
-    fig, axes = plt.subplots(*shape, figsize=(shape[0]*figratio[0], shape[1]*figratio[1]), subplot_kw=kwargs)
+    nrows, ncols = shape
+    single_width, single_height = figratio
+    width = single_width*ncols
+    height = single_height*nrows
+
+    fig, axes = plt.subplots(*shape, figsize=(width, height), subplot_kw=kwargs)
     try:
         axes = axes.flatten()
     except AttributeError:
