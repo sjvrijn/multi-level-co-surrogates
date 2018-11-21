@@ -223,7 +223,7 @@ class HierarchicalSurrogate:
 
         prediction_value = diff_value + self.rho*low_value
         # print(diff_std, low_std)
-        prediction_std = np.sqrt(diff_std**2, low_std**2)
+        prediction_std = np.sqrt(diff_std**2 + low_std**2)
 
         if mode == 'value':
             return prediction_value
