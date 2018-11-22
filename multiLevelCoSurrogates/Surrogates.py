@@ -208,21 +208,22 @@ class HierarchicalSurrogate:
         low_prediction = self.low_model.predict(X, mode=mode)
 
         if mode == 'value':
-            diff_value = diff_prediction
-            low_value = low_prediction
+            diff_value = diff_prediction.reshape((-1,))
+            low_value = low_prediction.reshape((-1,))
             diff_std = low_std = 0
         elif mode == 'std':
-            diff_std = diff_prediction
-            low_std = low_prediction
+            diff_std = diff_prediction.reshape((-1,))
+            low_std = low_prediction.reshape((-1,))
             diff_value = low_value = 0
         elif mode == 'both':
             diff_value, diff_std = diff_prediction
+            diff_value, diff_std = diff_value.reshape((-1,)), diff_std.reshape((-1,))
             low_value, low_std = low_prediction
+            low_value, low_std = low_value.reshape((-1,)), low_std.reshape((-1,))
         else:
             raise ValueError(f'Invalid mode {mode}')
 
         prediction_value = diff_value + self.rho*low_value
-        # print(diff_std, low_std)
         prediction_std = np.sqrt(diff_std**2 + low_std**2)
 
         if mode == 'value':
