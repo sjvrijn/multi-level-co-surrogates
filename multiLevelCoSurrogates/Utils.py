@@ -192,7 +192,7 @@ def plotsurfaces(surfaces, *, all_points=None, titles=None, shape=None, figratio
     else:
         shape = (1, len(surfaces))
 
-    figratio = (3,4.5) if figratio is None else figratio
+    figratio = (5,4.5) if figratio is None else figratio
     if as_3d:
         kwargs = {'projection': '3d'}
         plot_func = plotsurfaceonaxis
@@ -228,16 +228,24 @@ def plotsurfaces(surfaces, *, all_points=None, titles=None, shape=None, figratio
     plt.clf()
 
 
-def plotsurfaceonaxis(ax, surf, title, point_sets=None):
+def plotsurfaceonaxis(ax, surf, title, point_sets=None, plot_type='wireframe', contour=False):
     """Plot a Surface as 3D surface on a given matplotlib Axis"""
 
-    rows, cols = surf.X.shape
     offset = np.min(surf.Z)
+    rows, cols = surf.X.shape
 
-    surface = ax.plot_surface(surf.X, surf.Y, surf.Z, cmap='viridis_r', rcount=rows, ccount=cols,
-                              linewidth=0, antialiased=True)
-    ax.contour(surf.X, surf.Y, surf.Z, zdir='z', levels=33,
-               offset=offset, cmap='viridis_r')
+    if plot_type == 'wireframe':
+        colors = cm.viridis_r(linearscaletransform(surf.Z))
+        surface = ax.plot_surface(surf.X, surf.Y, surf.Z, rcount=15, ccount=15,
+                                  facecolors=colors, shade=False)
+        surface.set_facecolor((0,0,0,0))
+    elif plot_type == 'surface':
+        surface = ax.plot_surface(surf.X, surf.Y, surf.Z, cmap='viridis_r', rcount=rows, ccount=cols,
+                                  linewidth=0, antialiased=True)
+
+    if contour:
+        ax.contour(surf.X, surf.Y, surf.Z, zdir='z', levels=33,
+                   offset=offset, cmap='viridis_r')
     if point_sets:
         for x_y, z, style in point_sets:
             ax.scatter(x_y[:, 0], x_y[:, 1], z[1], **style)
