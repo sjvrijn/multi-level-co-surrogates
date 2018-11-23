@@ -19,7 +19,7 @@ from multiLevelCoSurrogates.Surrogates import Kriging, HierarchicalSurrogate
 
 Pprint =  PrettyPrinter(width=200)
 
-def run(multi_fid_func, num_iters=100):
+def run(multi_fid_func, num_iters=40):
 
     ndim = multi_fid_func.ndim
     fidelities = list(multi_fid_func.fidelity_names)
@@ -39,6 +39,8 @@ def run(multi_fid_func, num_iters=100):
             fidelity=fidelity
         )
 
+    pprint(archive.data)
+
     low_model = Kriging(archive, num_points=None, fidelity='low')
     mid_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=low_model,
                                       candidate_archive=archive, fidelities=fidelities[1:3])
@@ -47,7 +49,7 @@ def run(multi_fid_func, num_iters=100):
 
     high_model.train()
 
-    utility = bo.helpers.UtilityFunction(kind='ei', kappa=2.576, xi=0.0).utility
+    utility = bo.helpers.UtilityFunction(kind='ei', kappa=2.576, xi=1.0).utility
     acq_max = partial(bo.helpers.acq_max,
                       ac=utility, gp=high_model, random_state=np.random.RandomState(),
                       bounds=bounds.T, n_warmup=1000, n_iter=50)
@@ -59,6 +61,10 @@ def run(multi_fid_func, num_iters=100):
         partial(gpplot, func=mid_model.predict),
         partial(gpplot, func=low_model.predict),
 
+        partial(gpplot, func=high_model.predict, return_std=True),
+        partial(gpplot, func=mid_model.predict, return_std=True),
+        partial(gpplot, func=low_model.predict, return_std=True),
+
         lambda x: utility(x, gp=high_model, y_max=archive.max['high']),
         lambda x: utility(x, gp=mid_model, y_max=archive.max['medium']),
         lambda x: utility(x, gp=low_model, y_max=archive.max['low']),
@@ -66,6 +72,7 @@ def run(multi_fid_func, num_iters=100):
     titles = [
         'high', 'medium', 'low',
         'high model', 'medium model', 'low model',
+        'high std', 'medium std', 'low std',
         'acq_high', 'acq_medium', 'acq_low',
     ]
 
@@ -76,7 +83,7 @@ def run(multi_fid_func, num_iters=100):
             if iteration % interval == 0:
                 next_value = getattr(multi_fid_func, fidelity)(next_point)
                 archive.addcandidate(next_point, next_value, fidelity=fidelity)
-        print('iteration:', iteration, 'archive_size:', len(archive))
+        print(f'iteration: {iteration} | archive_size: {len(archive)} | next point: {next_point}')
         high_model.train()
 
         red_dot = {'marker': '.', 'color': 'red'}
@@ -87,10 +94,10 @@ def run(multi_fid_func, num_iters=100):
             [ScatterPoints(*archive.getcandidates(fidelity='high'), style=red_dot)],
             [ScatterPoints(*archive.getcandidates(fidelity='medium'), style=blue_circle)],
             [ScatterPoints(*archive.getcandidates(fidelity='low'), style=green_cross)],
-        ]*3
+        ]*4
 
-        if (iteration%9) == 0:
-            plotsurfaces(surfaces, all_points=points, titles=titles, as_3d=False, shape=(3,3))
+        # if (iteration%4) == 0:
+        plotsurfaces(surfaces, all_points=points, titles=titles, as_3d=False, shape=(4,3))
 
 
 
@@ -115,7 +122,7 @@ if __name__ == '__main__':
 
     old_hm = fit_funcs['himmelblau']
     hm = TriFidelityFunction(
-        u_bound=old_hm.u_bound, l_bound=old_hm.l_bound,
+        u_bound=np.array(old_hm.u_bound)*2, l_bound=np.array(old_hm.l_bound)*2,
         high=lambda x: -old_hm.high(x), medium=lambda x: -old_hm.medium(x), low=lambda x: -old_hm.low(x)
     )
 
