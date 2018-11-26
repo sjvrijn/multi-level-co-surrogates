@@ -15,11 +15,15 @@ from multiLevelCoSurrogates.Utils import select_subsample, linearscaletransform,
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
 from multiLevelCoSurrogates.Surrogates import Kriging, HierarchicalSurrogate
 
+import tracemalloc
+
+tracemalloc.start()
 
 
-Pprint =  PrettyPrinter(width=200)
 
-def run(multi_fid_func, num_iters=40):
+Pprint = PrettyPrinter(width=200)
+
+def run(multi_fid_func, num_iters=13):
 
     ndim = multi_fid_func.ndim
     fidelities = list(multi_fid_func.fidelity_names)
@@ -47,7 +51,7 @@ def run(multi_fid_func, num_iters=40):
     high_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=mid_model,
                                        candidate_archive=archive, fidelities=fidelities[0:2])
 
-    high_model.train()
+    high_model.retrain()
 
     utility = bo.helpers.UtilityFunction(kind='ei', kappa=2.576, xi=1.0).utility
     acq_max = partial(bo.helpers.acq_max,
@@ -84,7 +88,7 @@ def run(multi_fid_func, num_iters=40):
                 next_value = getattr(multi_fid_func, fidelity)(next_point)
                 archive.addcandidate(next_point, next_value, fidelity=fidelity)
         print(f'iteration: {iteration} | archive_size: {len(archive)} | next point: {next_point}')
-        high_model.train()
+        high_model.retrain()
 
         red_dot = {'marker': '.', 'color': 'red'}
         blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
@@ -98,6 +102,12 @@ def run(multi_fid_func, num_iters=40):
 
         # if (iteration%4) == 0:
         plotsurfaces(surfaces, all_points=points, titles=titles, as_3d=False, shape=(4,3))
+
+        print('MEMORY USAGE:')
+        snapshot = tracemalloc.take_snapshot()
+        for stat in snapshot.statistics('lineno')[:5]:
+            print(stat)
+        print()
 
 
 
@@ -120,9 +130,11 @@ def create_sample_set(ndim, size_per_fidelity, desired_range=None):
 if __name__ == '__main__':
     np.set_printoptions(linewidth=200)
 
+    bound_factor = 1
+
     old_hm = fit_funcs['himmelblau']
     hm = TriFidelityFunction(
-        u_bound=np.array(old_hm.u_bound)*2, l_bound=np.array(old_hm.l_bound)*2,
+        u_bound=np.array(old_hm.u_bound)*bound_factor, l_bound=np.array(old_hm.l_bound)*bound_factor,
         high=lambda x: -old_hm.high(x), medium=lambda x: -old_hm.medium(x), low=lambda x: -old_hm.low(x)
     )
 
