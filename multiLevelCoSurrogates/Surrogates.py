@@ -112,6 +112,9 @@ class Surrogate:
     def train(self):
         raise NotImplementedError
 
+    def retrain(self):
+        return self.train()
+
 
     @classmethod
     def fromname(cls, name, candidate_archive, n, fidelity=None):
@@ -236,7 +239,7 @@ class HierarchicalSurrogate:
 
     def train(self):
         self.diff_model.train()
-        self.low_model.train()
+        self.low_model.retrain()
 
 
     def retrain(self):
@@ -248,6 +251,7 @@ class HierarchicalSurrogate:
         self.y_diff = self.y_high - self.rho * self.y_low
 
         self.archive.addcandidates(self.X, self.y_diff, fidelity=self.diff_fidelity)
+        self.train()
 
 
     def determineScaleParameter(self):
