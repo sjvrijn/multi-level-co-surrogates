@@ -1,29 +1,36 @@
 import numpy as np
-import xarray as xr
+import pandas as pd
 import bayes_opt as bo
 
-from pprint import pprint, PrettyPrinter
 from functools import partial
-
-from multiLevelCoSurrogates.bo import gpplot, createsurfaces, plotsurfaces, ScatterPoints
-
+from collections import namedtuple
+from sklearn.metrics import mean_squared_error
 from pyDOE import lhs
+
+
 from multifidelityfunctions import TriFidelityFunction
+from multiLevelCoSurrogates.bo import gpplot, ScatterPoints
 from multiLevelCoSurrogates.config import fit_funcs
 from multiLevelCoSurrogates.local import base_dir
-from multiLevelCoSurrogates.Utils import select_subsample, linearscaletransform, ValueRange
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
+from multiLevelCoSurrogates.Utils import select_subsample, linearscaletransform, \
+    sample_by_function, createsurfaces, plotsurfaces, ValueRange
 from multiLevelCoSurrogates.Surrogates import Kriging, HierarchicalSurrogate
 
-import tracemalloc
 
+import tracemalloc
 tracemalloc.start()
 
 
+MSECollection = namedtuple('MSECollection', ['high', 'medium', 'low'])
+MSERecord = namedtuple('MSERecord', ['repetition', 'iteration',
+                                     *('mse_' + mse for mse in MSECollection._fields)])
 
-Pprint = PrettyPrinter(width=200)
+def flatten(iterable):
+    return [x for y in iterable for x in y]
 
-def run(multi_fid_func, num_iters=13):
+
+def run(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
 
     ndim = multi_fid_func.ndim
     fidelities = list(multi_fid_func.fidelity_names)
@@ -42,8 +49,6 @@ def run(multi_fid_func, num_iters=13):
             getattr(multi_fid_func, fidelity)(samples[fidelity]),
             fidelity=fidelity
         )
-
-    pprint(archive.data)
 
     low_model = Kriging(archive, num_points=None, fidelity='low')
     mid_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=low_model,
@@ -80,6 +85,25 @@ def run(multi_fid_func, num_iters=13):
         'acq_high', 'acq_medium', 'acq_low',
     ]
 
+    range_in = ValueRange(multi_fid_func.l_bound[0], multi_fid_func.u_bound[0])
+    range_lhs = ValueRange(0, 1)
+    range_out = ValueRange(-450, 0)
+
+    n_samples = 1000
+    ndim = 2
+
+    sample_points = sample_by_function(multi_fid_func.high, n_samples=n_samples, ndim=ndim,
+                                       range_in=range_in, range_out=range_out)
+    test_sample = linearscaletransform(sample_points, range_in=range_lhs, range_out=range_in)
+
+    test_mse = {
+        fid: partial(mean_squared_error,
+                     y_pred=getattr(multi_fid_func, fid)(test_sample))
+        for fid in fidelities
+    }
+
+    records = []
+
     for iteration in range(num_iters):
         next_point = acq_max(y_max=archive.max['high'])
 
@@ -90,25 +114,45 @@ def run(multi_fid_func, num_iters=13):
         print(f'iteration: {iteration} | archive_size: {len(archive)} | next point: {next_point}')
         high_model.retrain()
 
-        red_dot = {'marker': '.', 'color': 'red'}
-        blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
-        green_cross = {'marker': '+', 'color': 'green'}
-        surfaces = createsurfaces(functions_to_plot, l_bound=multi_fid_func.l_bound, u_bound=multi_fid_func.u_bound)
-        points = [
-            [ScatterPoints(*archive.getcandidates(fidelity='high'), style=red_dot)],
-            [ScatterPoints(*archive.getcandidates(fidelity='medium'), style=blue_circle)],
-            [ScatterPoints(*archive.getcandidates(fidelity='low'), style=green_cross)],
-        ]*4
 
-        # if (iteration%4) == 0:
-        plotsurfaces(surfaces, all_points=points, titles=titles, as_3d=False, shape=(4,3))
+        mses = MSECollection(
+            test_mse['high'](high_model.predict(test_sample)),
+            test_mse['medium'](mid_model.predict(test_sample)),
+            test_mse['low'](low_model.predict(test_sample)),
+        )
 
-        print('MEMORY USAGE:')
-        snapshot = tracemalloc.take_snapshot()
-        for stat in snapshot.statistics('lineno')[:5]:
-            print(stat)
-        print()
+        record = MSERecord(repetition_idx, iteration, *mses)
+        records.append(record)
 
+
+
+        if do_plot:
+            red_dot = {'marker': '.', 'color': 'red'}
+            blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
+            green_cross = {'marker': '+', 'color': 'green'}
+            surfaces = createsurfaces(functions_to_plot, l_bound=multi_fid_func.l_bound, u_bound=multi_fid_func.u_bound)
+            points = [
+                [ScatterPoints(*archive.getcandidates(fidelity='high'), style=red_dot)],
+                [ScatterPoints(*archive.getcandidates(fidelity='medium'), style=blue_circle)],
+                [ScatterPoints(*archive.getcandidates(fidelity='low'), style=green_cross)],
+            ]*4
+
+            # if (iteration%4) == 0:
+            plotsurfaces(surfaces, all_points=points, titles=titles, as_3d=False, shape=(4,3))
+
+        # print('MEMORY USAGE:')
+        # snapshot = tracemalloc.take_snapshot()
+        # for stat in snapshot.statistics('lineno')[:5]:
+        #     print(stat)
+        # print()
+
+
+    df = pd.DataFrame(records)
+    try:
+        df = pd.concat([pd.read_csv(f'{base_dir}_records.csv', index_col='index'), df])
+    except FileNotFoundError:
+        pass
+    df.to_csv(f'{base_dir}_records.csv', index_label='index')
 
 
 def create_sample_set(ndim, size_per_fidelity, desired_range=None):
@@ -138,4 +182,7 @@ if __name__ == '__main__':
         high=lambda x: -old_hm.high(x), medium=lambda x: -old_hm.medium(x), low=lambda x: -old_hm.low(x)
     )
 
-    run(hm)
+    num_repetitions = 50
+
+    for rep in range(num_repetitions):
+        run(hm, repetition_idx=rep)
