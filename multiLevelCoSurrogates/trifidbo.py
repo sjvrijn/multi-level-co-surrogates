@@ -22,7 +22,7 @@ import tracemalloc
 tracemalloc.start()
 
 
-MSECollection = namedtuple('MSECollection', ['high', 'medium', 'low'])
+MSECollection = namedtuple('MSECollection', ['high_hier', 'high', 'medium_hier', 'medium', 'low'])
 MSERecord = namedtuple('MSERecord', ['repetition', 'iteration',
                                      *('mse_' + mse for mse in MSECollection._fields)])
 
@@ -51,31 +51,36 @@ def run(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
         )
 
     low_model = Kriging(archive, num_points=None, fidelity='low')
-    mid_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=low_model,
-                                      candidate_archive=archive, fidelities=fidelities[1:3])
-    high_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=mid_model,
-                                       candidate_archive=archive, fidelities=fidelities[0:2])
+    medium_model = Kriging(archive, num_points=None, fidelity='medium')
+    high_model = Kriging(archive, num_points=None, fidelity='high')
 
+    medium_hier_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=low_model,
+                                              candidate_archive=archive, fidelities=fidelities[1:3])
+    high_hier_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=medium_hier_model,
+                                            candidate_archive=archive, fidelities=fidelities[0:2])
+
+    high_hier_model.retrain()
+    medium_model.retrain()
     high_model.retrain()
 
     utility = bo.helpers.UtilityFunction(kind='ei', kappa=2.576, xi=1.0).utility
     acq_max = partial(bo.helpers.acq_max,
-                      ac=utility, gp=high_model, random_state=np.random.RandomState(),
+                      ac=utility, gp=high_hier_model, random_state=np.random.RandomState(),
                       bounds=bounds.T, n_warmup=1000, n_iter=50)
 
     functions_to_plot = [
         multi_fid_func.high, multi_fid_func.medium, multi_fid_func.low,
 
-        partial(gpplot, func=high_model.predict),
-        partial(gpplot, func=mid_model.predict),
+        partial(gpplot, func=high_hier_model.predict),
+        partial(gpplot, func=medium_hier_model.predict),
         partial(gpplot, func=low_model.predict),
 
-        partial(gpplot, func=high_model.predict, return_std=True),
-        partial(gpplot, func=mid_model.predict, return_std=True),
+        partial(gpplot, func=high_hier_model.predict, return_std=True),
+        partial(gpplot, func=medium_hier_model.predict, return_std=True),
         partial(gpplot, func=low_model.predict, return_std=True),
 
-        lambda x: utility(x, gp=high_model, y_max=archive.max['high']),
-        lambda x: utility(x, gp=mid_model, y_max=archive.max['medium']),
+        lambda x: utility(x, gp=high_hier_model, y_max=archive.max['high']),
+        lambda x: utility(x, gp=medium_hier_model, y_max=archive.max['medium']),
         lambda x: utility(x, gp=low_model, y_max=archive.max['low']),
     ]
     titles = [
@@ -89,7 +94,7 @@ def run(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
     range_lhs = ValueRange(0, 1)
     range_out = ValueRange(-450, 0)
 
-    n_samples = 1000
+    n_samples = 100
     ndim = 2
 
     sample_points = sample_by_function(multi_fid_func.high, n_samples=n_samples, ndim=ndim,
@@ -112,12 +117,14 @@ def run(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
                 next_value = getattr(multi_fid_func, fidelity)(next_point)
                 archive.addcandidate(next_point, next_value, fidelity=fidelity)
         print(f'iteration: {iteration} | archive_size: {len(archive)} | next point: {next_point}')
-        high_model.retrain()
+        high_hier_model.retrain()
 
 
         mses = MSECollection(
+            test_mse['high'](high_hier_model.predict(test_sample)),
             test_mse['high'](high_model.predict(test_sample)),
-            test_mse['medium'](mid_model.predict(test_sample)),
+            test_mse['medium'](medium_hier_model.predict(test_sample)),
+            test_mse['medium'](medium_model.predict(test_sample)),
             test_mse['low'](low_model.predict(test_sample)),
         )
 
@@ -183,6 +190,8 @@ if __name__ == '__main__':
     )
 
     num_repetitions = 50
+    num_iters = 100
 
     for rep in range(num_repetitions):
-        run(hm, repetition_idx=rep)
+        np.random.seed(rep)
+        run(hm, num_iters=num_iters, repetition_idx=rep)
