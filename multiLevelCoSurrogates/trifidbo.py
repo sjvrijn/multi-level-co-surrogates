@@ -156,7 +156,7 @@ def run(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
 
     df = pd.DataFrame(records)
     try:
-        df = pd.concat([pd.read_csv(f'{base_dir}_records.csv', index_col='index'), df])
+        df = pd.concat([pd.read_csv(f'{base_dir}_records.csv', index_col='index'), df], ignore_index=True)
     except FileNotFoundError:
         pass
     df.to_csv(f'{base_dir}_records.csv', index_label='index')
