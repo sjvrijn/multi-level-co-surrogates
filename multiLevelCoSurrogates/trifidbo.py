@@ -105,15 +105,39 @@ def run(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
     records = []
 
     for iteration in range(num_iters):
-        next_point = acq_max(y_max=archive.max['high'])
+        next_point_low = acq_max(y_max=archive.max['high'])
+        next_point_medium = next_point_high = None
 
-        for interval, fidelity in zip(schema, fidelities):
-            if iteration % interval == 0:
-                next_value = getattr(multi_fid_func, fidelity)(next_point)
-                archive.addcandidate(next_point, next_value, fidelity=fidelity)
-
-        print(f'iteration: {iteration} | archive_size: {len(archive)} | next point: {next_point}')
+        next_value_low = multi_fid_func.low(next_point_low)
+        archive.addcandidate(next_point_low, next_value_low, fidelity='low')
         high_hier_model.retrain()
+
+        if iteration % schema[1] == 0:
+            candidates_low = archive.getcandidates(fidelity='low').candidates
+            candidates_medium = archive.getcandidates(fidelity='medium').candidates
+            interesting_candidates = list({tuple(x.tolist()) for x in candidates_low}
+                                          - {tuple(y.tolist()) for y in candidates_medium})
+            predicted_values = high_hier_model.predict(np.array(interesting_candidates))
+
+            next_point_medium = list(interesting_candidates[np.argmax(predicted_values)])
+            next_value_medium = multi_fid_func.medium(next_point_medium)
+            archive.addcandidate(next_point_medium, next_value_medium, fidelity='medium')
+            high_hier_model.retrain()
+
+        if iteration % schema[0] == 0:
+            candidates_medium = archive.getcandidates(fidelity='medium').candidates
+            candidates_high = archive.getcandidates(fidelity='high').candidates
+
+            interesting_candidates = list({tuple(x.tolist()) for x in candidates_medium}
+                                          - {tuple(y.tolist()) for y in candidates_high})
+            predicted_values = high_hier_model.predict(np.array(interesting_candidates))
+
+            next_point_high = list(interesting_candidates[np.argmax(predicted_values)])
+            next_value_high = multi_fid_func.medium(next_point_high)
+            archive.addcandidate(next_point_high, next_value_high, fidelity='high')
+            high_hier_model.retrain()
+
+        print(f'iteration: {iteration} | archive_size: {len(archive)} | next point: {next_point_low} {next_point_medium} {next_point_high}')
         medium_model.retrain()
         high_model.retrain()
 
@@ -138,12 +162,6 @@ def run(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
             ]*4
 
             plotsurfaces(surfaces, all_points=points, titles=titles, as_3d=False, shape=(4,3))
-
-        # print('MEMORY USAGE:')
-        # snapshot = tracemalloc.take_snapshot()
-        # for stat in snapshot.statistics('lineno')[:5]:
-        #     print(stat)
-        # print()
 
     return pd.DataFrame(records)
 
