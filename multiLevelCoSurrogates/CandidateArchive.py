@@ -55,7 +55,7 @@ class CandidateArchive:
             raise ValueError('must specify fidelity level in multi-fidelity case')
 
         # Checking types to make sure they are iterable in the right way
-        if isinstance(fitness, np.float64):
+        if isinstance(fitness, (np.float64, float)):
             fitness = [fitness]
 
         if isinstance(fidelity, str):
