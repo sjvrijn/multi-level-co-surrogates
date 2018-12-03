@@ -174,7 +174,7 @@ def run_hm(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
     input_range = ValueRange(*bounds)
     output_range = ValueRange(-450, 0)
 
-    schema = [4,2,1]
+    schema = [2,1]
 
     samples = create_sample_set(ndim, zip(fidelities, [5,8]),
                                 desired_range=input_range)
@@ -198,17 +198,13 @@ def run_hm(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
             fidelity=fidelity
         )
 
-    low_model = Kriging(archive, num_points=None, fidelity='low')
     medium_model = Kriging(archive, num_points=None, fidelity='medium')
     high_model = Kriging(archive, num_points=None, fidelity='high')
 
-    medium_hier_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=low_model,
-                                              candidate_archive=archive, fidelities=fidelities[1:3])
-    high_hier_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=medium_hier_model,
+    high_hier_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=medium_model,
                                             candidate_archive=archive, fidelities=fidelities[0:2])
 
     high_hier_model.retrain()
-    medium_model.retrain()
     high_model.retrain()
 
     utility = bo.helpers.UtilityFunction(kind='ei', kappa=2.576, xi=1.0).utility
@@ -217,25 +213,22 @@ def run_hm(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
                       bounds=bounds.T, n_warmup=1000, n_iter=50)
 
     functions_to_plot = [
-        multi_fid_func.high, multi_fid_func.medium, multi_fid_func.low,
+        multi_fid_func.high, multi_fid_func.medium,
 
         partial(gpplot, func=high_hier_model.predict),
-        partial(gpplot, func=medium_hier_model.predict),
-        partial(gpplot, func=low_model.predict),
+        partial(gpplot, func=medium_model.predict),
 
         partial(gpplot, func=high_hier_model.predict, return_std=True),
-        partial(gpplot, func=medium_hier_model.predict, return_std=True),
-        partial(gpplot, func=low_model.predict, return_std=True),
+        partial(gpplot, func=medium_model.predict, return_std=True),
 
         lambda x: utility(x, gp=high_hier_model, y_max=archive.max['high']),
-        lambda x: utility(x, gp=medium_hier_model, y_max=archive.max['medium']),
-        lambda x: utility(x, gp=low_model, y_max=archive.max['low']),
+        lambda x: utility(x, gp=medium_model, y_max=archive.max['medium']),
     ]
     titles = [
-        'high', 'medium', 'low',
-        'high model', 'medium model', 'low model',
-        'high std', 'medium std', 'low std',
-        'acq_high', 'acq_medium', 'acq_low',
+        'high', 'medium',
+        'high model', 'medium model',
+        'high std', 'medium std',
+        'acq_high', 'acq_medium',
     ]
 
     records = []
@@ -244,21 +237,9 @@ def run_hm(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
         next_point_low = acq_max(y_max=archive.max['high'])
         next_point_medium = next_point_high = None
 
-        next_value_low = multi_fid_func.low(next_point_low)
-        archive.addcandidate(next_point_low, next_value_low, fidelity='low')
+        next_value_medium = multi_fid_func.medium(next_point_low)
+        archive.addcandidate(next_point_low, next_value_medium, fidelity='medium')
         high_hier_model.retrain()
-
-        if iteration % schema[1] == 0:
-            candidates_low = archive.getcandidates(fidelity='low').candidates
-            candidates_medium = archive.getcandidates(fidelity='medium').candidates
-            interesting_candidates = list({tuple(x.tolist()) for x in candidates_low}
-                                          - {tuple(y.tolist()) for y in candidates_medium})
-            predicted_values = high_hier_model.predict(np.array(interesting_candidates))
-
-            next_point_medium = list(interesting_candidates[np.argmax(predicted_values)])
-            next_value_medium = multi_fid_func.medium(next_point_medium)
-            archive.addcandidate(next_point_medium, next_value_medium, fidelity='medium')
-            high_hier_model.retrain()
 
         if iteration % schema[0] == 0:
             candidates_medium = archive.getcandidates(fidelity='medium').candidates
@@ -280,24 +261,22 @@ def run_hm(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
         mses = MSECollection(
             mse_tester['high'](high_hier_model.predict(test_sample)),
             mse_tester['high'](high_model.predict(test_sample)),
-            mse_tester['medium'](medium_hier_model.predict(test_sample)),
+            0,
             mse_tester['medium'](medium_model.predict(test_sample)),
-            mse_tester['low'](low_model.predict(test_sample)),
+            0,
         )
         records.append(MSERecord(repetition_idx, iteration, *mses))
 
         if do_plot:
             red_dot = {'marker': '.', 'color': 'red'}
             blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
-            green_cross = {'marker': '+', 'color': 'green'}
             surfaces = createsurfaces(functions_to_plot, l_bound=multi_fid_func.l_bound, u_bound=multi_fid_func.u_bound)
             points = [
                 [ScatterPoints(*archive.getcandidates(fidelity='high'), style=red_dot)],
                 [ScatterPoints(*archive.getcandidates(fidelity='medium'), style=blue_circle)],
-                [ScatterPoints(*archive.getcandidates(fidelity='low'), style=green_cross)],
             ]*4
 
-            plotsurfaces(surfaces, all_points=points, titles=titles, as_3d=False, shape=(4,3))
+            plotsurfaces(surfaces, all_points=points, titles=titles, as_3d=False, shape=(4,2))
 
     return pd.DataFrame(records)
 
@@ -310,7 +289,7 @@ def run_hl(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
     input_range = ValueRange(*bounds)
     output_range = ValueRange(-450, 0)
 
-    schema = [4,2,1]
+    schema = [4,1]
 
     samples = create_sample_set(ndim, zip(fidelities, [5,13]),
                                 desired_range=input_range)
@@ -335,16 +314,12 @@ def run_hl(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
         )
 
     low_model = Kriging(archive, num_points=None, fidelity='low')
-    medium_model = Kriging(archive, num_points=None, fidelity='medium')
     high_model = Kriging(archive, num_points=None, fidelity='high')
 
-    medium_hier_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=low_model,
-                                              candidate_archive=archive, fidelities=fidelities[1:3])
-    high_hier_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=medium_hier_model,
+    high_hier_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=low_model,
                                             candidate_archive=archive, fidelities=fidelities[0:2])
 
     high_hier_model.retrain()
-    medium_model.retrain()
     high_model.retrain()
 
     utility = bo.helpers.UtilityFunction(kind='ei', kappa=2.576, xi=1.0).utility
@@ -353,25 +328,22 @@ def run_hl(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
                       bounds=bounds.T, n_warmup=1000, n_iter=50)
 
     functions_to_plot = [
-        multi_fid_func.high, multi_fid_func.medium, multi_fid_func.low,
+        multi_fid_func.high, multi_fid_func.low,
 
         partial(gpplot, func=high_hier_model.predict),
-        partial(gpplot, func=medium_hier_model.predict),
         partial(gpplot, func=low_model.predict),
 
         partial(gpplot, func=high_hier_model.predict, return_std=True),
-        partial(gpplot, func=medium_hier_model.predict, return_std=True),
         partial(gpplot, func=low_model.predict, return_std=True),
 
         lambda x: utility(x, gp=high_hier_model, y_max=archive.max['high']),
-        lambda x: utility(x, gp=medium_hier_model, y_max=archive.max['medium']),
         lambda x: utility(x, gp=low_model, y_max=archive.max['low']),
     ]
     titles = [
-        'high', 'medium', 'low',
-        'high model', 'medium model', 'low model',
-        'high std', 'medium std', 'low std',
-        'acq_high', 'acq_medium', 'acq_low',
+        'high', 'low',
+        'high model', 'low model',
+        'high std', 'low std',
+        'acq_high', 'acq_low',
     ]
 
     records = []
@@ -384,20 +356,8 @@ def run_hl(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
         archive.addcandidate(next_point_low, next_value_low, fidelity='low')
         high_hier_model.retrain()
 
-        if iteration % schema[1] == 0:
-            candidates_low = archive.getcandidates(fidelity='low').candidates
-            candidates_medium = archive.getcandidates(fidelity='medium').candidates
-            interesting_candidates = list({tuple(x.tolist()) for x in candidates_low}
-                                          - {tuple(y.tolist()) for y in candidates_medium})
-            predicted_values = high_hier_model.predict(np.array(interesting_candidates))
-
-            next_point_medium = list(interesting_candidates[np.argmax(predicted_values)])
-            next_value_medium = multi_fid_func.medium(next_point_medium)
-            archive.addcandidate(next_point_medium, next_value_medium, fidelity='medium')
-            high_hier_model.retrain()
-
         if iteration % schema[0] == 0:
-            candidates_medium = archive.getcandidates(fidelity='medium').candidates
+            candidates_medium = archive.getcandidates(fidelity='low').candidates
             candidates_high = archive.getcandidates(fidelity='high').candidates
 
             interesting_candidates = list({tuple(x.tolist()) for x in candidates_medium}
@@ -410,30 +370,27 @@ def run_hl(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
             high_hier_model.retrain()
 
         print(f'iteration: {iteration} | archive_size: {len(archive)} | next point: {next_point_low} {next_point_medium} {next_point_high}')
-        medium_model.retrain()
         high_model.retrain()
 
         mses = MSECollection(
             mse_tester['high'](high_hier_model.predict(test_sample)),
             mse_tester['high'](high_model.predict(test_sample)),
-            mse_tester['medium'](medium_hier_model.predict(test_sample)),
-            mse_tester['medium'](medium_model.predict(test_sample)),
+            0,
+            0,
             mse_tester['low'](low_model.predict(test_sample)),
         )
         records.append(MSERecord(repetition_idx, iteration, *mses))
 
         if do_plot:
             red_dot = {'marker': '.', 'color': 'red'}
-            blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
             green_cross = {'marker': '+', 'color': 'green'}
             surfaces = createsurfaces(functions_to_plot, l_bound=multi_fid_func.l_bound, u_bound=multi_fid_func.u_bound)
             points = [
                 [ScatterPoints(*archive.getcandidates(fidelity='high'), style=red_dot)],
-                [ScatterPoints(*archive.getcandidates(fidelity='medium'), style=blue_circle)],
                 [ScatterPoints(*archive.getcandidates(fidelity='low'), style=green_cross)],
             ]*4
 
-            plotsurfaces(surfaces, all_points=points, titles=titles, as_3d=False, shape=(4,3))
+            plotsurfaces(surfaces, all_points=points, titles=titles, as_3d=False, shape=(4,2))
 
     return pd.DataFrame(records)
 
@@ -458,24 +415,55 @@ if __name__ == '__main__':
     np.set_printoptions(linewidth=200)
 
     bound_factor = 1
-    num_repetitions = 1
-    num_iterations = 100
-    do_plot = True
+    num_repetitions = 15
+    num_iterations = [102, 51, 102]
+    do_plot = False
+    fit_func_names = ['himmelblau_seb', 'himmelblau']
 
-    old_hm = fit_funcs['himmelblau_seb']
-    hm = TriFidelityFunction(
-        u_bound=np.array(old_hm.u_bound)*bound_factor, l_bound=np.array(old_hm.l_bound)*bound_factor,
-        high=lambda x: -old_hm.high(x), medium=lambda x: -old_hm.medium(x), low=lambda x: -old_hm.low(x)
-    )
 
-    for rep in range(num_repetitions):
-        print(f'{rep}/{num_repetitions}')
-        np.random.seed(rep)
-        df = run(hm, num_iters=num_iterations, repetition_idx=rep, do_plot=do_plot)
+    for name in fit_func_names:
 
-        if rep != 0:
-            try:
-                df = pd.concat([pd.read_csv(f'{base_dir}_records.csv', index_col='index'), df], ignore_index=True)
-            except FileNotFoundError:
-                pass
-        df.to_csv(f'{base_dir}records.csv', index_label='index')
+        old_hm = fit_funcs[name]
+        hm = TriFidelityFunction(
+            u_bound=np.array(old_hm.u_bound) * bound_factor, l_bound=np.array(old_hm.l_bound) * bound_factor,
+            high=lambda x: -old_hm.high(x), medium=lambda x: -old_hm.medium(x), low=lambda x: -old_hm.low(x)
+        )
+
+        save_name = f'{base_dir}{name}_hml_records.csv'
+        for rep in range(num_repetitions):
+            print(f'{rep}/{num_repetitions}')
+            np.random.seed(rep)
+            df = run(hm, num_iters=num_iterations[0], repetition_idx=rep, do_plot=do_plot)
+
+            if rep != 0:
+                try:
+                    df = pd.concat([pd.read_csv(save_name, index_col='index'), df], ignore_index=True)
+                except FileNotFoundError:
+                    pass
+            df.to_csv(save_name, index_label='index')
+
+        save_name = f'{base_dir}{name}_hm_records.csv'
+        for rep in range(num_repetitions):
+            print(f'{rep}/{num_repetitions}')
+            np.random.seed(rep)
+            df = run_hm(hm, num_iters=num_iterations[1], repetition_idx=rep, do_plot=do_plot)
+
+            if rep != 0:
+                try:
+                    df = pd.concat([pd.read_csv(save_name, index_col='index'), df], ignore_index=True)
+                except FileNotFoundError:
+                    pass
+            df.to_csv(save_name, index_label='index')
+
+        save_name = f'{base_dir}{name}_hl_records.csv'
+        for rep in range(num_repetitions):
+            print(f'{rep}/{num_repetitions}')
+            np.random.seed(rep)
+            df = run_hl(hm, num_iters=num_iterations[2], repetition_idx=rep, do_plot=do_plot)
+
+            if rep != 0:
+                try:
+                    df = pd.concat([pd.read_csv(save_name, index_col='index'), df], ignore_index=True)
+                except FileNotFoundError:
+                    pass
+            df.to_csv(save_name, index_label='index')
