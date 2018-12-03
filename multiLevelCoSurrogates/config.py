@@ -28,6 +28,7 @@ fit_funcs = {
     'branin': branin,
     'booth': booth,
     'himmelblau': himmelblau,
+    'himmelblau_seb': himmelblau_seb,
     'sixHumpCamelBack': sixHumpCamelBack,
     # 'curretal88exp': curretal88exp,
     'park91a': park91a,
