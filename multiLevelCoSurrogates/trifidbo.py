@@ -27,9 +27,6 @@ MSECollection = namedtuple('MSECollection', ['high_hier', 'high', 'medium_hier',
 MSERecord = namedtuple('MSERecord', ['repetition', 'iteration',
                                      *('mse_' + mse for mse in MSECollection._fields)])
 
-def flatten(iterable):
-    return [x for y in iterable for x in y]
-
 
 def run(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
 
@@ -138,7 +135,8 @@ def run(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
             archive.addcandidate(next_point_high, next_value_high, fidelity='high')
             high_hier_model.retrain()
 
-        print(f'iteration: {iteration} | archive_size: {len(archive)} | next point: {next_point_low} {next_point_medium} {next_point_high}')
+        print(f'iteration: {iteration} | archive_size: {len(archive)} | '
+              f'next point: {next_point_low} {next_point_medium} {next_point_high}')
         medium_model.retrain()
         high_model.retrain()
 
@@ -255,7 +253,8 @@ def run_hm(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
             archive.addcandidate(next_point_high, next_value_high, fidelity='high')
             high_hier_model.retrain()
 
-        print(f'iteration: {iteration} | archive_size: {len(archive)} | next point: {next_point_low} {next_point_medium} {next_point_high}')
+        print(f'iteration: {iteration} | archive_size: {len(archive)} | '
+              f'next point: {next_point_low} {next_point_medium} {next_point_high}')
         medium_model.retrain()
         high_model.retrain()
 
@@ -370,7 +369,8 @@ def run_hl(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
             archive.addcandidate(next_point_high, next_value_high, fidelity='high')
             high_hier_model.retrain()
 
-        print(f'iteration: {iteration} | archive_size: {len(archive)} | next point: {next_point_low} {next_point_medium} {next_point_high}')
+        print(f'iteration: {iteration} | archive_size: {len(archive)} | '
+              f'next point: {next_point_low} {next_point_medium} {next_point_high}')
         high_model.retrain()
 
         mses = MSECollection(
