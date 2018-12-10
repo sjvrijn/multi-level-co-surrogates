@@ -4,6 +4,7 @@ import bayes_opt as bo
 
 from functools import partial
 from collections import namedtuple
+from itertools import product
 from sklearn.metrics import mean_squared_error
 from pyDOE import lhs
 
@@ -417,6 +418,7 @@ if __name__ == '__main__':
     bound_factor = 1
     num_repetitions = 15
     num_iterations = [102, 51, 102]
+    save_suffixes = ['hml', 'hm', 'hl']
     do_plot = False
     fit_func_names = ['himmelblau_seb', 'himmelblau']
 
@@ -429,38 +431,14 @@ if __name__ == '__main__':
             high=lambda x: -old_hm.high(x), medium=lambda x: -old_hm.medium(x), low=lambda x: -old_hm.low(x)
         )
 
-        save_name = f'{base_dir}{name}_hml_records.csv'
-        for rep in range(num_repetitions):
+
+        for (suffix, num_iters), rep in product(zip(save_suffixes, num_iterations), range(num_repetitions)):
             print(f'{rep}/{num_repetitions}')
             np.random.seed(rep)
-            df = run(hm, num_iters=num_iterations[0], repetition_idx=rep, do_plot=do_plot)
 
-            if rep != 0:
-                try:
-                    df = pd.concat([pd.read_csv(save_name, index_col='index'), df], ignore_index=True)
-                except FileNotFoundError:
-                    pass
-            df.to_csv(save_name, index_label='index')
+            df = run(hm, num_iters=num_iters, repetition_idx=rep, do_plot=do_plot)
 
-        save_name = f'{base_dir}{name}_hm_records.csv'
-        for rep in range(num_repetitions):
-            print(f'{rep}/{num_repetitions}')
-            np.random.seed(rep)
-            df = run_hm(hm, num_iters=num_iterations[1], repetition_idx=rep, do_plot=do_plot)
-
-            if rep != 0:
-                try:
-                    df = pd.concat([pd.read_csv(save_name, index_col='index'), df], ignore_index=True)
-                except FileNotFoundError:
-                    pass
-            df.to_csv(save_name, index_label='index')
-
-        save_name = f'{base_dir}{name}_hl_records.csv'
-        for rep in range(num_repetitions):
-            print(f'{rep}/{num_repetitions}')
-            np.random.seed(rep)
-            df = run_hl(hm, num_iters=num_iterations[2], repetition_idx=rep, do_plot=do_plot)
-
+            save_name = f'{base_dir}{name}_{suffix}_records.csv'
             if rep != 0:
                 try:
                     df = pd.concat([pd.read_csv(save_name, index_col='index'), df], ignore_index=True)
