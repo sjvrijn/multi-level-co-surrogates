@@ -2,3 +2,7 @@
 .idea/
 local.py
 venv/
+plots/
+*.html
+*.tex
+.ipynb_checkpoints/
