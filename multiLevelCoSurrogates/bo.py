@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from pyDOE import lhs
 from sklearn.metrics import mean_squared_error
+from more_itertools import flatten
 
 from multiLevelCoSurrogates.config import fit_funcs
 from multiLevelCoSurrogates.local import base_dir
@@ -277,10 +278,6 @@ def infill_experiment(num_repetitions=10, num_iters=1, which_model='hierarchical
                 print()
 
     return records
-
-
-def flatten(iterable):
-    return [x for y in iterable for x in y]
 
 
 if __name__ == "__main__":
