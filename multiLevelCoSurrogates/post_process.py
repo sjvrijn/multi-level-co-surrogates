@@ -365,15 +365,27 @@ def make2dvisualizations(func, l_bound, u_bound, name, num_intervals=200):
 
 def plot_function_surfaces():
 
-    for name, fit_func in list(fit_funcs.items())[:5]:
+    # for name, fit_func in list(fit_funcs.items())[:5]:
+    #
+    #     #TODO: make bounds np.arrays in the function package?
+    #     l_bound = np.array(fit_func.l_bound, dtype=np.float64)
+    #     u_bound = np.array(fit_func.u_bound, dtype=np.float64)
+    #
+    #     for fid in fit_func.fidelity_names:
+    #         func = getattr(fit_func, fid)
+    #         make2dvisualizations(func, l_bound, u_bound, '_'.join((name, fid)))
 
-        #TODO: make bounds np.arrays in the function package?
-        l_bound = np.array(fit_func.l_bound, dtype=np.float64)
-        u_bound = np.array(fit_func.u_bound, dtype=np.float64)
+    fit_func = fit_funcs['himmelblau']
+    l_bound = np.array(fit_func.l_bound, dtype=np.float64)
+    u_bound = np.array(fit_func.u_bound, dtype=np.float64)
 
-        for fid in fit_func.fidelity_names:
-            func = getattr(fit_func, fid)
-            make2dvisualizations(func, l_bound, u_bound, '_'.join((name, fid)))
+    high = createsurface(fit_func.high, l_bound, u_bound)
+    low = createsurface(fit_func.low, l_bound, u_bound)
+    diff = high - low
+
+    for surf, name in zip([high, low, diff], ['high', 'low', 'diff']):
+        make2dvisualizations(surf, l_bound, u_bound, f'himmelblau_{name}')
+
 
 def run():
     # data = getdata()
