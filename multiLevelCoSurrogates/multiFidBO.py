@@ -181,26 +181,15 @@ class MultiFidelityBO:
         self.high_hier_model.retrain()
 
         if iteration_idx % self.schema[1] == 0:
-            candidates_low = self.archive.getcandidates(fidelity='low').candidates
-            candidates_medium = self.archive.getcandidates(fidelity='medium').candidates
-            interesting_candidates = list({tuple(x.tolist()) for x in candidates_low}
-                                          - {tuple(y.tolist()) for y in candidates_medium})
-            predicted_values = self.high_hier_model.predict(np.array(interesting_candidates))
 
-            next_point_medium = list(interesting_candidates[np.argmax(predicted_values)])
+            next_point_medium = self.limited_acq_max(fid_low='low', fid_high='medium')
             next_value_medium = self.func.medium(next_point_medium)
             self.archive.addcandidate(next_point_medium, next_value_medium, fidelity='medium')
             self.high_hier_model.retrain()
 
         if iteration_idx % self.schema[0] == 0:
-            candidates_medium = self.archive.getcandidates(fidelity='medium').candidates
-            candidates_high = self.archive.getcandidates(fidelity='high').candidates
 
-            interesting_candidates = list({tuple(x.tolist()) for x in candidates_medium}
-                                          - {tuple(y.tolist()) for y in candidates_high})
-            predicted_values = self.high_hier_model.predict(np.array(interesting_candidates))
-
-            next_point_high = list(interesting_candidates[np.argmax(predicted_values)])
+            next_point_high = self.limited_acq_max(fid_low='medium', fid_high='high')
             next_value_high = self.func.medium(next_point_high)
             self.archive.addcandidate(next_point_high, next_value_high, fidelity='high')
             self.high_hier_model.retrain()
@@ -217,6 +206,18 @@ class MultiFidelityBO:
         record = MSERecord(repetition_idx, iteration_idx, *mses)
 
         return record
+
+
+
+    def limited_acq_max(self, fid_low, fid_high):
+        candidates_low = self.archive.getcandidates(fidelity=fid_low).candidates
+        candidates_high = self.archive.getcandidates(fidelity=fid_high).candidates
+        interesting_candidates = list({tuple(x.tolist()) for x in candidates_low}
+                                      - {tuple(y.tolist()) for y in candidates_high})
+        predicted_values = self.high_hier_model.predict(np.array(interesting_candidates))
+
+        next_point = list(interesting_candidates[np.argmax(predicted_values)])
+        return next_point
 
 
 
