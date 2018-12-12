@@ -62,21 +62,7 @@ class MultiFidelityBO:
         self.utility = bo.helpers.UtilityFunction(kind='ei', kappa=2.576, xi=1.0).utility
 
         ### ARCHIVE
-        if archive is None:
-            self.archive_fidelities = self.fidelities + [f'{a}-{b}' for a, b in pairwise(self.fidelities)]
-            self.archive = CandidateArchive(ndim=self.ndim, fidelities=self.archive_fidelities)
-
-            samples = create_sample_set(self.ndim, zip(self.fidelities, [5, 8, 13]),
-                                        desired_range=self.input_range)
-            for fidelity in self.fidelities:
-                self.archive.addcandidates(
-                    samples[fidelity],
-                    getattr(self.func, fidelity)(samples[fidelity]),
-                    fidelity=fidelity
-                )
-
-        else:
-            self.archive = archive
+        self.archive = self.init_archive(archive)
 
 
 
@@ -148,6 +134,23 @@ class MultiFidelityBO:
 
 
 
+    def init_archive(self, archive):
+        if archive is not None:
+            return archive
+
+        archive_fidelities = self.fidelities + [f'{a}-{b}' for a, b in pairwise(self.fidelities)]
+        archive = CandidateArchive(ndim=self.ndim, fidelities=archive_fidelities)
+
+        samples = create_sample_set(self.ndim, zip(self.fidelities, [5, 8, 13]),
+                                    desired_range=self.input_range)
+        for fidelity in self.fidelities:
+            archive.addcandidates(
+                samples[fidelity],
+                getattr(self.func, fidelity)(samples[fidelity]),
+                fidelity=fidelity
+            )
+
+        return archive
 
 
 
