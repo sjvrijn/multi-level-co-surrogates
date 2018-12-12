@@ -173,29 +173,39 @@ class MultiFidelityBO:
 
 
     def iteration(self, iteration_idx, repetition_idx):
-        next_point_low = self.acq_max(y_max=self.archive.max['high'])
-        next_point_medium = next_point_high = None
+        next_points = [None, None, None]
 
-        next_value_low = self.func.low(next_point_low)
-        self.archive.addcandidate(next_point_low, next_value_low, fidelity='low')
-        self.high_hier_model.retrain()
+
+
+        if iteration_idx % self.schema[2] == 0:
+
+            next_point = self.limited_acq_max(fid_low=None, fid_high='low')
+            next_value = self.func.low(next_point)
+            self.archive.addcandidate(next_point, next_value, fidelity='low')
+            self.high_hier_model.retrain()
+
+            next_points[2] = next_point
 
         if iteration_idx % self.schema[1] == 0:
 
-            next_point_medium = self.limited_acq_max(fid_low='low', fid_high='medium')
-            next_value_medium = self.func.medium(next_point_medium)
-            self.archive.addcandidate(next_point_medium, next_value_medium, fidelity='medium')
+            next_point = self.limited_acq_max(fid_low='low', fid_high='medium')
+            next_value = self.func.medium(next_point)
+            self.archive.addcandidate(next_point, next_value, fidelity='medium')
             self.high_hier_model.retrain()
+
+            next_points[1] = next_point
 
         if iteration_idx % self.schema[0] == 0:
 
-            next_point_high = self.limited_acq_max(fid_low='medium', fid_high='high')
-            next_value_high = self.func.medium(next_point_high)
-            self.archive.addcandidate(next_point_high, next_value_high, fidelity='high')
+            next_point = self.limited_acq_max(fid_low='medium', fid_high='high')
+            next_value = self.func.medium(next_point)
+            self.archive.addcandidate(next_point, next_value, fidelity='high')
             self.high_hier_model.retrain()
 
+            next_points[0] = next_point
+
         print(f'iteration: {iteration_idx} | archive_size: {len(self.archive)} | '
-              f'next point: {next_point_low} {next_point_medium} {next_point_high}')
+              f'next point: {next_points[2]} {next_points[1]} {next_points[0]}')
         self.medium_model.retrain()
         self.high_model.retrain()
 
@@ -210,14 +220,16 @@ class MultiFidelityBO:
 
 
     def limited_acq_max(self, fid_low, fid_high):
+        if fid_low is None:
+            return self.acq_max(y_max=self.archive.max['high'])
+
         candidates_low = self.archive.getcandidates(fidelity=fid_low).candidates
         candidates_high = self.archive.getcandidates(fidelity=fid_high).candidates
         interesting_candidates = list({tuple(x.tolist()) for x in candidates_low}
                                       - {tuple(y.tolist()) for y in candidates_high})
         predicted_values = self.high_hier_model.predict(np.array(interesting_candidates))
 
-        next_point = list(interesting_candidates[np.argmax(predicted_values)])
-        return next_point
+        return list(interesting_candidates[np.argmax(predicted_values)])
 
 
 
