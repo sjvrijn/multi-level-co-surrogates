@@ -17,6 +17,7 @@ from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
 from multiLevelCoSurrogates.Utils import select_subsample, linearscaletransform, \
     sample_by_function, createsurfaces, plotsurfaces, ValueRange
 from multiLevelCoSurrogates.Surrogates import Kriging, HierarchicalSurrogate
+from multiLevelCoSurrogates.multiFidBO import MultiFidelityBO
 
 
 import tracemalloc
@@ -436,7 +437,10 @@ if __name__ == '__main__':
             print(f'{rep}/{num_repetitions}')
             np.random.seed(rep)
 
-            df = run(hm, num_iters=num_iters, repetition_idx=rep, do_plot=do_plot)
+            # df = run(hm, num_iters=num_iters, repetition_idx=rep, do_plot=do_plot)
+            mfbo = MultiFidelityBO(hm, archive=None, do_plot=do_plot)
+            df = mfbo.run(num_iters=num_iters, repetition_idx=rep)
+
 
             save_name = f'{base_dir}{name}_{suffix}_records.csv'
             if rep != 0:
