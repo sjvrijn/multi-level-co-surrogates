@@ -48,17 +48,23 @@ MSERecord = namedtuple('MSERecord', ['repetition', 'iteration',
 
 class MultiFidelityBO:
 
-    def __init__(self, multi_fid_func, archive=None, do_plot=False):
+    def __init__(self, multi_fid_func, archive=None, do_plot=False, schema=None):
 
         self.do_plot = do_plot
         self.func = multi_fid_func
         self.ndim = self.func.ndim
         self.bounds = np.array([self.func.l_bound, self.func.u_bound], dtype=np.float)
         self.input_range = ValueRange(*self.bounds)
-        self.output_range = ValueRange(-450, 0)
         self.fidelities = list(self.func.fidelity_names)
 
-        self.schema = [4,2,1]
+        if self.schema is None:
+            self.schema = reversed([2**i for i in range(len(self.fidelities))])
+        else:
+            self.schema = schema
+
+        if len(self.schema) != len(self.fidelities):
+            raise ValueError('Cost schema does not match number of fidelity levels')
+
         self.utility = bo.helpers.UtilityFunction(kind='ei', kappa=2.576, xi=1.0).utility
 
         ### ARCHIVE
@@ -68,7 +74,7 @@ class MultiFidelityBO:
 
 
 
-        ################ MODELS
+        ################ HIERARCHICAL MODELS
         self.low_model = Kriging(self.archive, num_points=None, fidelity='low')
         self.medium_hier_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=self.low_model,
                                                        candidate_archive=self.archive, fidelities=self.fidelities[1:3])
@@ -76,7 +82,7 @@ class MultiFidelityBO:
                                                      candidate_archive=self.archive, fidelities=self.fidelities[0:2])
         self.high_hier_model.retrain()
 
-
+        #### REGULAR/DIRECT MODELS
         self.medium_model = Kriging(self.archive, num_points=None, fidelity='medium')
         self.medium_model.retrain()
         self.high_model = Kriging(self.archive, num_points=None, fidelity='high')
@@ -123,8 +129,9 @@ class MultiFidelityBO:
 
         ############ MSE SETUP
         n_samples = 1000
+        output_range = ValueRange(-450, 0)
         self.test_sample = sample_by_function(self.func.high, n_samples=n_samples, ndim=self.ndim,
-                                              range_in=self.input_range, range_out=self.output_range)
+                                              range_in=self.input_range, range_out=output_range)
 
         self.mse_tester = {
             fid: partial(mean_squared_error,
