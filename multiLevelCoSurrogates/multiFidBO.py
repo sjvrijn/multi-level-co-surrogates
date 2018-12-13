@@ -13,7 +13,7 @@ from functools import partial
 from collections import namedtuple
 from sklearn.metrics import mean_squared_error
 from pyDOE import lhs
-from more_itertools import pairwise
+from more_itertools import pairwise, stagger
 
 from multiLevelCoSurrogates.bo import gpplot, ScatterPoints
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
@@ -173,47 +173,28 @@ class MultiFidelityBO:
 
 
     def iteration(self, iteration_idx, repetition_idx):
-        next_points = [None, None, None]
+        next_points = {fid: None for fid in self.fidelities}
 
+        fid_pairs = stagger(reversed(self.fidelities), offsets=(-1, 0))
 
+        for cost, (fid_low, fid_high) in zip(reversed(self.schema), fid_pairs):
+            if iteration_idx % cost == 0:
+                next_point = self.limited_acq_max(fid_low=fid_low, fid_high=fid_high)
+                next_value = self.func.low(next_point)
+                self.archive.addcandidate(next_point, next_value, fidelity=fid_high)
+                self.high_hier_model.retrain()
+                next_points[fid_high] = next_point
 
-        if iteration_idx % self.schema[2] == 0:
-
-            next_point = self.limited_acq_max(fid_low=None, fid_high='low')
-            next_value = self.func.low(next_point)
-            self.archive.addcandidate(next_point, next_value, fidelity='low')
-            self.high_hier_model.retrain()
-
-            next_points[2] = next_point
-
-        if iteration_idx % self.schema[1] == 0:
-
-            next_point = self.limited_acq_max(fid_low='low', fid_high='medium')
-            next_value = self.func.medium(next_point)
-            self.archive.addcandidate(next_point, next_value, fidelity='medium')
-            self.high_hier_model.retrain()
-
-            next_points[1] = next_point
-
-        if iteration_idx % self.schema[0] == 0:
-
-            next_point = self.limited_acq_max(fid_low='medium', fid_high='high')
-            next_value = self.func.medium(next_point)
-            self.archive.addcandidate(next_point, next_value, fidelity='high')
-            self.high_hier_model.retrain()
-
-            next_points[0] = next_point
-
-        print(f'iteration: {iteration_idx} | archive_size: {len(self.archive)} | '
-              f'next point: {next_points[2]} {next_points[1]} {next_points[0]}')
         self.medium_model.retrain()
         self.high_model.retrain()
 
-        if self.do_plot:
-            self.plot()
-
         mses = self.getMSE()
         record = MSERecord(repetition_idx, iteration_idx, *mses)
+
+        print(f"iteration: {iteration_idx} | archive_size: {len(self.archive)} | "
+              f"next point: {next_points['low']} {next_points['medium']} {next_points['high']}")
+        if self.do_plot:
+            self.plot()
 
         return record
 
