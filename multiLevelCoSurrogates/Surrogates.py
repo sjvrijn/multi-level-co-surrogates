@@ -117,7 +117,7 @@ class Surrogate:
 
 
     @classmethod
-    def fromname(cls, name, candidate_archive, n, fidelity=None):
+    def fromname(cls, name, candidate_archive, n=None, fidelity=None):
         if name == 'RBF':
             return RBF(candidate_archive, n, fidelity)
         elif name == 'Kriging':
