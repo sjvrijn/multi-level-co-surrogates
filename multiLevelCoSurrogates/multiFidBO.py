@@ -19,7 +19,7 @@ from multiLevelCoSurrogates.bo import gpplot, ScatterPoints
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
 from multiLevelCoSurrogates.Utils import select_subsample, linearscaletransform, \
     sample_by_function, createsurfaces, plotsurfaces, ValueRange
-from multiLevelCoSurrogates.Surrogates import Kriging, HierarchicalSurrogate
+from multiLevelCoSurrogates.Surrogates import Kriging, HierarchicalSurrogate, Surrogate
 
 
 
@@ -57,8 +57,8 @@ class MultiFidelityBO:
         self.input_range = ValueRange(*self.bounds)
         self.fidelities = list(self.func.fidelity_names)
 
-        if self.schema is None:
-            self.schema = reversed([2**i for i in range(len(self.fidelities))])
+        if schema is None:
+            self.schema = list(reversed([2**i for i in range(len(self.fidelities))]))
         else:
             self.schema = schema
 
@@ -75,17 +75,30 @@ class MultiFidelityBO:
 
 
         ################ HIERARCHICAL MODELS
-        self.low_model = Kriging(self.archive, num_points=None, fidelity='low')
-        self.medium_hier_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=self.low_model,
-                                                       candidate_archive=self.archive, fidelities=self.fidelities[1:3])
-        self.high_hier_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=self.medium_hier_model,
-                                                     candidate_archive=self.archive, fidelities=self.fidelities[0:2])
+
+        self.models = {}
+        for fids in stagger(reversed(self.fidelities), offsets=(-1, 0)):
+            fid_low, fid_high = fids
+            if fid_low is None:
+                model = Surrogate.fromname('Kriging', self.archive, fidelity=fid_high)
+            else:
+                model = HierarchicalSurrogate('Kriging', lower_fidelity_model=self.models[fid_low],
+                                              candidate_archive=self.archive, fidelities=[fid_high, fid_low])
+            self.models[fid_high] = model
+
+        self.low_model = self.models[self.fidelities[2]]
+        self.medium_hier_model = self.models[self.fidelities[1]]
+        self.high_hier_model = self.models[self.fidelities[0]]
+
+
         self.high_hier_model.retrain()
 
+
+
         #### REGULAR/DIRECT MODELS
-        self.medium_model = Kriging(self.archive, num_points=None, fidelity='medium')
+        self.medium_model = Kriging(self.archive, num_points=None, fidelity=self.fidelities[1])
         self.medium_model.retrain()
-        self.high_model = Kriging(self.archive, num_points=None, fidelity='high')
+        self.high_model = Kriging(self.archive, num_points=None, fidelity=self.fidelities[0])
         self.high_model.retrain()
 
 
@@ -114,9 +127,9 @@ class MultiFidelityBO:
             partial(gpplot, func=self.medium_hier_model.predict, return_std=True),
             partial(gpplot, func=self.low_model.predict, return_std=True),
 
-            lambda x: self.utility(x, gp=self.high_hier_model, y_max=self.archive.max['high']),
-            lambda x: self.utility(x, gp=self.medium_hier_model, y_max=self.archive.max['medium']),
-            lambda x: self.utility(x, gp=self.low_model, y_max=self.archive.max['low']),
+            lambda x: self.utility(x, gp=self.high_hier_model, y_max=self.archive.max[self.fidelities[0]]),
+            lambda x: self.utility(x, gp=self.medium_hier_model, y_max=self.archive.max[self.fidelities[1]]),
+            lambda x: self.utility(x, gp=self.low_model, y_max=self.archive.max[self.fidelities[2]]),
         ]
         self.titles = [
             'high', 'medium', 'low',
