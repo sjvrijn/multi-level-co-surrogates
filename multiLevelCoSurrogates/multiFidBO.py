@@ -12,31 +12,13 @@ import bayes_opt as bo
 from functools import partial
 from collections import namedtuple
 from sklearn.metrics import mean_squared_error
-from pyDOE import lhs
 from more_itertools import pairwise, stagger
 
 from multiLevelCoSurrogates.bo import gpplot, ScatterPoints
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
-from multiLevelCoSurrogates.Utils import select_subsample, linearscaletransform, \
+from multiLevelCoSurrogates.Utils import create_subsample_set, create_random_sample_set, \
     sample_by_function, createsurfaces, plotsurfaces, ValueRange
 from multiLevelCoSurrogates.Surrogates import Kriging, HierarchicalSurrogate, Surrogate
-
-
-
-def create_sample_set(ndim, size_per_fidelity, desired_range=None):
-    size_per_fidelity = iter(sorted(size_per_fidelity, key=lambda x: x[1], reverse=True))
-    range_lhs = ValueRange(0, 1)
-
-    fid, size = next(size_per_fidelity)
-    sample = lhs(n=ndim, samples=size)
-    if desired_range is not None:
-        sample = linearscaletransform(sample, range_in=range_lhs, range_out=desired_range)
-    samples = {fid: sample}
-    for fid, size in size_per_fidelity:
-        sample = select_subsample(sample.T, num=size).T
-        samples[fid] = sample
-
-    return samples
 
 
 
@@ -161,8 +143,8 @@ class MultiFidelityBO:
         archive_fidelities = self.fidelities + [f'{a}-{b}' for a, b in pairwise(self.fidelities)]
         archive = CandidateArchive(ndim=self.ndim, fidelities=archive_fidelities)
 
-        samples = create_sample_set(self.ndim, zip(self.fidelities, [5, 8, 13]),
-                                    desired_range=self.input_range)
+        samples = create_subsample_set(self.ndim, zip(self.fidelities, [5, 8, 13]),
+                                       desired_range=self.input_range)
         for fidelity in self.fidelities:
             archive.addcandidates(
                 samples[fidelity],
@@ -226,7 +208,7 @@ class MultiFidelityBO:
 
         candidates_low = self.archive.getcandidates(fidelity=fid_low).candidates
         candidates_high = self.archive.getcandidates(fidelity=fid_high).candidates
-        interesting_candidates = list({tuple(x.tolist()) for x in candidates_low}
+        interesting_candidates = list({tuple(x.tolist()) for x in candidates_low}     # Loving the type transformations here....
                                       - {tuple(y.tolist()) for y in candidates_high})
         predicted_values = self.high_hier_model.predict(np.array(interesting_candidates))
 
