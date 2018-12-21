@@ -6,6 +6,7 @@ from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 from pathlib import Path
+from pyDOE import lhs
 
 
 
@@ -54,6 +55,39 @@ def select_subsample(xdata, num):
     sub_x = xdata[:, list(map(int, include[:num]))]
 
     return sub_x
+
+
+
+def create_subsample_set(ndim, size_per_fidelity, desired_range=None):
+    size_per_fidelity = iter(sorted(size_per_fidelity, key=lambda x: x[1], reverse=True))
+    range_lhs = ValueRange(0, 1)
+
+    fid, size = next(size_per_fidelity)
+    sample = lhs(n=ndim, samples=size)
+    if desired_range is not None:
+        sample = linearscaletransform(sample, range_in=range_lhs, range_out=desired_range)
+    samples = {fid: sample}
+    for fid, size in size_per_fidelity:
+        sample = select_subsample(sample.T, num=size).T
+        samples[fid] = sample
+
+    return samples
+
+
+def create_random_sample_set(ndim, size_per_fidelity, desired_range=None):
+    size_per_fidelity = iter(sorted(size_per_fidelity, key=lambda x: x[1], reverse=True))
+    range_lhs = ValueRange(0, 1)
+
+    fid, size = next(size_per_fidelity)
+    sample = lhs(n=ndim, samples=size)
+    if desired_range is not None:
+        sample = linearscaletransform(sample, range_in=range_lhs, range_out=desired_range)
+    samples = {fid: sample}
+    for fid, size in size_per_fidelity:
+        sample = select_subsample(sample.T, num=size).T
+        samples[fid] = sample
+
+    return samples
 
 
 def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
