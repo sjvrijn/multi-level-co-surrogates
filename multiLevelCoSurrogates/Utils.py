@@ -84,7 +84,7 @@ def create_random_sample_set(ndim, size_per_fidelity, desired_range=None):
         sample = linearscaletransform(sample, range_in=range_lhs, range_out=desired_range)
     samples = {fid: sample}
     for fid, size in size_per_fidelity:
-        sample = select_subsample(sample.T, num=size).T
+        sample = sample[np.random.choice(sample.shape[0], size=size, replace=False)]
         samples[fid] = sample
 
     return samples
