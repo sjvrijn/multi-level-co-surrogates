@@ -153,9 +153,7 @@ class CoSurrogate:
 
     def determineScaleParameter(self):
         """ Determine the scaling parameter 'rho' between y_low and y_high using simple linear regression """
-        regr = LinearRegression()
-        regr.fit(self.y_low.reshape(-1, 1), self.y_high.reshape(-1, 1))
-        return regr.coef_.flatten()[0]
+        return 1 / np.mean(self.y_high / self.y_low)
 
 
     @property
@@ -256,9 +254,7 @@ class HierarchicalSurrogate:
 
     def determineScaleParameter(self):
         """ Determine the scaling parameter 'rho' between y_low and y_high using simple linear regression """
-        regr = LinearRegression()
-        regr.fit(self.y_low.reshape(-1, 1), self.y_high.reshape(-1, 1))
-        return regr.coef_.flatten()[0]
+        return 1 / np.mean(self.y_high / self.y_low)
 
 
     def update_training_values(self):
