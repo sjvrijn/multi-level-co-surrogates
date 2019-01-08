@@ -169,10 +169,12 @@ if __name__ == '__main__':
     np.set_printoptions(linewidth=200)
 
     bound_factor = 1
-    num_repetitions = 15
-    num_iterations = [102, 51, 102]
-    save_suffixes = ['hml', 'hm', 'hl']
-    do_plot = False
+    num_repetitions = 3
+    # num_iterations = [102, 51, 102]
+    num_iterations = [104]
+    save_suffixes = ['hml'] #, 'hm', 'hl']
+    show_plot = True
+    save_plot = True
     fit_func_names = ['himmelblau_seb', 'himmelblau']
 
 
@@ -190,7 +192,7 @@ if __name__ == '__main__':
             np.random.seed(rep)
 
             # df = run(hm, num_iters=num_iters, repetition_idx=rep, do_plot=do_plot)
-            mfbo = MultiFidelityBO(hm, archive=None, do_plot=do_plot)
+            mfbo = MultiFidelityBO(hm, archive=None, show_plot=show_plot, save_plot=save_plot)
             df = mfbo.run(num_iters=num_iters, repetition_idx=rep)
 
 

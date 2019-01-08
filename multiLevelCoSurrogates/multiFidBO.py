@@ -30,9 +30,10 @@ MSERecord = namedtuple('MSERecord', ['repetition', 'iteration',
 
 class MultiFidelityBO:
 
-    def __init__(self, multi_fid_func, archive=None, do_plot=False, schema=None):
+    def __init__(self, multi_fid_func, archive=None, save_plot=False, show_plot=False, schema=None):
 
-        self.do_plot = do_plot
+        self.show_plot = show_plot
+        self.save_plot = save_plot
         self.func = multi_fid_func
         self.ndim = self.func.ndim
         self.bounds = np.array([self.func.l_bound, self.func.u_bound], dtype=np.float)
@@ -143,8 +144,10 @@ class MultiFidelityBO:
         archive_fidelities = self.fidelities + [f'{a}-{b}' for a, b in pairwise(self.fidelities)]
         archive = CandidateArchive(ndim=self.ndim, fidelities=archive_fidelities)
 
-        samples = create_subsample_set(self.ndim, zip(self.fidelities, [5, 8, 13]),
-                                       desired_range=self.input_range)
+        # samples = create_subsample_set(self.ndim, zip(self.fidelities, [5, 8, 13]),
+        #                                desired_range=self.input_range)
+        samples = create_random_sample_set(self.ndim, zip(self.fidelities, [5, 8, 13]),
+                                           desired_range=self.input_range)
         for fidelity in self.fidelities:
             archive.addcandidates(
                 samples[fidelity],
@@ -195,7 +198,7 @@ class MultiFidelityBO:
 
         print(f"iteration: {iteration_idx} | archive_size: {len(self.archive)} | "
               f"next point: {next_points['low']} {next_points['medium']} {next_points['high']}")
-        if self.do_plot:
+        if self.show_plot or self.save_plot:
             self.plot()
 
         return record
@@ -238,4 +241,4 @@ class MultiFidelityBO:
                      [ScatterPoints(*self.archive.getcandidates(fidelity='low'), style=green_cross)],
                  ] * 4
 
-        plotsurfaces(surfaces, all_points=points, titles=self.titles, as_3d=False, shape=(4, 3))
+        plotsurfaces(surfaces, all_points=points, titles=self.titles, as_3d=False, shape=(4, 3), show=self.show_plot)
