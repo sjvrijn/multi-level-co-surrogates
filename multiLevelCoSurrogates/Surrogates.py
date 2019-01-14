@@ -347,7 +347,7 @@ class RandomForest(Surrogate):
 
     def __init__(self, candidate_archive, num_points=None, fidelity=None):
         super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity)
-        self._surr = RandomForestRegressor()
+        self._surr = RandomForestRegressor(n_estimators=100)
         self.is_trained = False
 
     def train(self):

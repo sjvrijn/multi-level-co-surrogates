@@ -32,8 +32,8 @@ class CandidateArchive:
             self.fidelities = ['fitness']
 
         self.data = {}
-        self.max = {fid: -np.inf for fid in fidelities}
-        self.min = {fid: np.inf for fid in fidelities}
+        self.max = {fid: -np.inf for fid in self.fidelities}
+        self.min = {fid: np.inf for fid in self.fidelities}
 
 
     def __len__(self):
@@ -54,6 +54,9 @@ class CandidateArchive:
         elif self.num_fidelities > 1 and fidelity is None:
             raise ValueError('must specify fidelity level in multi-fidelity case')
 
+        if fidelity is None:
+            fidelity = self.fidelities
+
         # Checking types to make sure they are iterable in the right way
         if isinstance(fitness, (np.float64, float)):
             fitness = [fitness]
@@ -70,7 +73,7 @@ class CandidateArchive:
 
     def _addnewcandidate(self, candidate, fitness, fidelity=None, *, verbose=False):
         if self.num_fidelities == 1:
-            fit_values = fitness
+            fit_values = [fitness]
         else:
             fit_values = np.array([np.nan] * self.num_fidelities)
             idx = self.fidelities.index(fidelity)
