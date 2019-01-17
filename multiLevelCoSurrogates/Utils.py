@@ -118,8 +118,8 @@ def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
         f_probabilities = (1 - min_probability) * f_probabilities + min_probability
 
         check_values = np.random.uniform(size=f_probabilities.shape)
-        sample_filter = f_probabilities > check_values
-        new_sample = np.vstack((new_sample, raw_sample[sample_filter]))
+        filtered_sample = raw_sample[f_probabilities > check_values].reshape(-1, ndim)  # reshape in case ndim == 1
+        new_sample = np.vstack((new_sample, filtered_sample))
 
     return new_sample[:n_samples]
 
