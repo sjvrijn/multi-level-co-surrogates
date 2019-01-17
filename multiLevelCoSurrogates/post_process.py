@@ -187,6 +187,8 @@ def compare_by_genint(data):
     np.set_printoptions(precision=3, linewidth=2000)
 
     for fit_func_name, surrogate_name, use in product(fit_func_names, surrogates, uses):
+        if fit_func_name == 'himmelblau_seb':
+            continue
         if surrogate_name == 'NoSurrogate' and use is not 'reg':
             continue
         elif use == 'EGO-reg' and surrogate_name not in ['Kriging', 'RandomForest']:
@@ -246,6 +248,8 @@ def compare_by_use(data):
     np.set_printoptions(precision=3, linewidth=2000)
 
     for fit_func_name, gen_int_ in product(fit_func_names, gen_intervals):
+        if fit_func_name == 'himmelblau_seb':
+            continue
         plt.figure(figsize=figsize)
         num_plotted = 0
 
@@ -305,6 +309,9 @@ def compare_by_surrogate(data):
     np.set_printoptions(precision=3, linewidth=2000)
 
     for fit_func_name, use, gen_int_ in product(fit_func_names, uses, gen_intervals):
+        if fit_func_name == 'himmelblau_seb':
+            continue
+
         plt.figure(figsize=figsize)
         num_plotted = 0
 
@@ -375,6 +382,8 @@ def plot_function_surfaces():
     #         func = getattr(fit_func, fid)
     #         make2dvisualizations(func, l_bound, u_bound, '_'.join((name, fid)))
 
+    guaranteeFolderExists(f'{plot_dir}surfaces/')
+
     fit_func = fit_funcs['himmelblau']
     l_bound = np.array(fit_func.l_bound, dtype=np.float64)
     u_bound = np.array(fit_func.u_bound, dtype=np.float64)
@@ -388,10 +397,10 @@ def plot_function_surfaces():
 
 
 def run():
-    # data = getdata()
-    # compare_by_use(data)
-    # compare_by_genint(data)
-    # compare_by_surrogate(data)
+    data = getdata()
+    compare_by_use(data)
+    compare_by_genint(data)
+    compare_by_surrogate(data)
 
     plot_function_surfaces()
 
