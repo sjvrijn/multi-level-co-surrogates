@@ -16,9 +16,9 @@ from more_itertools import pairwise, stagger
 
 from multiLevelCoSurrogates.bo import gpplot, ScatterPoints
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
-from multiLevelCoSurrogates.Utils import create_subsample_set, create_random_sample_set, \
+from multiLevelCoSurrogates.Utils import create_random_sample_set, \
     sample_by_function, createsurfaces, plotsurfaces, ValueRange
-from multiLevelCoSurrogates.Surrogates import Kriging, HierarchicalSurrogate, Surrogate
+from multiLevelCoSurrogates.Surrogates import HierarchicalSurrogate, Surrogate
 
 
 
@@ -48,53 +48,38 @@ class MultiFidelityBO:
         if len(self.schema) != len(self.fidelities):
             raise ValueError('Cost schema does not match number of fidelity levels')
 
-        self.utility = bo.helpers.UtilityFunction(kind='ei', kappa=2.576, xi=1.0).utility
-
         ### ARCHIVE
         self.archive = self.init_archive(archive)
 
-
-
-
-
-        ################ HIERARCHICAL MODELS
-
+        ### HIERARCHICAL (AND DIRECT) MODELS
         self.models = {}
+        self.direct_models = {}
         for fids in stagger(reversed(self.fidelities), offsets=(-1, 0)):
             fid_low, fid_high = fids
             if fid_low is None:
                 model = Surrogate.fromname('Kriging', self.archive, fidelity=fid_high)
+                self.direct_models[fid_high] = model
             else:
                 model = HierarchicalSurrogate('Kriging', lower_fidelity_model=self.models[fid_low],
                                               candidate_archive=self.archive, fidelities=[fid_high, fid_low])
+                self.direct_models[fid_high] = Surrogate.fromname('Kriging', self.archive, fidelity=fid_high)
             self.models[fid_high] = model
 
         self.top_level_model = self.models[self.fidelities[0]]
         self.top_level_model.retrain()
+        for fid in self.fidelities:
+            self.direct_models[fid].retrain()
 
 
-
-        #### REGULAR/DIRECT MODELS
-        # self.medium_model = Kriging(self.archive, num_points=None, fidelity=self.fidelities[1])
-        # self.medium_model.retrain()
-        # self.high_model = Kriging(self.archive, num_points=None, fidelity=self.fidelities[0])
-        # self.high_model.retrain()
-
-
-
-
+        ### ACQUISITION FUNCTION
+        self.utility = bo.helpers.UtilityFunction(kind='ei', kappa=2.576, xi=1.0).utility
         self.acq_max = partial(
             bo.helpers.acq_max,
             ac=self.utility, gp=self.top_level_model, bounds=self.bounds.T,
             n_warmup=1000, n_iter=50, random_state=np.random.RandomState()
         )
 
-
-
-
-
-
-        ######### PLOTTING
+        ### PLOTTING
         self.functions_to_plot = [
             *self.func.functions,
             *[partial(gpplot, func=self.models[fid].predict) for fid in self.fidelities],
