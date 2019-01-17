@@ -189,9 +189,9 @@ class MultiFidelityBO:
 
     def getMSE(self):
         return self.MSECollection(
-            *[self.mse_tester[fid](self.models[fid](self.test_sample))
+            *[self.mse_tester[fid](self.models[fid].predict(self.test_sample))
               for fid in self.fidelities[:-1]],
-            *[self.mse_tester[fid](self.direct_models[fid](self.test_sample))
+            *[self.mse_tester[fid](self.direct_models[fid].predict(self.test_sample))
               for fid in self.fidelities],
         )
 
