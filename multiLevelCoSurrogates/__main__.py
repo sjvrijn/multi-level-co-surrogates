@@ -12,17 +12,16 @@ import os
 import cma
 import numpy as np
 import time
-from pyKriging.samplingplan import samplingplan
 from pyDOE import lhs
 from itertools import product
 
-from .Surrogates import Surrogate, CoSurrogate
-from .Logger import Logger
-from .config import data_dir, folder_name, suffix, data_ext, fit_funcs, fit_func_dims
-from .config import experiment_repetitions
-from .BayesianOptimization import EGO
-from .CandidateArchive import CandidateArchive
-from .Utils import guaranteeFolderExists, ValueRange, linearscaletransform
+from multiLevelCoSurrogates.Surrogates import Surrogate, CoSurrogate
+from multiLevelCoSurrogates.Logger import Logger
+from multiLevelCoSurrogates.config import data_dir, folder_name, suffix, data_ext, \
+    fit_funcs, fit_func_dims, experiment_repetitions
+from multiLevelCoSurrogates.BayesianOptimization import EGO
+from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
+from multiLevelCoSurrogates.Utils import guaranteeFolderExists, ValueRange, linearscaletransform
 
 
 def _keepInBounds(x, l_bound, u_bound):
@@ -225,7 +224,7 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep):
         return
 
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_, 'CMA_mu': mu, 'maxiter': 1000,
-                                                                  'verb_log': 0})
+                                                                  'verb_log': 0, 'verbose': -8})
 
     res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
                      header="Fitness values from actual function, inf for any not pre-selected candidate")
@@ -277,7 +276,7 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
 
     surrogate, cand_archive = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
-                                                                  'verb_log': 0})
+                                                                  'verb_log': 0, 'verbose': -8})
 
     res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
                      header="Fitness values from actual function, inf for any not pre-selected candidate")
@@ -389,7 +388,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
 
     surrogate, cand_archive = createCoSurrogate(ndim, init_sample_size, fit_func.low, fit_func.high, l_bound, u_bound, surrogate_name, fit_scaling_param)
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
-                                                                  'verb_log': 0})
+                                                                  'verb_log': 0, 'verbose': -8})
 
     res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
                      header="Fitness values from actual function, inf for any not pre-selected candidate")
@@ -463,7 +462,7 @@ def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sa
     surrogate_low.train()
 
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre*2, 'CMA_mu': mu, 'maxiter': 1000,
-                                                                  'verb_log': 0})
+                                                                  'verb_log': 0, 'verbose': -8})
 
     ### OPTIMIZATION ###
     while not es.stop():
@@ -497,10 +496,10 @@ def run():
     init_sample_size = 20
 
     fit_func_names = fit_funcs.keys()
-    surrogates = ['RandomForest']  # , 'SVM''Kriging', 'RBF', ]
+    surrogates = ['RandomForest', 'Kriging'] #, 'RBF', ]
     lambda_pres = [2]  #, 4, 8]  # , 30, 50]
     gen_intervals = [1, 2, 3, 5, 10]  # , 20]
-    experiments = product(lambda_pres, gen_intervals, range(1), fit_func_names, surrogates)
+    experiments = product(lambda_pres, gen_intervals, range(experiment_repetitions), fit_func_names, surrogates)
 
     for lambda_pre_mult, gen_int, rep, fit_func_name, surrogate_name in experiments:
 
@@ -519,12 +518,17 @@ def run():
         # if surrogate_name in ['Kriging', 'RandomForest'] and lambda_pre == 10 and gen_int == 1:
         #     runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
 
-        # runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, gen_interval=gen_int)
-        runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True, gen_interval=gen_int)
-        # runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False, gen_interval=gen_int)
+        runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
+                      fit_func_name, surrogate_name, rep, gen_interval=gen_int)
+        runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
+                                   fit_func_name, surrogate_name, rep, fit_scaling_param=True, gen_interval=gen_int)
+        runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
+                                   fit_func_name, surrogate_name, rep, fit_scaling_param=False, gen_interval=gen_int)
 
-        # runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=True, gen_interval=gen_int)
-        # runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size, fit_func_name, surrogate_name, rep, fit_scaling_param=False, gen_interval=gen_int)
+        runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
+                                              fit_func_name, surrogate_name, rep, fit_scaling_param=True, gen_interval=gen_int)
+        runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
+                                              fit_func_name, surrogate_name, rep, fit_scaling_param=False, gen_interval=gen_int)
 
 
 
