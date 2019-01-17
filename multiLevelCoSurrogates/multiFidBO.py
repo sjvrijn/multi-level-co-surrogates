@@ -22,15 +22,10 @@ from multiLevelCoSurrogates.Surrogates import HierarchicalSurrogate, Surrogate
 
 
 
-MSECollection = namedtuple('MSECollection', ['high_hier', 'high', 'medium_hier', 'medium', 'low'])
-MSERecord = namedtuple('MSERecord', ['repetition', 'iteration',
-                                     *('mse_' + mse for mse in MSECollection._fields)])
-
-
-
 class MultiFidelityBO:
 
-    def __init__(self, multi_fid_func, archive=None, save_plot=False, show_plot=False, schema=None):
+    def __init__(self, multi_fid_func, archive=None, save_plot=False, show_plot=False, schema=None,
+                 output_range=None):
 
         self.show_plot = show_plot
         self.save_plot = save_plot
@@ -38,6 +33,7 @@ class MultiFidelityBO:
         self.ndim = self.func.ndim
         self.bounds = np.array([self.func.l_bound, self.func.u_bound], dtype=np.float)
         self.input_range = ValueRange(*self.bounds)
+        self.output_range = ValueRange(*output_range)
         self.fidelities = list(self.func.fidelity_names)
 
         if schema is None:
@@ -96,16 +92,21 @@ class MultiFidelityBO:
 
 
         ############ MSE SETUP
-#         n_samples = 1000
-#         output_range = ValueRange(-450, 0)
-#         self.test_sample = sample_by_function(self.func.high, n_samples=n_samples, ndim=self.ndim,
-#                                               range_in=self.input_range, range_out=output_range)
+        mse_fidelities = [f'{fid}_hier' for fid in self.fidelities[:-1]] + \
+                         self.fidelities
+        self.MSECollection = namedtuple('MSECollection', mse_fidelities)
+        self.MSERecord = namedtuple('MSERecord', ['repetition', 'iteration',
+                                                  *(f'mse_{mse}' for mse in mse_fidelities)])
 
-#         self.mse_tester = {
-#             fid: partial(mean_squared_error,
-#                          y_pred=getattr(self.func, fid)(self.test_sample))
-#             for fid in self.fidelities
-#         }
+        n_samples = 1000
+        self.test_sample = sample_by_function(self.func.high, n_samples=n_samples, ndim=self.ndim,
+                                              range_in=self.input_range, range_out=self.output_range)
+
+        self.mse_tester = {
+            fid: partial(mean_squared_error,
+                         y_pred=getattr(self.func, fid)(self.test_sample))
+            for fid in self.fidelities
+        }
 
 
 
@@ -142,12 +143,14 @@ class MultiFidelityBO:
         records = []
 
         for iteration_idx in range(num_iters):
-            records.append(self.iteration(iteration_idx, repetition_idx))
+            self.iteration(iteration_idx)
+            record = self.MSERecord(repetition_idx, iteration_idx, *self.getMSE())
+            records.append(record)
 
         return pd.DataFrame(records)
 
 
-    def iteration(self, iteration_idx, repetition_idx):
+    def iteration(self, iteration_idx):
         next_points = {fid: None for fid in self.fidelities}
 
         fid_pairs = stagger(reversed(self.fidelities), offsets=(-1, 0))
@@ -160,18 +163,13 @@ class MultiFidelityBO:
                 self.top_level_model.retrain()
                 next_points[fid_high] = next_point
 
-        # self.medium_model.retrain()
-        # self.high_model.retrain()
-
-        mses = self.getMSE()
-        record = MSERecord(repetition_idx, iteration_idx, *mses)
+        for fid in self.fidelities:
+            self.direct_models[fid].retrain()
 
         print(f"iteration: {iteration_idx} | archive_size: {len(self.archive)} | "
               f"next point: {next_points['low']} {next_points['medium']} {next_points['high']}")
         if self.show_plot or self.save_plot:
             self.plot()
-
-        return record
 
 
 
@@ -189,14 +187,13 @@ class MultiFidelityBO:
 
 
 
-    # def getMSE(self):
-    #     return MSECollection(
-    #         self.mse_tester['high'](self.highest_model.predict(self.test_sample)),
-    #         self.mse_tester['high'](self.high_model.predict(self.test_sample)),
-    #         self.mse_tester['medium'](self.medium_hier_model.predict(self.test_sample)),
-    #         self.mse_tester['medium'](self.medium_model.predict(self.test_sample)),
-    #         self.mse_tester['low'](self.low_model.predict(self.test_sample)),
-    #     )
+    def getMSE(self):
+        return self.MSECollection(
+            *[self.mse_tester[fid](self.models[fid](self.test_sample))
+              for fid in self.fidelities[:-1]],
+            *[self.mse_tester[fid](self.direct_models[fid](self.test_sample))
+              for fid in self.fidelities],
+        )
 
 
     def plot(self):
