@@ -11,7 +11,6 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression
 from sklearn.svm import SVR
 from scipy.interpolate import Rbf
 
@@ -117,15 +116,15 @@ class Surrogate:
 
 
     @classmethod
-    def fromname(cls, name, candidate_archive, n=None, fidelity=None):
+    def fromname(cls, name, candidate_archive, n=None, fidelity=None, normalized=True):
         if name == 'RBF':
-            return RBF(candidate_archive, n, fidelity)
+            return RBF(candidate_archive, n, fidelity, normalized=normalized)
         elif name == 'Kriging':
-            return Kriging(candidate_archive, n, fidelity)
+            return Kriging(candidate_archive, n, fidelity, normalized=normalized)
         elif name == 'RandomForest':
-            return RandomForest(candidate_archive, n, fidelity)
+            return RandomForest(candidate_archive, n, fidelity, normalized=normalized)
         elif name == 'SVM':
-            return SVM(candidate_archive, n, fidelity)
+            return SVM(candidate_archive, n, fidelity, normalized=normalized)
         else:
             raise ValueError(f"Unknown surrogate name '{name}'.")
 
@@ -175,7 +174,7 @@ class HierarchicalSurrogate:
     """A generic interface for hierarchical surrogates"""
 
     def __init__(self, surrogate_name, lower_fidelity_model, candidate_archive, fidelities, *,
-                 num_points=None, fit_scaling_param=True):
+                 num_points=None, fit_scaling_param=True, normalized=True):
 
         self.diff_type = surrogate_name
         self.low_model = lower_fidelity_model
@@ -183,6 +182,7 @@ class HierarchicalSurrogate:
         self.fidelities = fidelities
         self.n = num_points
         self.fit_scaling_param = fit_scaling_param
+        self.normalized = normalized
 
         self.diff_fidelity = f'{fidelities[0]}-{fidelities[1]}'
         if self.archive is not None and len(self.archive) > 0:
@@ -195,7 +195,7 @@ class HierarchicalSurrogate:
             self.rho = None
             self.y_diff = None
 
-        self.diff_model = Surrogate.fromname(surrogate_name, candidate_archive, num_points, fidelity=self.diff_fidelity)
+        self.diff_model = Surrogate.fromname(surrogate_name, candidate_archive, num_points, fidelity=self.diff_fidelity, normalized=normalized)
 
 
     def predict(self, X, *, mode='value', return_std=None):
@@ -288,8 +288,8 @@ class RBF(Surrogate):
     """
     name = 'RBF'
 
-    def __init__(self, candidate_archive, num_points=None, fidelity=None):
-        super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity)
+    def __init__(self, candidate_archive, num_points=None, fidelity=None, normalized=True):
+        super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity, normalized=normalized)
         self.is_trained = False
 
     def do_predict(self, X):
@@ -312,8 +312,8 @@ class Kriging(Surrogate):
     provides_std = True
     name = 'Kriging'
 
-    def __init__(self, candidate_archive, num_points=None, fidelity=None, **kwargs):
-        super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity)
+    def __init__(self, candidate_archive, num_points=None, fidelity=None, normalized=True, **kwargs):
+        super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity, normalized=normalized)
         self._surr = GaussianProcessRegressor(**kwargs)
         self.is_trained = False
 
@@ -345,8 +345,8 @@ class RandomForest(Surrogate):
     provides_std = True
     name = 'RandomForest'
 
-    def __init__(self, candidate_archive, num_points=None, fidelity=None):
-        super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity)
+    def __init__(self, candidate_archive, num_points=None, fidelity=None, normalized=True):
+        super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity, normalized=normalized)
         self._surr = RandomForestRegressor(n_estimators=100)
         self.is_trained = False
 
@@ -378,8 +378,8 @@ class SVM(Surrogate):
     """
     name = 'SVM'
 
-    def __init__(self, candidate_archive, num_points=None, fidelity=None):
-        super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity)
+    def __init__(self, candidate_archive, num_points=None, fidelity=None, normalized=True):
+        super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity, normalized=normalized)
         self._surr = SVR()
         self.is_trained = False
 
