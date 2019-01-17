@@ -69,27 +69,23 @@ class MultiFidelityBO:
                                               candidate_archive=self.archive, fidelities=[fid_high, fid_low])
             self.models[fid_high] = model
 
-        self.low_model = self.models[self.fidelities[2]]
-        self.medium_hier_model = self.models[self.fidelities[1]]
-        self.high_hier_model = self.models[self.fidelities[0]]
-
-
-        self.high_hier_model.retrain()
+        self.top_level_model = self.models[self.fidelities[0]]
+        self.top_level_model.retrain()
 
 
 
         #### REGULAR/DIRECT MODELS
-        self.medium_model = Kriging(self.archive, num_points=None, fidelity=self.fidelities[1])
-        self.medium_model.retrain()
-        self.high_model = Kriging(self.archive, num_points=None, fidelity=self.fidelities[0])
-        self.high_model.retrain()
+        # self.medium_model = Kriging(self.archive, num_points=None, fidelity=self.fidelities[1])
+        # self.medium_model.retrain()
+        # self.high_model = Kriging(self.archive, num_points=None, fidelity=self.fidelities[0])
+        # self.high_model.retrain()
 
 
 
 
         self.acq_max = partial(
             bo.helpers.acq_max,
-            ac=self.utility, gp=self.high_hier_model, bounds=self.bounds.T,
+            ac=self.utility, gp=self.top_level_model, bounds=self.bounds.T,
             n_warmup=1000, n_iter=50, random_state=np.random.RandomState()
         )
 
@@ -100,40 +96,31 @@ class MultiFidelityBO:
 
         ######### PLOTTING
         self.functions_to_plot = [
-            self.func.high, self.func.medium, self.func.low,
-
-            partial(gpplot, func=self.high_hier_model.predict),
-            partial(gpplot, func=self.medium_hier_model.predict),
-            partial(gpplot, func=self.low_model.predict),
-
-            partial(gpplot, func=self.high_hier_model.predict, return_std=True),
-            partial(gpplot, func=self.medium_hier_model.predict, return_std=True),
-            partial(gpplot, func=self.low_model.predict, return_std=True),
-
-            lambda x: self.utility(x, gp=self.high_hier_model, y_max=self.archive.max[self.fidelities[0]]),
-            lambda x: self.utility(x, gp=self.medium_hier_model, y_max=self.archive.max[self.fidelities[1]]),
-            lambda x: self.utility(x, gp=self.low_model, y_max=self.archive.max[self.fidelities[2]]),
+            *self.func.functions,
+            *[partial(gpplot, func=self.models[fid].predict) for fid in self.fidelities],
+            *[partial(gpplot, func=self.models[fid].predict, return_std=True) for fid in self.fidelities],
+            *[lambda x: self.utility(x, gp=self.models[fid], y_max=self.archive.max[fid]) for fid in self.fidelities],
         ]
         self.titles = [
-            'high', 'medium', 'low',
-            'high model', 'medium model', 'low model',
-            'high std', 'medium std', 'low std',
-            'acq_high', 'acq_medium', 'acq_low',
+            *self.fidelities,
+            *[f'{fid} model' for fid in self.fidelities],
+            *[f'{fid} std' for fid in self.fidelities],
+            *[f'{fid} acq' for fid in self.fidelities],
         ]
 
 
 
         ############ MSE SETUP
-        n_samples = 1000
-        output_range = ValueRange(-450, 0)
-        self.test_sample = sample_by_function(self.func.high, n_samples=n_samples, ndim=self.ndim,
-                                              range_in=self.input_range, range_out=output_range)
+#         n_samples = 1000
+#         output_range = ValueRange(-450, 0)
+#         self.test_sample = sample_by_function(self.func.high, n_samples=n_samples, ndim=self.ndim,
+#                                               range_in=self.input_range, range_out=output_range)
 
-        self.mse_tester = {
-            fid: partial(mean_squared_error,
-                         y_pred=getattr(self.func, fid)(self.test_sample))
-            for fid in self.fidelities
-        }
+#         self.mse_tester = {
+#             fid: partial(mean_squared_error,
+#                          y_pred=getattr(self.func, fid)(self.test_sample))
+#             for fid in self.fidelities
+#         }
 
 
 
@@ -144,8 +131,6 @@ class MultiFidelityBO:
         archive_fidelities = self.fidelities + [f'{a}-{b}' for a, b in pairwise(self.fidelities)]
         archive = CandidateArchive(ndim=self.ndim, fidelities=archive_fidelities)
 
-        # samples = create_subsample_set(self.ndim, zip(self.fidelities, [5, 8, 13]),
-        #                                desired_range=self.input_range)
         samples = create_random_sample_set(self.ndim, zip(self.fidelities, [5, 8, 13]),
                                            desired_range=self.input_range)
         for fidelity in self.fidelities:
@@ -187,11 +172,11 @@ class MultiFidelityBO:
                 next_point = self.limited_acq_max(fid_low=fid_low, fid_high=fid_high)
                 next_value = self.func.low(next_point)
                 self.archive.addcandidate(next_point, next_value, fidelity=fid_high)
-                self.high_hier_model.retrain()
+                self.top_level_model.retrain()
                 next_points[fid_high] = next_point
 
-        self.medium_model.retrain()
-        self.high_model.retrain()
+        # self.medium_model.retrain()
+        # self.high_model.retrain()
 
         mses = self.getMSE()
         record = MSERecord(repetition_idx, iteration_idx, *mses)
@@ -213,20 +198,20 @@ class MultiFidelityBO:
         candidates_high = self.archive.getcandidates(fidelity=fid_high).candidates
         interesting_candidates = list({tuple(x.tolist()) for x in candidates_low}     # Loving the type transformations here....
                                       - {tuple(y.tolist()) for y in candidates_high})
-        predicted_values = self.high_hier_model.predict(np.array(interesting_candidates))
+        predicted_values = self.top_level_model.predict(np.array(interesting_candidates))
 
         return list(interesting_candidates[np.argmax(predicted_values)])
 
 
 
-    def getMSE(self):
-        return MSECollection(
-            self.mse_tester['high'](self.high_hier_model.predict(self.test_sample)),
-            self.mse_tester['high'](self.high_model.predict(self.test_sample)),
-            self.mse_tester['medium'](self.medium_hier_model.predict(self.test_sample)),
-            self.mse_tester['medium'](self.medium_model.predict(self.test_sample)),
-            self.mse_tester['low'](self.low_model.predict(self.test_sample)),
-        )
+    # def getMSE(self):
+    #     return MSECollection(
+    #         self.mse_tester['high'](self.highest_model.predict(self.test_sample)),
+    #         self.mse_tester['high'](self.high_model.predict(self.test_sample)),
+    #         self.mse_tester['medium'](self.medium_hier_model.predict(self.test_sample)),
+    #         self.mse_tester['medium'](self.medium_model.predict(self.test_sample)),
+    #         self.mse_tester['low'](self.low_model.predict(self.test_sample)),
+    #     )
 
 
     def plot(self):
