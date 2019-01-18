@@ -8,7 +8,7 @@ from itertools import product
 from sklearn.metrics import mean_squared_error
 
 
-from multifidelityfunctions import TriFidelityFunction
+from multifidelityfunctions import MultiFidelityFunction
 from multiLevelCoSurrogates.bo import gpplot, ScatterPoints
 from multiLevelCoSurrogates.config import fit_funcs
 from multiLevelCoSurrogates.local import base_dir
@@ -181,9 +181,10 @@ if __name__ == '__main__':
     for name in fit_func_names:
 
         old_hm = fit_funcs[name]
-        hm = TriFidelityFunction(
+        hm = MultiFidelityFunction(
             u_bound=np.array(old_hm.u_bound) * bound_factor, l_bound=np.array(old_hm.l_bound) * bound_factor,
-            high=lambda x: -old_hm.high(x), medium=lambda x: -old_hm.medium(x), low=lambda x: -old_hm.low(x)
+            functions=[lambda x: -old_hm.high(x), lambda x: -old_hm.medium(x), lambda x: -old_hm.low(x)],
+            fidelity_names=['high', 'medium', 'low'],
         )
 
 
