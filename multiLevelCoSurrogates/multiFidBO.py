@@ -158,7 +158,7 @@ class MultiFidelityBO:
         for cost, (fid_low, fid_high) in zip(reversed(self.schema), fid_pairs):
             if iteration_idx % cost == 0:
                 next_point = self.limited_acq_max(fid_low=fid_low, fid_high=fid_high)
-                next_value = self.func.low(next_point)
+                next_value = self.func[fid_high](next_point)
                 self.archive.addcandidate(next_point, next_value, fidelity=fid_high)
                 self.top_level_model.retrain()
                 next_points[fid_high] = next_point
@@ -166,8 +166,6 @@ class MultiFidelityBO:
         for fid in self.fidelities:
             self.direct_models[fid].retrain()
 
-        print(f"iteration: {iteration_idx} | archive_size: {len(self.archive)} | "
-              f"next point: {next_points['low']} {next_points['medium']} {next_points['high']}")
         if self.show_plot or self.save_plot:
             self.plot()
 
