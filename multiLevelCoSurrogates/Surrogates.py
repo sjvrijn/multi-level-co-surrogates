@@ -116,11 +116,11 @@ class Surrogate:
 
 
     @classmethod
-    def fromname(cls, name, candidate_archive, n=None, fidelity=None, normalized=True):
+    def fromname(cls, name, candidate_archive, n=None, fidelity=None, normalized=True, **kwargs):
         if name == 'RBF':
             return RBF(candidate_archive, n, fidelity, normalized=normalized)
         elif name == 'Kriging':
-            return Kriging(candidate_archive, n, fidelity, normalized=normalized)
+            return Kriging(candidate_archive, n, fidelity, normalized=normalized, **kwargs)
         elif name == 'RandomForest':
             return RandomForest(candidate_archive, n, fidelity, normalized=normalized)
         elif name == 'SVM':
@@ -174,7 +174,7 @@ class HierarchicalSurrogate:
     """A generic interface for hierarchical surrogates"""
 
     def __init__(self, surrogate_name, lower_fidelity_model, candidate_archive, fidelities, *,
-                 num_points=None, fit_scaling_param=True, normalized=True):
+                 num_points=None, fit_scaling_param=True, normalized=True, **kwargs):
 
         self.diff_type = surrogate_name
         self.low_model = lower_fidelity_model
@@ -195,7 +195,7 @@ class HierarchicalSurrogate:
             self.rho = None
             self.y_diff = None
 
-        self.diff_model = Surrogate.fromname(surrogate_name, candidate_archive, num_points, fidelity=self.diff_fidelity, normalized=normalized)
+        self.diff_model = Surrogate.fromname(surrogate_name, candidate_archive, num_points, fidelity=self.diff_fidelity, normalized=normalized, **kwargs)
 
 
     def predict(self, X, *, mode='value', return_std=None):
