@@ -282,7 +282,7 @@ def plotsurfaceonaxis(ax, surf, title, point_sets=None, plot_type='wireframe', c
                    offset=offset, cmap='viridis_r')
     if point_sets:
         for x_y, z, style in point_sets:
-            ax.scatter(x_y[:, 0], x_y[:, 1], z[1], **style)
+            ax.scatter(x_y[:, 0], x_y[:, 1], z, **style)
     ax.zaxis.set_major_locator(LinearLocator(10))
     ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
     ax.set_xlabel('x')
