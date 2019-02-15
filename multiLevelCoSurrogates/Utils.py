@@ -65,7 +65,7 @@ def create_subsample_set(ndim, size_per_fidelity, desired_range=None):
     fid, size = next(size_per_fidelity)
     sample = lhs(n=ndim, samples=size)
     if desired_range is not None:
-        sample = linearscaletransform(sample, range_in=range_lhs, range_out=desired_range)
+        sample = rescale(sample, range_in=range_lhs, range_out=desired_range)
     samples = {fid: sample}
     for fid, size in size_per_fidelity:
         sample = select_subsample(sample.T, num=size).T
@@ -81,7 +81,7 @@ def create_random_sample_set(ndim, size_per_fidelity, desired_range=None):
     fid, size = next(size_per_fidelity)
     sample = lhs(n=ndim, samples=size)
     if desired_range is not None:
-        sample = linearscaletransform(sample, range_in=range_lhs, range_out=desired_range)
+        sample = rescale(sample, range_in=range_lhs, range_out=desired_range)
     samples = {fid: sample}
     for fid, size in size_per_fidelity:
         sample = sample[np.random.choice(sample.shape[0], size=size, replace=False)]
@@ -114,7 +114,7 @@ def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
 
         f_values = -func(raw_sample)  # TODO: this is a hardcoded inversion of a minimization to maximization problem
 
-        f_probabilities = linearscaletransform(f_values, range_in=range_out)
+        f_probabilities = rescale(f_values, range_in=range_out)
         f_probabilities = (1 - min_probability) * f_probabilities + min_probability
 
         check_values = np.random.uniform(size=f_probabilities.shape)
@@ -133,7 +133,7 @@ def determinerange(values):
     return ValueRange(np.min(values, axis=0), np.max(values, axis=0))
 
 
-def linearscaletransform(values, *, range_in=None, range_out=ValueRange(0, 1), scale_only=False):
+def rescale(values, *, range_in=None, range_out=ValueRange(0, 1), scale_only=False):
     """Perform a scale transformation of `values`: [range_in] --> [range_out]"""
 
     if range_in is None:
@@ -151,7 +151,7 @@ def linearscaletransform(values, *, range_in=None, range_out=ValueRange(0, 1), s
         scaled_values = (values / scale_in) * scale_out
     else:
         scaled_values = (values - range_in.min) / scale_in
-        scaled_values = (scaled_values * scale_out) + range_out[0]
+        scaled_values = (scaled_values * scale_out) + range_out.min
 
     return scaled_values
 
@@ -269,7 +269,7 @@ def plotsurfaceonaxis(ax, surf, title, point_sets=None, plot_type='wireframe', c
     rows, cols = surf.X.shape
 
     if plot_type == 'wireframe':
-        colors = cm.viridis_r(linearscaletransform(surf.Z))
+        colors = cm.viridis_r(rescale(surf.Z))
         surface = ax.plot_surface(surf.X, surf.Y, surf.Z, rcount=15, ccount=15,
                                   facecolors=colors, shade=False)
         surface.set_facecolor((0,0,0,0))

@@ -20,7 +20,7 @@ from more_itertools import flatten
 from config import fit_funcs
 from local import base_dir
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
-from multiLevelCoSurrogates.Utils import createsurfaces, plotsurfaces, ValueRange, linearscaletransform
+from multiLevelCoSurrogates.Utils import createsurfaces, plotsurfaces, ValueRange, rescale
 from multiLevelCoSurrogates.Utils import select_subsample, sample_by_function
 from multiLevelCoSurrogates.bifidbo import BiFidBayesianOptimization
 
@@ -142,7 +142,7 @@ def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False, a
     range_lhs = ValueRange(0, 1)
 
     low_sample = lhs(ndim, num_low_samples)
-    low_sample = linearscaletransform(low_sample, range_in=range_lhs, range_out=range_in)
+    low_sample = rescale(low_sample, range_in=range_lhs, range_out=range_in)
     high_sample = select_subsample(low_sample.T, num_high_samples).T
 
     archive = CandidateArchive(ndim, fidelities=['high', 'low'])
@@ -222,7 +222,7 @@ def infill_experiment(num_repetitions=10, num_iters=1, which_model='hierarchical
 
     sample_points = sample_by_function(fit_func_high, n_samples=n_samples, ndim=ndim,
                                        range_in=range_in, range_out=range_out)
-    test_sample = linearscaletransform(sample_points, range_in=range_lhs, range_out=range_in)
+    test_sample = rescale(sample_points, range_in=range_lhs, range_out=range_in)
 
     pred_high, pred_low = fit_func_high(test_sample), fit_func_low(test_sample)
     test_mse_high = partial(mean_squared_error, y_pred=pred_high)

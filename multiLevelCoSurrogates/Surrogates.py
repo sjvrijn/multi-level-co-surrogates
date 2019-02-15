@@ -14,7 +14,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
 from scipy.interpolate import Rbf
 
-from .Utils import ValueRange, determinerange, linearscaletransform
+from .Utils import ValueRange, determinerange, rescale
 
 
 class Surrogate:
@@ -49,8 +49,8 @@ class Surrogate:
         if self.normalized:
             self.Xrange = determinerange(X)
             self.yrange = determinerange(y)
-            X = linearscaletransform(X, range_in=self.Xrange, range_out=self.normalize_target)
-            y = linearscaletransform(y, range_in=self.yrange, range_out=self.normalize_target)
+            X = rescale(X, range_in=self.Xrange, range_out=self.normalize_target)
+            y = rescale(y, range_in=self.yrange, range_out=self.normalize_target)
 
         self.X = X
         self.y = y
@@ -78,23 +78,21 @@ class Surrogate:
             raise ValueError(f"Invalid prediction mode '{mode}'. Supported are: 'value', 'std', 'both'")
 
         if self.normalized:
-            X = linearscaletransform(X, range_in=self.Xrange, range_out=self.normalize_target)
+            X = rescale(X, range_in=self.Xrange, range_out=self.normalize_target)
 
         prediction = predictor(X)
 
         if self.normalized:
-            if mode == 'both':
+
+            if mode == 'value':
+                prediction = rescale(prediction, range_in=self.normalize_target, range_out=self.yrange)
+            elif mode == 'std':
+                prediction = rescale(prediction, range_in=self.normalize_target, range_out=self.yrange, scale_only=True)
+            elif mode == 'both':
                 value, std = prediction
-            else:
-                value = prediction
-
-            value = linearscaletransform(value, range_in=self.normalize_target, range_out=self.yrange)
-
-            if mode == 'both':
-                std = linearscaletransform(std, range_in=self.normalize_target, range_out=self.yrange, scale_only=True)
+                value = rescale(value, range_in=self.normalize_target, range_out=self.yrange)
+                std = rescale(std, range_in=self.normalize_target, range_out=self.yrange, scale_only=True)
                 prediction = value, std
-            else:
-                prediction = value
 
         return prediction
 

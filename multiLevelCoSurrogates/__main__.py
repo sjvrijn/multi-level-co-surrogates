@@ -21,7 +21,7 @@ from config import data_dir, folder_name, suffix, data_ext, \
     fit_funcs, fit_func_dims, experiment_repetitions
 from multiLevelCoSurrogates.BayesianOptimization import EGO
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
-from multiLevelCoSurrogates.Utils import guaranteeFolderExists, ValueRange, linearscaletransform
+from multiLevelCoSurrogates.Utils import guaranteeFolderExists, ValueRange, rescale
 
 
 def _keepInBounds(x, l_bound, u_bound):
@@ -65,8 +65,8 @@ def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, surrogate_n
     """
 
     sample = lhs(N, init_sample_size)
-    init_candidates = linearscaletransform(sample, range_in=ValueRange(0,1),
-                                           range_out=ValueRange(l_bound, u_bound))
+    init_candidates = rescale(sample, range_in=ValueRange(0, 1),
+                              range_out=ValueRange(l_bound, u_bound))
 
     results = [fit_func(cand) for cand in init_candidates]
     results = np.array(results, ndmin=2).T
@@ -98,8 +98,8 @@ def createCoSurrogate(N, init_sample_size, fit_func_low, fit_func_high, l_bound,
     """
 
     sample = lhs(N, init_sample_size)
-    init_candidates = linearscaletransform(sample, range_in=ValueRange(0,1),
-                                           range_out=ValueRange(l_bound, u_bound))
+    init_candidates = rescale(sample, range_in=ValueRange(0, 1),
+                              range_out=ValueRange(l_bound, u_bound))
 
     results_low = np.array([fit_func_low(cand) for cand in init_candidates], ndmin=2).T
     results_high = np.array([fit_func_high(cand) for cand in init_candidates], ndmin=2).T
