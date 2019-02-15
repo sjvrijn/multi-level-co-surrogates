@@ -14,11 +14,10 @@ from collections import namedtuple
 from sklearn.metrics import mean_squared_error
 from more_itertools import pairwise, stagger
 
-from multiLevelCoSurrogates.bo import gpplot, ScatterPoints
-from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
-from multiLevelCoSurrogates.Utils import create_random_sample_set, \
-    sample_by_function, createsurfaces, plotsurfaces, ValueRange
-from multiLevelCoSurrogates.Surrogates import HierarchicalSurrogate, Surrogate
+from .CandidateArchive import CandidateArchive
+from .Utils import create_random_sample_set, \
+    sample_by_function, createsurfaces, plotsurfaces, gpplot, ScatterPoints, ValueRange
+from .Surrogates import HierarchicalSurrogate, Surrogate
 
 
 

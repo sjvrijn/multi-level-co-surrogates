@@ -1,12 +1,13 @@
 from collections import namedtuple
-import matplotlib.pyplot as plt
-import scipy
-from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
+from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
-import numpy as np
 from pathlib import Path
 from pyDOE import lhs
+
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy as sp
 
 
 
@@ -39,7 +40,7 @@ def select_subsample(xdata, num):
     # matrix might not be calculated, # float 32 precision is 10^-6, float 16 is 10^-3
     if xdata.size > 10000:
         xdata = np.float32(xdata)
-    distm = scipy.spatial.distance.cdist(xdata.T, xdata.T, 'euclidean')
+    distm = sp.spatial.distance.cdist(xdata.T, xdata.T, 'euclidean')
     include = np.where(distm == np.max(distm))[0]
     si = np.arange(xdata.shape[1])
     remain = np.delete(si, include)
@@ -302,3 +303,11 @@ def plotcmaponaxis(ax, surf, title, point_sets=None):
     ax.set_ylabel('y')
     ax.set_title(title)
     return surface
+
+
+def gpplot(x, func, return_std=False):
+    idx = 1 if return_std else 0
+    return func(x, return_std=return_std)[idx]
+
+
+ScatterPoints = namedtuple('ScatterPoints', ['x_y', 'z', 'style'])

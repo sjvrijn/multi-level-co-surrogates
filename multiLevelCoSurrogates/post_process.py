@@ -11,7 +11,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 from config import experiment_repetitions, fit_funcs, fit_func_dims, folder_name
 from config import suffix, data_ext, plot_ext, data_dir, plot_dir, base_dir
-from multiLevelCoSurrogates.Utils import guaranteeFolderExists, createsurface, plotsurfaces
+from multiLevelCoSurrogates import guaranteeFolderExists, createsurface, plotsurfaces
 from itertools import product
 from matplotlib import pyplot as plt
 from collections import namedtuple

@@ -21,16 +21,8 @@ from config import fit_funcs
 from local import base_dir
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
 from multiLevelCoSurrogates.Utils import createsurfaces, plotsurfaces, ValueRange, rescale
-from multiLevelCoSurrogates.Utils import select_subsample, sample_by_function
+from multiLevelCoSurrogates.Utils import select_subsample, sample_by_function, gpplot, ScatterPoints
 from multiLevelCoSurrogates.bifidbo import BiFidBayesianOptimization
-
-
-def gpplot(x, func, return_std=False):
-    idx = 1 if return_std else 0
-    return func(x, return_std=return_std)[idx]
-
-
-ScatterPoints = namedtuple('ScatterPoints', ['x_y', 'z', 'style'])
 
 
 def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
