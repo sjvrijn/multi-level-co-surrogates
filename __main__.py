@@ -15,11 +15,7 @@ import time
 from pyDOE import lhs
 from itertools import product
 
-from multiLevelCoSurrogates.Surrogates import Surrogate, CoSurrogate
-from multiLevelCoSurrogates.Logger import Logger
-from multiLevelCoSurrogates.BayesianOptimization import EGO
-from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
-from multiLevelCoSurrogates.Utils import guaranteeFolderExists, ValueRange, rescale
+import multiLevelCoSurrogates as mlcs
 
 from config import data_dir, folder_name, suffix, data_ext, \
     fit_funcs, fit_func_dims, experiment_repetitions
@@ -66,18 +62,18 @@ def createSurrogate(N, init_sample_size, fit_func, l_bound, u_bound, surrogate_n
     """
 
     sample = lhs(N, init_sample_size)
-    init_candidates = rescale(sample, range_in=ValueRange(0, 1),
-                              range_out=ValueRange(l_bound, u_bound))
+    init_candidates = mlcs.rescale(sample, range_in=mlcs.ValueRange(0, 1),
+                              range_out=mlcs.ValueRange(l_bound, u_bound))
 
     results = [fit_func(cand) for cand in init_candidates]
     results = np.array(results, ndmin=2).T
 
-    cand_archive = CandidateArchive(ndim=N)
+    cand_archive = mlcs.CandidateArchive(ndim=N)
     for cand, res in zip(init_candidates, results):
         cand_archive.addcandidate(cand, res)
 
     # Now that we have our initial data, we can create an instance of the surrogate model
-    surrogate = Surrogate.fromname(surrogate_name, cand_archive, n=init_sample_size)
+    surrogate = mlcs.Surrogate.fromname(surrogate_name, cand_archive, n=init_sample_size)
     surrogate.train()
     return surrogate, cand_archive
 
@@ -99,20 +95,20 @@ def createCoSurrogate(N, init_sample_size, fit_func_low, fit_func_high, l_bound,
     """
 
     sample = lhs(N, init_sample_size)
-    init_candidates = rescale(sample, range_in=ValueRange(0, 1),
-                              range_out=ValueRange(l_bound, u_bound))
+    init_candidates = mlcs.rescale(sample, range_in=mlcs.ValueRange(0, 1),
+                                   range_out=mlcs.ValueRange(l_bound, u_bound))
 
     results_low = np.array([fit_func_low(cand) for cand in init_candidates], ndmin=2).T
     results_high = np.array([fit_func_high(cand) for cand in init_candidates], ndmin=2).T
 
-    cand_archive = CandidateArchive(ndim=N, fidelities=['high', 'low', 'high-low'])
+    cand_archive = mlcs.CandidateArchive(ndim=N, fidelities=['high', 'low', 'high-low'])
     for cand, res_h, res_l in zip(init_candidates, results_high, results_low):
         cand_archive.addcandidate(cand, res_h, fidelity='high')
         cand_archive.addcandidate(cand, res_l, fidelity='low')
 
     # Now that we have our initial data, we can create an instance of the surrogate model
-    surrogate = CoSurrogate(surrogate_name, cand_archive, fidelities=['high', 'low'], n=init_sample_size,
-                            fit_scaling_param=fit_scaling_param)
+    surrogate = mlcs.CoSurrogate(surrogate_name, cand_archive, fidelities=['high', 'low'], n=init_sample_size,
+                                 fit_scaling_param=fit_scaling_param)
     surrogate.train()
     return surrogate, cand_archive
 
@@ -121,14 +117,14 @@ def retrainMultiFidelity(cand_archive, training_size, surrogate_name, fit_scalin
     """
     Retrieve the last `training_size` candidates from the archive and create a new co-surrogate trained on that dataset
 
-    :param cand_archive:        CandidateArchive object
+    :param cand_archive:        mlcs.CandidateArchive object
     :param training_size:       Number of most recent candidates to use to retrain
     :param surrogate_name:      Name of the surrogate type to re-initialize
     :param fit_scaling_param:   Train on error after a linear regression fit between the two levels? (default: True)
     :return:                    The newly retrained co-surrogate
     """
-    co_surrogate = CoSurrogate(surrogate_name, cand_archive, fidelities=['high', 'low'], n=training_size,
-                               fit_scaling_param=fit_scaling_param)
+    co_surrogate = mlcs.CoSurrogate(surrogate_name, cand_archive, fidelities=['high', 'low'], n=training_size,
+                                    fit_scaling_param=fit_scaling_param)
     co_surrogate.train()
     return co_surrogate
 
@@ -137,12 +133,12 @@ def retrain(cand_archive, training_size, surrogate_name):
     """
     Retrieve the last `training_size` candidates from the archive and create a new surrogate trained on that dataset
 
-    :param cand_archive:        CandidateArchive object
+    :param cand_archive:        mlcs.CandidateArchive object
     :param training_size:       Number of most recent candidates to use to retrain
     :param surrogate_name:      Name of the surrogate type to re-initialize
     :return:                    The newly retrained surrogate
     """
-    surrogate = Surrogate.fromname(surrogate_name, cand_archive, n=training_size)
+    surrogate = mlcs.Surrogate.fromname(surrogate_name, cand_archive, n=training_size)
     surrogate.train()
     return surrogate
 
@@ -156,7 +152,7 @@ def multiFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_a
     :param pre_results:     Estimated fitnesses according to some pre-evaluation method
     :param lambda_:         Number of offspring to choose and evaluate on high fidelity
     :param fit_func:        The fitness function to use
-    :param cand_archive:    CandidateArchive object
+    :param cand_archive:    mlcs.CandidateArchive object
     :return:                High fidelity fitness results (list)
     """
     # Pre-selection evolution control: Choose the best lambda from lambda_pre to be re-evaluated (otherwise: np.inf)
@@ -181,7 +177,7 @@ def singleFidelityPreSelection(candidates, pre_results, lambda_, fit_func, cand_
     :param pre_results:     Estimated fitnesses according to some pre-evaluation method
     :param lambda_:         Number of offspring to choose and evaluate on high fidelity
     :param fit_func:        The fitness function to use
-    :param cand_archive:    CandidateArchive object
+    :param cand_archive:    mlcs.CandidateArchive object
     :param fidelity:        Name of fidelity level to use when storing results in the candidate archive (optional)
     :return:                High fidelity fitness results (list)
     """
@@ -219,7 +215,7 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep):
     fname = folder_name.format(ndim=ndim, func=fit_func_name, use='reg', surr='NoSurrogate')
     fsuff = suffix.format(size=0, rep=rep, gen=0)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
-    guaranteeFolderExists(f'{data_dir}{fname}')
+    mlcs.guaranteeFolderExists(f'{data_dir}{fname}')
 
     if f'{fsuff}reslog.{data_ext}' in os.listdir(f'{data_dir}{fname}'):
         return
@@ -227,10 +223,10 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep):
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_log': 0, 'verbose': -8})
 
-    res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
-                     header="Fitness values from actual function, inf for any not pre-selected candidate")
-    time_log = Logger(f'{filename_prefix}timelog.{data_ext}',
-                      header="Time spent on optimization process")
+    res_log = mlcs.Logger(f'{filename_prefix}reslog.{data_ext}',
+                          header="Fitness values from actual function, inf for any not pre-selected candidate")
+    time_log = mlcs.Logger(f'{filename_prefix}timelog.{data_ext}',
+                           header="Time spent on optimization process")
     start_time = time.time()
 
     while not es.stop():
@@ -270,7 +266,7 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
     fname = folder_name.format(ndim=ndim, func=fit_func_name, use='reg', surr=surrogate_name)
     fsuff = suffix.format(size=lambda_pre, rep=rep, gen=gen_interval)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
-    guaranteeFolderExists(f'{data_dir}{fname}')
+    mlcs.guaranteeFolderExists(f'{data_dir}{fname}')
 
     if f'{fsuff}reslog.{data_ext}' in os.listdir(f'{data_dir}{fname}'):
         return
@@ -279,10 +275,10 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_log': 0, 'verbose': -8})
 
-    res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
-                     header="Fitness values from actual function, inf for any not pre-selected candidate")
-    time_log = Logger(f'{filename_prefix}timelog.{data_ext}',
-                      header="Time spent on optimization process")
+    res_log = mlcs.Logger(f'{filename_prefix}reslog.{data_ext}',
+                          header="Fitness values from actual function, inf for any not pre-selected candidate")
+    time_log = mlcs.Logger(f'{filename_prefix}timelog.{data_ext}',
+                           header="Time spent on optimization process")
     start_time = time.time()
 
     while not es.stop():
@@ -306,7 +302,7 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
 
 def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep):
     """
-    Perform an optimization run on an optimization function using an EGO approach
+    Perform an optimization run on an optimization function using an mlcs.EGO approach
 
     :param ndim:                Dimensionality of the fitness function
     :param init_sample_size:    Number of candidates to generate as an initial sample
@@ -325,19 +321,19 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
     u_bound = np.array(fit_func.u_bound)
 
     # Set up the filename detailing all settings of the experiment
-    fname = folder_name.format(ndim=ndim, func=fit_func_name, use='EGO-reg', surr=surrogate_name)
+    fname = folder_name.format(ndim=ndim, func=fit_func_name, use='mlcs.EGO-reg', surr=surrogate_name)
     fsuff = suffix.format(size=0, rep=rep, gen=0)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
-    guaranteeFolderExists(f'{data_dir}{fname}')
+    mlcs.guaranteeFolderExists(f'{data_dir}{fname}')
 
     # if f'{fsuff}reslog.{data_ext}' in os.listdir(f'{data_dir}{fname}'):
     #     return
 
     surrogate, cand_archive = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
-    ego = EGO(surrogate, ndim, fit_func.u_bound, fit_func.l_bound)
+    ego = mlcs.EGO(surrogate, ndim, fit_func.u_bound, fit_func.l_bound)
 
-    res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
-                     header="Fitness values from actual function, inf for any not pre-selected candidate")
+    res_log = mlcs.Logger(f'{filename_prefix}reslog.{data_ext}',
+                          header="Fitness values from actual function, inf for any not pre-selected candidate")
 
     for i in range(num_iters):
 
@@ -382,7 +378,7 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
     fname = folder_name.format(ndim=ndim, func=fit_func_name, use=f"{'scaled-MF' if fit_scaling_param else 'MF'}", surr=surrogate_name)
     fsuff = suffix.format(size=lambda_pre, rep=rep, gen=gen_interval)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
-    guaranteeFolderExists(f'{data_dir}{fname}')
+    mlcs.guaranteeFolderExists(f'{data_dir}{fname}')
 
     if f'{fsuff}reslog.{data_ext}' in os.listdir(f'{data_dir}{fname}'):
         return
@@ -391,10 +387,10 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_log': 0, 'verbose': -8})
 
-    res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
-                     header="Fitness values from actual function, inf for any not pre-selected candidate")
-    time_log = Logger(f'{filename_prefix}timelog.{data_ext}',
-                      header="Time spent on optimization process")
+    res_log = mlcs.Logger(f'{filename_prefix}reslog.{data_ext}',
+                          header="Fitness values from actual function, inf for any not pre-selected candidate")
+    time_log = mlcs.Logger(f'{filename_prefix}timelog.{data_ext}',
+                           header="Time spent on optimization process")
     start_time = time.time()
 
     ### OPTIMIZATION ###
@@ -450,16 +446,16 @@ def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sa
                                use=f"{'scaled-MF-bisurr' if fit_scaling_param else 'MF-bisurr'}", surr=surrogate_name)
     fsuff = suffix.format(size=lambda_pre, rep=rep, gen=gen_interval)
     filename_prefix = f'{data_dir}{fname}{fsuff}'
-    guaranteeFolderExists(f'{data_dir}{fname}')
+    mlcs.guaranteeFolderExists(f'{data_dir}{fname}')
 
     if f'{fsuff}reslog.{data_ext}' in os.listdir(f'{data_dir}{fname}'):
         return
 
-    res_log = Logger(f'{filename_prefix}reslog.{data_ext}',
-                     header="Fitness values from actual function, inf for any not pre-selected candidate")
+    res_log = mlcs.Logger(f'{filename_prefix}reslog.{data_ext}',
+                          header="Fitness values from actual function, inf for any not pre-selected candidate")
 
     surrogate, cand_archive = createCoSurrogate(ndim, init_sample_size, fit_func.low, fit_func.high, l_bound, u_bound, surrogate_name, fit_scaling_param)
-    surrogate_low = Surrogate.fromname(surrogate_name, cand_archive, n=training_size, fidelity='low')
+    surrogate_low = mlcs.Surrogate.fromname(surrogate_name, cand_archive, n=training_size, fidelity='low')
     surrogate_low.train()
 
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre*2, 'CMA_mu': mu, 'maxiter': 1000,
@@ -517,7 +513,7 @@ def run():
         #     runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep)
 
         # if surrogate_name in ['Kriging', 'RandomForest'] and lambda_pre == 10 and gen_int == 1:
-        #     runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
+        #     runmlcs.EGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surrogate_name, rep)
 
         runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size,
                       fit_func_name, surrogate_name, rep, gen_interval=gen_int)
