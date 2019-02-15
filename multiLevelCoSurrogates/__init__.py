@@ -14,5 +14,4 @@ from .CandidateArchive import *
 from .Surrogates import *
 from .Utils import *
 
-from .bo import *
 from .multiFidBO import *

@@ -17,11 +17,12 @@ from itertools import product
 
 from multiLevelCoSurrogates.Surrogates import Surrogate, CoSurrogate
 from multiLevelCoSurrogates.Logger import Logger
-from config import data_dir, folder_name, suffix, data_ext, \
-    fit_funcs, fit_func_dims, experiment_repetitions
 from multiLevelCoSurrogates.BayesianOptimization import EGO
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
 from multiLevelCoSurrogates.Utils import guaranteeFolderExists, ValueRange, rescale
+
+from config import data_dir, folder_name, suffix, data_ext, \
+    fit_funcs, fit_func_dims, experiment_repetitions
 
 
 def _keepInBounds(x, l_bound, u_bound):
@@ -315,7 +316,7 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
     :param rep:                 Repetition number
     """
 
-    from multiLevelCoSurrogates.post_process import make2dvisualizations
+    from post_process import make2dvisualizations
 
     num_iters = 100
 

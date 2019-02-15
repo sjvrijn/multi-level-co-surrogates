@@ -19,10 +19,8 @@ from more_itertools import flatten
 
 from config import fit_funcs
 from local import base_dir
-from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
-from multiLevelCoSurrogates.Utils import createsurfaces, plotsurfaces, ValueRange, rescale
-from multiLevelCoSurrogates.Utils import select_subsample, sample_by_function, gpplot, ScatterPoints
-from multiLevelCoSurrogates.bifidbo import BiFidBayesianOptimization
+
+import multiLevelCoSurrogates as mlcs
 
 
 def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
@@ -33,20 +31,20 @@ def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
         *surfaces,
 
         partial(bifidbo.acq, gp=bifidbo.gp_high, y_max=bifidbo.cand_arch.max['high']),
-        partial(gpplot, func=bifidbo.gp_high.predict),
-        partial(gpplot, func=bifidbo.gp_high.predict, return_std=True),
+        partial(mlcs.gpplot, func=bifidbo.gp_high.predict),
+        partial(mlcs.gpplot, func=bifidbo.gp_high.predict, return_std=True),
 
         partial(bifidbo.acq, gp=bifidbo.gp_low, y_max=bifidbo.cand_arch.max['low']),
-        partial(gpplot, func=bifidbo.gp_low.predict),
-        partial(gpplot, func=bifidbo.gp_low.predict, return_std=True),
+        partial(mlcs.gpplot, func=bifidbo.gp_low.predict),
+        partial(mlcs.gpplot, func=bifidbo.gp_low.predict, return_std=True),
 
         partial(bifidbo.acq, gp=bifidbo.bo_diff.gp, y_max=bifidbo.bo_diff.space.Y.max()),
-        partial(gpplot, func=bifidbo.bo_diff.gp.predict),
-        partial(gpplot, func=bifidbo.bo_diff.gp.predict, return_std=True),
+        partial(mlcs.gpplot, func=bifidbo.bo_diff.gp.predict),
+        partial(mlcs.gpplot, func=bifidbo.bo_diff.gp.predict, return_std=True),
 
         partial(bifidbo.acq, gp=bifidbo, y_max=bifidbo.bo_diff.space.Y.max()),
-        partial(gpplot, func=bifidbo.predict),
-        partial(gpplot, func=bifidbo.predict, return_std=True),
+        partial(mlcs.gpplot, func=bifidbo.predict),
+        partial(mlcs.gpplot, func=bifidbo.predict, return_std=True),
     ]
     titles = [
         f'Function high',
@@ -69,12 +67,12 @@ def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
         f'Hierarchical GP {count}',
         f'Hierarchical GP var {count}',
     ]
-    surfaces = createsurfaces(funcs)
+    surfaces = mlcs.createsurfaces(funcs)
 
-    p_high = [ScatterPoints(*bifidbo.cand_arch.getcandidates(fidelity='high'),
-                            style={'marker': 'o', 'facecolors': 'none', 'color': 'red'})]
-    p_low = [ScatterPoints(*bifidbo.cand_arch.getcandidates(fidelity='low'),
-                           style={'marker': '+', 'color': 'red'})]
+    p_high = [mlcs.Scatterpoints(*bifidbo.cand_arch.getcandidates(fidelity='high'),
+                                 style={'marker': 'o', 'facecolors': 'none', 'color': 'red'})]
+    p_low = [mlcs.Scatterpoints(*bifidbo.cand_arch.getcandidates(fidelity='low'),
+                                style={'marker': '+', 'color': 'red'})]
     p_both = [
         p_high[0],
         p_low[0],
@@ -96,13 +94,13 @@ def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
     plot_shape = (5, 3)
 
     if plot_opts.get('plot_2d', False):
-        plotsurfaces(surfaces, all_points=points,
-                     titles=titles, shape=plot_shape,
-                     save_as=savename_2d, as_3d=False, **plot_opts)
+        mlcs.plotsurfaces(surfaces, all_points=points,
+                          titles=titles, shape=plot_shape,
+                          save_as=savename_2d, as_3d=False, **plot_opts)
     if plot_opts.get('plot_3d', False):
-        plotsurfaces(surfaces, all_points=points,
-                     titles=titles, shape=plot_shape,
-                     save_as=savename_3d, as_3d=True, **plot_opts)
+        mlcs.plotsurfaces(surfaces, all_points=points,
+                          titles=titles, shape=plot_shape,
+                          save_as=savename_3d, as_3d=True, **plot_opts)
 
 
 boha = fit_funcs['himmelblau']
@@ -118,7 +116,7 @@ def fit_func_high(x):
 def fit_func_low(x):
     return -boha.low(x)
 
-surfaces = createsurfaces([fit_func_high, fit_func_low])
+surfaces = mlcs.createsurfaces([fit_func_high, fit_func_low])
 surfaces.append(surfaces[0] - surfaces[1])
 
 
@@ -130,18 +128,18 @@ def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False, a
         raise ValueError('Please provide more low-fidelity than high-fidelity samples')
 
     ndim = 2
-    range_in = ValueRange(-5, 5)
-    range_lhs = ValueRange(0, 1)
+    range_in = mlcs.ValueRange(-5, 5)
+    range_lhs = mlcs.ValueRange(0, 1)
 
     low_sample = lhs(ndim, num_low_samples)
-    low_sample = rescale(low_sample, range_in=range_lhs, range_out=range_in)
-    high_sample = select_subsample(low_sample.T, num_high_samples).T
+    low_sample = mlcs.rescale(low_sample, range_in=range_lhs, range_out=range_in)
+    high_sample = mlcs.select_subsample(low_sample.T, num_high_samples).T
 
-    archive = CandidateArchive(ndim, fidelities=['high', 'low'])
+    archive = mlcs.CandidateArchive(ndim, fidelities=['high', 'low'])
     archive.addcandidates(low_sample, fit_func_low(low_sample), fidelity='low')
     archive.addcandidates(high_sample, fit_func_high(high_sample), fidelity='high')
 
-    bifidbo = BiFidBayesianOptimization(
+    bifidbo = mlcs.BiFidBayesianOptimization(
         f_low=fit_func_low, f_high=fit_func_high,
         cand_arch=archive, acq=acq, bounds=bounds
     )
@@ -205,16 +203,16 @@ def infill_experiment(num_repetitions=10, num_iters=1, which_model='hierarchical
 
     make_plots = plot_opts.get('plot_2d', False) or plot_opts.get('plot_3d', False)
 
-    range_in = ValueRange(-5, 5)
-    range_lhs = ValueRange(0, 1)
-    range_out = ValueRange(-450, 0)
+    range_in = mlcs.ValueRange(-5, 5)
+    range_lhs = mlcs.ValueRange(0, 1)
+    range_out = mlcs.ValueRange(-450, 0)
 
     n_samples = 1000
     ndim = 2
 
-    sample_points = sample_by_function(fit_func_high, n_samples=n_samples, ndim=ndim,
-                                       range_in=range_in, range_out=range_out)
-    test_sample = rescale(sample_points, range_in=range_lhs, range_out=range_in)
+    sample_points = mlcs.sample_by_function(fit_func_high, n_samples=n_samples, ndim=ndim,
+                                            range_in=range_in, range_out=range_out)
+    test_sample = mlcs.rescale(sample_points, range_in=range_lhs, range_out=range_in)
 
     pred_high, pred_low = fit_func_high(test_sample), fit_func_low(test_sample)
     test_mse_high = partial(mean_squared_error, y_pred=pred_high)
