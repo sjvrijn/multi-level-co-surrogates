@@ -25,7 +25,7 @@ from multiLevelCoSurrogates.Surrogates import HierarchicalSurrogate, Surrogate
 class MultiFidelityBO:
 
     def __init__(self, multi_fid_func, archive=None, save_plot=False, show_plot=False, schema=None,
-                 output_range=None):
+                 output_range=None, normalized=True):
 
         self.show_plot = show_plot
         self.save_plot = save_plot
@@ -35,6 +35,7 @@ class MultiFidelityBO:
         self.input_range = ValueRange(*self.bounds)
         self.output_range = ValueRange(*output_range)
         self.fidelities = list(self.func.fidelity_names)
+        self.normalized = normalized
 
         if schema is None:
             self.schema = list(reversed([2**i for i in range(len(self.fidelities))]))
@@ -53,12 +54,14 @@ class MultiFidelityBO:
         for fids in stagger(reversed(self.fidelities), offsets=(-1, 0)):
             fid_low, fid_high = fids
             if fid_low is None:
-                model = Surrogate.fromname('Kriging', self.archive, fidelity=fid_high)
+                model = Surrogate.fromname('Kriging', self.archive, fidelity=fid_high, normalized=normalized)
                 self.direct_models[fid_high] = model
             else:
                 model = HierarchicalSurrogate('Kriging', lower_fidelity_model=self.models[fid_low],
-                                              candidate_archive=self.archive, fidelities=[fid_high, fid_low])
-                self.direct_models[fid_high] = Surrogate.fromname('Kriging', self.archive, fidelity=fid_high)
+                                              candidate_archive=self.archive, fidelities=[fid_high, fid_low],
+                                              normalized=normalized)
+                self.direct_models[fid_high] = Surrogate.fromname('Kriging', self.archive, fidelity=fid_high,
+                                                                  normalized=normalized)
             self.models[fid_high] = model
 
         self.top_level_model = self.models[self.fidelities[0]]
