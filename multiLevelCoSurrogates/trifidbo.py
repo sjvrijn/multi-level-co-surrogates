@@ -2,19 +2,13 @@ import numpy as np
 import pandas as pd
 import bayes_opt as bo
 
+import multifidelityfunctions as mff
+import multiLevelCoSurrogates as mlcs
+
 from functools import partial
 from collections import namedtuple
 from itertools import product
 from sklearn.metrics import mean_squared_error
-
-
-from multifidelityfunctions import MultiFidelityFunction
-from multiLevelCoSurrogates.bo import gpplot, ScatterPoints
-from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
-from multiLevelCoSurrogates.Utils import create_subsample_set, \
-    sample_by_function, createsurfaces, plotsurfaces, ValueRange
-from multiLevelCoSurrogates.Surrogates import Kriging, HierarchicalSurrogate
-from multiLevelCoSurrogates.multiFidBO import MultiFidelityBO
 from local import base_dir
 from config import fit_funcs
 
@@ -33,17 +27,17 @@ def run(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
     ndim = multi_fid_func.ndim
     fidelities = list(multi_fid_func.fidelity_names)
     bounds = np.array([multi_fid_func.l_bound, multi_fid_func.u_bound], dtype=np.float)
-    input_range = ValueRange(*bounds)
-    output_range = ValueRange(-450, 0)
+    input_range = mlcs.ValueRange(*bounds)
+    output_range = mlcs.ValueRange(-450, 0)
 
     schema = [4,2,1]
 
-    samples = create_subsample_set(ndim, zip(fidelities, [5,8,13]),
-                                   desired_range=input_range)
+    samples = mlcs.create_subsample_set(ndim, zip(fidelities, [5,8,13]),
+                                        desired_range=input_range)
 
     n_samples = 1000
-    test_sample = sample_by_function(multi_fid_func.high, n_samples=n_samples, ndim=ndim,
-                                     range_in=input_range, range_out=output_range)
+    test_sample = mlcs.sample_by_function(multi_fid_func.high, n_samples=n_samples, ndim=ndim,
+                                          range_in=input_range, range_out=output_range)
 
     mse_tester = {
         fid: partial(mean_squared_error,
@@ -52,7 +46,7 @@ def run(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
     }
 
     archive_fidelities = fidelities + [f'{a}-{b}' for a, b in zip(fidelities, fidelities[1:])]
-    archive = CandidateArchive(ndim=ndim, fidelities=archive_fidelities)
+    archive = mlcs.CandidateArchive(ndim=ndim, fidelities=archive_fidelities)
     for fidelity in fidelities:
         archive.addcandidates(
             samples[fidelity],
@@ -60,14 +54,14 @@ def run(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
             fidelity=fidelity
         )
 
-    low_model = Kriging(archive, num_points=None, fidelity='low')
-    medium_model = Kriging(archive, num_points=None, fidelity='medium')
-    high_model = Kriging(archive, num_points=None, fidelity='high')
+    low_model = mlcs.Kriging(archive, num_points=None, fidelity='low')
+    medium_model = mlcs.Kriging(archive, num_points=None, fidelity='medium')
+    high_model = mlcs.Kriging(archive, num_points=None, fidelity='high')
 
-    medium_hier_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=low_model,
-                                              candidate_archive=archive, fidelities=fidelities[1:3])
-    high_hier_model = HierarchicalSurrogate('Kriging', lower_fidelity_model=medium_hier_model,
-                                            candidate_archive=archive, fidelities=fidelities[0:2])
+    medium_hier_model = mlcs.HierarchicalSurrogate('Kriging', lower_fidelity_model=low_model,
+                                                   candidate_archive=archive, fidelities=fidelities[1:3])
+    high_hier_model = mlcs.HierarchicalSurrogate('Kriging', lower_fidelity_model=medium_hier_model,
+                                                 candidate_archive=archive, fidelities=fidelities[0:2])
 
     high_hier_model.retrain()
     medium_model.retrain()
@@ -81,13 +75,13 @@ def run(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
     functions_to_plot = [
         multi_fid_func.high, multi_fid_func.medium, multi_fid_func.low,
 
-        partial(gpplot, func=high_hier_model.predict),
-        partial(gpplot, func=medium_hier_model.predict),
-        partial(gpplot, func=low_model.predict),
+        partial(mlcs.gpplot, func=high_hier_model.predict),
+        partial(mlcs.gpplot, func=medium_hier_model.predict),
+        partial(mlcs.gpplot, func=low_model.predict),
 
-        partial(gpplot, func=high_hier_model.predict, return_std=True),
-        partial(gpplot, func=medium_hier_model.predict, return_std=True),
-        partial(gpplot, func=low_model.predict, return_std=True),
+        partial(mlcs.gpplot, func=high_hier_model.predict, return_std=True),
+        partial(mlcs.gpplot, func=medium_hier_model.predict, return_std=True),
+        partial(mlcs.gpplot, func=low_model.predict, return_std=True),
 
         lambda x: utility(x, gp=high_hier_model, y_max=archive.max['high']),
         lambda x: utility(x, gp=medium_hier_model, y_max=archive.max['medium']),
@@ -153,14 +147,14 @@ def run(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
             red_dot = {'marker': '.', 'color': 'red'}
             blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
             green_cross = {'marker': '+', 'color': 'green'}
-            surfaces = createsurfaces(functions_to_plot, l_bound=multi_fid_func.l_bound, u_bound=multi_fid_func.u_bound)
+            surfaces = mlcs.createsurfaces(functions_to_plot, l_bound=multi_fid_func.l_bound, u_bound=multi_fid_func.u_bound)
             points = [
-                [ScatterPoints(*archive.getcandidates(fidelity='high'), style=red_dot)],
-                [ScatterPoints(*archive.getcandidates(fidelity='medium'), style=blue_circle)],
-                [ScatterPoints(*archive.getcandidates(fidelity='low'), style=green_cross)],
+                [mlcs.ScatterPoints(*archive.getcandidates(fidelity='high'), style=red_dot)],
+                [mlcs.ScatterPoints(*archive.getcandidates(fidelity='medium'), style=blue_circle)],
+                [mlcs.ScatterPoints(*archive.getcandidates(fidelity='low'), style=green_cross)],
             ]*4
 
-            plotsurfaces(surfaces, all_points=points, titles=titles, as_3d=False, shape=(4,3))
+            mlcs.plotsurfaces(surfaces, all_points=points, titles=titles, as_3d=False, shape=(4,3))
 
     return pd.DataFrame(records)
 
@@ -181,7 +175,7 @@ if __name__ == '__main__':
     for name in fit_func_names:
 
         old_hm = fit_funcs[name]
-        hm = MultiFidelityFunction(
+        hm = mff.MultiFidelityFunction(
             u_bound=np.array(old_hm.u_bound) * bound_factor, l_bound=np.array(old_hm.l_bound) * bound_factor,
             functions=[lambda x: -old_hm.high(x), lambda x: -old_hm.medium(x), lambda x: -old_hm.low(x)],
             fidelity_names=['high', 'medium', 'low'],
@@ -193,7 +187,7 @@ if __name__ == '__main__':
             np.random.seed(rep)
 
             # df = run(hm, num_iters=num_iters, repetition_idx=rep, do_plot=do_plot)
-            mfbo = MultiFidelityBO(hm, archive=None, show_plot=show_plot, save_plot=save_plot)
+            mfbo = mlcs.MultiFidelityBO(hm, archive=None, show_plot=show_plot, save_plot=save_plot)
             df = mfbo.run(num_iters=num_iters, repetition_idx=rep)
 
 
