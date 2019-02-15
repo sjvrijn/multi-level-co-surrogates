@@ -69,9 +69,9 @@ def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
     ]
     surfaces = mlcs.createsurfaces(funcs)
 
-    p_high = [mlcs.Scatterpoints(*bifidbo.cand_arch.getcandidates(fidelity='high'),
+    p_high = [mlcs.ScatterPoints(*bifidbo.cand_arch.getcandidates(fidelity='high'),
                                  style={'marker': 'o', 'facecolors': 'none', 'color': 'red'})]
-    p_low = [mlcs.Scatterpoints(*bifidbo.cand_arch.getcandidates(fidelity='low'),
+    p_low = [mlcs.ScatterPoints(*bifidbo.cand_arch.getcandidates(fidelity='low'),
                                 style={'marker': '+', 'color': 'red'})]
     p_both = [
         p_high[0],

@@ -10,6 +10,24 @@ import numpy as np
 import scipy as sp
 
 
+# ------------------------------------------------------------------------------
+
+ScatterPoints = namedtuple('ScatterPoints', ['x_y', 'z', 'style'])
+ValueRange = namedtuple('ValueRange', ['min', 'max'])
+
+Surface = namedtuple('Surface', ['X', 'Y', 'Z'])
+
+def add_surface(a, b):
+    return Surface(a.X, a.Y, a.Z + b.Z)
+
+def subtract_surface(a, b):
+    return Surface(a.X, a.Y, a.Z - b.Z)
+
+Surface.__add__ = add_surface
+Surface.__sub__ = subtract_surface
+
+
+# ------------------------------------------------------------------------------
 
 def guaranteeFolderExists(path_name):
     """ Make sure the given path exists after this call """
@@ -17,6 +35,8 @@ def guaranteeFolderExists(path_name):
     path.expanduser()
     path.mkdir(parents=True, exist_ok=True)
 
+
+# ------------------------------------------------------------------------------
 
 def select_subsample(xdata, num):
     """
@@ -56,7 +76,6 @@ def select_subsample(xdata, num):
     sub_x = xdata[:, list(map(int, include[:num]))]
 
     return sub_x
-
 
 
 def create_subsample_set(ndim, size_per_fidelity, desired_range=None):
@@ -127,8 +146,6 @@ def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
 
 # ------------------------------------------------------------------------------
 
-ValueRange = namedtuple('ValueRange', ['min', 'max'])
-
 def determinerange(values):
     """Determine the range of values in each dimension"""
     return ValueRange(np.min(values, axis=0), np.max(values, axis=0))
@@ -158,18 +175,6 @@ def rescale(values, *, range_in=None, range_out=ValueRange(0, 1), scale_only=Fal
 
 
 # ------------------------------------------------------------------------------
-
-Surface = namedtuple('Surface', ['X', 'Y', 'Z'])
-
-def add_surface(a, b):
-    return Surface(a.X, a.Y, a.Z + b.Z)
-
-def subtract_surface(a, b):
-    return Surface(a.X, a.Y, a.Z - b.Z)
-
-Surface.__add__ = add_surface
-Surface.__sub__ = subtract_surface
-
 
 def calc_numsteps(low, high, step, endpoint=True):
     """Calculate the number of 'step' steps between 'low' and 'high'"""
@@ -308,6 +313,3 @@ def plotcmaponaxis(ax, surf, title, point_sets=None):
 def gpplot(x, func, return_std=False):
     idx = 1 if return_std else 0
     return func(x, return_std=return_std)[idx]
-
-
-ScatterPoints = namedtuple('ScatterPoints', ['x_y', 'z', 'style'])
