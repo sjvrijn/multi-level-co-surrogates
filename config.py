@@ -10,7 +10,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 
 from multifidelityfunctions import *
-from .local import base_dir
+from local import base_dir
 
 
 # Filename related settings

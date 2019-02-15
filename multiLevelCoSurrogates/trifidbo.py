@@ -10,13 +10,13 @@ from sklearn.metrics import mean_squared_error
 
 from multifidelityfunctions import MultiFidelityFunction
 from multiLevelCoSurrogates.bo import gpplot, ScatterPoints
-from multiLevelCoSurrogates.config import fit_funcs
-from multiLevelCoSurrogates.local import base_dir
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
 from multiLevelCoSurrogates.Utils import create_subsample_set, \
     sample_by_function, createsurfaces, plotsurfaces, ValueRange
 from multiLevelCoSurrogates.Surrogates import Kriging, HierarchicalSurrogate
 from multiLevelCoSurrogates.multiFidBO import MultiFidelityBO
+from local import base_dir
+from config import fit_funcs
 
 
 import tracemalloc

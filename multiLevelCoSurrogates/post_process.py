@@ -9,9 +9,9 @@ post_process.py: This file is intended to perform some simple post-processing
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-from multiLevelCoSurrogates.config import experiment_repetitions, fit_funcs, fit_func_dims, folder_name
-from multiLevelCoSurrogates.config import suffix, data_ext, plot_ext, data_dir, plot_dir, base_dir
-from multiLevelCoSurrogates.Utils import guaranteeFolderExists, createsurface, plotsurfaces, Surface
+from config import experiment_repetitions, fit_funcs, fit_func_dims, folder_name
+from config import suffix, data_ext, plot_ext, data_dir, plot_dir, base_dir
+from multiLevelCoSurrogates.Utils import guaranteeFolderExists, createsurface, plotsurfaces
 from itertools import product
 from matplotlib import pyplot as plt
 from collections import namedtuple

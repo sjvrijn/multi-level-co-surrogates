@@ -17,7 +17,7 @@ from itertools import product
 
 from multiLevelCoSurrogates.Surrogates import Surrogate, CoSurrogate
 from multiLevelCoSurrogates.Logger import Logger
-from multiLevelCoSurrogates.config import data_dir, folder_name, suffix, data_ext, \
+from config import data_dir, folder_name, suffix, data_ext, \
     fit_funcs, fit_func_dims, experiment_repetitions
 from multiLevelCoSurrogates.BayesianOptimization import EGO
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive

@@ -17,8 +17,8 @@ from pyDOE import lhs
 from sklearn.metrics import mean_squared_error
 from more_itertools import flatten
 
-from multiLevelCoSurrogates.config import fit_funcs
-from multiLevelCoSurrogates.local import base_dir
+from config import fit_funcs
+from local import base_dir
 from multiLevelCoSurrogates.CandidateArchive import CandidateArchive
 from multiLevelCoSurrogates.Utils import createsurfaces, plotsurfaces, ValueRange, linearscaletransform
 from multiLevelCoSurrogates.Utils import select_subsample, sample_by_function
