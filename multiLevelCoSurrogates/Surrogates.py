@@ -9,7 +9,7 @@ __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 import numpy as np
-from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process import GaussianProcessRegressor, kernels
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
 from scipy.interpolate import Rbf
@@ -312,6 +312,8 @@ class Kriging(Surrogate):
 
     def __init__(self, candidate_archive, num_points=None, fidelity=None, normalized=True, **kwargs):
         super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity, normalized=normalized)
+        if 'kernel' not in kwargs:
+            kwargs['kernel'] = kernels.RBF()
         self._surr = GaussianProcessRegressor(**kwargs)
         self.is_trained = False
 
