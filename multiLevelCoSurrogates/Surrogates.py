@@ -313,7 +313,8 @@ class Kriging(Surrogate):
     def __init__(self, candidate_archive, num_points=None, fidelity=None, normalized=True, **kwargs):
         super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity, normalized=normalized)
         if 'kernel' not in kwargs:
-            kwargs['kernel'] = kernels.RBF()
+            kwargs['kernel'] = kernels.ConstantKernel(constant_value=1.0) \
+                * kernels.RBF(length_scale=1.0, length_scale_bounds=(1e-1, 10.0))
         self._surr = GaussianProcessRegressor(**kwargs)
         self.is_trained = False
 
