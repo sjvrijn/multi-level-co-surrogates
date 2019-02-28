@@ -300,7 +300,7 @@ def plotsurfaceonaxis(ax, surf, title, point_sets=None, plot_type='wireframe', c
 def plotcmaponaxis(ax, surf, title, point_sets=None):
     """Plot a Surface as 2D heatmap on a given matplotlib Axis"""
 
-    surface = ax.pcolor(surf.X, surf.Y, surf.Z, cmap=cm.viridis)
+    surface = ax.pcolormesh(surf.X, surf.Y, surf.Z, cmap=cm.viridis)
     if point_sets:
         for x_y, z, style in point_sets:
             ax.scatter(x_y[:, 0], x_y[:, 1], **style)
