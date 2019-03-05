@@ -70,9 +70,9 @@ class MultiFidelityBO:
 
 
         ### ACQUISITION FUNCTION
-        self.utility = bo.helpers.UtilityFunction(kind='ei', kappa=2.576, xi=1.0).utility
+        self.utility = bo.util.UtilityFunction(kind='ei', kappa=2.576, xi=1.0).utility
         self.acq_max = partial(
-            bo.helpers.acq_max,
+            bo.util.acq_max,
             ac=self.utility, gp=self.top_level_model, bounds=self.bounds.T,
             n_warmup=1000, n_iter=50, random_state=np.random.RandomState()
         )

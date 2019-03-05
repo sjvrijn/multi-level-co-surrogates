@@ -67,8 +67,8 @@ def run(multi_fid_func, *, num_iters=100, repetition_idx=0, do_plot=False):
     medium_model.retrain()
     high_model.retrain()
 
-    utility = bo.helpers.UtilityFunction(kind='ei', kappa=2.576, xi=1.0).utility
-    acq_max = partial(bo.helpers.acq_max,
+    utility = bo.util.UtilityFunction(kind='ei', kappa=2.576, xi=1.0).utility
+    acq_max = partial(bo.util.acq_max,
                       ac=utility, gp=high_hier_model, random_state=np.random.RandomState(),
                       bounds=bounds.T, n_warmup=1000, n_iter=50)
 
