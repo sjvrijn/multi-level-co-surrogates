@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 """
-testCandidateArchive.py: Set of tests for the mlcs.CandidateArchive
+test_CandidateArchive.py: Set of tests for the mlcs.CandidateArchive
 """
 
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-
+import pytest
 import multiLevelCoSurrogates as mlcs
 from multiLevelCoSurrogates import CandidateArchive
 
@@ -30,4 +30,9 @@ def test_multiple_fidelities():
     assert archive.fidelities == fids
 
 
+def test_fidelity_not_specified():
+    fids = [f'my_{i}th_fidelity' for i in range(5)]
+    archive = CandidateArchive(ndim=0, fidelities=fids)
+    with pytest.raises(ValueError):
+        archive.addcandidate([1, 2, 3], fitness=1)
 
