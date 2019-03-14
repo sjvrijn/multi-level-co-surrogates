@@ -100,7 +100,7 @@ class MultiFidelityBO:
         self.MSERecord = namedtuple('MSERecord', ['repetition', 'iteration',
                                                   *(f'mse_{mse}' for mse in mse_fidelities)])
 
-        if test_sample:
+        if test_sample is not None:
             self.test_sample = test_sample
         else:
             n_samples = 1000
