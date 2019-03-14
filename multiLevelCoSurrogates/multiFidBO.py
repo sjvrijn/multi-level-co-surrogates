@@ -95,8 +95,6 @@ class MultiFidelityBO:
             *[f'{fid} acq' for fid in self.fidelities],
         ]
 
-
-
         ############ MSE SETUP
         mse_fidelities = [f'{fid}_hier' for fid in self.fidelities[:-1]] + \
                          self.fidelities
@@ -104,12 +102,12 @@ class MultiFidelityBO:
         self.MSERecord = namedtuple('MSERecord', ['repetition', 'iteration',
                                                   *(f'mse_{mse}' for mse in mse_fidelities)])
 
-        if test_sample is not None:
-            self.test_sample = test_sample
-        else:
+        if test_sample is None:
             n_samples = 1000
-            self.test_sample = sample_by_function(self.func.high, n_samples=n_samples, ndim=self.ndim,
-                                                  range_in=self.input_range, range_out=self.output_range)
+            test_sample = sample_by_function(self.func.high, n_samples=n_samples, ndim=self.ndim,
+                                             range_in=self.input_range, range_out=self.output_range,
+                                             minimize=minimize)
+        self.test_sample = test_sample
 
         self.mse_tester = {
             fid: partial(mean_squared_error,
