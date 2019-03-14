@@ -111,7 +111,8 @@ def create_random_sample_set(ndim, size_per_fidelity, desired_range=None):
 
 
 def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
-                       min_probability=0.0, oversampling_factor=2.5):
+                       min_probability=0.0, oversampling_factor=2.5,
+                       minimize=True):
     """ Create a sample of points, such that they are more likely to have a
     better fitness value according to the given function.
 
@@ -126,19 +127,34 @@ def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
     of valid samples by repeating the above process until enough valid
     samples have been generated.
     """
+    if not isinstance(range_in, ValueRange):
+        range_in = ValueRange(*range_in)
+    if not isinstance(range_out, ValueRange):
+        range_out = ValueRange(*range_out)
+
     new_sample = np.array([]).reshape((0, ndim))
     sample_shape = (int(n_samples * oversampling_factor), ndim)
 
     while len(new_sample) < n_samples:
-        raw_sample = np.random.uniform(high=range_in.max, low=range_in.min, size=sample_shape)
+        raw_sample = np.random.uniform(high=range_in.max, low=range_in.min,
+                                       size=sample_shape)
 
-        f_values = -func(raw_sample)  # TODO: this is a hardcoded inversion of a minimization to maximization problem
+        f_values = func(raw_sample)
 
-        f_probabilities = rescale(f_values, range_in=range_out)
-        f_probabilities = (1 - min_probability) * f_probabilities + min_probability
+        f_probabilities = rescale(f_values, range_in=range_out,
+                                  range_out=ValueRange(min_probability, 1))
 
         check_values = np.random.uniform(size=f_probabilities.shape)
-        filtered_sample = raw_sample[f_probabilities > check_values].reshape(-1, ndim)  # reshape in case ndim == 1
+
+        if minimize:
+            selected_samples = f_probabilities < check_values
+        else:
+            selected_samples = f_probabilities > check_values
+
+        filtered_sample = raw_sample[selected_samples]
+        if ndim == 1:
+            filtered_sample = filtered_sample.reshape(-1, ndim)
+
         new_sample = np.vstack((new_sample, filtered_sample))
 
     return new_sample[:n_samples]
