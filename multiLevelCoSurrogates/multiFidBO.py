@@ -24,7 +24,11 @@ from .Surrogates import HierarchicalSurrogate, Surrogate
 class MultiFidelityBO:
 
     def __init__(self, multi_fid_func, archive=None, save_plot=False, show_plot=False, schema=None,
-                 output_range=None, normalized=True, test_sample=None):
+                 output_range=None, normalized=True, test_sample=None, minimize=False):
+
+        if minimize:
+            raise NotImplementedError("Minimization is not internally supported. "
+                                      "Instead, please invert your function(s).")
 
         self.show_plot = show_plot
         self.save_plot = save_plot
