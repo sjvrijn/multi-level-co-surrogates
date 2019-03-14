@@ -127,10 +127,8 @@ def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
     of valid samples by repeating the above process until enough valid
     samples have been generated.
     """
-    if not isinstance(range_in, ValueRange):
-        range_in = ValueRange(*range_in)
-    if not isinstance(range_out, ValueRange):
-        range_out = ValueRange(*range_out)
+    range_in = ValueRange(*range_in)
+    range_out = ValueRange(*range_out)
 
     new_sample = np.array([]).reshape((0, ndim))
     sample_shape = (int(n_samples * oversampling_factor), ndim)
@@ -138,9 +136,7 @@ def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
     while len(new_sample) < n_samples:
         raw_sample = np.random.uniform(high=range_in.max, low=range_in.min,
                                        size=sample_shape)
-
         f_values = func(raw_sample)
-
         f_probabilities = rescale(f_values, range_in=range_out,
                                   range_out=ValueRange(min_probability, 1))
 
@@ -153,7 +149,7 @@ def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
 
         filtered_sample = raw_sample[selected_samples]
         if ndim == 1:
-            filtered_sample = filtered_sample.reshape(-1, ndim)
+            filtered_sample = filtered_sample.reshape(-1, 1)
 
         new_sample = np.vstack((new_sample, filtered_sample))
 
