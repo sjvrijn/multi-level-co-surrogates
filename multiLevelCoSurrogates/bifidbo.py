@@ -42,7 +42,7 @@ class BiFidBayesianOptimization:
                 xi = param
         self.kind = kind
 
-        self.acq = bo.helpers.UtilityFunction(kind=kind, kappa=kappa, xi=xi).utility
+        self.acq = bo.util.UtilityFunction(kind=kind, kappa=kappa, xi=xi).utility
         self.bo_diff = BayesianOptimization(blank_fitness, self.bounds, verbose=False)
 
         gp_opts = {
@@ -155,4 +155,4 @@ class BiFidBayesianOptimization:
             kwargs['y_max'] = self.bo_diff.space.Y.max()
 
 
-        return bo.helpers.acq_max(**kwargs)
+        return bo.util.acq_max(**kwargs)

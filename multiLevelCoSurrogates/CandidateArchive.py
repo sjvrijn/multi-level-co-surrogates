@@ -24,12 +24,9 @@ class CandidateArchive:
         """An archive of candidate: fitnesses pairs, for one or multiple fidelities"""
         self.ndim = ndim
 
-        if fidelities:
-            self.num_fidelities = len(fidelities)
-            self.fidelities = fidelities
-        else:
-            self.num_fidelities = 1
-            self.fidelities = ['fitness']
+        if not fidelities:
+            fidelities = ['fitness']
+        self.fidelities = fidelities
 
         self.data = {}
         self.max = {fid: -np.inf for fid in self.fidelities}
@@ -49,9 +46,9 @@ class CandidateArchive:
     def addcandidate(self, candidate, fitness, fidelity=None, *, verbose=False):
         """Add a candidate to the archive. Will overwrite fitness value if candidate is already present"""
 
-        if self.num_fidelities == 1 and fidelity is not None:
+        if len(self.fidelities) == 1 and fidelity is not None:
             warn(f"fidelity specification {fidelity} ignored in single-fidelity case", RuntimeWarning)
-        elif self.num_fidelities > 1 and fidelity is None:
+        elif len(self.fidelities) > 1 and fidelity is None:
             raise ValueError('must specify fidelity level in multi-fidelity case')
 
         if fidelity is None:
@@ -72,10 +69,10 @@ class CandidateArchive:
 
 
     def _addnewcandidate(self, candidate, fitness, fidelity=None, *, verbose=False):
-        if self.num_fidelities == 1:
+        if len(self.fidelities) == 1:
             fit_values = [fitness]
         else:
-            fit_values = np.array([np.nan] * self.num_fidelities)
+            fit_values = np.array([np.nan] * len(self.fidelities))
             idx = self.fidelities.index(fidelity)
             fit_values[idx] = fitness
 
