@@ -119,7 +119,7 @@ def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
     First a larger uniform sample (default oversampling_factor=2.5) is
     created and evaluated on the given function. These values are then
     scaled from `range_out` to [min_probability,1], where `min_probability`
-    defaults  to 0.0. Each of these values is then 'tested' against a new
+    defaults  to 0.0. Each of these values is then filtered using a new
     uniformly random value between [0,1] to determine whether the sampled
     point is kept or not.
 
@@ -130,7 +130,7 @@ def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
     range_in = ValueRange(*range_in)
     range_out = ValueRange(*range_out)
 
-    new_sample = np.array([]).reshape((0, ndim))
+    function_based_sample = np.array([]).reshape((0, ndim))
     sample_shape = (int(n_samples * oversampling_factor), ndim)
 
     while len(new_sample) < n_samples:
@@ -151,9 +151,9 @@ def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
         if ndim == 1:
             filtered_sample = filtered_sample.reshape(-1, 1)
 
-        new_sample = np.vstack((new_sample, filtered_sample))
+        function_based_sample = np.vstack((new_sample, filtered_sample))
 
-    return new_sample[:n_samples]
+    return function_based_sample[:n_samples]
 
 
 # ------------------------------------------------------------------------------
