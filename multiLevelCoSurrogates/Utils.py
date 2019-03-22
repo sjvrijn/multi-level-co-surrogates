@@ -133,7 +133,7 @@ def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
     function_based_sample = np.array([]).reshape((0, ndim))
     sample_shape = (int(n_samples * oversampling_factor), ndim)
 
-    while len(new_sample) < n_samples:
+    while len(function_based_sample) < n_samples:
         raw_sample = np.random.uniform(high=range_in.max, low=range_in.min,
                                        size=sample_shape)
         f_values = func(raw_sample)
@@ -151,7 +151,7 @@ def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
         if ndim == 1:
             filtered_sample = filtered_sample.reshape(-1, 1)
 
-        function_based_sample = np.vstack((new_sample, filtered_sample))
+        function_based_sample = np.vstack((function_based_sample, filtered_sample))
 
     return function_based_sample[:n_samples]
 
