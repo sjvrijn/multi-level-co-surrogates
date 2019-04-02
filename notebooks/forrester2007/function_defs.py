@@ -68,7 +68,7 @@ def create_mse_tracking(func, sample_generator,
     return mse_tracking
 
 
-def plot_high_vs_low_num_samples(data, name, vmin=.5, vmax=100):
+def plot_high_vs_low_num_samples(data, name, vmin=.5, vmax=100, save_as=None):
     norm = colors.LogNorm(vmin=vmin, vmax=vmax, clip=True)
     fig, ax = plt.subplots(figsize=(9,3.5))
 
@@ -95,11 +95,12 @@ def plot_high_vs_low_num_samples(data, name, vmin=.5, vmax=100):
     axx.set_xlabel('#Low-fid samples')
 
     plt.tight_layout()
-    plt.savefig(f'{plot_dir}{name}.pdf')
+    if save_as:
+        plt.savefig(save_as)  # f'{plot_dir}{name}.pdf'
     plt.show()
 
 
-def plot_high_vs_low_num_samples_diff(data, name, vmin=.5, vmax=100):
+def plot_high_vs_low_num_samples_diff(data, name, vmin=.5, vmax=100, save_as=None):
 
     to_plot = np.nanmedian(data[:,:,:,1] - data[:,:,:,0], axis=2)
     max_diff = 2*min(abs(np.nanmin(to_plot)), np.nanmax(to_plot))
@@ -113,11 +114,12 @@ def plot_high_vs_low_num_samples_diff(data, name, vmin=.5, vmax=100):
 
     plt.title('high (hierarchical)')
     plt.tight_layout()
-    plt.savefig(f'{plot_dir}{name}_diff.pdf')
+    if save_as:
+        plt.savefig(save_as)  # f'{plot_dir}{name}_diff.pdf'
     plt.show()
 
 
-def plot_inter_method_diff(data_A, data_B, name):
+def plot_inter_method_diff(data_A, data_B, name, save_as=None):
     fig, ax = plt.subplots(figsize=(9,3.5))
 
     plt.title(f'high (hierarchical) MSE: {name}')
@@ -133,7 +135,8 @@ def plot_inter_method_diff(data_A, data_B, name):
     ax.set_xlabel('#Low-fid samples')
 
     plt.tight_layout()
-    plt.savefig(f'{plot_dir}{name}.pdf')
+    if save_as:
+        plt.savefig(save_as)  # f'{plot_dir}{name}.pdf'
     plt.show()
 
 
