@@ -75,7 +75,7 @@ def plot_high_vs_low_num_samples(data, name, vmin=.5, vmax=100, save_as=None):
     ax.set_aspect(1.)
     data = np.nanmedian(data, axis=2)
 
-    plt.title('high (hierarchical)')
+    plt.title('Median MSE for high (hierarchical) model')
     img = ax.imshow(data[:,:,0], cmap='viridis_r', norm=norm)
 
     divider = make_axes_locatable(ax)
@@ -112,7 +112,7 @@ def plot_high_vs_low_num_samples_diff(data, name, vmin=.5, vmax=100, save_as=Non
     ax.set_ylabel('#High-fid samples')
     ax.set_xlabel('#Low-fid samples')
 
-    plt.title('high (hierarchical)')
+    plt.title('Median of paired (high (hierarchical) - high (direct)) MSE')
     plt.tight_layout()
     if save_as:
         plt.savefig(save_as)  # f'{plot_dir}{name}_diff.pdf'
