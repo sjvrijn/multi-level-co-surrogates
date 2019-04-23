@@ -65,15 +65,17 @@ def create_mse_tracking(func, sample_generator,
     for num_high in range(min_high, max_high+1, step):
         for num_low in range(min_low, max_low+1, step):
             for rep in range(num_reps):
-                idx = num_high * (max_high-min_high)/step \
-                        + num_low * (max_low-min_low)/step \
-                        + rep
-                      
 
-                if num_high >= num_low:
-                    continue
+                idx = (num_high-min_high)//step * num_reps * (max_low-min_low)//step \
+                        + (num_low-min_low)//step * num_reps \
+                        + rep
+
+                idx = int(idx)
+
                 if idx % 100 == 0:
                     print(idx, '/', len(cases))
+                if num_high >= num_low:
+                    continue
 
                 low_x = sample_generator(ndim, num_low)
                 high_x = low_x[np.random.choice(num_low, num_high, replace=False)]
@@ -83,19 +85,22 @@ def create_mse_tracking(func, sample_generator,
                 archive.addcandidates(high_x, func.high(high_x), fidelity='high')
 
                 mfbo = mlcs.MultiFidelityBO(func, archive, output_range=output_range, test_sample=test_sample)
+
                 MSEs = mfbo.getMSE()
+                R2s = mfbo.getR2()
+
                 mse_tracking[num_high, num_low, rep] = MSEs
 
-                if MSEs.high_hier > MSEs.high:
-                    plt.plot(plot_x, func.high(plot_x), label='true function')
-                    plt.plot(plot_x, mfbo.models['high'].predict(plot_x), label='hierarchical model')
-                    plt.plot(plot_x, mfbo.direct_models['high'].predict(plot_x), label='direct model')
-                    plt.legend()
-                    plt.title(f'{num_high} from {num_low} samples\n'
-                              f'(MSE: {np.round(MSEs.high_hier, 2)} vs {np.round(MSEs.high, 2)})')
-                    plt.tight_layout()
-                    plt.savefig(f'{plot_dir}case_{idx}_{num_high}C{num_low}.png')
-                    plt.clf()
+                plt.plot(plot_x, func.high(plot_x), label='true function')
+                plt.plot(plot_x, mfbo.models['high'].predict(plot_x), label='hierarchical model')
+                plt.plot(plot_x, mfbo.direct_models['high'].predict(plot_x), label='direct model')
+                plt.legend()
+                plt.title(f'{num_high} from {num_low} samples\n'
+                          f'(MSE: {np.round(MSEs.high_hier, 2)} vs {np.round(MSEs.high, 2)})\n'
+                          f'(R^2: {np.round(R2s.high_hier, 2)} vs {np.round(R2s.high, 2)})')
+                plt.tight_layout()
+                plt.savefig(f'{plot_dir}Matern_case_{idx}_{num_low}choose{num_high}.png')
+                plt.clf()
 
                 for i, (direct, fid) in enumerate([(False, 'high'), (False, 'low'), (True, 'high')]):
                     if direct:
