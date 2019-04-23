@@ -11,7 +11,7 @@ import bayes_opt as bo
 
 from functools import partial
 from collections import namedtuple
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, r2_score
 from more_itertools import pairwise, stagger
 
 from .CandidateArchive import CandidateArchive
@@ -62,7 +62,7 @@ class MultiFidelityBO:
             else:
                 model = HierarchicalSurrogate('Kriging', lower_fidelity_model=self.models[fid_low],
                                               candidate_archive=self.archive, fidelities=[fid_high, fid_low],
-                                              normalized=normalized)
+                                              normalized=normalized, fit_scaling_param=False)
                 self.direct_models[fid_high] = Surrogate.fromname('Kriging', self.archive, fidelity=fid_high,
                                                                   normalized=normalized)
             self.models[fid_high] = model
@@ -96,11 +96,12 @@ class MultiFidelityBO:
         ]
 
         ############ MSE SETUP
-        mse_fidelities = [f'{fid}_hier' for fid in self.fidelities[:-1]] + \
+        score_fidelities = [f'{fid}_hier' for fid in self.fidelities[:-1]] + \
                          self.fidelities
-        self.MSECollection = namedtuple('MSECollection', mse_fidelities)
+        self.MSECollection = namedtuple('MSECollection', score_fidelities)
+        self.R2Collection = namedtuple('R2Collection', score_fidelities)
         self.MSERecord = namedtuple('MSERecord', ['repetition', 'iteration',
-                                                  *(f'mse_{mse}' for mse in mse_fidelities)])
+                                                  *(f'mse_{mse}' for mse in score_fidelities)])
 
         if test_sample is None:
             n_samples = 1000
@@ -111,6 +112,12 @@ class MultiFidelityBO:
 
         self.mse_tester = {
             fid: partial(mean_squared_error,
+                         y_pred=getattr(self.func, fid)(self.test_sample))
+            for fid in self.fidelities
+        }
+
+        self.r2_tester = {
+            fid: partial(r2_score,
                          y_pred=getattr(self.func, fid)(self.test_sample))
             for fid in self.fidelities
         }
@@ -197,6 +204,16 @@ class MultiFidelityBO:
             *[self.mse_tester[fid](self.models[fid].predict(self.test_sample))
               for fid in self.fidelities[:-1]],
             *[self.mse_tester[fid](self.direct_models[fid].predict(self.test_sample))
+              for fid in self.fidelities],
+        )
+
+
+
+    def getR2(self):
+        return self.R2Collection(
+            *[self.r2_tester[fid](self.models[fid].predict(self.test_sample))
+              for fid in self.fidelities[:-1]],
+            *[self.r2_tester[fid](self.direct_models[fid].predict(self.test_sample))
               for fid in self.fidelities],
         )
 
