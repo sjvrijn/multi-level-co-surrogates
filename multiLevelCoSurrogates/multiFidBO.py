@@ -24,7 +24,8 @@ from .Surrogates import HierarchicalSurrogate, Surrogate
 class MultiFidelityBO:
 
     def __init__(self, multi_fid_func, archive=None, save_plot=False, show_plot=False, schema=None,
-                 output_range=None, normalized=True, test_sample=None, minimize=False):
+                 output_range=None, normalized=True, test_sample=None, minimize=False,
+                 kernel=None, scaling='on'):
 
         if minimize:
             raise NotImplementedError("Minimization is not internally supported. "
@@ -57,14 +58,14 @@ class MultiFidelityBO:
         for fids in stagger(reversed(self.fidelities), offsets=(-1, 0)):
             fid_low, fid_high = fids
             if fid_low is None:
-                model = Surrogate.fromname('Kriging', self.archive, fidelity=fid_high, normalized=normalized)
+                model = Surrogate.fromname('Kriging', self.archive, fidelity=fid_high, normalized=normalized, kernel=kernel)
                 self.direct_models[fid_high] = model
             else:
                 model = HierarchicalSurrogate('Kriging', lower_fidelity_model=self.models[fid_low],
                                               candidate_archive=self.archive, fidelities=[fid_high, fid_low],
-                                              normalized=normalized, fit_scaling_param=False)
+                                              normalized=normalized, scaling=scaling, kernel=kernel)
                 self.direct_models[fid_high] = Surrogate.fromname('Kriging', self.archive, fidelity=fid_high,
-                                                                  normalized=normalized)
+                                                                  normalized=normalized, kernel=kernel)
             self.models[fid_high] = model
 
         self.top_level_model = self.models[self.fidelities[0]]
