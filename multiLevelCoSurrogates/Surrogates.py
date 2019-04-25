@@ -172,20 +172,20 @@ class HierarchicalSurrogate:
     """A generic interface for hierarchical surrogates"""
 
     def __init__(self, surrogate_name, lower_fidelity_model, candidate_archive, fidelities, *,
-                 num_points=None, fit_scaling_param=True, normalized=True, **kwargs):
+                 num_points=None, scaling='on', normalized=True, **kwargs):
 
         self.diff_type = surrogate_name
         self.low_model = lower_fidelity_model
         self.archive = candidate_archive
         self.fidelities = fidelities
         self.n = num_points
-        self.fit_scaling_param = fit_scaling_param
+        self.scaling = scaling
         self.normalized = normalized
 
         self.diff_fidelity = f'{fidelities[0]}-{fidelities[1]}'
         if self.archive is not None and len(self.archive) > 0:
             self.X, self.y_low, self.y_high = self.update_training_values()
-            self.rho = self.determineScaleParameter() if fit_scaling_param else 1
+            self.rho = self.determineScaleParameter()
             self.y_diff = self.y_high - self.rho * self.y_low
             self.archive.addcandidates(self.X, self.y_diff, fidelity=self.diff_fidelity)
         else:
@@ -243,7 +243,7 @@ class HierarchicalSurrogate:
         associated CandidateArchive.
         """
         self.X, self.y_low, self.y_high = self.update_training_values()
-        self.rho = self.determineScaleParameter() if self.fit_scaling_param else 1
+        self.rho = self.determineScaleParameter() if self.scaling else 1
         self.y_diff = self.y_high - self.rho * self.y_low
 
         self.archive.addcandidates(self.X, self.y_diff, fidelity=self.diff_fidelity)
@@ -251,8 +251,18 @@ class HierarchicalSurrogate:
 
 
     def determineScaleParameter(self):
-        """ Determine the scaling parameter 'rho' between y_low and y_high using simple linear regression """
-        return 1 / np.mean(self.y_high / self.y_low)
+        """Determine the scaling parameter 'rho' between y_low and y_high"""
+        if self.scaling == 'off':
+            rho = 1
+        elif self.scaling == 'on':
+            rho = 1 / np.mean(self.y_high / self.y_low)
+        elif self.scaling == 'inverted':
+            rho = 1 / np.mean(self.y_low / self.y_high)
+            # print(f'rho = {rho} = 1 / mean({self.y_low/self.y_high})')
+        else:
+            raise ValueError(f"Scaling option '{self.scaling}' not recognised")
+
+        return rho
 
 
     def update_training_values(self):
@@ -312,9 +322,27 @@ class Kriging(Surrogate):
 
     def __init__(self, candidate_archive, num_points=None, fidelity=None, normalized=True, **kwargs):
         super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity, normalized=normalized)
-        if 'kernel' not in kwargs:
-            kwargs['kernel'] = kernels.ConstantKernel(constant_value=1.0) \
+
+        kernel = kwargs.get('kernel', 'RBF')
+
+        if kernel == 'DotProduct':
+            kernel = kernels.ConstantKernel(constant_value=1.0) \
+                * kernels.DotProduct(sigma_0=1.0)**2
+        elif kernel == 'ExpSine':
+            kernel = kernels.ConstantKernel(constant_value=1.0) \
+                * kernels.ExpSineSquared(length_scale=1.0, periodicity=3.0)
+        elif kernel == 'Matern':
+            kernel = kernels.ConstantKernel(constant_value=1.0) \
+                * kernels.Matern(length_scale=1.0, length_scale_bounds=(1e-5, 5.0))
+        elif kernel == 'RationalQuadratic':
+            kernel = kernels.ConstantKernel(constant_value=1.0) \
+                * kernels.RationalQuadratic(alpha=.1, length_scale=1)
+        elif kernel == 'RBF':
+            kernel = kernels.ConstantKernel(constant_value=1.0) \
                 * kernels.RBF(length_scale=1.0, length_scale_bounds=(1e-1, 10.0))
+
+        kwargs['kernel'] = kernel
+
         self._surr = GaussianProcessRegressor(**kwargs)
         self.is_trained = False
 
