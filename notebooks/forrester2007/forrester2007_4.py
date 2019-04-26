@@ -29,12 +29,12 @@ plot_dir = '../../plots/'
 
 min_high = 2
 min_low = 3
-max_high = 30  #50
-max_low = 60  #125
-num_reps = 1  #50
-step = 2  #1
+max_high = 50
+max_low = 125
+num_reps = 50
+step = 1
 
-plot_x = np.linspace(0, 1, 101).reshape(-1, 1)
+# plot_x = np.linspace(0, 1, 101).reshape(-1, 1)
 
 
 #@jit(parallel=True)
@@ -45,8 +45,10 @@ def create_mse_tracking(func, sample_generator, gp_kernel='',
     n_test_samples = 1000
     mse_tracking = np.empty((max_high+1, max_low+1, num_reps, 3))
     mse_tracking[:] = np.nan
+    r2_tracking = np.empty((max_high + 1, max_low + 1, num_reps, 3))
+    r2_tracking[:] = np.nan
 
-    error_tracking = np.empty((max_high+1, max_low+1, num_reps, 3, n_test_samples))
+    value_tracking = np.empty((max_high+1, max_low+1, num_reps, 3, n_test_samples))
 
     cases = list(product(range(min_high, max_high+1, step), range(min_low, max_low+1, step), range(num_reps)))
 
@@ -60,8 +62,8 @@ def create_mse_tracking(func, sample_generator, gp_kernel='',
 
     print('starting loops')
 
-    bad_MSE = []
-    bad_R2 = []
+    # bad_MSE = []
+    # bad_R2 = []
 
     #for idx, case in enumerate(cases):
     #    num_high, num_low, rep = case
@@ -87,32 +89,33 @@ def create_mse_tracking(func, sample_generator, gp_kernel='',
                 archive.addcandidates(low_x, func.low(low_x), fidelity='low')
                 archive.addcandidates(high_x, func.high(high_x), fidelity='high')
 
-                print(idx)
+                # print(idx)
                 mfbo = mlcs.MultiFidelityBO(func, archive, output_range=output_range, test_sample=test_sample,
                                             kernel=gp_kernel[:-1], scaling=scaling)
 
                 MSEs = mfbo.getMSE()
                 R2s = mfbo.getR2()
 
-                if MSEs.high_hier > MSEs.high:
-                    bad_MSE.append(idx)
-                if R2s.high_hier < R2s.high:
-                    bad_R2.append(idx)
+                # if MSEs.high_hier > MSEs.high:
+                #     bad_MSE.append(idx)
+                # if R2s.high_hier < R2s.high:
+                #     bad_R2.append(idx)
 
                 mse_tracking[num_high, num_low, rep] = MSEs
+                r2_tracking[num_high, num_low, rep] = R2s
 
-                plt.plot(plot_x, func.high(plot_x), label='true function')
-                plt.plot(plot_x, mfbo.models['high'].predict(plot_x), label='hierarchical model')
-                plt.plot(plot_x, mfbo.direct_models['high'].predict(plot_x), label='direct model')
-                plt.scatter(*archive.getcandidates(fidelity='low'), label='low fidelity samples', s=42, zorder=4, marker='o', facecolors='none', color='red')
-                plt.scatter(*archive.getcandidates(fidelity='high'), label='high fidelity samples', s=42, zorder=5, marker='x', color='black')
-                plt.legend()
-                plt.title(f'{num_high} from {num_low} samples\n'
-                          f'(MSE: {np.round(MSEs.high_hier, 2)} vs {np.round(MSEs.high, 2)})\n'
-                          f'(R^2: {np.round(R2s.high_hier, 2)} vs {np.round(R2s.high, 2)})')
-                plt.tight_layout()
-                plt.savefig(f'{plot_dir}{gp_kernel}case_{idx}_{num_low}choose{num_high}.png')
-                plt.clf()
+                # plt.plot(plot_x, func.high(plot_x), label='true function')
+                # plt.plot(plot_x, mfbo.models['high'].predict(plot_x), label='hierarchical model')
+                # plt.plot(plot_x, mfbo.direct_models['high'].predict(plot_x), label='direct model')
+                # plt.scatter(*archive.getcandidates(fidelity='low'), label='low fidelity samples', s=42, zorder=4, marker='o', facecolors='none', color='red')
+                # plt.scatter(*archive.getcandidates(fidelity='high'), label='high fidelity samples', s=42, zorder=5, marker='x', color='black')
+                # plt.legend()
+                # plt.title(f'{num_high} from {num_low} samples\n'
+                #           f'(MSE: {np.round(MSEs.high_hier, 2)} vs {np.round(MSEs.high, 2)})\n'
+                #           f'(R^2: {np.round(R2s.high_hier, 2)} vs {np.round(R2s.high, 2)})')
+                # plt.tight_layout()
+                # plt.savefig(f'{plot_dir}{gp_kernel}case_{idx}_{num_low}choose{num_high}.png')
+                # plt.clf()
 
                 for i, (direct, fid) in enumerate([(False, 'high'), (False, 'low'), (True, 'high')]):
                     if direct:
@@ -120,27 +123,25 @@ def create_mse_tracking(func, sample_generator, gp_kernel='',
                     else:
                         models = mfbo.models
 
-                    x = mfbo.mse_tester[fid].keywords['y_pred'].flatten()
-                    y = models[fid].predict(mfbo.test_sample).flatten()
-                    error_tracking[num_high, num_low, rep, i] = (x-y)**2
+                    value_tracking[num_high, num_low, rep, i] = models[fid].predict(mfbo.test_sample).flatten()
 
-    with open(f'{plot_dir}{gp_kernel}num_bad.txt', 'w') as f:
-        f.write(f'#Bad cases by MSE: {len(bad_MSE)}\n'
-                f'#Bad cases by R^2: {len(bad_R2)}\n'
-                f'\n'
-                f'Bad MSE indices: {bad_MSE}\n'
-                f'Bad R^2 indices: {bad_R2}\n')
+    # with open(f'{plot_dir}{gp_kernel}num_bad.txt', 'w') as f:
+    #     f.write(f'#Bad cases by MSE: {len(bad_MSE)}\n'
+    #             f'#Bad cases by R^2: {len(bad_R2)}\n'
+    #             f'\n'
+    #             f'Bad MSE indices: {bad_MSE}\n'
+    #             f'Bad R^2 indices: {bad_R2}\n')
 
     print(len(cases), '/', len(cases))
-    return mse_tracking, error_tracking
+    return mse_tracking, r2_tracking, value_tracking
 
 
 
 
-kernels = ['DotProduct_', 'ExpSine_', 'Matern_', 'RationalQuadratic_', 'RBF_']
+# kernels = ['DotProduct_', 'ExpSine_', 'Matern_', 'RationalQuadratic_', 'RBF_']
+kernels = ['Matern_', 'RationalQuadratic_', 'RBF_']
 
 # # EGO - 1D function
-
 inv_OD = mff.MultiFidelityFunction(
     u_bound=np.array(OD.u_bound), l_bound=np.array(OD.l_bound),
     functions=[lambda x: -OD.high(x), lambda x: -OD.low(x)],
@@ -148,32 +149,38 @@ inv_OD = mff.MultiFidelityFunction(
 )
 
 
-base_plot_dir = plot_dir
-scaling_options = ['on', 'off', 'inverted']  # , 'regularized']
-subdirs = ['0_original_scaling/', '1_disabled_scaling/', '2_inverted_scaling/']  # , '3_regularized_scaling/']
+# base_plot_dir = plot_dir
+scaling_options = ['off']  # , 'on', 'inverted']  # , 'regularized']
+# subdirs = ['disabled_scaling/', 'original_scaling/', 'inverted_scaling/']  # , '3_regularized_scaling/']
 
 for k in kernels:
-    for scale, subdir in zip(scaling_options, subdirs):
+    # for scale, subdir in zip(scaling_options, subdirs):
+    #     plot_dir = base_plot_dir + subdir
+    for scale in scaling_options:
         np.random.seed(20160501)  # Setting seed for reproducibility
-        plot_dir = base_plot_dir + subdir
-        mse_tracking, errors = create_mse_tracking(inv_OD, low_random_sample, gp_kernel=k,
-                                                   max_high=max_high, max_low=max_low,
-                                                   num_reps=num_reps, min_high=min_high,
-                                                   min_low=min_low, step=step,
-                                                   scaling=scale)
-        # np.save('1d_mse_tracking.npy', mse_tracking)
-        # np.save('1d_error_tracking.npy', errors)
+        mse_tracking, r2_tracking, values = create_mse_tracking(inv_OD, low_random_sample, gp_kernel=k,
+                                                                max_high=max_high, max_low=max_low,
+                                                                num_reps=num_reps, min_high=min_high,
+                                                                min_low=min_low, step=step,
+                                                                scaling=scale)
+        np.save('1d_mse_tracking.npy', mse_tracking)
+        np.save('1d_r2_tracking.npy', r2_tracking)
+        np.save('1d_value_tracking.npy', values)
 
-sys.exit(0)
 
-np.random.seed(20160501)  # Setting seed for reproducibility
-mse_tracking, errors = create_mse_tracking(TD_inv, low_random_sample, 
-                                           max_high=max_high, max_low=max_low, 
-                                           num_reps=num_reps, min_high=min_high, 
-                                           min_low=min_low, step=step)
+for k in kernels:
+    # for scale, subdir in zip(scaling_options, subdirs):
+    for scale in scaling_options:
+        np.random.seed(20160501)  # Setting seed for reproducibility
+        mse_tracking, r2_tracking, values = create_mse_tracking(TD_inv, low_random_sample, gp_kernel=k,
+                                                                max_high=max_high, max_low=max_low,
+                                                                num_reps=num_reps, min_high=min_high,
+                                                                min_low=min_low, step=step,
+                                                                scaling=scale)
 
-np.save('2d_mse_tracking.npy', mse_tracking)
-np.save('2d_error_tracking.npy', errors)
+        np.save('2d_mse_tracking.npy', mse_tracking)
+        np.save('2d_r2_tracking.npy', r2_tracking)
+        np.save('2d_value_tracking.npy', values)
 
 
 
