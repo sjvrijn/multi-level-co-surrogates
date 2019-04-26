@@ -9,7 +9,7 @@ import sys
 
 # from numba import jit, prange
 
-module_path = os.path.abspath(os.path.join('..'))
+module_path = os.path.abspath(os.path.join('../..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
@@ -24,7 +24,7 @@ OD = mff.oneDimensional
 
 np.set_printoptions(linewidth=200)
 plot_dir = '../../plots/'
-
+file_dir = '../../files/'
 
 
 min_high = 2
@@ -163,9 +163,9 @@ for k in kernels:
                                                                 num_reps=num_reps, min_high=min_high,
                                                                 min_low=min_low, step=step,
                                                                 scaling=scale)
-        np.save('1d_lin_mse_tracking.npy', mse_tracking)
-        np.save('1d_lin_r2_tracking.npy', r2_tracking)
-        np.save('1d_lin_value_tracking.npy', values)
+        np.save(f'{file_dir}{k}1d_lin_mse_tracking.npy', mse_tracking)
+        np.save(f'{file_dir}{k}1d_lin_r2_tracking.npy', r2_tracking)
+        np.save(f'{file_dir}{k}1d_lin_value_tracking.npy', values)
 
 
 for k in kernels:
@@ -178,9 +178,9 @@ for k in kernels:
                                                                 min_low=min_low, step=step,
                                                                 scaling=scale)
 
-        np.save('2d_lin_mse_tracking.npy', mse_tracking)
-        np.save('2d_lin_r2_tracking.npy', r2_tracking)
-        np.save('2d_lin_value_tracking.npy', values)
+        np.save(f'{file_dir}{k}2d_lin_mse_tracking.npy', mse_tracking)
+        np.save(f'{file_dir}{k}2d_lin_r2_tracking.npy', r2_tracking)
+        np.save(f'{file_dir}{k}2d_lin_value_tracking.npy', values)
 
 
 
