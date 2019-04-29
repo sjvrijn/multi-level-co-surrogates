@@ -26,6 +26,9 @@ np.set_printoptions(linewidth=200)
 plot_dir = '../../plots/'
 file_dir = '../../files/'
 
+mlcs.guaranteeFolderExists(plot_dir)
+mlcs.guaranteeFolderExists(file_dir)
+
 
 min_high = 2
 min_low = 3
