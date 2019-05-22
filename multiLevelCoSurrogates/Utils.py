@@ -111,24 +111,48 @@ def create_random_sample_set(ndim, size_per_fidelity, desired_range=None):
 
 
 def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
-                       min_probability=0.0, oversampling_factor=2.5,
-                       minimize=True):
-    """ Create a sample of points, such that they are more likely to have a
+                       min_p=0.01, max_p=0.99, minimize=True,
+                       oversampling_factor=2.5):
+    """Create a sample of points, such that they are more likely to have a
     better fitness value according to the given function.
 
     First a larger uniform sample (default oversampling_factor=2.5) is
     created and evaluated on the given function. These values are then
-    scaled from `range_out` to [min_probability,1], where `min_probability`
-    defaults  to 0.0. Each of these values is then filtered using a new
-    uniformly random value between [0,1] to determine whether the sampled
-    point is kept or not.
+    scaled from `range_out` to [min_p, max_p], set as [0.01, 0.99] by
+    default. Each of these values is then filtered using a new uniformly
+    random value between [0,1] to determine whether the sampled point is
+    kept or not.
 
     If enough valid samples remain, return them, otherwise extends the set
     of valid samples by repeating the above process until enough valid
     samples have been generated.
+
+    :param func:                Function to sample for. Should accept
+                                numpy arrays of shape `(n_samples, ndim)`.
+    :param n_samples:           Desired number of samples as output.
+    :param ndim:                Dimensionality of the domain.
+    :param range_in:            Domain of the function to sample for.
+    :param range_out:           Range of the function to sample for.
+    :param min_p:               Minimum acceptance probability for a sample
+                                at the worst possible function value.
+                                Default: `0.01`
+    :param max_p:               Maximum acceptance probability for a sample
+                                at the function's optimum.
+                                Default: `0.01`
+    :param minimize:            Whether the function should be minimized.
+                                Default: `True`.
+    :param oversampling_factor: How many more samples to create per
+                                iteration, reduces number of loops.
+                                Default: `2.5`
+
+    :returns:                   `(n_samples, ndim)`-array of selected samples.
     """
     range_in = ValueRange(*range_in)
     range_out = ValueRange(*range_out)
+
+    min_p = max(min_p, 0)
+    max_p = min(max_p, 1)
+    range_p = ValueRange(min_p, max_p)
 
     function_based_sample = np.array([]).reshape((0, ndim))
     sample_shape = (int(n_samples * oversampling_factor), ndim)
@@ -138,7 +162,7 @@ def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
                                        size=sample_shape)
         f_values = func(raw_sample)
         f_probabilities = rescale(f_values, range_in=range_out,
-                                  range_out=ValueRange(min_probability, 1))
+                                  range_out=range_p)
 
         check_values = np.random.uniform(size=f_probabilities.shape)
 
