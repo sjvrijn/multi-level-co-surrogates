@@ -162,6 +162,12 @@ TD_inv = mff.MultiFidelityFunction(
 )
 
 
+def forrester(X):
+    term1 = (6*X - 2)**2
+    term2 = np.sin(12*X - 4)
+    return np.sum(22 - (term1 * term2 + 6.03), axis=1)
+
+
 def create_models_and_compare(func, low, high, save_as=None):
     archive = mlcs.CandidateArchive(ndim=2, fidelities=['high', 'low', 'high-low'])
     archive.addcandidates(low, func.low(low), fidelity='low')
