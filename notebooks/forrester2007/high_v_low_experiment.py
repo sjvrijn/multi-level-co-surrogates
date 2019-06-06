@@ -17,6 +17,8 @@ np.random.seed(20160501)  # Setting seed for reproducibility
 np.set_printoptions(linewidth=200)
 plot_dir = '../../plots/'
 file_dir = '../../files/'
+mlcs.guaranteeFolderExists(plot_dir)
+mlcs.guaranteeFolderExists(file_dir)
 
 min_high = 2
 min_low = 3
@@ -43,7 +45,7 @@ def create_mse_tracking(func, sample_generator, ndim, gp_kernel='',
 
     input_range = mlcs.ValueRange(*np.array([func.l_bound, func.u_bound], dtype=np.float))
     output_range = (0, 22*ndim)
-    test_sample = mlcs.sample_by_function(func.high, n_samples=n_test_samples, ndim=func.ndim,
+    test_sample = mlcs.sample_by_function(func.high, n_samples=n_test_samples, ndim=ndim,
                                           range_in=input_range, range_out=output_range, minimize=False)
 
     np.save(f'{ndim}d_test_sample.npy', test_sample)
