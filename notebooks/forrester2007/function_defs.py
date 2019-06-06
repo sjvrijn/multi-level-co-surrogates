@@ -173,7 +173,7 @@ def forrester_low(X):
     term1 = 0.5*forrester_high(X)
     term2 = 10*(X - 0.5) - 5
 
-    return 22 - (term1 + np.sum(term2, axis=1))
+    return term1 - np.sum(term2, axis=1)
 
 
 forrester = mff.MultiFidelityFunction(
