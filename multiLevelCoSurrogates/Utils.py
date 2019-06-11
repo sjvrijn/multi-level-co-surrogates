@@ -138,7 +138,7 @@ def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
                                 Default: `0.01`
     :param max_p:               Maximum acceptance probability for a sample
                                 at the function's optimum.
-                                Default: `0.01`
+                                Default: `0.99`
     :param minimize:            Whether the function should be minimized.
                                 Default: `True`.
     :param oversampling_factor: How many more samples to create per
