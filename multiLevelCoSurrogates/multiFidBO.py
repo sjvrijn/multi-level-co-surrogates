@@ -55,8 +55,8 @@ class MultiFidelityBO:
         ### HIERARCHICAL (AND DIRECT) MODELS
         self.models = {}
         self.direct_models = {}
-        for fids in stagger(reversed(self.fidelities), offsets=(-1, 0)):
-            fid_low, fid_high = fids
+        for fid_low, fid_high in stagger(reversed(self.fidelities), offsets=(-1, 0)):
+
             if fid_low is None:
                 model = Surrogate.fromname('Kriging', self.archive, fidelity=fid_high, normalized=normalized, kernel=kernel)
                 self.direct_models[fid_high] = model
