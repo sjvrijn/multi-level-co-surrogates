@@ -34,8 +34,11 @@ class MultiFidelityBO:
         self.show_plot = show_plot
         self.save_plot = save_plot
         self.func = multi_fid_func
-        self.ndim = self.func.ndim
-        self.bounds = np.array([self.func.l_bound, self.func.u_bound], dtype=np.float)
+        if archive:
+            self.ndim = archive.ndim
+        else:
+            self.ndim = self.func.ndim
+        self.bounds = np.array([self.func.l_bound * self.ndim, self.func.u_bound * self.ndim], dtype=np.float)
         self.input_range = ValueRange(*self.bounds)
         self.output_range = ValueRange(*output_range)
         self.fidelities = list(self.func.fidelity_names)
@@ -173,7 +176,7 @@ class MultiFidelityBO:
         for cost, (fid_low, fid_high) in zip(reversed(self.schema), fid_pairs):
             if iteration_idx % cost == 0:
                 next_point = self.limited_acq_max(fid_low=fid_low, fid_high=fid_high)
-                next_value = self.func[fid_high](next_point)
+                next_value = self.func[fid_high](next_point.reshape((-1,1)))
                 self.archive.addcandidate(next_point, next_value, fidelity=fid_high)
                 self.top_level_model.retrain()
                 next_points[fid_high] = next_point
