@@ -46,7 +46,7 @@ class CandidateArchive:
     def addcandidate(self, candidate, fitness, fidelity=None, *, verbose=False):
         """Add a candidate to the archive. Will overwrite fitness value if candidate is already present"""
 
-        if len(self.fidelities) == 1 and fidelity is not None:
+        if len(self.fidelities) == 1 and fidelity is not None and verbose:
             warn(f"fidelity specification {fidelity} ignored in single-fidelity case", RuntimeWarning)
         elif len(self.fidelities) > 1 and fidelity is None:
             raise ValueError('must specify fidelity level in multi-fidelity case')

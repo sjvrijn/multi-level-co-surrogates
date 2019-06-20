@@ -49,8 +49,8 @@ class Surrogate:
         if self.normalized:
             self.Xrange = determinerange(X)
             self.yrange = determinerange(y)
-            X = rescale(X, range_in=self.Xrange, range_out=self.normalize_target).reshape((-1,1))
-            y = rescale(y, range_in=self.yrange, range_out=self.normalize_target).reshape((-1,1))
+            X = rescale(X, range_in=self.Xrange, range_out=self.normalize_target)
+            y = rescale(y, range_in=self.yrange, range_out=self.normalize_target)
 
         self.X = X
         self.y = y
