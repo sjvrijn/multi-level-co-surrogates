@@ -49,8 +49,8 @@ class Surrogate:
         if self.normalized:
             self.Xrange = determinerange(X)
             self.yrange = determinerange(y)
-            X = rescale(X, range_in=self.Xrange, range_out=self.normalize_target)
-            y = rescale(y, range_in=self.yrange, range_out=self.normalize_target)
+            X = rescale(X, range_in=self.Xrange, range_out=self.normalize_target).reshape((-1,1))
+            y = rescale(y, range_in=self.yrange, range_out=self.normalize_target).reshape((-1,1))
 
         self.X = X
         self.y = y
@@ -85,14 +85,14 @@ class Surrogate:
         if self.normalized:
 
             if mode == 'value':
-                prediction = rescale(prediction, range_in=self.normalize_target, range_out=self.yrange)
+                prediction = rescale(prediction, range_in=self.normalize_target, range_out=self.yrange).reshape((-1,1))
             elif mode == 'std':
-                prediction = rescale(prediction, range_in=self.normalize_target, range_out=self.yrange, scale_only=True)
+                prediction = rescale(prediction, range_in=self.normalize_target, range_out=self.yrange, scale_only=True).reshape((-1,1))
             elif mode == 'both':
                 value, std = prediction
                 value = rescale(value, range_in=self.normalize_target, range_out=self.yrange)
                 std = rescale(std, range_in=self.normalize_target, range_out=self.yrange, scale_only=True)
-                prediction = value, std
+                prediction = value.reshape((-1,1)), std.reshape((-1,1))
 
         return prediction
 
@@ -355,13 +355,14 @@ class Kriging(Surrogate):
         return self._surr.set_params(**kwargs)
 
     def do_predict(self, X):
-        return self._surr.predict(X).reshape((-1, ))
+        return self._surr.predict(X).reshape((-1, 1))
 
     def do_predict_std(self, X):
-        return self._surr.predict(X, return_std=True)[1]
+        return self._surr.predict(X, return_std=True)[1].reshape((-1, 1))
 
     def do_predict_both(self, X):
-        return self._surr.predict(X, return_std=True)
+        prediction, std = self._surr.predict(X, return_std=True)
+        return prediction.reshape((-1, 1)), std.reshape((-1, 1))
 
 
 class RandomForest(Surrogate):
