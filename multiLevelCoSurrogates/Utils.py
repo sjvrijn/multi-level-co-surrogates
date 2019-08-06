@@ -220,6 +220,16 @@ def calc_numsteps(low, high, step, endpoint=True):
     return num_steps
 
 
+def create_meshgrid(l_bound, step, u_bound):
+    """Create a meshgrid within the given bounds"""
+    num_steps_x = calc_numsteps(l_bound[0], u_bound[0], step[0])
+    num_steps_y = calc_numsteps(l_bound[1], u_bound[1], step[1])
+    X = np.linspace(l_bound[0], u_bound[0], num_steps_x)
+    Y = np.linspace(l_bound[1], u_bound[1], num_steps_y)
+    X, Y = np.meshgrid(X, Y)
+    return X, Y
+
+
 def create_wide_meshgrid(l_bound, step, u_bound):
     """Create a meshgrid that extends 1 step in each direction beyond the original bounds"""
     num_steps_x = calc_numsteps(l_bound[0], u_bound[0], step[0]) + 2
@@ -230,7 +240,7 @@ def create_wide_meshgrid(l_bound, step, u_bound):
     return X, Y
 
 
-def createsurface(func, l_bound=None, u_bound=None, step=None):
+def createsurface(func, l_bound=None, u_bound=None, step=None, wide=True):
     """Create a Surface(X, Y, Z) by evaluating `func` on a (wide) grid ranging from l_bound to u_bound"""
     if isinstance(func, Surface):
         return func
@@ -239,7 +249,10 @@ def createsurface(func, l_bound=None, u_bound=None, step=None):
     u_bound = np.array([5, 5]) if u_bound is None else u_bound
     step = [0.2, 0.2] if step is None else step
 
-    X, Y = create_wide_meshgrid(l_bound, step, u_bound)
+    if wide:
+        X, Y = create_wide_meshgrid(l_bound, step, u_bound)
+    else:
+        X, Y = create_meshgrid(l_bound, step, u_bound)
 
     X_Y = np.array([[[x,y]] for x, y in zip(X.flatten(), Y.flatten())])
     Z = np.array([func(x_y) for x_y in X_Y]).reshape(X.shape)
