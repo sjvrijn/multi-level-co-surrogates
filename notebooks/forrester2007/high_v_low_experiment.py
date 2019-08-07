@@ -9,8 +9,9 @@ if module_path not in sys.path:
     sys.path.append(module_path)
 
 import multiLevelCoSurrogates as mlcs
+from multifidelityfunctions import forrester
 
-from function_defs import low_lhs_sample, low_random_sample, forrester
+from function_defs import low_lhs_sample, low_random_sample
 
 np.random.seed(20160501)  # Setting seed for reproducibility
 
