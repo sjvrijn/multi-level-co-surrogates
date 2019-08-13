@@ -9,7 +9,7 @@ if module_path not in sys.path:
     sys.path.append(module_path)
 
 import multiLevelCoSurrogates as mlcs
-from multifidelityfunctions import forrester
+from multifidelityfunctions import forrester, branin, currin, hartmann, borehole
 
 from function_defs import low_lhs_sample, low_random_sample
 
@@ -25,8 +25,8 @@ min_high = 2
 min_low = 3
 max_high = 50
 max_low = 125
-num_reps = 30
-step = 3
+num_reps = 50
+step = 1
 
 
 # @jit(parallel=True)
@@ -34,7 +34,7 @@ def create_mse_tracking(func, sample_generator, ndim, gp_kernel='',
                         max_high=40, max_low=100, num_reps=30,
                         min_high=2, min_low=3, step=1, scaling='on'):
 
-    n_test_samples = 1000
+    n_test_samples = 500*ndim
     mse_tracking = np.empty((max_high+1, max_low+1, num_reps, 3))
     mse_tracking[:] = np.nan
     r2_tracking = np.empty((max_high+1, max_low+1, num_reps, 3))
@@ -46,8 +46,11 @@ def create_mse_tracking(func, sample_generator, ndim, gp_kernel='',
 
     input_range = mlcs.ValueRange(*np.array([func.l_bound, func.u_bound], dtype=np.float))
     output_range = (0, 22*ndim)
-    test_sample = mlcs.sample_by_function(func.high, n_samples=n_test_samples, ndim=ndim,
-                                          range_in=input_range, range_out=output_range, minimize=False)
+    
+    test_sample = low_lhs_sample(ndim, n_test_samples)
+
+    #test_sample = mlcs.sample_by_function(func.high, n_samples=n_test_samples, ndim=ndim,
+    #                                      range_in=input_range, range_out=output_range, minimize=False)
 
     np.save(f'{ndim}d_test_sample.npy', test_sample)
 
@@ -99,7 +102,14 @@ def create_mse_tracking(func, sample_generator, ndim, gp_kernel='',
 
 
 if __name__ == '__main__':
-    ndim = int(input("Dimensionality: "))
+    
+    #ndim, func, func_name = 1, forrester, 'forrester'
+    ndim, func, func_name = 2, branin, 'branin'
+    #ndim, func, func_name = 2, currin, 'currin'
+    #ndim, func, func_name = 6, hartmann, 'hartmann6'
+    #ndim, func, func_name = 8, borehole, 'borehole'
+
+    #ndim = int(input("Enter dimensionality of input: "))
 
     kernels = ['Matern_']
     scaling_options = ['off']  # , 'on', 'inverted']  # , 'regularized']
@@ -108,11 +118,11 @@ if __name__ == '__main__':
         for scale in scaling_options:
             np.random.seed(20160501)  # Setting seed for reproducibility
             mse_tracking, r2_tracking, values = create_mse_tracking(
-                forrester, low_lhs_sample, ndim=ndim, gp_kernel=k,
+                func, low_lhs_sample, ndim=ndim, gp_kernel=k,
                 max_high=max_high, max_low=max_low, num_reps=num_reps,
                 min_high=min_high, min_low=min_low, step=step, scaling=scale
             )
 
-            np.save(f'{file_dir}{k}{ndim}d_lin_mse_tracking.npy', mse_tracking)
-            np.save(f'{file_dir}{k}{ndim}d_lin_r2_tracking.npy', r2_tracking)
-            np.save(f'{file_dir}{k}{ndim}d_lin_value_tracking.npy', values)
+            np.save(f'{file_dir}{k}{ndim}d_{func_name}_lin_mse_tracking.npy', mse_tracking)
+            np.save(f'{file_dir}{k}{ndim}d_{func_name}_lin_r2_tracking.npy', r2_tracking)
+            np.save(f'{file_dir}{k}{ndim}d_{func_name}_lin_value_tracking.npy', values)
