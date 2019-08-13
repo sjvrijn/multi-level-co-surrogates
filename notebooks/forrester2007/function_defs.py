@@ -13,15 +13,12 @@ if module_path not in sys.path:
     sys.path.append(module_path)
 
 from itertools import product
-from more_itertools import chunked
-from functools import partial
 import multifidelityfunctions as mff
 import multiLevelCoSurrogates as mlcs
-from sklearn.gaussian_process import GaussianProcessRegressor, kernels
-from sklearn.ensemble import RandomForestRegressor
 
 np.random.seed(20160501)  # Setting seed for reproducibility
-OD = mff.oneDimensional
+# OD = mff.oneDimensional
+OD = mff.forrester
 
 from IPython.core.display import clear_output
 
@@ -100,11 +97,13 @@ def plot_high_vs_low_num_samples(data, name, vmin=.5, vmax=100, save_as=None):
     plt.show()
 
 
-def plot_high_vs_low_num_samples_diff(data, name, vmin=.5, vmax=100, save_as=None):
+def plot_high_vs_low_num_samples_diff(data, name, max_diff=None, save_as=None):
 
     to_plot = np.nanmedian(data[:,:,:,1] - data[:,:,:,0], axis=2)
-    max_diff = 2*min(abs(np.nanmin(to_plot)), np.nanmax(to_plot))
-    norm = colors.Normalize(vmin=-max_diff, vmax=max_diff, clip=True)
+    if max_diff is None:
+        max_diff = 2*min(abs(np.nanmin(to_plot)), np.nanmax(to_plot))
+    # norm = colors.Normalize(vmin=-max_diff, vmax=max_diff, clip=True)
+    norm = colors.SymLogNorm(linthresh=.01, vmin=-max_diff, vmax=max_diff, clip=True)
 
     fig, ax = plt.subplots(figsize=(9,3.5))
     img = ax.imshow(to_plot, cmap='RdYlGn', norm=norm)
@@ -119,20 +118,21 @@ def plot_high_vs_low_num_samples_diff(data, name, vmin=.5, vmax=100, save_as=Non
     plt.show()
 
 
-def plot_inter_method_diff(data_A, data_B, name, save_as=None):
-    fig, ax = plt.subplots(figsize=(9,3.5))
-
-    plt.title(f'high (hierarchical) MSE: {name}')
+def plot_inter_method_diff(data_A, data_B, name, max_diff=None, save_as=None):
     to_plot = np.nanmedian(data_A[:,:,:,0] - data_B[:,:,:,0], axis=2)
 
-    max_diff = .05*min(abs(np.nanmin(to_plot)), np.nanmax(to_plot))
+    if max_diff is None:
+        max_diff = 2*min(abs(np.nanmin(to_plot)), np.nanmax(to_plot))
+    # max_diff = .05*min(abs(np.nanmin(to_plot)), np.nanmax(to_plot))
     norm = colors.Normalize(vmin=-max_diff, vmax=max_diff, clip=True)
 
+    fig, ax = plt.subplots(figsize=(9,3.5))
     img = ax.imshow(to_plot, cmap='RdYlGn', norm=norm)
-
     fig.colorbar(img, ax=ax, orientation='vertical')
     ax.set_ylabel('#High-fid samples')
     ax.set_xlabel('#Low-fid samples')
+
+    plt.title(f'high (hierarchical) MSE: {name}')
 
     plt.tight_layout()
     if save_as:
