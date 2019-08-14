@@ -184,7 +184,10 @@ def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
 
 def determinerange(values):
     """Determine the range of values in each dimension"""
-    return ValueRange(np.min(values, axis=0), np.max(values, axis=0))
+    r = ValueRange(np.min(values, axis=0), np.max(values, axis=0))
+    if np.any(r.max - r.min < 1e-8):
+        r = ValueRange(r.min - 1e8, r.max + 1e8)
+    return r
 
 
 def rescale(values, *, range_in=None, range_out=ValueRange(0, 1), scale_only=False):
