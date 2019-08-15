@@ -6,3 +6,5 @@ plots/
 *.html
 *.tex
 .ipynb_checkpoints/
+*.npy
+*.npz
