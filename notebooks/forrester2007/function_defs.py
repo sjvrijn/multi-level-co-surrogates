@@ -73,7 +73,7 @@ def plot_high_vs_low_num_samples(data, name, vmin=.5, vmax=100, save_as=None):
     data = np.nanmedian(data, axis=2)
 
     plt.title('Median MSE for high (hierarchical) model')
-    img = ax.imshow(data[:,:,0], cmap='viridis_r', norm=norm)
+    img = ax.imshow(data[:,:,0], cmap='viridis_r', norm=norm, origin='lower')
 
     divider = make_axes_locatable(ax)
     axx = divider.append_axes("bottom", size=.2, pad=0.05, sharex=ax)
@@ -84,8 +84,8 @@ def plot_high_vs_low_num_samples(data, name, vmin=.5, vmax=100, save_as=None):
     axy.xaxis.set_tick_params(labelbottom=False)
     axx.yaxis.set_tick_params(labelleft=False)
 
-    img = axy.imshow(np.nanmean(data[:,:,1], axis=1).reshape(-1,1), cmap='viridis_r', norm=norm)
-    img = axx.imshow(np.nanmean(data[:,:,2], axis=0).reshape(1,-1), cmap='viridis_r', norm=norm)
+    img = axy.imshow(np.nanmean(data[:,:,1], axis=1).reshape(-1,1), cmap='viridis_r', norm=norm, origin='lower')
+    img = axx.imshow(np.nanmean(data[:,:,2], axis=0).reshape(1,-1), cmap='viridis_r', norm=norm, origin='lower')
 
     fig.colorbar(img, ax=ax, orientation='vertical')
     axy.set_ylabel('#High-fid samples')
@@ -106,7 +106,7 @@ def plot_high_vs_low_num_samples_diff(data, name, max_diff=None, save_as=None):
     norm = colors.SymLogNorm(linthresh=.01, vmin=-max_diff, vmax=max_diff, clip=True)
 
     fig, ax = plt.subplots(figsize=(9,3.5))
-    img = ax.imshow(to_plot, cmap='RdYlGn', norm=norm)
+    img = ax.imshow(to_plot, cmap='RdYlGn', norm=norm, origin='lower')
     fig.colorbar(img, ax=ax, orientation='vertical')
     ax.set_ylabel('#High-fid samples')
     ax.set_xlabel('#Low-fid samples')
@@ -127,7 +127,7 @@ def plot_inter_method_diff(data_A, data_B, name, max_diff=None, save_as=None):
     norm = colors.Normalize(vmin=-max_diff, vmax=max_diff, clip=True)
 
     fig, ax = plt.subplots(figsize=(9,3.5))
-    img = ax.imshow(to_plot, cmap='RdYlGn', norm=norm)
+    img = ax.imshow(to_plot, cmap='RdYlGn', norm=norm, origin='lower')
     fig.colorbar(img, ax=ax, orientation='vertical')
     ax.set_ylabel('#High-fid samples')
     ax.set_xlabel('#Low-fid samples')
