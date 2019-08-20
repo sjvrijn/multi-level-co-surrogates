@@ -39,20 +39,11 @@ def create_mse_tracking(func, sample_generator, ndim, gp_kernel='',
     mse_tracking[:] = np.nan
     r2_tracking = np.empty((max_high+1, max_low+1, num_reps, 3))
     r2_tracking[:] = np.nan
-
     value_tracking = np.empty((max_high+1, max_low+1, num_reps, 3, n_test_samples))
 
     num_cases = (max_high-min_high)//step * (max_low-min_low)//step * num_reps
-
-    input_range = mlcs.ValueRange(*np.array([func.l_bound, func.u_bound], dtype=np.float))
-    output_range = (0, 22*ndim)
-    
     test_sample = low_lhs_sample(ndim, n_test_samples)
-
-    #test_sample = mlcs.sample_by_function(func.high, n_samples=n_test_samples, ndim=ndim,
-    #                                      range_in=input_range, range_out=output_range, minimize=False)
-
-    np.save(f'{ndim}d_test_sample.npy', test_sample)
+    np.save(f'{file_dir}{ndim}d_test_sample.npy', test_sample)
 
     print('starting loops')
 
@@ -78,7 +69,7 @@ def create_mse_tracking(func, sample_generator, ndim, gp_kernel='',
                 archive.addcandidates(low_x, func.low(low_x), fidelity='low')
                 archive.addcandidates(high_x, func.high(high_x), fidelity='high')
 
-                mfbo = mlcs.MultiFidelityBO(func, archive, output_range=output_range, test_sample=test_sample,
+                mfbo = mlcs.MultiFidelityBO(func, archive, test_sample=test_sample,
                                             kernel=gp_kernel[:-1], scaling=scaling)
 
                 MSEs = mfbo.getMSE()
