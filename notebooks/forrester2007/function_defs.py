@@ -65,14 +65,14 @@ def create_mse_tracking(func, sample_generator,
     return mse_tracking
 
 
-def plot_high_vs_low_num_samples(data, name, vmin=.5, vmax=100, save_as=None):
+def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, save_as=None):
     norm = colors.LogNorm(vmin=vmin, vmax=vmax, clip=True)
     fig, ax = plt.subplots(figsize=(9,3.5))
 
     ax.set_aspect(1.)
     data = np.nanmedian(data, axis=2)
 
-    plt.title('Median MSE for high (hierarchical) model')
+    plt.title(f'Median MSE for high (hierarchical) model - {title}')
     img = ax.imshow(data[:,:,0], cmap='viridis_r', norm=norm, origin='lower')
 
     divider = make_axes_locatable(ax)
@@ -97,7 +97,7 @@ def plot_high_vs_low_num_samples(data, name, vmin=.5, vmax=100, save_as=None):
     plt.show()
 
 
-def plot_high_vs_low_num_samples_diff(data, name, max_diff=None, save_as=None):
+def plot_high_vs_low_num_samples_diff(data, title, max_diff=None, save_as=None):
 
     to_plot = np.nanmedian(data[:,:,:,1] - data[:,:,:,0], axis=2)
     if max_diff is None:
@@ -111,7 +111,7 @@ def plot_high_vs_low_num_samples_diff(data, name, max_diff=None, save_as=None):
     ax.set_ylabel('#High-fid samples')
     ax.set_xlabel('#Low-fid samples')
 
-    plt.title('Median of paired (high (hierarchical) - high (direct)) MSE')
+    plt.title(f'Median of paired (high (hierarchical) - high (direct)) MSE - {title}')
     plt.tight_layout()
     if save_as:
         plt.savefig(save_as)  # f'{plot_dir}{name}_diff.pdf'
