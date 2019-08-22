@@ -15,7 +15,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from more_itertools import pairwise, stagger
 
 from .CandidateArchive import CandidateArchive
-from .Utils import create_random_sample_set, \
+from .Utils import create_random_sample_set, rescale, \
     sample_by_function, createsurfaces, plotsurfaces, gpplot, ScatterPoints, ValueRange
 from .Surrogates import HierarchicalSurrogate, Surrogate
 
@@ -112,6 +112,8 @@ class MultiFidelityBO:
             test_sample = sample_by_function(self.func.high, n_samples=n_samples, ndim=self.ndim,
                                              range_in=self.input_range, range_out=output_range,
                                              minimize=minimize)
+        else:
+            test_sample = rescale(test_sample, range_in=(0,1), range_out=self.input_range)
         self.test_sample = test_sample
 
         self.mse_tester = {
