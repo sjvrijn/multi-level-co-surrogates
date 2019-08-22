@@ -40,7 +40,6 @@ class MultiFidelityBO:
             self.ndim = self.func.ndim
         self.bounds = np.array([self.func.l_bound * self.ndim, self.func.u_bound * self.ndim], dtype=np.float)
         self.input_range = ValueRange(*self.bounds)
-        self.output_range = ValueRange(*output_range)
         self.fidelities = list(self.func.fidelity_names)
         self.normalized = normalized
 
@@ -109,8 +108,9 @@ class MultiFidelityBO:
 
         if test_sample is None:
             n_samples = 1000
+            output_range = ValueRange(*output_range)
             test_sample = sample_by_function(self.func.high, n_samples=n_samples, ndim=self.ndim,
-                                             range_in=self.input_range, range_out=self.output_range,
+                                             range_in=self.input_range, range_out=output_range,
                                              minimize=minimize)
         self.test_sample = test_sample
 

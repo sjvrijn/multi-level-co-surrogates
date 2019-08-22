@@ -9,7 +9,7 @@ if module_path not in sys.path:
     sys.path.append(module_path)
 
 import multiLevelCoSurrogates as mlcs
-from multifidelityfunctions import forrester, branin, currin, hartmann, borehole
+from multifidelityfunctions import forrester, branin, currin, hartmann, borehole, park91a, park91b
 
 from function_defs import low_lhs_sample, low_random_sample
 
@@ -97,6 +97,8 @@ if __name__ == '__main__':
     #ndim, func, func_name = 1, forrester, 'forrester'
     ndim, func, func_name = 2, branin, 'branin'
     #ndim, func, func_name = 2, currin, 'currin'
+    #ndim, func, func_name = 4, park91a, 'park91a'
+    #ndim, func, func_name = 4, park91b, 'park91b'
     #ndim, func, func_name = 6, hartmann, 'hartmann6'
     #ndim, func, func_name = 8, borehole, 'borehole'
 
