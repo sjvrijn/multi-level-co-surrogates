@@ -3,11 +3,11 @@ from collections import namedtuple
 from itertools import product
 
 import numpy as np
-import os
+from pathlib import Path
 import sys
 
 
-module_path = os.path.abspath(os.path.join('../..'))
+module_path = Path().joinpath('../..')
 if module_path not in sys.path:
     sys.path.append(module_path)
 
@@ -19,8 +19,8 @@ from function_defs import low_lhs_sample, low_random_sample
 np.random.seed(20160501)  # Setting seed for reproducibility
 
 np.set_printoptions(linewidth=200)
-plot_dir = '../../plots/'
-file_dir = '../../files/'
+plot_dir = Path('../../plots/')
+file_dir = Path('../../files/')
 mlcs.guaranteeFolderExists(plot_dir)
 mlcs.guaranteeFolderExists(file_dir)
 
@@ -46,7 +46,7 @@ def create_mse_tracking(func, sample_generator, ndim, gp_kernel='',
 
     num_cases = (max_high-min_high)//step * (max_low-min_low)//step * num_reps
     test_sample = low_lhs_sample(ndim, n_test_samples)  #TODO: consider rescaling test_sample here instead of in MultiFidBO
-    np.save(f'{file_dir}{ndim}d_test_sample.npy', test_sample)
+    np.save(file_dir.joinpath(f'{ndim}d_test_sample.npy'), test_sample)
 
     print('starting loops')
 
@@ -130,6 +130,6 @@ if __name__ == '__main__':
             min_high=min_high, min_low=min_low, step=step, scaling=scale
         )
 
-        np.save(f'{file_dir}{k}{case.ndim}d_{case.func_name}_lin_mse_tracking.npy', mse_tracking)
-        np.save(f'{file_dir}{k}{case.ndim}d_{case.func_name}_lin_r2_tracking.npy', r2_tracking)
-        np.save(f'{file_dir}{k}{case.ndim}d_{case.func_name}_lin_value_tracking.npy', values)
+        np.save(file_dir.joinpath(f'{k}{case.ndim}d_{case.func_name}_lin_mse_tracking.npy'), mse_tracking)
+        np.save(file_dir.joinpath(f'{k}{case.ndim}d_{case.func_name}_lin_r2_tracking.npy'), r2_tracking)
+        np.save(file_dir.joinpath(f'{k}{case.ndim}d_{case.func_name}_lin_value_tracking.npy'), values)
