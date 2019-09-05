@@ -4,12 +4,12 @@
 from pyDOE import lhs
 import numpy as np
 import matplotlib.pyplot as plt
-import os
+from pathlib import Path
 import sys
 
 # from numba import jit, prange
 
-module_path = os.path.abspath(os.path.join('../..'))
+module_path = Path().joinpath('../..')
 if module_path not in sys.path:
     sys.path.append(module_path)
 
