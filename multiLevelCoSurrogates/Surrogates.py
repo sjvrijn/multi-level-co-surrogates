@@ -127,47 +127,6 @@ class Surrogate:
             raise ValueError(f"Unknown surrogate name '{name}'.")
 
 
-class CoSurrogate:
-    """A generic interface for co-surrogates"""
-
-    def __init__(self, surrogate_name, candidate_archive, fidelities, n, fit_scaling_param=True):
-
-        X, y = candidate_archive.getcandidates(num_recent_candidates=n, fidelity=fidelities)
-        y_high, y_low = y[:, 0], y[:, 1]
-
-        self.X = X
-        self.y_low = np.array(y_low)
-        self.y_high = np.array(y_high)
-
-        self.rho = self.determineScaleParameter() if fit_scaling_param else 1
-        self.y = y_high - self.rho*y_low
-
-        for idx, x in enumerate(X):
-            candidate_archive.addcandidate(x, self.y[idx], fidelity='high-low')
-
-        self.surrogate = Surrogate.fromname(surrogate_name, candidate_archive, n, fidelity='high-low')
-
-
-    def determineScaleParameter(self):
-        """ Determine the scaling parameter 'rho' between y_low and y_high using simple linear regression """
-        return 1 / np.mean(self.y_high / self.y_low)
-
-
-    @property
-    def is_trained(self):
-        return self.surrogate.is_trained
-
-    @property
-    def provides_std(self):
-        return self.surrogate.provides_std
-
-    def predict(self, X, *, mode='value'):
-        return self.surrogate.predict(X, mode=mode)
-
-    def train(self):
-        return self.surrogate.train()
-
-
 class HierarchicalSurrogate:
     """A generic interface for hierarchical surrogates"""
 
