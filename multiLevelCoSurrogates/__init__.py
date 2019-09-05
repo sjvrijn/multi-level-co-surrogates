@@ -9,9 +9,7 @@ __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 
-from .BayesianOptimization import *
 from .CandidateArchive import *
-# from .Logger import *
 from .Surrogates import *
 from .Utils import *
 
