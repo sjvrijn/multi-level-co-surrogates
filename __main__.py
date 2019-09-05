@@ -223,10 +223,10 @@ def runNoSurrogateExperiment(ndim, lambda_, mu, fit_func_name, rep):
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_log': 0, 'verbose': -8})
 
-    res_log = mlcs.Logger(f'{filename_prefix}reslog.{data_ext}',
-                          header="Fitness values from actual function, inf for any not pre-selected candidate")
-    time_log = mlcs.Logger(f'{filename_prefix}timelog.{data_ext}',
-                           header="Time spent on optimization process")
+    # res_log = mlcs.Logger(f'{filename_prefix}reslog.{data_ext}',
+    #                       header="Fitness values from actual function, inf for any not pre-selected candidate")
+    # time_log = mlcs.Logger(f'{filename_prefix}timelog.{data_ext}',
+    #                        header="Time spent on optimization process")
     start_time = time.time()
 
     while not es.stop():
@@ -275,10 +275,10 @@ def runExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, training_size
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_log': 0, 'verbose': -8})
 
-    res_log = mlcs.Logger(f'{filename_prefix}reslog.{data_ext}',
-                          header="Fitness values from actual function, inf for any not pre-selected candidate")
-    time_log = mlcs.Logger(f'{filename_prefix}timelog.{data_ext}',
-                           header="Time spent on optimization process")
+    # res_log = mlcs.Logger(f'{filename_prefix}reslog.{data_ext}',
+    #                       header="Fitness values from actual function, inf for any not pre-selected candidate")
+    # time_log = mlcs.Logger(f'{filename_prefix}timelog.{data_ext}',
+    #                        header="Time spent on optimization process")
     start_time = time.time()
 
     while not es.stop():
@@ -332,8 +332,8 @@ def runEGOExperiment(ndim, init_sample_size, training_size, fit_func_name, surro
     surrogate, cand_archive = createSurrogate(ndim, init_sample_size, fit_func.high, l_bound, u_bound, surrogate_name)
     ego = mlcs.EGO(surrogate, ndim, fit_func.u_bound, fit_func.l_bound)
 
-    res_log = mlcs.Logger(f'{filename_prefix}reslog.{data_ext}',
-                          header="Fitness values from actual function, inf for any not pre-selected candidate")
+    # res_log = mlcs.Logger(f'{filename_prefix}reslog.{data_ext}',
+    #                       header="Fitness values from actual function, inf for any not pre-selected candidate")
 
     for i in range(num_iters):
 
@@ -387,10 +387,10 @@ def runMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sample_size, 
     es = cma.CMAEvolutionStrategy(init_individual, sigma, inopts={'popsize': lambda_pre, 'CMA_mu': mu, 'maxiter': 1000,
                                                                   'verb_log': 0, 'verbose': -8})
 
-    res_log = mlcs.Logger(f'{filename_prefix}reslog.{data_ext}',
-                          header="Fitness values from actual function, inf for any not pre-selected candidate")
-    time_log = mlcs.Logger(f'{filename_prefix}timelog.{data_ext}',
-                           header="Time spent on optimization process")
+    # res_log = mlcs.Logger(f'{filename_prefix}reslog.{data_ext}',
+    #                       header="Fitness values from actual function, inf for any not pre-selected candidate")
+    # time_log = mlcs.Logger(f'{filename_prefix}timelog.{data_ext}',
+    #                        header="Time spent on optimization process")
     start_time = time.time()
 
     ### OPTIMIZATION ###
@@ -451,8 +451,8 @@ def runBiSurrogateMultiFidelityExperiment(ndim, lambda_, lambda_pre, mu, init_sa
     if f'{fsuff}reslog.{data_ext}' in os.listdir(f'{data_dir}{fname}'):
         return
 
-    res_log = mlcs.Logger(f'{filename_prefix}reslog.{data_ext}',
-                          header="Fitness values from actual function, inf for any not pre-selected candidate")
+    # res_log = mlcs.Logger(f'{filename_prefix}reslog.{data_ext}',
+    #                       header="Fitness values from actual function, inf for any not pre-selected candidate")
 
     surrogate, cand_archive = createCoSurrogate(ndim, init_sample_size, fit_func.low, fit_func.high, l_bound, u_bound, surrogate_name, fit_scaling_param)
     surrogate_low = mlcs.Surrogate.fromname(surrogate_name, cand_archive, n=training_size, fidelity='low')
