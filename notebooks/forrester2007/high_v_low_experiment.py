@@ -32,7 +32,6 @@ num_reps = 50
 step = 1
 
 
-# @jit(parallel=True)
 def create_mse_tracking(func, sample_generator, ndim, gp_kernel='',
                         max_high=40, max_low=100, num_reps=30,
                         min_high=2, min_low=3, step=1, scaling='on'):
@@ -44,51 +43,43 @@ def create_mse_tracking(func, sample_generator, ndim, gp_kernel='',
     r2_tracking[:] = np.nan
     value_tracking = np.empty((max_high+1, max_low+1, num_reps, 3, n_test_samples))
 
-    num_cases = (max_high-min_high)//step * (max_low-min_low)//step * num_reps
     test_sample = low_lhs_sample(ndim, n_test_samples)  #TODO: consider rescaling test_sample here instead of in MultiFidBO
     np.save(file_dir.joinpath(f'{ndim}d_test_sample.npy'), test_sample)
 
     print('starting loops')
 
-    for num_high in range(min_high, max_high+1, step):
-        for num_low in range(min_low, max_low+1, step):
-            for rep in range(num_reps):
+    cases = list(product(range(min_high, max_high+1, step),
+                         range(min_low, max_low+1, step),
+                         range(num_reps)))
 
-                #TODO: this calculation is silly, this *HAS* to be possible much simpler...
-                idx = (num_high - min_high) // step * num_reps * (max_low - min_low) // step \
-                      + (num_low - min_low) // step * num_reps \
-                      + rep
+    for i, (num_high, num_low), rep in enumerate(cases):
 
-                idx = int(idx)
+        if i % 100 == 0:
+            print(f'{i}/{len(cases)}')
 
-                if idx % 100 == 0:
-                    print(idx, '/', num_cases)
-                if num_high >= num_low:
-                    continue
+        if num_high >= num_low:
+            continue
 
-                low_x = sample_generator(ndim, num_low)
-                high_x = low_x[np.random.choice(num_low, num_high, replace=False)]
+        low_x = sample_generator(ndim, num_low)
+        high_x = low_x[np.random.choice(num_low, num_high, replace=False)]
 
-                archive = mlcs.CandidateArchive(ndim=ndim, fidelities=['high', 'low', 'high-low'])
-                archive.addcandidates(low_x, func.low(low_x), fidelity='low')
-                archive.addcandidates(high_x, func.high(high_x), fidelity='high')
+        archive = mlcs.CandidateArchive(ndim=ndim, fidelities=['high', 'low', 'high-low'])
+        archive.addcandidates(low_x, func.low(low_x), fidelity='low')
+        archive.addcandidates(high_x, func.high(high_x), fidelity='high')
 
-                mfbo = mlcs.MultiFidelityBO(func, archive, test_sample=test_sample,
-                                            kernel=gp_kernel[:-1], scaling=scaling)
+        mfbo = mlcs.MultiFidelityBO(func, archive, test_sample=test_sample,
+                                    kernel=gp_kernel[:-1], scaling=scaling)
 
-                mse_tracking[num_high, num_low, rep] = mfbo.getMSE()
-                r2_tracking[num_high, num_low, rep] = mfbo.getR2()
+        mse_tracking[num_high, num_low, rep] = mfbo.getMSE()
+        r2_tracking[num_high, num_low, rep] = mfbo.getR2()
 
-                for i, (direct, fid) in enumerate([(False, 'high'), (False, 'low'), (True, 'high')]):
-                    if direct:
-                        models = mfbo.direct_models
-                    else:
-                        models = mfbo.models
+        for i, model in enumerate([mfbo.models['high'],
+                                   mfbo.models['low'],
+                                   mfbo.direct_models['high']]):
 
-                    value_tracking[num_high, num_low, rep, i] = models[fid].predict(mfbo.test_sample).flatten()
+            value_tracking[num_high, num_low, rep, i] = model.predict(mfbo.test_sample).flatten()
 
-
-    print(num_cases, '/', num_cases)
+    print(f'{len(cases)}/{len(cases)}')
     return mse_tracking, r2_tracking, value_tracking
 
 
@@ -124,12 +115,14 @@ if __name__ == '__main__':
     for case, k, scale in product(cases, kernels, scaling_options):
 
         np.random.seed(20160501)  # Setting seed for reproducibility
-        mse_tracking, r2_tracking, values = create_mse_tracking(
+        mses, r_squares, values = create_mse_tracking(
             case.func, low_lhs_sample, ndim=case.ndim, gp_kernel=k,
             max_high=max_high, max_low=max_low, num_reps=num_reps,
             min_high=min_high, min_low=min_low, step=step, scaling=scale
         )
 
-        np.save(file_dir.joinpath(f'{k}{case.ndim}d_{case.func_name}_lin_mse_tracking.npy'), mse_tracking)
-        np.save(file_dir.joinpath(f'{k}{case.ndim}d_{case.func_name}_lin_r2_tracking.npy'), r2_tracking)
-        np.save(file_dir.joinpath(f'{k}{case.ndim}d_{case.func_name}_lin_value_tracking.npy'), values)
+        base_file_name = f'{k}{case.ndim}d_{case.func_name}'
+
+        np.save(file_dir.joinpath(f'{base_file_name}_lin_mse_tracking.npy'), mses)
+        np.save(file_dir.joinpath(f'{base_file_name}_lin_r2_tracking.npy'), r_squares)
+        np.save(file_dir.joinpath(f'{base_file_name}_lin_value_tracking.npy'), values)
