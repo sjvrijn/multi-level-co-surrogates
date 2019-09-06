@@ -38,6 +38,10 @@ class Surrogate:
         self.Xrange = None
         self.yrange = None
 
+        self._predictors = {'value': self.do_predict,
+                            'std': self.do_predict_std,
+                            'both': self.do_predict_both}
+
         if self.archive is not None and len(self.archive) > 0:
             self._updatevalues()
 
@@ -57,7 +61,7 @@ class Surrogate:
 
 
     def predict(self, X, *, mode='value', return_std=None):
-        """Public prediction function.
+        """Prediction function.
         Available modes: 'value', 'std' and 'both'
         """
         if not self.is_trained:
@@ -68,14 +72,7 @@ class Surrogate:
         elif return_std is False:
             mode = 'value'
 
-        if mode == 'value':
-            predictor = self.do_predict
-        elif mode == 'std':
-            predictor = self.do_predict_std
-        elif mode == 'both':
-            predictor = self.do_predict_both
-        else:
-            raise ValueError(f"Invalid prediction mode '{mode}'. Supported are: 'value', 'std', 'both'")
+        predictor = self._predictors[mode]
 
         if self.normalized:
             X = rescale(X, range_in=self.Xrange, range_out=self.normalize_target)
