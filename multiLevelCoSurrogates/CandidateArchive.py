@@ -89,7 +89,7 @@ class CandidateArchive:
         fid_idx = self.fidelities.index(fidelity)
 
         if verbose and not np.isnan(fit_values[fid_idx]):
-            warn(f"overwriting existing value '{self.data[idx, fidelity]}' with '{fitness}'", RuntimeWarning)
+            warn(f"overwriting existing value '{self.data[tuple(candidate), fid_idx]}' with '{fitness}'", RuntimeWarning)
 
         fit_values[fid_idx] = fitness
         self._updateminmax(fidelity, fitness)
