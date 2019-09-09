@@ -44,25 +44,17 @@ def create_mse_tracking(func, ndim, mfbo_options, instances,
 
     test_sample = low_lhs_sample(ndim, n_test_samples)  #TODO: consider rescaling test_sample here instead of in MultiFidBO
     np.save(file_dir.joinpath(f'{ndim}d_test_sample.npy'), test_sample)
+    mfbo_options['test_sample'] = test_sample
 
     print('starting loops')
 
-    for i, (num_high, num_low, rep) in enumerate(instances):
+    for i, instance in enumerate(instances):
+        num_high, num_low, rep = instance
 
         if i % 100 == 0:
             print(f'{i}/{len(instances)}')
 
-        np.random.seed(int(f'{num_high:03}{num_low:03}{rep:03}'))
-
-        high_x, low_x = multi_fidelity_doe(ndim, num_high, num_low)
-
-        archive = mlcs.CandidateArchive(ndim=ndim,
-                                        fidelities=['high', 'low', 'high-low'])
-        archive.addcandidates(low_x, func.low(low_x), fidelity='low')
-        archive.addcandidates(high_x, func.high(high_x), fidelity='high')
-
-        mfbo = mlcs.MultiFidelityBO(func, archive, test_sample=test_sample,
-                                    **mfbo_options)
+        mfbo = create_experiment_instance(func, mfbo_options, ndim, instance)
 
         mse_tracking[num_high, num_low, rep] = mfbo.getMSE()
         r2_tracking[num_high, num_low, rep] = mfbo.getR2()
@@ -70,11 +62,31 @@ def create_mse_tracking(func, ndim, mfbo_options, instances,
         for i, model in enumerate([mfbo.models['high'],
                                    mfbo.models['low'],
                                    mfbo.direct_models['high']]):
-
             value_tracking[num_high, num_low, rep, i] = model.predict(mfbo.test_sample).flatten()
 
     print(f'{len(instances)}/{len(instances)}')
     return mse_tracking, r2_tracking, value_tracking
+
+
+def create_experiment_instance(func, mfbo_options, ndim, instance):
+    """Create a consistent instantiated MFBO instance with the given parameters.
+
+    :returns MultiFidelityBO instance
+    """
+    num_high, num_low, rep = instance
+
+    np.random.seed(int(f'{num_high:03}{num_low:03}{rep:03}'))
+
+    high_x, low_x = multi_fidelity_doe(ndim, num_high, num_low)
+
+    archive = mlcs.CandidateArchive(ndim=ndim,
+                                    fidelities=['high', 'low', 'high-low'])
+    archive.addcandidates(low_x, func.low(low_x), fidelity='low')
+    archive.addcandidates(high_x, func.high(high_x), fidelity='high')
+
+    mfbo = mlcs.MultiFidelityBO(func, archive, **mfbo_options)
+
+    return mfbo
 
 
 def multi_fidelity_doe(ndim, num_high, num_low):
