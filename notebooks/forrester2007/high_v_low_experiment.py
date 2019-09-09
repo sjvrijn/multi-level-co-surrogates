@@ -60,6 +60,9 @@ def create_mse_tracking(func, sample_generator, ndim, gp_kernel='',
         if num_high >= num_low:
             continue
 
+        seed = int(f'{num_high:02}{num_low:03}{rep:02}')
+        np.random.seed(seed)
+
         low_x = sample_generator(ndim, num_low)
         high_x = low_x[np.random.choice(num_low, num_high, replace=False)]
 
