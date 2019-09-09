@@ -32,9 +32,8 @@ num_reps = 50
 step = 1
 
 
-def create_mse_tracking(func, ndim, mfbo_options,
-                        max_high=40, max_low=100, num_reps=30,
-                        min_high=2, min_low=3, step=1):
+def create_mse_tracking(func, ndim, mfbo_options, instances,
+                        max_high=40, max_low=100, num_reps=30):
 
     n_test_samples = 500*ndim
     mse_tracking = np.empty((max_high+1, max_low+1, num_reps, 3))
@@ -47,11 +46,6 @@ def create_mse_tracking(func, ndim, mfbo_options,
     np.save(file_dir.joinpath(f'{ndim}d_test_sample.npy'), test_sample)
 
     print('starting loops')
-
-    instances = product(range(min_high, max_high+1, step),
-                        range(min_low, max_low+1, step),
-                        range(num_reps))
-    instances = [(h, l, r) for h, l, r in instances if h < l]
 
     for i, (num_high, num_low, rep) in enumerate(instances):
 
@@ -130,10 +124,16 @@ if __name__ == '__main__':
 
         options = {'kernel': k, 'scaling': scale}
 
+        instances = [(h, l, r)
+                     for h, l, r in product(range(min_high, max_high + 1, step),
+                                            range(min_low, max_low + 1, step),
+                                            range(num_reps))
+                     if h < l]
+
+
         mses, r_squares, values = create_mse_tracking(
-            case.func, ndim=case.ndim, mfbo_options=options,
+            case.func, ndim=case.ndim, mfbo_options=options, instances=instances,
             max_high=max_high, max_low=max_low, num_reps=num_reps,
-            min_high=min_high, min_low=min_low, step=step
         )
 
         base_file_name = f'{k}{case.ndim}d_{case.func_name}'
