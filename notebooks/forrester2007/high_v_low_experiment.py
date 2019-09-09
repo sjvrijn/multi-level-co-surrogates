@@ -32,9 +32,9 @@ num_reps = 50
 step = 1
 
 
-def create_mse_tracking(func, ndim, gp_kernel='',
+def create_mse_tracking(func, ndim, mfbo_options,
                         max_high=40, max_low=100, num_reps=30,
-                        min_high=2, min_low=3, step=1, scaling='on'):
+                        min_high=2, min_low=3, step=1):
 
     n_test_samples = 500*ndim
     mse_tracking = np.empty((max_high+1, max_low+1, num_reps, 3))
@@ -68,7 +68,7 @@ def create_mse_tracking(func, ndim, gp_kernel='',
         archive.addcandidates(high_x, func.high(high_x), fidelity='high')
 
         mfbo = mlcs.MultiFidelityBO(func, archive, test_sample=test_sample,
-                                    kernel=gp_kernel[:-1], scaling=scaling)
+                                    **mfbo_options)
 
         mse_tracking[num_high, num_low, rep] = mfbo.getMSE()
         r2_tracking[num_high, num_low, rep] = mfbo.getR2()
@@ -127,10 +127,13 @@ if __name__ == '__main__':
     for case, k, scale in product(cases, kernels, scaling_options):
 
         np.random.seed(20160501)  # Setting seed for reproducibility
+
+        options = {'kernel': k, 'scaling': scale}
+
         mses, r_squares, values = create_mse_tracking(
-            case.func, ndim=case.ndim, gp_kernel=k,
+            case.func, ndim=case.ndim, mfbo_options=options,
             max_high=max_high, max_low=max_low, num_reps=num_reps,
-            min_high=min_high, min_low=min_low, step=step, scaling=scale
+            min_high=min_high, min_low=min_low, step=step
         )
 
         base_file_name = f'{k}{case.ndim}d_{case.func_name}'
