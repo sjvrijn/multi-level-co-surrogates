@@ -48,17 +48,15 @@ def create_mse_tracking(func, ndim, gp_kernel='',
 
     print('starting loops')
 
-    instances = list(product(range(min_high, max_high+1, step),
-                             range(min_low, max_low+1, step),
-                             range(num_reps)))
+    instances = product(range(min_high, max_high+1, step),
+                        range(min_low, max_low+1, step),
+                        range(num_reps))
+    instances = [(h, l, r) for h, l, r in instances if h < l]
 
     for i, (num_high, num_low, rep) in enumerate(instances):
 
         if i % 100 == 0:
             print(f'{i}/{len(instances)}')
-
-        if num_high >= num_low:
-            continue
 
         seed = int(f'{num_high:02}{num_low:03}{rep:02}')
         np.random.seed(seed)
