@@ -48,14 +48,14 @@ def create_mse_tracking(func, ndim, gp_kernel='',
 
     print('starting loops')
 
-    cases = list(product(range(min_high, max_high+1, step),
-                         range(min_low, max_low+1, step),
-                         range(num_reps)))
+    instances = list(product(range(min_high, max_high+1, step),
+                             range(min_low, max_low+1, step),
+                             range(num_reps)))
 
-    for i, (num_high, num_low, rep) in enumerate(cases):
+    for i, (num_high, num_low, rep) in enumerate(instances):
 
         if i % 100 == 0:
-            print(f'{i}/{len(cases)}')
+            print(f'{i}/{len(instances)}')
 
         if num_high >= num_low:
             continue
@@ -82,7 +82,7 @@ def create_mse_tracking(func, ndim, gp_kernel='',
 
             value_tracking[num_high, num_low, rep, i] = model.predict(mfbo.test_sample).flatten()
 
-    print(f'{len(cases)}/{len(cases)}')
+    print(f'{len(instances)}/{len(instances)}')
     return mse_tracking, r2_tracking, value_tracking
 
 
