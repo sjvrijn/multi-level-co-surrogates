@@ -32,7 +32,7 @@ num_reps = 50
 step = 1
 
 
-def create_mse_tracking(func, sample_generator, ndim, gp_kernel='',
+def create_mse_tracking(func, ndim, gp_kernel='',
                         max_high=40, max_low=100, num_reps=30,
                         min_high=2, min_low=3, step=1, scaling='on'):
 
@@ -63,10 +63,10 @@ def create_mse_tracking(func, sample_generator, ndim, gp_kernel='',
         seed = int(f'{num_high:02}{num_low:03}{rep:02}')
         np.random.seed(seed)
 
-        low_x = sample_generator(ndim, num_low)
-        high_x = low_x[np.random.choice(num_low, num_high, replace=False)]
+        high_x, low_x = multi_fidelity_doe(ndim, num_high, num_low)
 
-        archive = mlcs.CandidateArchive(ndim=ndim, fidelities=['high', 'low', 'high-low'])
+        archive = mlcs.CandidateArchive(ndim=ndim,
+                                        fidelities=['high', 'low', 'high-low'])
         archive.addcandidates(low_x, func.low(low_x), fidelity='low')
         archive.addcandidates(high_x, func.high(high_x), fidelity='high')
 
@@ -84,6 +84,18 @@ def create_mse_tracking(func, sample_generator, ndim, gp_kernel='',
 
     print(f'{len(cases)}/{len(cases)}')
     return mse_tracking, r2_tracking, value_tracking
+
+
+def multi_fidelity_doe(ndim, num_high, num_low):
+    """Create a Design of Experiments (DoE) for two fidelities in `ndim`
+    dimensions. The high-fidelity samples are guaranteed to be a subset
+    of the low-fidelity samples.
+
+    :returns high-fidelity samples, low-fidelity samples
+    """
+    low_x = low_lhs_sample(ndim, num_low)
+    high_x = low_x[np.random.choice(num_low, num_high, replace=False)]
+    return high_x, low_x
 
 
 if __name__ == '__main__':
@@ -119,7 +131,7 @@ if __name__ == '__main__':
 
         np.random.seed(20160501)  # Setting seed for reproducibility
         mses, r_squares, values = create_mse_tracking(
-            case.func, low_lhs_sample, ndim=case.ndim, gp_kernel=k,
+            case.func, ndim=case.ndim, gp_kernel=k,
             max_high=max_high, max_low=max_low, num_reps=num_reps,
             min_high=min_high, min_low=min_low, step=step, scaling=scale
         )
