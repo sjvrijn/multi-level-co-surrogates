@@ -58,8 +58,7 @@ def create_mse_tracking(func, ndim, gp_kernel='',
         if i % 100 == 0:
             print(f'{i}/{len(instances)}')
 
-        seed = int(f'{num_high:02}{num_low:03}{rep:02}')
-        np.random.seed(seed)
+        np.random.seed(int(f'{num_high:03}{num_low:03}{rep:03}'))
 
         high_x, low_x = multi_fidelity_doe(ndim, num_high, num_low)
 
