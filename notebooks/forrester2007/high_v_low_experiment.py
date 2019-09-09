@@ -52,7 +52,7 @@ def create_mse_tracking(func, sample_generator, ndim, gp_kernel='',
                          range(min_low, max_low+1, step),
                          range(num_reps)))
 
-    for i, (num_high, num_low), rep in enumerate(cases):
+    for i, (num_high, num_low, rep) in enumerate(cases):
 
         if i % 100 == 0:
             print(f'{i}/{len(cases)}')
