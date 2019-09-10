@@ -102,38 +102,7 @@ def multi_fidelity_doe(ndim, num_high, num_low):
     return high_x, low_x
 
 
-def run():
-
-    cases = [
-        # Case(1, mff.forrester, 'forrester'),
-
-        # Case(2, mff.forrester, 'forrester'),
-        Case(2, mff.bohachevsky, 'bohachevsky'),
-        Case(2, mff.booth, 'booth'),
-        Case(2, mff.branin, 'branin'),
-        # Case(2, mff.currin, 'currin'),
-        Case(2, mff.himmelblau, 'himmelblau'),
-        Case(2, mff.sixHumpCamelBack, 'sixHumpCamelBack'),
-
-        # Case(4, mff.forrester, 'forrester'),
-        # Case(4, mff.park91a, 'park91a'),
-        Case(4, mff.park91b, 'park91b'),
-
-        Case(6, mff.forrester, 'forrester'),
-        Case(6, mff.hartmann6, 'hartmann6'),
-
-        Case(8, mff.forrester, 'forrester'),
-        Case(8, mff.borehole, 'borehole'),
-    ]
-
-    kernels = ['Matern_']
-    scaling_options = ['off']  # , 'on', 'inverted']  # , 'regularized']
-
-    instances = [(h, l, r)
-                 for h, l, r in product(range(min_high, max_high + 1, step),
-                                        range(min_low, max_low + 1, step),
-                                        range(num_reps))
-                 if h < l]
+def run(cases, kernels, scaling_options, instances):
 
     for case, k, scale in product(cases, kernels, scaling_options):
 
@@ -152,7 +121,3 @@ def run():
         np.save(file_dir.joinpath(f'{base_file_name}_lin_mse_tracking.npy'), mses)
         np.save(file_dir.joinpath(f'{base_file_name}_lin_r2_tracking.npy'), r_squares)
         np.save(file_dir.joinpath(f'{base_file_name}_lin_value_tracking.npy'), values)
-
-
-if __name__ == '__main__':
-    run()
