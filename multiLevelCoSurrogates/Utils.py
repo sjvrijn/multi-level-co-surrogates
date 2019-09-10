@@ -39,9 +39,8 @@ def guaranteeFolderExists(path_name):
 # ------------------------------------------------------------------------------
 
 def select_subsample(xdata, num):
-    """
-    uniform selection of sub samples from a larger data set (only for input).
-    use it to create uniform sample
+    """Uniform selection of sub samples from a larger data set (only for input).
+    Use it to create a uniform sample
        inputs:
           xdata  : inputs data set. each row is a dimension
             num  : final (desired) number of samples
@@ -234,7 +233,9 @@ def create_meshgrid(l_bound, step, u_bound):
 
 
 def create_wide_meshgrid(l_bound, step, u_bound):
-    """Create a meshgrid that extends 1 step in each direction beyond the original bounds"""
+    """Create a meshgrid that extends 1 step in each direction beyond the
+    original bounds
+    """
     num_steps_x = calc_numsteps(l_bound[0], u_bound[0], step[0]) + 2
     num_steps_y = calc_numsteps(l_bound[1], u_bound[1], step[1]) + 2
     X = np.linspace(l_bound[0] - step[0], u_bound[0] + step[0], num_steps_x)
@@ -244,7 +245,9 @@ def create_wide_meshgrid(l_bound, step, u_bound):
 
 
 def createsurface(func, l_bound=None, u_bound=None, step=None, wide=True):
-    """Create a Surface(X, Y, Z) by evaluating `func` on a (wide) grid ranging from l_bound to u_bound"""
+    """Create a Surface(X, Y, Z) by evaluating `func` on a (wide) grid ranging
+    from l_bound to u_bound
+    """
     if isinstance(func, Surface):
         return func
 
@@ -264,25 +267,27 @@ def createsurface(func, l_bound=None, u_bound=None, step=None, wide=True):
 
 
 def createsurfaces(funcs, *args, **kwargs):
-    """Create Surface objects for each function in the list `funcs` using the default parameters"""
+    """Create Surface objects for each function in the list `funcs` using the
+    default parameters
+    """
     return [createsurface(func, *args, **kwargs) for func in funcs]
 
 
 # ------------------------------------------------------------------------------
 
-def plotsurfaces(surfaces, *, all_points=None, titles=None, shape=None, figratio=None, save_as=None, as_3d=True, show=True, **_):
+def plotsurfaces(surfaces, *, all_points=None, titles=None, shape=None,
+                 figratio=None, save_as=None, as_3d=True, show=True, **_):
     """Plot a set of surfaces as subfigures in a single figure"""
     if titles is None:
         titles = ['']*len(surfaces)
     elif len(titles) < len(surfaces):
         titles.extend([''] * (len(surfaces) - len(titles)))
 
-    if shape is not None:
-        if np.product(shape) != len(surfaces):
-            raise ValueError(f"Given shape 'np.product({shape})={np.product(shape)}'"
-                             f" does not match number of functions '{len(surfaces)}' given.")
-    else:
+    if shape is None:
         shape = (1, len(surfaces))
+    elif np.product(shape) != len(surfaces):
+        raise ValueError(f"Given shape 'np.product({shape})={np.product(shape)}'"
+                         f" does not match number of functions '{len(surfaces)}' given.")
 
     figratio = (5,4.5) if figratio is None else figratio
     if as_3d:
