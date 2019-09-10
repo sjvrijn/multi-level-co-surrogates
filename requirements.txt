@@ -1,5 +1,5 @@
 bayesian-optimization>=1.0.0
-cma==2.6.0
+cma>=2.6.0
 cycler>=0.10.0
 kiwisolver>=1.0.1
 matplotlib>=2.2.3
