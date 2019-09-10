@@ -14,7 +14,7 @@ from itertools import product
 
 import multifidelityfunctions as mff
 
-from .high_v_low_experiment import run
+from high_v_low_experiment import run
 
 min_high = 2
 min_low = 3

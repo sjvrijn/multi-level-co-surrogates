@@ -24,24 +24,17 @@ file_dir = Path('../../files/')
 mlcs.guaranteeFolderExists(plot_dir)
 mlcs.guaranteeFolderExists(file_dir)
 
-min_high = 2
-min_low = 3
-max_high = 50
-max_low = 125
-num_reps = 50
-step = 1
 
 Case = namedtuple('Case', 'ndim func func_name')
 
-def create_mse_tracking(func, ndim, mfbo_options, instances,
-                        max_high=40, max_low=100, num_reps=30):
+def create_mse_tracking(func, ndim, mfbo_options, instances):
 
     n_test_samples = 500*ndim
-    mse_tracking = np.empty((max_high+1, max_low+1, num_reps, 3))
+    mse_tracking = np.empty((len(instances), 3))
     mse_tracking[:] = np.nan
-    r2_tracking = np.empty((max_high+1, max_low+1, num_reps, 3))
+    r2_tracking = np.empty((len(instances), 3))
     r2_tracking[:] = np.nan
-    value_tracking = np.empty((max_high+1, max_low+1, num_reps, 3, n_test_samples))
+    value_tracking = np.empty((len(instances), 3, n_test_samples))
 
     test_sample = low_lhs_sample(ndim, n_test_samples)  #TODO: consider rescaling test_sample here instead of in MultiFidBO
     np.save(file_dir.joinpath(f'{ndim}d_test_sample.npy'), test_sample)
@@ -50,20 +43,19 @@ def create_mse_tracking(func, ndim, mfbo_options, instances,
     print('starting loops')
 
     for i, instance in enumerate(instances):
-        num_high, num_low, rep = instance
 
         if i % 100 == 0:
             print(f'{i}/{len(instances)}')
 
         mfbo = create_experiment_instance(func, mfbo_options, ndim, instance)
 
-        mse_tracking[num_high, num_low, rep] = mfbo.getMSE()
-        r2_tracking[num_high, num_low, rep] = mfbo.getR2()
+        mse_tracking[i] = mfbo.getMSE()
+        r2_tracking[i] = mfbo.getR2()
 
-        for i, model in enumerate([mfbo.models['high'],
+        for m, model in enumerate([mfbo.models['high'],
                                    mfbo.models['low'],
                                    mfbo.direct_models['high']]):
-            value_tracking[num_high, num_low, rep, i] = model.predict(mfbo.test_sample).flatten()
+            value_tracking[i, m] = model.predict(mfbo.test_sample).flatten()
 
     print(f'{len(instances)}/{len(instances)}')
     return mse_tracking, r2_tracking, value_tracking
@@ -108,16 +100,16 @@ def run(cases, kernels, scaling_options, instances):
 
         np.random.seed(20160501)  # Setting seed for reproducibility
 
-        options = {'kernel': k, 'scaling': scale}
+        options = {'kernel': k[:-1], 'scaling': scale}
 
-
-        mses, r_squares, values = create_mse_tracking(
-            case.func, ndim=case.ndim, mfbo_options=options, instances=instances,
-            max_high=max_high, max_low=max_low, num_reps=num_reps,
-        )
+        mses, r_squares, values = \
+            create_mse_tracking(func=case.func, mfbo_options=options,
+                                ndim=case.ndim, instances=instances)
 
         base_file_name = f'{k}{case.ndim}d_{case.func_name}'
 
+        # TODO: store as Pandas DataFrame/XArray DataArray/DataSet instead
+        np.save(file_dir.joinpath(f'{base_file_name}_instances.npy'), np.array(instances))
         np.save(file_dir.joinpath(f'{base_file_name}_lin_mse_tracking.npy'), mses)
         np.save(file_dir.joinpath(f'{base_file_name}_lin_r2_tracking.npy'), r_squares)
         np.save(file_dir.joinpath(f'{base_file_name}_lin_value_tracking.npy'), values)
