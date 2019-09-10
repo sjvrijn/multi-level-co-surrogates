@@ -14,7 +14,7 @@ if module_path not in sys.path:
 import multiLevelCoSurrogates as mlcs
 import multifidelityfunctions as mff
 
-from function_defs import low_lhs_sample, low_random_sample
+from function_defs import low_lhs_sample
 
 np.random.seed(20160501)  # Setting seed for reproducibility
 
@@ -31,6 +31,7 @@ max_low = 125
 num_reps = 50
 step = 1
 
+Case = namedtuple('Case', 'ndim func func_name')
 
 def create_mse_tracking(func, ndim, mfbo_options, instances,
                         max_high=40, max_low=100, num_reps=30):
@@ -101,9 +102,7 @@ def multi_fidelity_doe(ndim, num_high, num_low):
     return high_x, low_x
 
 
-if __name__ == '__main__':
-
-    Case = namedtuple('Case', 'ndim func func_name')
+def run():
 
     cases = [
         # Case(1, mff.forrester, 'forrester'),
@@ -130,17 +129,17 @@ if __name__ == '__main__':
     kernels = ['Matern_']
     scaling_options = ['off']  # , 'on', 'inverted']  # , 'regularized']
 
+    instances = [(h, l, r)
+                 for h, l, r in product(range(min_high, max_high + 1, step),
+                                        range(min_low, max_low + 1, step),
+                                        range(num_reps))
+                 if h < l]
+
     for case, k, scale in product(cases, kernels, scaling_options):
 
         np.random.seed(20160501)  # Setting seed for reproducibility
 
         options = {'kernel': k, 'scaling': scale}
-
-        instances = [(h, l, r)
-                     for h, l, r in product(range(min_high, max_high + 1, step),
-                                            range(min_low, max_low + 1, step),
-                                            range(num_reps))
-                     if h < l]
 
 
         mses, r_squares, values = create_mse_tracking(
@@ -153,3 +152,7 @@ if __name__ == '__main__':
         np.save(file_dir.joinpath(f'{base_file_name}_lin_mse_tracking.npy'), mses)
         np.save(file_dir.joinpath(f'{base_file_name}_lin_r2_tracking.npy'), r_squares)
         np.save(file_dir.joinpath(f'{base_file_name}_lin_value_tracking.npy'), values)
+
+
+if __name__ == '__main__':
+    run()
