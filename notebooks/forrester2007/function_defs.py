@@ -159,6 +159,7 @@ TD_inv = mff.MultiFidelityFunction(
     u_bound=np.array(OD.u_bound*2), l_bound=np.array(OD.l_bound*2),
     functions=[td_inv_high, td_inv_low],
     fidelity_names=['high', 'low'],
+    name="Inverted Forrester",
 )
 
 
