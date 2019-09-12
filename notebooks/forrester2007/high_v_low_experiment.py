@@ -72,6 +72,11 @@ def create_experiment_instance(func, mfbo_options, ndim, instance):
 
     high_x, low_x = multi_fidelity_doe(ndim, num_high, num_low)
 
+    range_out = (np.array(func.l_bound), np.array(func.u_bound))
+
+    high_x = mlcs.rescale(high_x, range_in=(0,1), range_out=range_out)
+    low_x = mlcs.rescale(low_x, range_in=(0,1), range_out=range_out)
+
     archive = mlcs.CandidateArchive(ndim=ndim,
                                     fidelities=['high', 'low', 'high-low'])
     archive.addcandidates(low_x, func.low(low_x), fidelity='low')
