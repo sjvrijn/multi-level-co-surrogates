@@ -3,10 +3,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pyDOE import lhs
 import matplotlib.pyplot as plt
 import numpy as np
-import time
 import os
 import sys
-import warnings
 
 module_path = os.path.abspath(os.path.join('../..'))
 if module_path not in sys.path:
@@ -16,8 +14,6 @@ from itertools import product
 import multifidelityfunctions as mff
 import multiLevelCoSurrogates as mlcs
 
-np.random.seed(20160501)  # Setting seed for reproducibility
-# OD = mff.oneDimensional
 OD = mff.forrester
 
 from IPython.core.display import clear_output
@@ -93,7 +89,7 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, save_as=None):
 
     plt.tight_layout()
     if save_as:
-        plt.savefig(save_as)  # f'{plot_dir}{name}.pdf'
+        plt.savefig(save_as)
     plt.show()
 
 
@@ -102,20 +98,12 @@ def plot_high_vs_low_num_samples_diff(data, title, max_diff=None, save_as=None):
     to_plot = np.nanmedian(data[:,:,:,1] - data[:,:,:,0], axis=2)
     if max_diff is None:
         max_diff = 2*min(abs(np.nanmin(to_plot)), np.nanmax(to_plot))
-    # norm = colors.Normalize(vmin=-max_diff, vmax=max_diff, clip=True)
+
     norm = colors.SymLogNorm(linthresh=.01, vmin=-max_diff, vmax=max_diff, clip=True)
 
-    fig, ax = plt.subplots(figsize=(9,3.5))
-    img = ax.imshow(to_plot, cmap='RdYlGn', norm=norm, origin='lower')
-    fig.colorbar(img, ax=ax, orientation='vertical')
-    ax.set_ylabel('#High-fid samples')
-    ax.set_xlabel('#Low-fid samples')
+    long_title = f'Median of paired (high (hierarchical) - high (direct)) MSE - {title}'
 
-    plt.title(f'Median of paired (high (hierarchical) - high (direct)) MSE - {title}')
-    plt.tight_layout()
-    if save_as:
-        plt.savefig(save_as)  # f'{plot_dir}{name}_diff.pdf'
-    plt.show()
+    plot_high_v_low(long_title, norm, save_as, to_plot)
 
 
 def plot_inter_method_diff(data_A, data_B, name, max_diff=None, save_as=None):
@@ -123,20 +111,24 @@ def plot_inter_method_diff(data_A, data_B, name, max_diff=None, save_as=None):
 
     if max_diff is None:
         max_diff = 2*min(abs(np.nanmin(to_plot)), np.nanmax(to_plot))
-    # max_diff = .05*min(abs(np.nanmin(to_plot)), np.nanmax(to_plot))
+
     norm = colors.Normalize(vmin=-max_diff, vmax=max_diff, clip=True)
 
-    fig, ax = plt.subplots(figsize=(9,3.5))
+    long_title = f'high (hierarchical) MSE: {name}'
+
+    plot_high_v_low(long_title, norm, save_as, to_plot)
+
+
+def plot_high_v_low(long_title, norm, save_as, to_plot):
+    fig, ax = plt.subplots(figsize=(9, 3.5))
     img = ax.imshow(to_plot, cmap='RdYlGn', norm=norm, origin='lower')
     fig.colorbar(img, ax=ax, orientation='vertical')
     ax.set_ylabel('#High-fid samples')
     ax.set_xlabel('#Low-fid samples')
-
-    plt.title(f'high (hierarchical) MSE: {name}')
-
+    plt.title(long_title)
     plt.tight_layout()
     if save_as:
-        plt.savefig(save_as)  # f'{plot_dir}{name}.pdf'
+        plt.savefig(save_as)
     plt.show()
 
 
@@ -163,15 +155,18 @@ TD_inv = mff.MultiFidelityFunction(
 )
 
 
-def create_models_and_compare(func, low, high, save_as=None):
+def create_models_and_compare(func, low, high, steps=None, save_as=None):
     archive = mlcs.CandidateArchive(ndim=2, fidelities=['high', 'low', 'high-low'])
     archive.addcandidates(low, func.low(low), fidelity='low')
     archive.addcandidates(high, func.high(high), fidelity='high')
 
     mfbo = mlcs.MultiFidelityBO(func, archive, output_range=(-16, 10), schema=[1,1])
 
-    surf_high_model = mlcs.createsurface(mfbo.models['high'].predict, u_bound=u_bound, l_bound=l_bound, step=steps)
-    surf_low_model = mlcs.createsurface(mfbo.models['low'].predict, u_bound=u_bound, l_bound=l_bound, step=steps)
+    surf_high = mlcs.createsurface(func.high, u_bound=func.u_bound, l_bound=func.l_bound, step=steps)
+    surf_low = mlcs.createsurface(func.low, u_bound=func.u_bound, l_bound=func.l_bound, step=steps)
+
+    surf_high_model = mlcs.createsurface(mfbo.models['high'].predict, u_bound=func.u_bound, l_bound=func.l_bound, step=steps)
+    surf_low_model = mlcs.createsurface(mfbo.models['low'].predict, u_bound=func.u_bound, l_bound=func.l_bound, step=steps)
 
     points_high = [mlcs.ScatterPoints(*archive.getcandidates(fidelity='high'), red_dot)]
     points_low = [mlcs.ScatterPoints(*archive.getcandidates(fidelity='low'), blue_circle)]
