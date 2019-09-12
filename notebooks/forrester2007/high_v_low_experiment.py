@@ -1,8 +1,10 @@
 # coding: utf-8
 from collections import namedtuple
 from itertools import product
+from functools import partial
 
 import numpy as np
+import matplotlib.pyplot as plt
 from pathlib import Path
 import sys
 
@@ -12,9 +14,7 @@ if module_path not in sys.path:
     sys.path.append(module_path)
 
 import multiLevelCoSurrogates as mlcs
-import multifidelityfunctions as mff
-
-from function_defs import low_lhs_sample
+from function_defs import low_lhs_sample, red_dot, blue_circle
 
 np.random.seed(20160501)  # Setting seed for reproducibility
 
@@ -118,3 +118,46 @@ def run(cases, kernels, scaling_options, instances):
         np.save(file_dir.joinpath(f'{base_file_name}_lin_mse_tracking.npy'), mses)
         np.save(file_dir.joinpath(f'{base_file_name}_lin_r2_tracking.npy'), r_squares)
         np.save(file_dir.joinpath(f'{base_file_name}_lin_value_tracking.npy'), values)
+
+
+def plot_model_and_samples(case, kernel, scaling_option, instance):
+    options = {'kernel': kernel[:-1], 'scaling': scaling_option}
+    mfbo = create_experiment_instance(case.func, options, case.ndim, instance)
+
+    if case.ndim == 1:
+
+        plot_x = np.linspace(case.func.l_bound, case.func.u_bound, 1001)
+
+        plt.figure()
+        plt.plot(plot_x, case.func.high(plot_x), label='True high-fidelity')
+        plt.plot(plot_x, case.func.low(plot_x), label='True low-fidelity')
+        plt.plot(plot_x, mfbo.models['high'].predict(plot_x), label='Hierarchical model')
+
+        plt.scatter(*mfbo.archive.getcandidates(fidelity='high'), label='High-fidelity samples')
+        plt.scatter(*mfbo.archive.getcandidates(fidelity='low'), label='low-fidelity samples')
+
+        plt.title(f'{case.ndim}D {case.func_name}: {instance.high}/{instance.low}'
+                  f' samples (repetition {instance.rep})')
+        plt.legend(loc=0)
+        plt.tight_layout()
+
+        plt.show()
+
+    else:
+
+        surf_high = mlcs.createsurface(case.func.high, l_bound=case.func.l_bound, u_bound=case.func.u_bound)
+        surf_low = mlcs.createsurface(case.func.low, l_bound=case.func.l_bound, u_bound=case.func.u_bound)
+
+        surf_model_high = mlcs.createsurface(partial(mlcs.gpplot, func=mfbo.models['high'].predict),
+                                             l_bound=case.func.l_bound,
+                                             u_bound=case.func.u_bound)
+        surf_model_low = mlcs.createsurface(partial(mlcs.gpplot, func=mfbo.models['low'].predict),
+                                             l_bound=case.func.l_bound,
+                                             u_bound=case.func.u_bound)
+
+        points = [mlcs.ScatterPoints(*mfbo.archive.getcandidates(fidelity='high'), red_dot),
+                  mlcs.ScatterPoints(*mfbo.archive.getcandidates(fidelity='low'), blue_circle)]
+
+        mlcs.plotsurfaces([surf_high, surf_low, surf_model_high, surf_model_low],
+                          titles=['True High', 'True Low', 'Hierarchical model', 'Low-fidelity model'],
+                          all_points=[points, points, points, points], shape=(2,2))
