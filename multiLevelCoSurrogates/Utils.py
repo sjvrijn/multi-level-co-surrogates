@@ -38,6 +38,13 @@ def guaranteeFolderExists(path_name):
 
 # ------------------------------------------------------------------------------
 
+def low_lhs_sample(ndim, nlow):
+    if ndim == 1:
+        return np.linspace(0,1,nlow).reshape(-1,1)
+    elif ndim > 1:
+        return lhs(ndim, nlow)
+
+
 def select_subsample(xdata, num):
     """Uniform selection of sub samples from a larger data set (only for input).
     Use it to create a uniform sample

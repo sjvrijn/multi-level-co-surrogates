@@ -53,7 +53,7 @@ def create_mse_tracking(func, sample_generator,
         archive.addcandidates(low_x, func.low(low_x), fidelity='low')
         archive.addcandidates(high_x, func.high(high_x), fidelity='high')
 
-        mfbo = mlcs.MultiFidelityBO(func, archive, output_range=(-10, 16))
+        mfbo = mlcs.MultiFidelityBO(func, archive)
         mse_tracking[num_high, num_low, rep] = mfbo.getMSE()
 
     clear_output()
@@ -160,7 +160,7 @@ def create_models_and_compare(func, low, high, steps=None, save_as=None):
     archive.addcandidates(low, func.low(low), fidelity='low')
     archive.addcandidates(high, func.high(high), fidelity='high')
 
-    mfbo = mlcs.MultiFidelityBO(func, archive, output_range=(-16, 10), schema=[1,1])
+    mfbo = mlcs.MultiFidelityBO(func, archive, schema=[1,1])
 
     surf_high = mlcs.createsurface(func.high, u_bound=func.u_bound, l_bound=func.l_bound, step=steps)
     surf_low = mlcs.createsurface(func.low, u_bound=func.u_bound, l_bound=func.l_bound, step=steps)

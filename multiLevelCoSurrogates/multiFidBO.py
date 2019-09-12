@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Class file for a multi-fidelity Bayesian Optimizer
+Class file for a multi-fidelity Bayesian Optimizer with built-in hierarchical
+surrogate model
 """
 
 import numpy as np
@@ -16,15 +17,16 @@ from more_itertools import pairwise, stagger
 
 from .CandidateArchive import CandidateArchive
 from .Utils import create_random_sample_set, rescale, \
-    sample_by_function, createsurfaces, plotsurfaces, gpplot, ScatterPoints, ValueRange
+    sample_by_function, low_lhs_sample, \
+    createsurfaces, plotsurfaces, gpplot, ScatterPoints, ValueRange
 from .Surrogates import HierarchicalSurrogate, Surrogate
 
 
 
 class MultiFidelityBO:
 
-    def __init__(self, multi_fid_func, archive=None, save_plot=False, show_plot=False, schema=None,
-                 output_range=None, normalized=True, test_sample=None, minimize=False,
+    def __init__(self, multi_fid_func, archive=None, save_plot=False, show_plot=False,
+                 schema=None, normalized=True, test_sample=None, minimize=False,
                  kernel=None, scaling='on'):
 
         if minimize:
@@ -114,13 +116,9 @@ class MultiFidelityBO:
                                                   *(f'mse_{mse}' for mse in score_fidelities)])
 
         if test_sample is None:
-            n_samples = 1000
-            output_range = ValueRange(*output_range)
-            test_sample = sample_by_function(self.func.high, n_samples=n_samples, ndim=self.ndim,
-                                             range_in=self.input_range, range_out=output_range,
-                                             minimize=minimize)
-        else:
-            test_sample = rescale(test_sample, range_in=(0,1), range_out=self.input_range)
+            test_sample = low_lhs_sample(self.ndim, 500 * self.ndim)
+
+        test_sample = rescale(test_sample, range_in=(0,1), range_out=self.input_range)
         self.test_sample = test_sample
 
         self.mse_tester = {
