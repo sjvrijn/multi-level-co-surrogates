@@ -4,6 +4,7 @@ from itertools import product
 from functools import partial
 
 import numpy as np
+import xarray as xr
 import matplotlib.pyplot as plt
 from pathlib import Path
 import sys
@@ -27,14 +28,36 @@ mlcs.guaranteeFolderExists(file_dir)
 
 Case = namedtuple('Case', 'ndim func func_name')
 
+def uniquify(sequence):
+    """Reduce a list to it's unique elements while preserving order"""
+    return list(dict.fromkeys(sequence))
+
+
+def indexify(sequence, index_source):
+    return [index_source.index(item) for item in sequence]
+
+
 def create_mse_tracking(func, ndim, mfbo_options, instances):
 
     n_test_samples = 500*ndim
-    mse_tracking = np.empty((len(instances), 3))
+
+    models = ['high_hier', 'high', 'low']
+    n_highs, n_lows, reps = map(uniquify, zip(*instances))
+    array_size = (len(n_highs), len(n_lows), len(reps), 3)
+
+    mse_tracking = xr.DataArray(np.empty(array_size),
+                                dims=['n_high', 'n_low', 'rep', 'model'],
+                                coords=[n_highs, n_lows, reps, models])
     mse_tracking[:] = np.nan
-    r2_tracking = np.empty((len(instances), 3))
+    r2_tracking = xr.DataArray(np.empty(array_size),
+                                dims=['n_high', 'n_low', 'rep', 'model'],
+                                coords=[n_highs, n_lows, reps, models])
     r2_tracking[:] = np.nan
-    value_tracking = np.empty((len(instances), 3, n_test_samples))
+    value_tracking = xr.DataArray(np.empty((*array_size, n_test_samples)),
+                                  dims=['n_high', 'n_low', 'rep', 'model', 'idx'],
+                                  coords={'n_high': n_highs, 'n_low': n_lows,
+                                          'rep': reps, 'model': models,
+                                          'idx': range(n_test_samples)})
 
     test_sample = low_lhs_sample(ndim, n_test_samples)  #TODO: consider rescaling test_sample here instead of in MultiFidBO
     np.save(file_dir.joinpath(f'{ndim}d_test_sample.npy'), test_sample)
@@ -49,13 +72,21 @@ def create_mse_tracking(func, ndim, mfbo_options, instances):
 
         mfbo = create_experiment_instance(func, mfbo_options, ndim, instance)
 
-        mse_tracking[i] = mfbo.getMSE()
-        r2_tracking[i] = mfbo.getR2()
+        h, l, r = instance
+        idx_dict = (('n_high', [h]), ('n_low', [l]), ('rep', [r]), ('model', models))
 
-        for m, model in enumerate([mfbo.models['high'],
-                                   mfbo.models['low'],
-                                   mfbo.direct_models['high']]):
-            value_tracking[i, m] = model.predict(mfbo.test_sample).flatten()
+        mse_tracking = mse_tracking.combine_first(xr.DataArray(np.array(mfbo.getMSE()).reshape((1,1,1,3)), idx_dict))
+        r2_tracking = r2_tracking.combine_first(xr.DataArray(np.array(mfbo.getR2()).reshape((1,1,1,3)), idx_dict))
+
+        values = np.array([model.predict(mfbo.test_sample).flatten()
+                           for model in [mfbo.models['high'],
+                                         mfbo.direct_models['high'],
+                                         mfbo.models['low']]
+                           ]).reshape((1,1,1,3,n_test_samples))
+
+        idx_dict = (('n_high', [h]), ('n_low', [l]), ('rep', [r]), ('model', models), ('idx', range(n_test_samples)))
+
+        value_tracking = value_tracking.combine_first(xr.DataArray(values, idx_dict))
 
     print(f'{len(instances)}/{len(instances)}')
     return mse_tracking, r2_tracking, value_tracking
@@ -110,6 +141,8 @@ def run(cases, kernels, scaling_options, instances):
         mses, r_squares, values = \
             create_mse_tracking(func=case.func, mfbo_options=options,
                                 ndim=case.ndim, instances=instances)
+
+        return mses, r_squares, values
 
         base_file_name = f'{k}{case.ndim}d_{case.func_name}'
 
