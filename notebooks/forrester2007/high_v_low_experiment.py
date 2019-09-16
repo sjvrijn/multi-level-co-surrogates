@@ -1,5 +1,4 @@
 # coding: utf-8
-from collections import namedtuple
 from itertools import product
 from functools import partial
 
@@ -79,20 +78,31 @@ def create_mse_tracking(func, ndim, mfbo_options, instances):
 
     print(f'{len(instances)}/{len(instances)}')
 
+    attributes = dict(experiment='create_mse_tracking',
+                      function=func.name, ndim=ndim,
+                      kernel=mfbo_options['kernel'],
+                      scaling=mfbo_options['scaling'])
 
     mse_tracking = xr.DataArray(mse_tracking,
                                 dims=['n_high', 'n_low', 'rep', 'model'],
-                                coords=[n_highs, n_lows, reps, models])
+                                coords=[n_highs, n_lows, reps, models],
+                                attrs=attributes)
     r2_tracking = xr.DataArray(r2_tracking,
                                 dims=['n_high', 'n_low', 'rep', 'model'],
-                                coords=[n_highs, n_lows, reps, models])
+                                coords=[n_highs, n_lows, reps, models],
+                                attrs=attributes)
     value_tracking = xr.DataArray(value_tracking,
                                   dims=['n_high', 'n_low', 'rep', 'model', 'idx'],
                                   coords={'n_high': n_highs, 'n_low': n_lows,
                                           'rep': reps, 'model': models,
-                                          'idx': range(n_test_samples)})
+                                          'idx': range(n_test_samples)},
+                                  attrs=attributes)
 
-    return mse_tracking, r2_tracking, value_tracking
+    output = xr.Dataset({'mses': mse_tracking,
+                         'r2': r2_tracking,
+                         'values': value_tracking})
+
+    return output
 
 
 def create_experiment_instance(func, mfbo_options, ndim, instance):
@@ -141,17 +151,13 @@ def run(cases, kernels, scaling_options, instances):
 
         options = {'kernel': k[:-1], 'scaling': scale}
 
-        mses, r_squares, values = \
-            create_mse_tracking(func=case.func, mfbo_options=options,
-                                ndim=case.ndim, instances=instances)
+        output = create_mse_tracking(func=case.func, mfbo_options=options,
+                                     ndim=case.ndim, instances=instances)
 
         base_file_name = f'{k}{case.ndim}d_{case.func.name}'
 
         np.save(file_dir.joinpath(f'{base_file_name}_instances.npy'), np.array(instances))
-        #TODO: combine into single DataSet?
-        mses.to_netcdf(file_dir.joinpath(f'{base_file_name}_mse.nc'))
-        mses.to_netcdf(file_dir.joinpath(f'{base_file_name}_r2.nc'))
-        mses.to_netcdf(file_dir.joinpath(f'{base_file_name}_test_values.nc'))
+        output.to_netcdf(file_dir.joinpath(f'{base_file_name}.nc'))
 
 
 def plot_model_and_samples(case, kernel, scaling_option, instance):
