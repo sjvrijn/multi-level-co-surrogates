@@ -3,12 +3,12 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pyDOE import lhs
 import matplotlib.pyplot as plt
 import numpy as np
-import os
+from pathlib import Path
 import sys
 
-module_path = os.path.abspath(os.path.join('../..'))
+module_path = Path('../..')
 if module_path not in sys.path:
-    sys.path.append(module_path)
+    sys.path.append(str(module_path.resolve()))
 
 from itertools import product
 import multifidelityfunctions as mff
