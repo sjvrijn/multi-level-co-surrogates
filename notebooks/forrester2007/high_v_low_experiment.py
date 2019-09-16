@@ -45,19 +45,9 @@ def create_mse_tracking(func, ndim, mfbo_options, instances):
     n_highs, n_lows, reps = map(uniquify, zip(*instances))
     array_size = (len(n_highs), len(n_lows), len(reps), 3)
 
-    mse_tracking = xr.DataArray(np.empty(array_size),
-                                dims=['n_high', 'n_low', 'rep', 'model'],
-                                coords=[n_highs, n_lows, reps, models])
-    mse_tracking[:] = np.nan
-    r2_tracking = xr.DataArray(np.empty(array_size),
-                                dims=['n_high', 'n_low', 'rep', 'model'],
-                                coords=[n_highs, n_lows, reps, models])
-    r2_tracking[:] = np.nan
-    value_tracking = xr.DataArray(np.empty((*array_size, n_test_samples)),
-                                  dims=['n_high', 'n_low', 'rep', 'model', 'idx'],
-                                  coords={'n_high': n_highs, 'n_low': n_lows,
-                                          'rep': reps, 'model': models,
-                                          'idx': range(n_test_samples)})
+    mse_tracking = np.full(array_size, np.nan)
+    r2_tracking = np.full(array_size, np.nan)
+    value_tracking = np.full((*array_size, n_test_samples), np.nan)
 
     test_sample = low_lhs_sample(ndim, n_test_samples)  #TODO: consider rescaling test_sample here instead of in MultiFidBO
     np.save(file_dir.joinpath(f'{ndim}d_test_sample.npy'), test_sample)
@@ -65,30 +55,45 @@ def create_mse_tracking(func, ndim, mfbo_options, instances):
 
     print('starting loops')
 
-    for i, instance in enumerate(instances):
+    #TODO: simplify this index creation stuff
+    all_n_high, all_n_low, all_reps = list(zip(*instances))
+
+    n_high_indices = indexify(all_n_high, n_highs)
+    n_low_indices = indexify(all_n_low, n_lows)
+    reps_indices = indexify(all_reps, reps)
+
+    indices = list(zip(n_high_indices, n_low_indices, reps_indices))
+
+    for i, (instance, indices) in enumerate(zip(instances, indices)):
 
         if i % 100 == 0:
             print(f'{i}/{len(instances)}')
 
         mfbo = create_experiment_instance(func, mfbo_options, ndim, instance)
 
-        h, l, r = instance
-        idx_dict = (('n_high', [h]), ('n_low', [l]), ('rep', [r]), ('model', models))
+        mse_tracking[indices] = mfbo.getMSE()
+        r2_tracking[indices] = mfbo.getR2()
 
-        mse_tracking = mse_tracking.combine_first(xr.DataArray(np.array(mfbo.getMSE()).reshape((1,1,1,3)), idx_dict))
-        r2_tracking = r2_tracking.combine_first(xr.DataArray(np.array(mfbo.getR2()).reshape((1,1,1,3)), idx_dict))
-
-        values = np.array([model.predict(mfbo.test_sample).flatten()
-                           for model in [mfbo.models['high'],
-                                         mfbo.direct_models['high'],
-                                         mfbo.models['low']]
-                           ]).reshape((1,1,1,3,n_test_samples))
-
-        idx_dict = (('n_high', [h]), ('n_low', [l]), ('rep', [r]), ('model', models), ('idx', range(n_test_samples)))
-
-        value_tracking = value_tracking.combine_first(xr.DataArray(values, idx_dict))
+        for m, model in enumerate([mfbo.models['high'],
+                                   mfbo.direct_models['high'],
+                                   mfbo.models['low']]):
+            value_tracking[(*indices), m] = model.predict(mfbo.test_sample).flatten()
 
     print(f'{len(instances)}/{len(instances)}')
+
+
+    mse_tracking = xr.DataArray(mse_tracking,
+                                dims=['n_high', 'n_low', 'rep', 'model'],
+                                coords=[n_highs, n_lows, reps, models])
+    r2_tracking = xr.DataArray(r2_tracking,
+                                dims=['n_high', 'n_low', 'rep', 'model'],
+                                coords=[n_highs, n_lows, reps, models])
+    value_tracking = xr.DataArray(value_tracking,
+                                  dims=['n_high', 'n_low', 'rep', 'model', 'idx'],
+                                  coords={'n_high': n_highs, 'n_low': n_lows,
+                                          'rep': reps, 'model': models,
+                                          'idx': range(n_test_samples)})
+
     return mse_tracking, r2_tracking, value_tracking
 
 
@@ -142,15 +147,13 @@ def run(cases, kernels, scaling_options, instances):
             create_mse_tracking(func=case.func, mfbo_options=options,
                                 ndim=case.ndim, instances=instances)
 
-        return mses, r_squares, values
-
         base_file_name = f'{k}{case.ndim}d_{case.func_name}'
 
-        # TODO: store as Pandas DataFrame/XArray DataArray/DataSet instead
         np.save(file_dir.joinpath(f'{base_file_name}_instances.npy'), np.array(instances))
-        np.save(file_dir.joinpath(f'{base_file_name}_lin_mse_tracking.npy'), mses)
-        np.save(file_dir.joinpath(f'{base_file_name}_lin_r2_tracking.npy'), r_squares)
-        np.save(file_dir.joinpath(f'{base_file_name}_lin_value_tracking.npy'), values)
+        #TODO: combine into single DataSet?
+        mses.to_netcdf(file_dir.joinpath(f'{base_file_name}_mse.nc'))
+        mses.to_netcdf(file_dir.joinpath(f'{base_file_name}_r2.nc'))
+        mses.to_netcdf(file_dir.joinpath(f'{base_file_name}_test_values.nc'))
 
 
 def plot_model_and_samples(case, kernel, scaling_option, instance):
