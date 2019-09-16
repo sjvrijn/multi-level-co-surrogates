@@ -26,8 +26,6 @@ mlcs.guaranteeFolderExists(plot_dir)
 mlcs.guaranteeFolderExists(file_dir)
 
 
-Case = namedtuple('Case', 'ndim func func_name')
-
 def uniquify(sequence):
     """Reduce a list to it's unique elements while preserving order"""
     return list(dict.fromkeys(sequence))
@@ -147,7 +145,7 @@ def run(cases, kernels, scaling_options, instances):
             create_mse_tracking(func=case.func, mfbo_options=options,
                                 ndim=case.ndim, instances=instances)
 
-        base_file_name = f'{k}{case.ndim}d_{case.func_name}'
+        base_file_name = f'{k}{case.ndim}d_{case.func.name}'
 
         np.save(file_dir.joinpath(f'{base_file_name}_instances.npy'), np.array(instances))
         #TODO: combine into single DataSet?
@@ -172,7 +170,7 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
         plt.scatter(*mfbo.archive.getcandidates(fidelity='high'), label='High-fidelity samples')
         plt.scatter(*mfbo.archive.getcandidates(fidelity='low'), label='low-fidelity samples')
 
-        plt.title(f'{case.ndim}D {case.func_name}: {instance.high}/{instance.low}'
+        plt.title(f'{case.ndim}D {case.func.name}: {instance.high}/{instance.low}'
                   f' samples (repetition {instance.rep})')
         plt.legend(loc=0)
         plt.tight_layout()
