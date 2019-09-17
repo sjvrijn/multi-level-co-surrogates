@@ -3,6 +3,7 @@ from itertools import product
 from functools import partial
 
 import numpy as np
+from scipy.spatial import distance
 import xarray as xr
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -137,8 +138,23 @@ def multi_fidelity_doe(ndim, num_high, num_low):
 
     :returns high-fidelity samples, low-fidelity samples
     """
+    high_x = low_lhs_sample(ndim, num_high)
     low_x = low_lhs_sample(ndim, num_low)
-    high_x = low_x[np.random.choice(num_low, num_high, replace=False)]
+
+    dists = distance.cdist(high_x, low_x)
+
+    #TODO: this is the naive method, potentially speed up?
+    highs_to_match = set(range(num_high))
+    while highs_to_match:
+        min_dist = np.min(dists)
+        high_idx, low_idx = np.where(dists == min_dist)
+
+        low_x[low_idx] = high_x[high_idx]
+        dists[high_idx] = np.inf
+        dists[:,low_idx] = np.inf
+
+        highs_to_match.remove(high_idx[0])
+
     return high_x, low_x
 
 
