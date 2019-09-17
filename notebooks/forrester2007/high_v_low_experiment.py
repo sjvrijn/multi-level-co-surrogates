@@ -8,10 +8,9 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import sys
 
-
-module_path = Path().joinpath('../..')
+module_path = Path('../..')
 if module_path not in sys.path:
-    sys.path.append(module_path)
+    sys.path.append(str(module_path.resolve()))
 
 import multiLevelCoSurrogates as mlcs
 from function_defs import low_lhs_sample, red_dot, blue_circle
