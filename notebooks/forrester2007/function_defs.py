@@ -66,10 +66,10 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, save_as=None):
     fig, ax = plt.subplots(figsize=(9,3.5))
 
     ax.set_aspect(1.)
-    data = np.nanmedian(data, axis=2)
+    data = data.median(dim='rep')
 
     plt.title(f'Median MSE for high (hierarchical) model - {title}')
-    img = ax.imshow(data[:,:,0], cmap='viridis_r', norm=norm, origin='lower')
+    img = ax.imshow(data.sel(model='high_hier'), cmap='viridis_r', norm=norm, origin='lower')
 
     divider = make_axes_locatable(ax)
     axx = divider.append_axes("bottom", size=.2, pad=0.05, sharex=ax)
@@ -80,8 +80,8 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, save_as=None):
     axy.xaxis.set_tick_params(labelbottom=False)
     axx.yaxis.set_tick_params(labelleft=False)
 
-    img = axy.imshow(np.nanmean(data[:,:,1], axis=1).reshape(-1,1), cmap='viridis_r', norm=norm, origin='lower')
-    img = axx.imshow(np.nanmean(data[:,:,2], axis=0).reshape(1,-1), cmap='viridis_r', norm=norm, origin='lower')
+    img = axy.imshow(data.sel(model='high').mean(dim='n_low').values.reshape(-1,1), cmap='viridis_r', norm=norm, origin='lower')
+    img = axx.imshow(data.sel(model='low').mean(dim='n_high').values.reshape(1,-1), cmap='viridis_r', norm=norm, origin='lower')
 
     fig.colorbar(img, ax=ax, orientation='vertical')
     axy.set_ylabel('#High-fid samples')
@@ -95,7 +95,8 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, save_as=None):
 
 def plot_high_vs_low_num_samples_diff(data, title, max_diff=None, save_as=None):
 
-    to_plot = np.nanmedian(data[:,:,:,1] - data[:,:,:,0], axis=2)
+    paired_diffs = data.sel(model='high') - data.sel(model='high_hier')
+    to_plot = paired_diffs.median(dim='rep')
     if max_diff is None:
         max_diff = 2*min(abs(np.nanmin(to_plot)), np.nanmax(to_plot))
 
@@ -107,7 +108,7 @@ def plot_high_vs_low_num_samples_diff(data, title, max_diff=None, save_as=None):
 
 
 def plot_inter_method_diff(data_A, data_B, name, max_diff=None, save_as=None):
-    to_plot = np.nanmedian(data_A[:,:,:,0] - data_B[:,:,:,0], axis=2)
+    to_plot = np.nanmedian(data_A.sel(model='high_hier') - data_B.sel(model='high_hier'), axis=2)
 
     if max_diff is None:
         max_diff = 2*min(abs(np.nanmin(to_plot)), np.nanmax(to_plot))
