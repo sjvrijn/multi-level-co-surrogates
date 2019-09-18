@@ -147,14 +147,13 @@ def multi_fidelity_doe(ndim, num_high, num_low):
     highs_to_match = set(range(num_high))
     while highs_to_match:
         min_dist = np.min(dists)
-        high_idx, low_idx = np.where(dists == min_dist)
+        high_idx, low_idx = np.argwhere(dists == min_dist)[0]
 
         low_x[low_idx] = high_x[high_idx]
-        dists[high_idx] = np.inf
+
+        dists[high_idx,:] = np.inf
         dists[:,low_idx] = np.inf
-
-        highs_to_match.remove(high_idx[0])
-
+        highs_to_match.remove(high_idx)
     return high_x, low_x
 
 
