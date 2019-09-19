@@ -1,0 +1,72 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+"""
+Filename.py: << A short summary docstring about this file >>
+"""
+
+__author__ = 'Sander van Rijn'
+__email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
+
+import sys
+from collections import namedtuple
+from pprint import pprint
+
+import matplotlib.pyplot as plt
+import numpy as np
+import xarray as xr
+from matplotlib import colors
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from pyprojroot import here
+
+module_path = str(here())
+if module_path not in sys.path:
+    sys.path.append(module_path)
+
+import multiLevelCoSurrogates as mlcs
+import processing as proc
+
+plot_dir = here('plots/')
+data_dir = here('files/')
+
+
+# generic flow
+Case = namedtuple('Case', 'name ndim vmin vmax max_diff')
+
+cases = [
+    Case('Forrester', 1, None, None, 100),
+    #     Case('Forrester',        2,  None,    None,  100),
+    #     Case('Forrester',        4,  None,    None,   10),
+    #     Case('Forrester',        6,  None,    None,   10),
+    #     Case('Forrester',        8,  None,    None,   10),
+    #     Case('Bohachevsky',      2,   500,   2_000,  200),
+    #     Case('Booth',            2,   1e5,     5e6, 5000),
+    Case('Branin', 2, 10, 1e4, None),
+    #     Case('Currin',           2,   .01,      10,   50),
+    #     Case('Himmelblau',       2,  None,    None, 1000),
+    #     Case('SixHumpCamelBack', 2,  None,    None,  100),
+    #     Case('Park91a',          4,  None,    None,    1),
+    #     Case('Park91b',          4,  None,    None,    1),
+    Case('Hartmann6', 6, 8e-3, 5e-1, 1),
+    Case('Borehole', 8, 10, 3000, 1e4),
+]
+
+# %%
+
+for c in cases:
+    print(c.name, c.ndim)
+    with xr.open_dataset(data_dir / f'Matern_{c.ndim}d_{c.name}.nc') as ds:
+        mses = ds['mses'].load()
+
+    print(mses.coords)
+    print('median')
+    pprint([(f'{95 + i}%-ile', np.nanpercentile(mses.median(dim='rep'), 95 + i)) for i in range(6)])
+
+    plot_name = f'{c.ndim}d-{c.name}-high-low-samples-linear'
+    title = f'{c.name} ({c.ndim}D)'
+
+    proc.plot_high_vs_low_num_samples(mses, title, vmin=c.vmin, vmax=c.vmax, save_as=plot_dir / f'{plot_name}.pdf')
+    proc.plot_high_vs_low_num_samples_diff(mses, title, max_diff=c.max_diff, save_as=plot_dir / f'{plot_name}_diff.pdf')
+
+    proc.display_paired_differences(mses, title=title, save_as=plot_dir / f'{plot_name}_significance.pdf')
+    proc.plot_extracts(mses, title, save_as=plot_dir / f'{plot_name}_extracts.pdf', show=True)
