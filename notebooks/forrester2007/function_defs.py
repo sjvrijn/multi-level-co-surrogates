@@ -1,22 +1,20 @@
+import sys
+from itertools import product
+
+import matplotlib.pyplot as plt
+import numpy as np
+from IPython.core.display import clear_output
 from matplotlib import colors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pyDOE import lhs
-import matplotlib.pyplot as plt
-import numpy as np
-from pathlib import Path
-import sys
+from pyprojroot import here
 
-module_path = Path('../..')
+module_path = str(here())
 if module_path not in sys.path:
-    sys.path.append(str(module_path.resolve()))
+    sys.path.append(module_path)
 
-from itertools import product
-import multifidelityfunctions as mff
 import multiLevelCoSurrogates as mlcs
 
-OD = mff.forrester
-
-from IPython.core.display import clear_output
 
 
 def low_random_sample(ndim, nlow):
@@ -137,23 +135,6 @@ def plot_high_v_low(long_title, norm, save_as, to_plot):
 red_dot = {'marker': '.', 'color': 'red'}
 blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
 
-@mff.row_vectorize
-def td_inv_high(xx):
-    x1, x2 = xx
-    return -(OD.high(x1) + OD.high(x2))
-
-@mff.row_vectorize
-def td_inv_low(xx):
-    x1, x2 = xx
-    return -(OD.low(x1) + OD.low(x2))
-
-
-TD_inv = mff.MultiFidelityFunction(
-    u_bound=np.array(OD.u_bound*2), l_bound=np.array(OD.l_bound*2),
-    functions=[td_inv_high, td_inv_low],
-    fidelity_names=['high', 'low'],
-    name="Inverted Forrester",
-)
 
 
 def create_models_and_compare(func, low, high, steps=None, save_as=None):
