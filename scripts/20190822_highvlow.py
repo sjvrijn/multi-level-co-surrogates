@@ -16,12 +16,10 @@ from pyprojroot import here
 
 import multifidelityfunctions as mff
 
-from experiments import calculate_mse_grid
+from experiments import Case, Instance, calculate_mse_grid
 
 save_dir = here('files/high_v_low/')
 save_dir.mkdir(parents=True, exist_ok=True)
-
-Case = namedtuple('Case', 'ndim func')
 
 cases = [
     Case(1, mff.forrester),
@@ -53,7 +51,7 @@ min_low, max_low = 3, 125
 step = 1
 num_reps = 50
 
-instances = [(h, l, r)
+instances = [Instance(h, l, r)
              for h, l, r in product(range(min_high, max_high + 1, step),
                                     range(min_low, max_low + 1, step),
                                     range(num_reps))

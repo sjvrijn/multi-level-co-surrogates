@@ -16,13 +16,10 @@ from pyprojroot import here
 
 import multifidelityfunctions as mff
 
-from experiments import plot_model_and_samples
+from experiments import Case, Instance, plot_model_and_samples
 
 save_dir = here('plots/plot_specifics/')
 save_dir.mkdir(parents=True, exist_ok=True)
-
-Case = namedtuple('Case', 'ndim func')
-Instance = namedtuple('Instance', 'high low rep')
 
 cases = [
     # Case(1, mff.forrester),

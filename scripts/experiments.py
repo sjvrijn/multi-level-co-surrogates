@@ -1,5 +1,6 @@
 # coding: utf-8
 import sys
+from collections import namedtuple
 from functools import partial
 from itertools import product
 
@@ -20,6 +21,10 @@ import multiLevelCoSurrogates as mlcs
 # defining some point styles
 red_dot = {'marker': '.', 'color': 'red'}
 blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
+
+
+Case = namedtuple('Case', 'ndim func')
+Instance = namedtuple('Instance', 'high low rep')
 
 
 def low_lhs_sample(ndim, nlow):
@@ -203,16 +208,15 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
         plt.show()
 
     else:
+        bounds = {'l_bound': case.func.l_bound, 'u_bound': case.func.u_bound}
 
-        surf_high = mlcs.createsurface(case.func.high, l_bound=case.func.l_bound, u_bound=case.func.u_bound)
-        surf_low = mlcs.createsurface(case.func.low, l_bound=case.func.l_bound, u_bound=case.func.u_bound)
+        surf_high = mlcs.createsurface(case.func.high, **bounds)
+        surf_low = mlcs.createsurface(case.func.low, **bounds)
 
         surf_model_high = mlcs.createsurface(partial(mlcs.gpplot, func=mfbo.models['high'].predict),
-                                             l_bound=case.func.l_bound,
-                                             u_bound=case.func.u_bound)
+                                             **bounds)
         surf_model_low = mlcs.createsurface(partial(mlcs.gpplot, func=mfbo.models['low'].predict),
-                                             l_bound=case.func.l_bound,
-                                             u_bound=case.func.u_bound)
+                                             **bounds)
 
         points = [mlcs.ScatterPoints(*mfbo.archive.getcandidates(fidelity='high'), red_dot),
                   mlcs.ScatterPoints(*mfbo.archive.getcandidates(fidelity='low'), blue_circle)]
