@@ -9,8 +9,6 @@ test the new implementation using the xarray package
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-from collections import namedtuple
-
 from pyprojroot import here
 
 import multifidelityfunctions as mff

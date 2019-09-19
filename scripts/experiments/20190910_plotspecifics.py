@@ -9,7 +9,6 @@ space and sample points for specific selected instances.
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-from collections import namedtuple
 from itertools import product
 
 from pyprojroot import here

@@ -9,7 +9,6 @@ many combinations of numbers of high- vs. low-fidelity samples
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-from collections import namedtuple
 from itertools import product
 
 from pyprojroot import here
@@ -48,8 +47,8 @@ scaling_options = ['off']  # , 'on', 'inverted']  # , 'regularized']
 
 min_high, max_high = 2, 50
 min_low, max_low = 3, 125
-step = 1
-num_reps = 50
+step = 10
+num_reps = 5#0
 
 instances = [Instance(h, l, r)
              for h, l, r in product(range(min_high, max_high + 1, step),
