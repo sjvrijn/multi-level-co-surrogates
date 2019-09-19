@@ -12,16 +12,13 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 from collections import namedtuple
 from itertools import product
 
+from pyprojroot import here
+
 import multifidelityfunctions as mff
 
-from high_v_low_experiment import run
+from .high_v_low_experiment import run
 
-min_high = 2
-min_low = 3
-max_high = 50
-max_low = 125
-num_reps = 50
-step = 1
+save_dir = here('./files/high_v_low/')
 
 Case = namedtuple('Case', 'ndim func')
 
@@ -50,6 +47,11 @@ cases = [
 kernels = ['Matern_']
 scaling_options = ['off']  # , 'on', 'inverted']  # , 'regularized']
 
+min_high, max_high = 2, 50
+min_low, max_low = 3, 125
+step = 1
+num_reps = 50
+
 instances = [(h, l, r)
              for h, l, r in product(range(min_high, max_high + 1, step),
                                     range(min_low, max_low + 1, step),
@@ -57,5 +59,4 @@ instances = [(h, l, r)
              if h < l]
 
 
-run(cases, kernels, scaling_options, instances)
-
+run(cases, kernels, scaling_options, instances, save_dir=save_dir)

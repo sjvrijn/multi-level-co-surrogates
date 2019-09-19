@@ -6,23 +6,15 @@ import numpy as np
 from scipy.spatial import distance
 import xarray as xr
 import matplotlib.pyplot as plt
-from pathlib import Path
+from pyprojroot import here
 import sys
 
-module_path = Path('../..')
+module_path = str(here())
 if module_path not in sys.path:
-    sys.path.append(str(module_path.resolve()))
+    sys.path.append(module_path)
 
 import multiLevelCoSurrogates as mlcs
 from function_defs import low_lhs_sample, red_dot, blue_circle
-
-np.random.seed(20160501)  # Setting seed for reproducibility
-
-np.set_printoptions(linewidth=200)
-plot_dir = Path('../../plots/')
-file_dir = Path('../../files/')
-mlcs.guaranteeFolderExists(plot_dir)
-mlcs.guaranteeFolderExists(file_dir)
 
 
 def uniquify(sequence):
@@ -34,7 +26,7 @@ def indexify(sequence, index_source):
     return [index_source.index(item) for item in sequence]
 
 
-def create_mse_tracking(func, ndim, mfbo_options, instances):
+def create_mse_tracking(func, ndim, mfbo_options, instances, save_dir):
 
     n_test_samples = 500*ndim
 
@@ -47,7 +39,7 @@ def create_mse_tracking(func, ndim, mfbo_options, instances):
     value_tracking = np.full((*array_size, n_test_samples), np.nan)
 
     test_sample = low_lhs_sample(ndim, n_test_samples)  #TODO: consider rescaling test_sample here instead of in MultiFidBO
-    np.save(file_dir.joinpath(f'{ndim}d_test_sample.npy'), test_sample)
+    np.save(save_dir/f'{ndim}d_test_sample.npy', test_sample)
     mfbo_options['test_sample'] = test_sample
 
     print('starting loops')
@@ -157,7 +149,7 @@ def multi_fidelity_doe(ndim, num_high, num_low):
     return high_x, low_x
 
 
-def run(cases, kernels, scaling_options, instances):
+def run(cases, kernels, scaling_options, instances, save_dir):
 
     for case, k, scale in product(cases, kernels, scaling_options):
 
@@ -170,8 +162,8 @@ def run(cases, kernels, scaling_options, instances):
 
         base_file_name = f'{k}{case.ndim}d_{case.func.name}'
 
-        np.save(file_dir.joinpath(f'{base_file_name}_instances.npy'), np.array(instances))
-        output.to_netcdf(file_dir.joinpath(f'{base_file_name}.nc'))
+        np.save(save_dir/f'{base_file_name}_instances.npy', np.array(instances))
+        output.to_netcdf(save_dir/f'{base_file_name}.nc')
 
 
 def plot_model_and_samples(case, kernel, scaling_option, instance):

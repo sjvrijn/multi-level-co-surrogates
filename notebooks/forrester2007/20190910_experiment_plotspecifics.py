@@ -11,10 +11,13 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 from collections import namedtuple
 from itertools import product
 
+from pyprojroot import here
+
 import multifidelityfunctions as mff
 
-from high_v_low_experiment import plot_model_and_samples
+from .high_v_low_experiment import plot_model_and_samples
 
+save_dir = here('./plots/plot_specifics/')
 
 Case = namedtuple('Case', 'ndim func')
 Instance = namedtuple('Instance', 'high low rep')

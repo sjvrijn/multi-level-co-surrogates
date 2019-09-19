@@ -10,12 +10,14 @@ __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 from collections import namedtuple
-from itertools import product
+
+from pyprojroot import here
 
 import multifidelityfunctions as mff
 
-from high_v_low_experiment import run
+from .high_v_low_experiment import run
 
+save_dir = here('./files/Xarray_test/')
 
 Case = namedtuple('Case', 'ndim func')
 
@@ -56,4 +58,4 @@ instances = [(2, 4, 0), (2, 7, 0), (2, 9, 0),
              ]
 
 
-run(cases, kernels, scaling_options, instances)
+run(cases, kernels, scaling_options, instances, save_dir=save_dir)
