@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Filename.py: << A short summary docstring about this file >>
+20190910_plot_specifics.py: Experiment runner to generate plots of the search-
+space and sample points for specific selected instances.
 """
 
 __author__ = 'Sander van Rijn'
@@ -15,9 +16,10 @@ from pyprojroot import here
 
 import multifidelityfunctions as mff
 
-from .high_v_low_experiment import plot_model_and_samples
+from experiments import plot_model_and_samples
 
-save_dir = here('./plots/plot_specifics/')
+save_dir = here('plots/plot_specifics/')
+save_dir.mkdir(parents=True, exist_ok=True)
 
 Case = namedtuple('Case', 'ndim func')
 Instance = namedtuple('Instance', 'high low rep')
@@ -32,16 +34,6 @@ cases = [
     # Case(2, mff.currin),
     # Case(2, mff.himmelblau),
     # Case(2, mff.sixHumpCamelBack),
-
-    # Case(4, mff.forrester),
-    # Case(4, mff.park91a),
-    # Case(4, mff.park91b),
-
-    # Case(6, mff.forrester),
-    # Case(6, mff.hartmann6),
-
-    # Case(8, mff.forrester),
-    # Case(8, mff.borehole),
 ]
 
 kernels = ['Matern_']

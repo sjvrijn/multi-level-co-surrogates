@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-20190822_experiment_highvlow.py: Experiment runner file for generating data for
+20190822_highvlow.py: Experiment runner file for generating data for
 many combinations of numbers of high- vs. low-fidelity samples
 """
 
@@ -16,9 +16,10 @@ from pyprojroot import here
 
 import multifidelityfunctions as mff
 
-from .high_v_low_experiment import run
+from experiments import calculate_mse_grid
 
-save_dir = here('./files/high_v_low/')
+save_dir = here('files/high_v_low/')
+save_dir.mkdir(parents=True, exist_ok=True)
 
 Case = namedtuple('Case', 'ndim func')
 
@@ -59,4 +60,4 @@ instances = [(h, l, r)
              if h < l]
 
 
-run(cases, kernels, scaling_options, instances, save_dir=save_dir)
+calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir=save_dir)

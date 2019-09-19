@@ -1,20 +1,32 @@
 # coding: utf-8
-from itertools import product
-from functools import partial
-
-import numpy as np
-from scipy.spatial import distance
-import xarray as xr
-import matplotlib.pyplot as plt
-from pyprojroot import here
 import sys
+from functools import partial
+from itertools import product
+
+import matplotlib.pyplot as plt
+import numpy as np
+import xarray as xr
+from pyDOE import lhs
+from pyprojroot import here
+from scipy.spatial import distance
 
 module_path = str(here())
 if module_path not in sys.path:
     sys.path.append(module_path)
 
 import multiLevelCoSurrogates as mlcs
-from function_defs import low_lhs_sample, red_dot, blue_circle
+
+
+# defining some point styles
+red_dot = {'marker': '.', 'color': 'red'}
+blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
+
+
+def low_lhs_sample(ndim, nlow):
+    if ndim == 1:
+        return np.linspace(0,1,nlow).reshape(-1,1)
+    elif ndim > 1:
+        return lhs(ndim, nlow)
 
 
 def uniquify(sequence):
@@ -149,7 +161,7 @@ def multi_fidelity_doe(ndim, num_high, num_low):
     return high_x, low_x
 
 
-def run(cases, kernels, scaling_options, instances, save_dir):
+def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
 
     for case, k, scale in product(cases, kernels, scaling_options):
 
@@ -158,7 +170,8 @@ def run(cases, kernels, scaling_options, instances, save_dir):
         options = {'kernel': k[:-1], 'scaling': scale}
 
         output = create_mse_tracking(func=case.func, mfbo_options=options,
-                                     ndim=case.ndim, instances=instances)
+                                     ndim=case.ndim, instances=instances,
+                                     save_dir=save_dir)
 
         base_file_name = f'{k}{case.ndim}d_{case.func.name}'
 

@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-20190822_experiment_highvlow.py: Experiment runner file for generating data for
-many combinations of numbers of high- vs. low-fidelity samples
+20190913_xarray_test.py: Experiment runner file for generating sample data to
+test the new implementation using the xarray package
 """
 
 __author__ = 'Sander van Rijn'
@@ -15,9 +15,10 @@ from pyprojroot import here
 
 import multifidelityfunctions as mff
 
-from .high_v_low_experiment import run
+from experiments import calculate_mse_grid
 
-save_dir = here('./files/Xarray_test/')
+save_dir = here('files/Xarray_test/')
+save_dir.mkdir(parents=True, exist_ok=True)
 
 Case = namedtuple('Case', 'ndim func')
 
@@ -58,4 +59,4 @@ instances = [(2, 4, 0), (2, 7, 0), (2, 9, 0),
              ]
 
 
-run(cases, kernels, scaling_options, instances, save_dir=save_dir)
+calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir=save_dir)
