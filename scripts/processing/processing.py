@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Filename.py: << A short summary docstring about this file >>
+processing.py: Collection of data processing procedures that can be called
+by explicit runner files.
 """
 
 __author__ = 'Sander van Rijn'
@@ -19,7 +20,8 @@ red_dot = {'marker': '.', 'color': 'red'}
 blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
 
 
-def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, save_as=None):
+def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100,
+                                 points=(), save_as=None):
     norm = colors.LogNorm(vmin=vmin, vmax=vmax, clip=True)
     fig, ax = plt.subplots(figsize=(9,3.5))
 
@@ -41,9 +43,18 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, save_as=None):
     img = axy.imshow(data.sel(model='high').mean(dim='n_low').values.reshape(-1,1), cmap='viridis_r', norm=norm, origin='lower')
     img = axx.imshow(data.sel(model='low').mean(dim='n_high').values.reshape(1,-1), cmap='viridis_r', norm=norm, origin='lower')
 
+    pts = []
+    for p, marker in zip(points, '.v^><*+xD1234'):
+        ph, pl = tuple(map(int, p.DoE.split(':')))
+        handle = ax.scatter(pl, ph, marker=marker)
+        pts.append((handle, f'{p.Author} ({p.Year}'))
+
     fig.colorbar(img, ax=ax, orientation='vertical')
     axy.set_ylabel('#High-fid samples')
     axx.set_xlabel('#Low-fid samples')
+
+    handles, labels = zip(*pts)
+    ax.legend(handles, labels, bbox_to_anchor=(1.2, 0.5), loc='center left')
 
     plt.tight_layout()
     if save_as:
@@ -112,8 +123,6 @@ def display_paired_differences(data, title, vmax=5, num_colors=5, save_as=None):
     plt.show()
 
 
-# %%
-
 def plot_extracts(data, title, save_as=None, show=False):
     fig, ax = plt.subplots(1, 2, figsize=(9, 3.5))
 
@@ -134,5 +143,3 @@ def plot_extracts(data, title, save_as=None, show=False):
     if show:
         plt.show()
     plt.close()
-
-

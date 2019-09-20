@@ -8,6 +8,7 @@ Filename.py: << A short summary docstring about this file >>
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
+import csv
 from collections import namedtuple
 from pprint import pprint
 
@@ -43,8 +44,13 @@ cases = [
 ]
 
 
+with open(data_dir/"DoE_configs.csv", newline="") as infile:
+    reader = csv.reader(infile)
+    Data = namedtuple("Data", next(reader))
+    data = list(map(Data._make, reader))
+
+
 for c in cases:
-    print(c.name, c.ndim)
     with xr.open_dataset(data_dir / f'Matern_{c.ndim}d_{c.name}.nc') as ds:
         mses = ds['mses'].load()
 
@@ -55,8 +61,16 @@ for c in cases:
     plot_name = f'{c.ndim}d-{c.name}-high-low-samples-linear'
     title = f'{c.name} ({c.ndim}D)'
 
-    proc.plot_high_vs_low_num_samples(mses, title, vmin=c.vmin, vmax=c.vmax, save_as=plot_dir / f'{plot_name}.pdf')
-    proc.plot_high_vs_low_num_samples_diff(mses, title, max_diff=c.max_diff, save_as=plot_dir / f'{plot_name}_diff.pdf')
+    data_points = [d for d in data
+                   if d.function == c.name and int(d.D) == c.ndim]
+    pprint(data_points)
 
-    proc.display_paired_differences(mses, title=title, save_as=plot_dir / f'{plot_name}_significance.pdf')
+    proc.plot_high_vs_low_num_samples(mses, title, vmin=c.vmin, vmax=c.vmax,
+                                      points=data_points,
+                                      save_as=plot_dir / f'{plot_name}.pdf')
+    proc.plot_high_vs_low_num_samples_diff(mses, title, max_diff=c.max_diff,
+                                           save_as=plot_dir / f'{plot_name}_diff.pdf')
+
+    proc.display_paired_differences(mses, title=title,
+                                    save_as=plot_dir / f'{plot_name}_significance.pdf')
     proc.plot_extracts(mses, title, save_as=plot_dir / f'{plot_name}_extracts.pdf', show=True)
