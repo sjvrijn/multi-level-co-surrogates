@@ -53,8 +53,9 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100,
     axy.set_ylabel('#High-fid samples')
     axx.set_xlabel('#Low-fid samples')
 
-    handles, labels = zip(*pts)
-    ax.legend(handles, labels, bbox_to_anchor=(1.2, 0.5), loc='center left')
+    if pts:
+        handles, labels = zip(*pts)
+        ax.legend(handles, labels, bbox_to_anchor=(1.2, 0.5), loc='center left')
 
     plt.tight_layout()
     if save_as:
