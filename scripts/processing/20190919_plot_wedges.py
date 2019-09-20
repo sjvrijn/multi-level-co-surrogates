@@ -8,29 +8,19 @@ Filename.py: << A short summary docstring about this file >>
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-import sys
 from collections import namedtuple
 from pprint import pprint
 
-import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-from matplotlib import colors
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pyprojroot import here
 
-module_path = str(here())
-if module_path not in sys.path:
-    sys.path.append(module_path)
-
-import multiLevelCoSurrogates as mlcs
 import processing as proc
 
-plot_dir = here('plots/')
+plot_dir = here('plots/2019-09_MSE_analysis')
 data_dir = here('files/')
 
 
-# generic flow
 Case = namedtuple('Case', 'name ndim vmin vmax max_diff')
 
 cases = [
@@ -51,7 +41,6 @@ cases = [
     Case('Borehole', 8, 10, 3000, 1e4),
 ]
 
-# %%
 
 for c in cases:
     print(c.name, c.ndim)
