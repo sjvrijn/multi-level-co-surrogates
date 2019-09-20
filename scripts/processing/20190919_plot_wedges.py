@@ -17,8 +17,9 @@ from pyprojroot import here
 
 import processing as proc
 
-plot_dir = here('plots/2019-09_MSE_analysis')
 data_dir = here('files/')
+plot_dir = here('plots/2019-09_MSE_analysis')
+plot_dir.mkdir(parents=True, exist_ok=True)
 
 
 Case = namedtuple('Case', 'name ndim vmin vmax max_diff')
