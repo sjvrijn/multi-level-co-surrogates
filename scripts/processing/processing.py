@@ -9,6 +9,8 @@ by explicit runner files.
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
+from itertools import product
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colors
@@ -18,6 +20,10 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # defining some point styles
 red_dot = {'marker': '.', 'color': 'red'}
 blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
+
+single_point_styles = [{'marker': m}  # 'fillstyle': f,
+                       for m in 'osHDPX*v^><']
+                       #for f, m in product(['full', None], 'oSHDPX*v^><')]
 
 
 def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100,
@@ -44,9 +50,9 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100,
     img = axx.imshow(data.sel(model='low').mean(dim='n_high').values.reshape(1,-1), cmap='viridis_r', norm=norm, origin='lower')
 
     pts = []
-    for p, marker in zip(points, '.v^><*+xD1234'):
+    for p, style in zip(points, single_point_styles):
         ph, pl = tuple(map(int, p.DoE.split(':')))
-        handle = ax.scatter(pl, ph, marker=marker)
+        handle = ax.scatter(pl, ph, edgecolor='black', **style)
         pts.append((handle, f'{p.Author} ({p.Year}'))
 
     fig.colorbar(img, ax=ax, orientation='vertical')
