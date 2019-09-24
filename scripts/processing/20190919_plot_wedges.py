@@ -71,6 +71,6 @@ for c in cases:
     proc.plot_high_vs_low_num_samples_diff(mses, title, max_diff=c.max_diff,
                                            save_as=plot_dir / f'{plot_name}_diff.pdf')
 
-    proc.display_paired_differences(mses, title=title,
-                                    save_as=plot_dir / f'{plot_name}_significance.pdf')
+    proc.plot_t_scores(mses, title=title,
+                       save_as=plot_dir / f'{plot_name}_significance.pdf')
     proc.plot_extracts(mses, title, save_as=plot_dir / f'{plot_name}_extracts.pdf', show=True)

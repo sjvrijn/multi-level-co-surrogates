@@ -109,15 +109,15 @@ def plot_high_v_low(long_title, norm, save_as, to_plot):
     plt.show()
 
 
-def display_paired_differences(data, title, vmax=5, num_colors=5, save_as=None):
+def plot_t_scores(data, title, vmax=5, num_colors=11, save_as=None):
     paired_differences = data.sel(model='high_hier') - data.sel(model='high')
     mean_paired_diff = paired_differences.mean(dim='rep')
     std_paired_diff = paired_differences.std(dim='rep', ddof=1)
     se_paired_diff = std_paired_diff / np.sqrt(data.shape[2])
-    t_scores = abs(mean_paired_diff / se_paired_diff)
+    t_scores = mean_paired_diff / se_paired_diff
 
     norm = colors.Normalize(vmin=0, vmax=vmax, clip=True)
-    discrete_cmap = plt.get_cmap('viridis', num_colors)
+    discrete_cmap = plt.get_cmap('seismic_r', num_colors)
 
     fig, ax = plt.subplots(figsize=(9, 3.5))
     img = ax.imshow(t_scores, cmap=discrete_cmap, norm=norm, origin='lower')
