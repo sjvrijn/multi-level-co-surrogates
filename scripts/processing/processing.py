@@ -110,7 +110,7 @@ def plot_high_v_low(long_title, norm, save_as, to_plot):
 
 
 def plot_t_scores(data, title, t_range=5, num_colors=11, save_as=None):
-    paired_differences = data.sel(model='high') - data.sel(model='hier')
+    paired_differences = data.sel(model='high') - data.sel(model='high_hier')
     mean_paired_diff = paired_differences.mean(dim='rep')
     std_paired_diff = paired_differences.std(dim='rep', ddof=1)
     se_paired_diff = std_paired_diff / np.sqrt(data.shape[2])
