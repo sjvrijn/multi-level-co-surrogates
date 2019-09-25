@@ -47,8 +47,8 @@ scaling_options = ['off']  # , 'on', 'inverted']  # , 'regularized']
 
 min_high, max_high = 2, 50
 min_low, max_low = 3, 125
-step = 10
-num_reps = 5#0
+step = 1
+num_reps = 50
 
 instances = [Instance(h, l, r)
              for h, l, r in product(range(min_high, max_high + 1, step),
