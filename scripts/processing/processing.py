@@ -98,7 +98,7 @@ def plot_inter_method_diff(data_A, data_B, name, max_diff=None, save_as=None):
 
 def plot_high_v_low(long_title, norm, save_as, to_plot):
     fig, ax = plt.subplots(figsize=(9, 3.5))
-    img = ax.imshow(to_plot, cmap='RdYlGn', norm=norm, origin='lower')
+    img = ax.imshow(to_plot, cmap='PiYG', norm=norm, origin='lower')
     fig.colorbar(img, ax=ax, orientation='vertical')
     ax.set_ylabel('#High-fid samples')
     ax.set_xlabel('#Low-fid samples')
@@ -109,7 +109,7 @@ def plot_high_v_low(long_title, norm, save_as, to_plot):
     plt.show()
 
 
-def plot_t_scores(data, title, t_range=5, num_colors=11, save_as=None):
+def plot_t_scores(data, title, t_range=5, num_colors=10, save_as=None):
     paired_differences = data.sel(model='high') - data.sel(model='high_hier')
     mean_paired_diff = paired_differences.mean(dim='rep')
     std_paired_diff = paired_differences.std(dim='rep', ddof=1)
@@ -117,11 +117,11 @@ def plot_t_scores(data, title, t_range=5, num_colors=11, save_as=None):
     t_scores = mean_paired_diff / se_paired_diff
 
     norm = colors.Normalize(vmin=-t_range, vmax=t_range, clip=True)
-    discrete_cmap = plt.get_cmap('seismic_r', num_colors)
+    discrete_cmap = plt.get_cmap('PuOr_r', num_colors)
 
     fig, ax = plt.subplots(figsize=(9, 3.5))
     img = ax.imshow(t_scores, cmap=discrete_cmap, norm=norm, origin='lower')
-    fig.colorbar(img, ax=ax, orientation='vertical')
+    fig.colorbar(img, ax=ax, orientation='vertical', ticks=np.arange(-t_range, t_range, 1))
     ax.set_title(f"Paired difference t-scores - {title}")
 
     plt.tight_layout()
