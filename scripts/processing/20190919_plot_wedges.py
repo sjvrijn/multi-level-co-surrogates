@@ -26,21 +26,21 @@ plot_dir.mkdir(parents=True, exist_ok=True)
 Case = namedtuple('Case', 'name ndim vmin vmax max_diff')
 
 cases = [
-    Case('Forrester', 1, None, None, 100),
-    #     Case('Forrester',        2,  None,    None,  100),
-    #     Case('Forrester',        4,  None,    None,   10),
-    #     Case('Forrester',        6,  None,    None,   10),
-    #     Case('Forrester',        8,  None,    None,   10),
-    #     Case('Bohachevsky',      2,   500,   2_000,  200),
-    #     Case('Booth',            2,   1e5,     5e6, 5000),
-    Case('Branin', 2, 10, 1e4, None),
-    #     Case('Currin',           2,   .01,      10,   50),
-    #     Case('Himmelblau',       2,  None,    None, 1000),
-    #     Case('SixHumpCamelBack', 2,  None,    None,  100),
-    #     Case('Park91a',          4,  None,    None,    1),
-    #     Case('Park91b',          4,  None,    None,    1),
-    Case('Hartmann6', 6, 8e-3, 5e-1, 1),
-    Case('Borehole', 8, 10, 3000, 1e4),
+    Case('Forrester',        1,  None,    None,  100),
+    Case('Forrester',        2,  None,    None,  100),
+    Case('Forrester',        4,  None,    None,   10),
+    Case('Forrester',        6,  None,    None,   10),
+    Case('Forrester',        8,  None,    None,   10),
+    Case('Bohachevsky',      2,  None,    None,  100),
+    Case('Booth',            2,  None,    None, 1000),
+    Case('Branin',           2,    10,     1e4, 1000),
+    Case('Currin',           2,   .01,      10,   50),
+    Case('Himmelblau',       2,  None,    None, 1000),
+    Case('SixHumpCamelback', 2,  None,    None,  100),
+    Case('Park91A',          4,  None,    None,    1),
+    Case('Park91B',          4,  None,    None,    1),
+    Case('Hartmann6',        6,  None,    None, None),
+    Case('Borehole',         8,    10,    3000,  1e4),
 ]
 
 
