@@ -46,28 +46,19 @@ def indexify(sequence, index_source):
 def create_mse_tracking(func, ndim, mfbo_options, instances):
 
     n_test_samples = mfbo_options['test_sample'].shape[1]
-
     models = ['high_hier', 'high', 'low']
+
     n_highs, n_lows, reps = map(uniquify, zip(*instances))
-    array_size = (len(n_highs), len(n_lows), len(reps), 3)
+    array_size = (len(n_highs), len(n_lows), len(reps), len(models))
 
     mse_tracking = np.full(array_size, np.nan)
     r2_tracking = np.full(array_size, np.nan)
     value_tracking = np.full((*array_size, n_test_samples), np.nan)
 
+    indices = indexify_instances(instances)
+
     print('starting loops')
-
-    #TODO: simplify this index creation stuff
-    all_n_high, all_n_low, all_reps = list(zip(*instances))
-
-    n_high_indices = indexify(all_n_high, n_highs)
-    n_low_indices = indexify(all_n_low, n_lows)
-    reps_indices = indexify(all_reps, reps)
-
-    indices = list(zip(n_high_indices, n_low_indices, reps_indices))
-
     for i, (instance, indices) in enumerate(zip(instances, indices)):
-
         if i % 100 == 0:
             print(f'{i}/{len(instances)}')
 
@@ -75,14 +66,13 @@ def create_mse_tracking(func, ndim, mfbo_options, instances):
 
         mse_tracking[indices] = mfbo.getMSE()
         r2_tracking[indices] = mfbo.getR2()
-
         for m, model in enumerate([mfbo.models['high'],
                                    mfbo.direct_models['high'],
                                    mfbo.models['low']]):
             value_tracking[(*indices), m] = model.predict(mfbo.test_sample).flatten()
-
     print(f'{len(instances)}/{len(instances)}')
 
+    # Iteration finished, arranging data into xr.Dataset
     attributes = dict(experiment='create_mse_tracking',
                       function=func.name, ndim=ndim,
                       kernel=mfbo_options['kernel'],
@@ -108,6 +98,23 @@ def create_mse_tracking(func, ndim, mfbo_options, instances):
                          'values': value_tracking})
 
     return output
+
+
+def indexify_instances(instances):
+    """Return an 'indexified' version of the list of instances, i.e. each
+    instance is replaced by a tuple of indices.
+    These indices can then be used to write values into a size-correct numpy-
+    array as part of a xr.DataArray whose coordinates do not necessarily
+    start at 0 or increase by 1.
+    """
+    n_highs, n_lows, reps = map(uniquify, zip(*instances))
+
+    all_n_high, all_n_low, all_reps = list(zip(*instances))
+    n_high_indices = indexify(all_n_high, n_highs)
+    n_low_indices = indexify(all_n_low, n_lows)
+    reps_indices = indexify(all_reps, reps)
+    indices = list(zip(n_high_indices, n_low_indices, reps_indices))
+    return indices
 
 
 def create_experiment_instance(func, mfbo_options, ndim, instance):
@@ -179,8 +186,7 @@ def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
         options = {'kernel': k[:-1], 'scaling': scale, 'test_sample': test_sample}
 
         output = create_mse_tracking(func=case.func, mfbo_options=options,
-                                     ndim=case.ndim, instances=instances,
-                                     save_dir=save_dir)
+                                     ndim=case.ndim, instances=instances)
 
         base_file_name = f'{k}{case.ndim}d_{case.func.name}'
 
