@@ -43,6 +43,20 @@ def indexify(sequence, index_source):
     return [index_source.index(item) for item in sequence]
 
 
+def extract_existing_instances(data):
+    """Return a list of Instances that are non-NaN in the given xr.DataArray"""
+    indices = np.arange(np.prod(data.shape)).reshape(data.shape)
+
+    valid = np.where(np.isfinite(data), indices, np.nan).flatten()
+    valid = valid[np.isfinite(valid)].astype(int)
+
+    all_instances = list(map(Instance,
+                             product(*[x.values.tolist()
+                                       for x in data.coords.values()])))
+    array_instances = np.array(all_instances)
+    return array_instances[valid].tolist()
+
+
 def create_mse_tracking(func, ndim, mfbo_options, instances):
 
     n_test_samples = mfbo_options['test_sample'].shape[1]
