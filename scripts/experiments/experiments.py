@@ -43,9 +43,9 @@ def indexify(sequence, index_source):
     return [index_source.index(item) for item in sequence]
 
 
-def create_mse_tracking(func, ndim, mfbo_options, instances, save_dir):
+def create_mse_tracking(func, ndim, mfbo_options, instances):
 
-    n_test_samples = 500*ndim
+    n_test_samples = mfbo_options['test_sample'].shape[1]
 
     models = ['high_hier', 'high', 'low']
     n_highs, n_lows, reps = map(uniquify, zip(*instances))
@@ -54,10 +54,6 @@ def create_mse_tracking(func, ndim, mfbo_options, instances, save_dir):
     mse_tracking = np.full(array_size, np.nan)
     r2_tracking = np.full(array_size, np.nan)
     value_tracking = np.full((*array_size, n_test_samples), np.nan)
-
-    test_sample = low_lhs_sample(ndim, n_test_samples)  #TODO: consider rescaling test_sample here instead of in MultiFidBO
-    np.save(save_dir/f'{ndim}d_test_sample.npy', test_sample)
-    mfbo_options['test_sample'] = test_sample
 
     print('starting loops')
 
@@ -170,9 +166,17 @@ def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
 
     for case, k, scale in product(cases, kernels, scaling_options):
 
-        np.random.seed(20160501)  # Setting seed for reproducibility
+        test_sample_save_name = save_dir / f'{case.ndimndim}d_test_sample.npy'
 
-        options = {'kernel': k[:-1], 'scaling': scale}
+        if not test_sample_save_name.exists():
+            n_test_samples = 500*case.ndim
+            np.random.seed(20160501)  # Setting seed for reproducibility
+            test_sample = low_lhs_sample(case.ndim, n_test_samples)  # TODO: consider rescaling test_sample here instead of in MultiFidBO
+            np.save(test_sample_save_name, test_sample)
+        else:
+            test_sample = np.load(test_sample_save_name)
+
+        options = {'kernel': k[:-1], 'scaling': scale, 'test_sample': test_sample}
 
         output = create_mse_tracking(func=case.func, mfbo_options=options,
                                      ndim=case.ndim, instances=instances,
