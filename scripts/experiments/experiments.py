@@ -1,5 +1,6 @@
 # coding: utf-8
 import sys
+import time
 from collections import namedtuple
 from functools import partial
 from itertools import product
@@ -55,6 +56,12 @@ def extract_existing_instances(data):
                                        for x in data.coords.values()])))
     array_instances = np.array(all_instances)
     return array_instances[valid].tolist()
+
+
+def extend_existing_dataset(dataset, instances):
+    """Take the given dataset, extend it with all given instances not already present
+    in the dataset, and return this extended version."""
+    pass
 
 
 def create_mse_tracking(func, ndim, mfbo_options, instances):
@@ -187,6 +194,8 @@ def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
 
     for case, k, scale in product(cases, kernels, scaling_options):
 
+        start = time.time()
+        print(f"Starting case {case} at {start}")
         test_sample_save_name = save_dir / f'{case.ndimndim}d_test_sample.npy'
 
         if not test_sample_save_name.exists():
@@ -206,6 +215,9 @@ def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
 
         np.save(save_dir/f'{base_file_name}_instances.npy', np.array(instances))
         output.to_netcdf(save_dir/f'{base_file_name}.nc')
+        end = time.time()
+        print(f"Ended case {case} at {end}\n"
+              f"Time spent: {end-start}")
 
 
 def plot_model_and_samples(case, kernel, scaling_option, instance):
