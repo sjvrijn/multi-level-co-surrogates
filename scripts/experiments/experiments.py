@@ -196,22 +196,24 @@ def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
 
         start = time.time()
         print(f"Starting case {case} at {start}")
-        test_sample_save_name = save_dir / f'{case.ndimndim}d_test_sample.npy'
 
+        output_path = save_dir / f"{k}{case.ndim}d-{case.func.name}.nc"
+        if output_path.exists():
+            from warnings import warn
+            warn(f"File {output_path} already exists! Skipping case...")
+            continue
+
+        test_sample_save_name = save_dir / f'{case.ndimndim}d-test-sample.npy'
         if not test_sample_save_name.exists():
             test_sample = create_test_sample(case, test_sample_save_name)
         else:
             test_sample = np.load(test_sample_save_name)
 
         options = {'kernel': k[:-1], 'scaling': scale, 'test_sample': test_sample}
-
         output = create_mse_tracking(func=case.func, mfbo_options=options,
                                      ndim=case.ndim, instances=instances)
 
-        base_file_name = f'{k}{case.ndim}d_{case.func.name}'
-
-        np.save(save_dir/f'{base_file_name}_instances.npy', np.array(instances))
-        output.to_netcdf(save_dir/f'{base_file_name}.nc')
+        output.to_netcdf(output_path)
         end = time.time()
         print(f"Ended case {case} at {end}\n"
               f"Time spent: {end-start}")
