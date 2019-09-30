@@ -20,7 +20,7 @@ from pyprojroot import here
 
 import processing as proc
 
-experiment_name  "2019-09-mse-r2"
+experiment_name = "2019-09-mse-r2"
 
 data_dir = here("files") / experiment_name
 plot_dir = here("plots") / experiment_name
@@ -30,7 +30,7 @@ plot_dir.mkdir(parents=True, exist_ok=True)
 Case = namedtuple('Case', 'name ndim vmin vmax max_diff')
 
 cases = [
-    Case(f"AdjustableBranin{a1}", 2, 10, 1e4, 1000),
+    Case(f"AdjustableBranin{a1}", 2, 10, 1e4, 1000)
     for a1 in np.linspace(-0.5, 1.0, 16)
 ]
 

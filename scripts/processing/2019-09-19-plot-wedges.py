@@ -20,7 +20,7 @@ from pyprojroot import here
 
 import processing as proc
 
-experiment_name  "2019-09-mse-nc"
+experiment_name = "2019-09-mse-nc"
 
 data_dir = here("files") / experiment_name
 plot_dir = here("plots") / experiment_name
