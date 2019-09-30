@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-Filename.py: << A short summary docstring about this file >>
+2019-09-19-plot-wedges.py: Plot the wedge-shaped MSE-grids
+for all available (standard) cases, with DoE's as used in
+literature plotted.
 """
 
 __author__ = 'Sander van Rijn'

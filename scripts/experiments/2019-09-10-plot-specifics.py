@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-20190910_plot_specifics.py: Experiment runner to generate plots of the search-
+2019-09-10-plot-specifics.py: Experiment runner to generate plots of the search-
 space and sample points for specific selected instances.
 """
 
@@ -17,7 +17,7 @@ import multifidelityfunctions as mff
 
 from experiments import Case, Instance, plot_model_and_samples
 
-save_dir = here('plots/plot_specifics/')
+save_dir = here('plots/2019-09-plot-specifics/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
 cases = [

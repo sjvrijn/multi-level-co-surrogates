@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-Filename.py: << A short summary docstring about this file >>
+2019-09-30-plot-wedges.py: Plot the wedge-shaped MSE-grids
+for various parametrizations of the Adjustable Branin
+function.
 """
 
 __author__ = 'Sander van Rijn'
