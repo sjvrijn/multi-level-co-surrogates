@@ -18,8 +18,10 @@ from pyprojroot import here
 
 import processing as proc
 
-data_dir = here('files/')
-plot_dir = here('plots/2019-09_MSE_analysis')
+experiment_name  "2019-09-mse-nc"
+
+data_dir = here("files") / experiment_name
+plot_dir = here("plots") / experiment_name
 plot_dir.mkdir(parents=True, exist_ok=True)
 
 
@@ -33,7 +35,6 @@ cases = [
     Case('Forrester',        8,  None,    None,   10),
     Case('Bohachevsky',      2,  None,    None,  100),
     Case('Booth',            2,  None,    None, 1000),
-    Case('Branin',           2,    10,     1e4, 1000),
     Case('Currin',           2,   .01,      10,   50),
     Case('Himmelblau',       2,  None,    None, 1000),
     Case('SixHumpCamelback', 2,  None,    None,  100),
