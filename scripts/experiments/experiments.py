@@ -203,11 +203,7 @@ def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
             warn(f"File {output_path} already exists! Skipping case...")
             continue
 
-        test_sample_save_name = save_dir / f'{case.ndimndim}d-test-sample.npy'
-        if not test_sample_save_name.exists():
-            test_sample = create_test_sample(case, test_sample_save_name)
-        else:
-            test_sample = np.load(test_sample_save_name)
+        test_sample = load_test_sample(case.ndim, save_dir)
 
         options = {'kernel': k[:-1], 'scaling': scale, 'test_sample': test_sample}
         output = create_mse_tracking(func=case.func, mfbo_options=options,
@@ -219,10 +215,14 @@ def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
               f"Time spent: {end-start}")
 
 
-def create_test_sample(case, test_sample_save_name):
-    n_test_samples = 500 * case.ndim
+def load_test_sample(ndim, save_dir):
+    test_sample_save_name = save_dir / f'{ndim}d-test-sample.npy'
+    if test_sample_save_name.exists():
+        return np.load(test_sample_save_name)
+
+    n_test_samples = 500 * ndim
     np.random.seed(20160501)  # Setting seed for reproducibility
-    test_sample = low_lhs_sample(case.ndim, n_test_samples)  # TODO: consider rescaling test_sample here instead of in MultiFidBO
+    test_sample = low_lhs_sample(ndim, n_test_samples)  # TODO: consider rescaling test_sample here instead of in MultiFidBO
     np.save(test_sample_save_name, test_sample)
     return test_sample
 
