@@ -199,10 +199,7 @@ def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
         test_sample_save_name = save_dir / f'{case.ndimndim}d_test_sample.npy'
 
         if not test_sample_save_name.exists():
-            n_test_samples = 500*case.ndim
-            np.random.seed(20160501)  # Setting seed for reproducibility
-            test_sample = low_lhs_sample(case.ndim, n_test_samples)  # TODO: consider rescaling test_sample here instead of in MultiFidBO
-            np.save(test_sample_save_name, test_sample)
+            test_sample = create_test_sample(case, test_sample_save_name)
         else:
             test_sample = np.load(test_sample_save_name)
 
@@ -218,6 +215,14 @@ def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
         end = time.time()
         print(f"Ended case {case} at {end}\n"
               f"Time spent: {end-start}")
+
+
+def create_test_sample(case, test_sample_save_name):
+    n_test_samples = 500 * case.ndim
+    np.random.seed(20160501)  # Setting seed for reproducibility
+    test_sample = low_lhs_sample(case.ndim, n_test_samples)  # TODO: consider rescaling test_sample here instead of in MultiFidBO
+    np.save(test_sample_save_name, test_sample)
+    return test_sample
 
 
 def plot_model_and_samples(case, kernel, scaling_option, instance):
