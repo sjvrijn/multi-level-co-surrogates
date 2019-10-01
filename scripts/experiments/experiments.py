@@ -203,7 +203,7 @@ def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
             warn(f"File {output_path} already exists! Skipping case...")
             continue
 
-        test_sample = load_test_sample(case.ndim, save_dir)
+        test_sample = get_test_sample(case.ndim, save_dir)
 
         options = {'kernel': k[:-1], 'scaling': scale, 'test_sample': test_sample}
         output = create_mse_tracking(func=case.func, mfbo_options=options,
@@ -215,14 +215,17 @@ def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
               f"Time spent: {end-start}")
 
 
-def load_test_sample(ndim, save_dir):
+def get_test_sample(ndim, save_dir):
+    """Get the test-sample for an `ndim`-dimensional function. If a sample has
+    been previously generated and saved, load it from file. Else, generate it
+    based on the fixed seed and store it for future use."""
     test_sample_save_name = save_dir / f'{ndim}d-test-sample.npy'
     if test_sample_save_name.exists():
         return np.load(test_sample_save_name)
 
     n_test_samples = 500 * ndim
     np.random.seed(20160501)  # Setting seed for reproducibility
-    test_sample = low_lhs_sample(ndim, n_test_samples)  # TODO: consider rescaling test_sample here instead of in MultiFidBO
+    test_sample = low_lhs_sample(ndim, n_test_samples)
     np.save(test_sample_save_name, test_sample)
     return test_sample
 
@@ -232,7 +235,6 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
     mfbo = create_experiment_instance(case.func, options, case.ndim, instance)
 
     if case.ndim == 1:
-
         plot_x = np.linspace(case.func.l_bound, case.func.u_bound, 1001)
 
         plt.figure()
@@ -247,7 +249,6 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
                   f' samples (repetition {instance.rep})')
         plt.legend(loc=0)
         plt.tight_layout()
-
         plt.show()
 
     else:
