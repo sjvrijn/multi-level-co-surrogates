@@ -190,24 +190,39 @@ def multi_fidelity_doe(ndim, num_high, num_low):
     return high_x, low_x
 
 
+def filter_instances(instances, data):
+    """Return `instances` with all instances removed that are already present in
+    the file located at `output_path`"""
+
+    data.load()
+    existing_instances = extract_existing_instances(data)
+
+    return [instance
+            for instance in instances
+            if instance not in existing_instances]
+
+
 def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
 
     for case, k, scale in product(cases, kernels, scaling_options):
-
         start = time.time()
         print(f"Starting case {case} at {start}")
 
         output_path = save_dir / f"{k}{case.ndim}d-{case.func.name}.nc"
         if output_path.exists():
-            from warnings import warn
-            warn(f"File {output_path} already exists! Skipping case...")
-            continue
+            ds = xr.open_dataset(output_path)
+            instances = filter_instances(instances, ds['mses'])
+        else:
+            ds = None
 
         test_sample = get_test_sample(case.ndim, save_dir)
-
         options = {'kernel': k[:-1], 'scaling': scale, 'test_sample': test_sample}
         output = create_mse_tracking(func=case.func, mfbo_options=options,
                                      ndim=case.ndim, instances=instances)
+
+        if ds:
+            ds.load()
+            output = ds.merge(output)
 
         output.to_netcdf(output_path)
         end = time.time()
