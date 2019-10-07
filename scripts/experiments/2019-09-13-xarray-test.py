@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-20190913_xarray_test.py: Experiment runner file for generating sample data to
+2019-09-13-xarray-test.py: Experiment runner file for generating sample data to
 test the new implementation using the xarray package
 """
 
@@ -15,7 +15,7 @@ import multifidelityfunctions as mff
 
 from experiments import Case, Instance, calculate_mse_grid
 
-save_dir = here('files/Xarray_test/')
+save_dir = here('files/2019-09-xarray-test/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
 cases = [

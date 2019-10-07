@@ -1,5 +1,6 @@
 # coding: utf-8
 import sys
+import time
 from collections import namedtuple
 from functools import partial
 from itertools import product
@@ -43,35 +44,42 @@ def indexify(sequence, index_source):
     return [index_source.index(item) for item in sequence]
 
 
-def create_mse_tracking(func, ndim, mfbo_options, instances, save_dir):
+def extract_existing_instances(data):
+    """Return a list of Instances that are non-NaN in the given xr.DataArray"""
+    indices = np.arange(np.prod(data.shape)).reshape(data.shape)
 
-    n_test_samples = 500*ndim
+    valid = np.where(np.isfinite(data), indices, np.nan).flatten()
+    valid = valid[np.isfinite(valid)].astype(int)
 
+    all_instances = list(map(Instance,
+                             product(*[x.values.tolist()
+                                       for x in data.coords.values()])))
+    array_instances = np.array(all_instances)
+    return array_instances[valid].tolist()
+
+
+def extend_existing_dataset(dataset, instances):
+    """Take the given dataset, extend it with all given instances not already present
+    in the dataset, and return this extended version."""
+    pass
+
+
+def create_mse_tracking(func, ndim, mfbo_options, instances):
+
+    n_test_samples = mfbo_options['test_sample'].shape[1]
     models = ['high_hier', 'high', 'low']
+
     n_highs, n_lows, reps = map(uniquify, zip(*instances))
-    array_size = (len(n_highs), len(n_lows), len(reps), 3)
+    array_size = (len(n_highs), len(n_lows), len(reps), len(models))
 
     mse_tracking = np.full(array_size, np.nan)
     r2_tracking = np.full(array_size, np.nan)
     value_tracking = np.full((*array_size, n_test_samples), np.nan)
 
-    test_sample = low_lhs_sample(ndim, n_test_samples)  #TODO: consider rescaling test_sample here instead of in MultiFidBO
-    np.save(save_dir/f'{ndim}d_test_sample.npy', test_sample)
-    mfbo_options['test_sample'] = test_sample
+    indices = indexify_instances(instances)
 
     print('starting loops')
-
-    #TODO: simplify this index creation stuff
-    all_n_high, all_n_low, all_reps = list(zip(*instances))
-
-    n_high_indices = indexify(all_n_high, n_highs)
-    n_low_indices = indexify(all_n_low, n_lows)
-    reps_indices = indexify(all_reps, reps)
-
-    indices = list(zip(n_high_indices, n_low_indices, reps_indices))
-
     for i, (instance, indices) in enumerate(zip(instances, indices)):
-
         if i % 100 == 0:
             print(f'{i}/{len(instances)}')
 
@@ -79,14 +87,13 @@ def create_mse_tracking(func, ndim, mfbo_options, instances, save_dir):
 
         mse_tracking[indices] = mfbo.getMSE()
         r2_tracking[indices] = mfbo.getR2()
-
         for m, model in enumerate([mfbo.models['high'],
                                    mfbo.direct_models['high'],
                                    mfbo.models['low']]):
             value_tracking[(*indices), m] = model.predict(mfbo.test_sample).flatten()
-
     print(f'{len(instances)}/{len(instances)}')
 
+    # Iteration finished, arranging data into xr.Dataset
     attributes = dict(experiment='create_mse_tracking',
                       function=func.name, ndim=ndim,
                       kernel=mfbo_options['kernel'],
@@ -112,6 +119,23 @@ def create_mse_tracking(func, ndim, mfbo_options, instances, save_dir):
                          'values': value_tracking})
 
     return output
+
+
+def indexify_instances(instances):
+    """Return an 'indexified' version of the list of instances, i.e. each
+    instance is replaced by a tuple of indices.
+    These indices can then be used to write values into a size-correct numpy-
+    array as part of a xr.DataArray whose coordinates do not necessarily
+    start at 0 or increase by 1.
+    """
+    n_highs, n_lows, reps = map(uniquify, zip(*instances))
+
+    all_n_high, all_n_low, all_reps = list(zip(*instances))
+    n_high_indices = indexify(all_n_high, n_highs)
+    n_low_indices = indexify(all_n_low, n_lows)
+    reps_indices = indexify(all_reps, reps)
+    indices = list(zip(n_high_indices, n_low_indices, reps_indices))
+    return indices
 
 
 def create_experiment_instance(func, mfbo_options, ndim, instance):
@@ -166,22 +190,59 @@ def multi_fidelity_doe(ndim, num_high, num_low):
     return high_x, low_x
 
 
+def filter_instances(instances, data):
+    """Return `instances` with all instances removed that are already present in
+    the file located at `output_path`"""
+
+    data.load()
+    existing_instances = extract_existing_instances(data)
+
+    return [instance
+            for instance in instances
+            if instance not in existing_instances]
+
+
 def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
 
     for case, k, scale in product(cases, kernels, scaling_options):
+        start = time.time()
+        print(f"Starting case {case} at {start}")
 
-        np.random.seed(20160501)  # Setting seed for reproducibility
+        output_path = save_dir / f"{k}{case.ndim}d-{case.func.name}.nc"
+        if output_path.exists():
+            ds = xr.open_dataset(output_path)
+            instances = filter_instances(instances, ds['mses'])
+        else:
+            ds = None
 
-        options = {'kernel': k[:-1], 'scaling': scale}
-
+        test_sample = get_test_sample(case.ndim, save_dir)
+        options = {'kernel': k[:-1], 'scaling': scale, 'test_sample': test_sample}
         output = create_mse_tracking(func=case.func, mfbo_options=options,
-                                     ndim=case.ndim, instances=instances,
-                                     save_dir=save_dir)
+                                     ndim=case.ndim, instances=instances)
 
-        base_file_name = f'{k}{case.ndim}d_{case.func.name}'
+        if ds:
+            ds.load()
+            output = ds.merge(output)
 
-        np.save(save_dir/f'{base_file_name}_instances.npy', np.array(instances))
-        output.to_netcdf(save_dir/f'{base_file_name}.nc')
+        output.to_netcdf(output_path)
+        end = time.time()
+        print(f"Ended case {case} at {end}\n"
+              f"Time spent: {end-start}")
+
+
+def get_test_sample(ndim, save_dir):
+    """Get the test-sample for an `ndim`-dimensional function. If a sample has
+    been previously generated and saved, load it from file. Else, generate it
+    based on the fixed seed and store it for future use."""
+    test_sample_save_name = save_dir / f'{ndim}d-test-sample.npy'
+    if test_sample_save_name.exists():
+        return np.load(test_sample_save_name)
+
+    n_test_samples = 500 * ndim
+    np.random.seed(20160501)  # Setting seed for reproducibility
+    test_sample = low_lhs_sample(ndim, n_test_samples)
+    np.save(test_sample_save_name, test_sample)
+    return test_sample
 
 
 def plot_model_and_samples(case, kernel, scaling_option, instance):
@@ -189,7 +250,6 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
     mfbo = create_experiment_instance(case.func, options, case.ndim, instance)
 
     if case.ndim == 1:
-
         plot_x = np.linspace(case.func.l_bound, case.func.u_bound, 1001)
 
         plt.figure()
@@ -204,7 +264,6 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
                   f' samples (repetition {instance.rep})')
         plt.legend(loc=0)
         plt.tight_layout()
-
         plt.show()
 
     else:
