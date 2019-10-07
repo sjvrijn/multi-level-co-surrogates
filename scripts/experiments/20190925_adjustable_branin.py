@@ -2,13 +2,16 @@
 # -*- coding: utf-8 -*-
 
 """
-20190822_highvlow.py: Experiment runner file for generating data for
-many combinations of numbers of high- vs. low-fidelity samples
+20190925_adjustable_branin.py: Experiment runner file for generating data for
+many combinations of numbers of high- vs. low-fidelity samples, specifically
+for the adjustable version of the Branin function.
+Adjusting values A1 are expected as commandline arguments.
 """
 
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
+import sys
 from itertools import product
 
 from pyprojroot import here
@@ -21,8 +24,8 @@ save_dir = here('files/high_v_low/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
 cases = [
-    Case(2, mff.adjustable_branin(0)),
-    Case(2, mff.adjustable_branin(0.5)),
+    Case(2, mff.adjustable_branin(float(x)))
+    for x in sys.argv[1:]
 ]
 
 kernels = ['Matern_']
