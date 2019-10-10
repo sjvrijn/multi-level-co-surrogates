@@ -66,7 +66,7 @@ def extend_existing_dataset(dataset, instances):
 
 def create_mse_tracking(func, ndim, mfbo_options, instances):
 
-    n_test_samples = mfbo_options['test_sample'].shape[1]
+    n_test_samples = mfbo_options['test_sample'].shape[0]
     models = ['high_hier', 'high', 'low']
 
     n_highs, n_lows, reps = map(uniquify, zip(*instances))
