@@ -30,11 +30,11 @@ def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
     funcs = [
         *surfaces,
 
-        partial(bifidbo.acq, gp=bifidbo.gp_high, y_max=bifidbo.cand_arch.max['high']),
+        partial(bifidbo.acq, gp=bifidbo.gp_high, y_max=bifidbo.archive.max['high']),
         partial(mlcs.gpplot, func=bifidbo.gp_high.predict),
         partial(mlcs.gpplot, func=bifidbo.gp_high.predict, return_std=True),
 
-        partial(bifidbo.acq, gp=bifidbo.gp_low, y_max=bifidbo.cand_arch.max['low']),
+        partial(bifidbo.acq, gp=bifidbo.gp_low, y_max=bifidbo.archive.max['low']),
         partial(mlcs.gpplot, func=bifidbo.gp_low.predict),
         partial(mlcs.gpplot, func=bifidbo.gp_low.predict, return_std=True),
 
@@ -69,9 +69,9 @@ def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
     ]
     surfaces = mlcs.createsurfaces(funcs)
 
-    p_high = [mlcs.ScatterPoints(*bifidbo.cand_arch.getcandidates(fidelity='high'),
+    p_high = [mlcs.ScatterPoints(*bifidbo.archive.get_candidates(fidelity='high'),
                                  style={'marker': 'o', 'facecolors': 'none', 'color': 'red'})]
-    p_low = [mlcs.ScatterPoints(*bifidbo.cand_arch.getcandidates(fidelity='low'),
+    p_low = [mlcs.ScatterPoints(*bifidbo.archive.get_candidates(fidelity='low'),
                                 style={'marker': '+', 'color': 'red'})]
     p_both = [
         p_high[0],
@@ -136,12 +136,12 @@ def createbifidbo(num_low_samples=25, num_high_samples=5, plot_surfaces=False, a
     high_sample = mlcs.select_subsample(low_sample.T, num_high_samples).T
 
     archive = mlcs.CandidateArchive(ndim, fidelities=['high', 'low'])
-    archive.addcandidates(low_sample, fit_func_low(low_sample), fidelity='low')
-    archive.addcandidates(high_sample, fit_func_high(high_sample), fidelity='high')
+    archive.add_candidates(low_sample, fit_func_low(low_sample), fidelity='low')
+    archive.add_candidates(high_sample, fit_func_high(high_sample), fidelity='high')
 
     bifidbo = mlcs.BiFidBayesianOptimization(
         f_low=fit_func_low, f_high=fit_func_high,
-        cand_arch=archive, acq=acq, bounds=bounds
+        archive=archive, acq=acq, bounds=bounds
     )
     bifidbo.train_gp(fidelity='low')
     bifidbo.train_gp(fidelity='high')
@@ -165,7 +165,7 @@ def find_infill_and_retrain(bifidbo, which_model='hierarchical', fidelity='low')
     else:
         raise ValueError(f"fidelity '{fidelity}' not recognized")
 
-    bifidbo.cand_arch.addcandidate(candidate=infill_in, fitness=infill_out, fidelity=fidelity)
+    bifidbo.archive.add_candidate(candidate=infill_in, fitness=infill_out, fidelity=fidelity)
     bifidbo.train_gp(fidelity=fidelity)
 
 

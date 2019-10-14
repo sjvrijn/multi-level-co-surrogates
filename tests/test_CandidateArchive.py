@@ -16,15 +16,15 @@ from multiLevelCoSurrogates import CandidateArchive
 
 def test_bare_archive():
     archive = CandidateArchive(ndim=0)
-    assert archive.fidelities == ['fitness']
+    assert archive.fidelities == ('fitness',)
     assert len(archive) == len(archive.data) == 0
     assert len(archive.max) == len(archive.min) == len(archive.fidelities)
 
 
 def test_single_fidelity():
     fid = 'my_fidelity'
-    archive = CandidateArchive(ndim=0, fidelities=[fid])
-    assert archive.fidelities == [fid]
+    archive = CandidateArchive(ndim=0, fidelities=(fid,))
+    assert archive.fidelities == (fid,)
 
 
 def test_multiple_fidelities():
@@ -37,7 +37,7 @@ def test_fidelity_not_specified():
     fids = [f'my_{i}th_fidelity' for i in range(5)]
     archive = CandidateArchive(ndim=0, fidelities=fids)
     with pytest.raises(ValueError):
-        archive.addcandidate([1, 2, 3], fitness=1)
+        archive.add_candidate([1, 2, 3], fitness=1)
 
 
 ### A 'happy path' is a simple run through some functionality that just works
@@ -46,9 +46,9 @@ def test_1fid_happy_path():
     archive = CandidateArchive(ndim=3)
     candidates = np.random.randn(30).reshape((10, 3))
     fitnesses = np.random.randn(10).reshape((10, 1))
-    archive.addcandidates(candidates.tolist(), fitnesses)
+    archive.add_candidates(candidates.tolist(), fitnesses)
 
-    result = archive.getcandidates()
+    result = archive.get_candidates()
     assert isinstance(result, mlcs.CandidateSet)
     assert hasattr(result, 'candidates')
     assert hasattr(result, 'fitnesses')
@@ -59,24 +59,24 @@ def test_1fid_happy_path():
 
 
 def test_2fid_happy_path():
-    archive = CandidateArchive(ndim=3, fidelities=['AAA', 'BBB'])
+    archive = CandidateArchive(ndim=3, fidelities=('AAA', 'BBB'))
     candidates = np.random.randn(30).reshape((10, 3))
     fitnesses = np.random.randn(10).reshape((10, 1))
     with pytest.raises(ValueError):
-        archive.addcandidates(candidates, fitnesses)
+        archive.add_candidates(candidates, fitnesses)
 
-    archive.addcandidates(candidates.tolist(), fitnesses, fidelity='AAA')
+    archive.add_candidates(candidates.tolist(), fitnesses, fidelity='AAA')
 
-    cand, fit = archive.getcandidates(fidelity='AAA')
+    cand, fit = archive.get_candidates(fidelity='AAA')
     np.testing.assert_array_almost_equal(candidates, cand)
     np.testing.assert_array_almost_equal(fitnesses, fit)
 
     new_fitnesses = np.random.randn(5).reshape((5, 1))
     indices = np.random.choice(np.arange(10), 5, replace=False)
 
-    archive.addcandidates(candidates[indices].tolist(), new_fitnesses, fidelity='BBB')
+    archive.add_candidates(candidates[indices].tolist(), new_fitnesses, fidelity='BBB')
 
-    cand, fit = archive.getcandidates(fidelity='BBB')
+    cand, fit = archive.get_candidates(fidelity='BBB')
     # comparing sorted because order does not matter...
     np.testing.assert_array_almost_equal(
         sorted(candidates[indices].tolist()),

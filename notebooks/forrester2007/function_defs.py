@@ -48,8 +48,8 @@ def create_mse_tracking(func, sample_generator,
         high_x = low_x[np.random.choice(num_low, num_high, replace=False)]
 
         archive = mlcs.CandidateArchive(ndim=ndim, fidelities=['high', 'low', 'high-low'])
-        archive.addcandidates(low_x, func.low(low_x), fidelity='low')
-        archive.addcandidates(high_x, func.high(high_x), fidelity='high')
+        archive.add_candidates(low_x, func.low(low_x), fidelity='low')
+        archive.add_candidates(high_x, func.high(high_x), fidelity='high')
 
         mfbo = mlcs.MultiFidelityBO(func, archive)
         mse_tracking[num_high, num_low, rep] = mfbo.getMSE()
@@ -139,8 +139,8 @@ blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
 
 def create_models_and_compare(func, low, high, steps=None, save_as=None):
     archive = mlcs.CandidateArchive(ndim=2, fidelities=['high', 'low', 'high-low'])
-    archive.addcandidates(low, func.low(low), fidelity='low')
-    archive.addcandidates(high, func.high(high), fidelity='high')
+    archive.add_candidates(low, func.low(low), fidelity='low')
+    archive.add_candidates(high, func.high(high), fidelity='high')
 
     mfbo = mlcs.MultiFidelityBO(func, archive, schema=[1,1])
 
@@ -150,8 +150,8 @@ def create_models_and_compare(func, low, high, steps=None, save_as=None):
     surf_high_model = mlcs.createsurface(mfbo.models['high'].predict, u_bound=func.u_bound, l_bound=func.l_bound, step=steps)
     surf_low_model = mlcs.createsurface(mfbo.models['low'].predict, u_bound=func.u_bound, l_bound=func.l_bound, step=steps)
 
-    points_high = [mlcs.ScatterPoints(*archive.getcandidates(fidelity='high'), red_dot)]
-    points_low = [mlcs.ScatterPoints(*archive.getcandidates(fidelity='low'), blue_circle)]
+    points_high = [mlcs.ScatterPoints(*archive.get_candidates(fidelity='high'), red_dot)]
+    points_low = [mlcs.ScatterPoints(*archive.get_candidates(fidelity='low'), blue_circle)]
 
     points = [
         points_high, points_low,

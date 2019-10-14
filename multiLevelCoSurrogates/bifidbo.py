@@ -26,10 +26,10 @@ def blank_fitness(_):
 
 class BiFidBayesianOptimization:
 
-    def __init__(self, f_low, f_high, cand_arch, acq=None, bounds=None):
+    def __init__(self, f_low, f_high, archive, acq=None, bounds=None):
         self.f_low = f_low
         self.f_high = f_high
-        self.cand_arch = cand_arch
+        self.archive = archive
         self.bounds = {'x': (-5,5), 'y': (-5,5)} if bounds is None else bounds
 
         kind, kappa, xi = 'ucb', 2.576, 0.0
@@ -57,7 +57,7 @@ class BiFidBayesianOptimization:
         self.gp_high = Kriging(**gp_opts)
         self.bo_diff.gp = Kriging(**gp_opts)
 
-        candidates, fitnesses = self.cand_arch.getcandidates(num_recent_candidates=0, fidelity=['high', 'low'])
+        candidates, fitnesses = self.archive.get_candidates(num_recent_candidates=0, fidelity=['high', 'low'])
         y_high, y_low = fitnesses[:,0], fitnesses[:,1]
         self.rho = self.determine_rho(y_high, y_low)
 
@@ -86,15 +86,15 @@ class BiFidBayesianOptimization:
         else:
             raise ValueError(f"Fidelity '{fidelity}' unknown, please choose 'high' or 'low'.")
 
-        a, b = self.cand_arch.getcandidates(num_recent_candidates=n, fidelity=fidelity)
+        a, b = self.archive.get_candidates(num_recent_candidates=n, fidelity=fidelity)
         gp.fit(a, b.ravel())
 
 
     def train_diff(self, n=None):
-        if self.cand_arch.num_fidelities != 2:
+        if self.archive.num_fidelities != 2:
             raise ValueError('Cannot work with anything other than 2 fidelities for now. Sorry :)')
 
-        candidates, fitnesses = self.cand_arch.getcandidates(num_recent_candidates=n, fidelity=['high', 'low'])
+        candidates, fitnesses = self.archive.get_candidates(num_recent_candidates=n, fidelity=['high', 'low'])
         y_high, y_low = fitnesses[:,0], fitnesses[:,1]
 
         self.rho = self.determine_rho(y_high, y_low)
@@ -140,15 +140,15 @@ class BiFidBayesianOptimization:
 
         if which_model == 'hierarchical':
             kwargs['gp'] = self
-            kwargs['y_max'] = self.cand_arch.max['high']
+            kwargs['y_max'] = self.archive.max['high']
 
         elif which_model == 'low':
             kwargs['gp'] = self.gp_low
-            kwargs['y_max'] = self.cand_arch.max['low']
+            kwargs['y_max'] = self.archive.max['low']
 
         elif which_model == 'high':
             kwargs['gp'] = self.gp_high
-            kwargs['y_max'] = self.cand_arch.max['high']
+            kwargs['y_max'] = self.archive.max['high']
 
         elif which_model == 'diff':
             kwargs['gp'] = self.bo_diff.gp

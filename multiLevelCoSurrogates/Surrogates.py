@@ -48,7 +48,7 @@ class Surrogate:
 
     def _updatevalues(self):
 
-        X, y = self.archive.getcandidates(num_recent_candidates=self.num_points, fidelity=self.fidelity)
+        X, y = self.archive.get_candidates(num_recent_candidates=self.num_points, fidelity=self.fidelity)
 
         if self.normalized:
             self.Xrange = determinerange(X)
@@ -143,7 +143,7 @@ class HierarchicalSurrogate:
             self.X, self.y_low, self.y_high = self.update_training_values()
             self.rho = self.determineScaleParameter()
             self.y_diff = self.y_high - self.rho * self.y_low
-            self.archive.addcandidates(self.X, self.y_diff, fidelity=self.diff_fidelity)
+            self.archive.add_candidates(self.X, self.y_diff, fidelity=self.diff_fidelity)
         else:
             self.X = self.y_low = self.y_high = None
             self.rho = None
@@ -202,7 +202,7 @@ class HierarchicalSurrogate:
         self.rho = self.determineScaleParameter() if self.scaling else 1
         self.y_diff = self.y_high - self.rho * self.y_low
 
-        self.archive.addcandidates(self.X, self.y_diff, fidelity=self.diff_fidelity)
+        self.archive.add_candidates(self.X, self.y_diff, fidelity=self.diff_fidelity)
         self.train()
 
 
@@ -223,7 +223,7 @@ class HierarchicalSurrogate:
 
     def update_training_values(self):
         assert len(self.fidelities) == 2
-        X, y = self.archive.getcandidates(num_recent_candidates=self.n, fidelity=self.fidelities)
+        X, y = self.archive.get_candidates(num_recent_candidates=self.n, fidelity=self.fidelities)
         y_high, y_low = y[:, 0], y[:, 1]
         return X,  np.array(y_low), np.array(y_high)
 
