@@ -145,7 +145,7 @@ class MultiFidelityBO:
         samples = create_random_sample_set(self.ndim, zip(self.fidelities, [5, 8, 13]),
                                            desired_range=self.input_range)
         for fidelity in self.fidelities:
-            archive.add_candidates(
+            archive.addcandidates(
                 samples[fidelity],
                 getattr(self.func, fidelity)(samples[fidelity]),
                 fidelity=fidelity
@@ -184,7 +184,7 @@ class MultiFidelityBO:
             if iteration_idx % cost == 0:
                 next_point = self.limited_acq_max(fid_low=fid_low, fid_high=fid_high)
                 next_value = self.func[fid_high](next_point.reshape((-1,1)))
-                self.archive.add_candidate(next_point, next_value, fidelity=fid_high)
+                self.archive.addcandidate(next_point, next_value, fidelity=fid_high)
                 self.top_level_model.retrain()
                 next_points[fid_high] = next_point
 
@@ -200,8 +200,8 @@ class MultiFidelityBO:
         if fid_low is None:
             return self.acq_max(y_max=self.archive.max['high'])
 
-        candidates_low = self.archive.get_candidates(fidelity=fid_low).candidates
-        candidates_high = self.archive.get_candidates(fidelity=fid_high).candidates
+        candidates_low = self.archive.getcandidates(fidelity=fid_low).candidates
+        candidates_high = self.archive.getcandidates(fidelity=fid_high).candidates
         interesting_candidates = list({tuple(x.tolist()) for x in candidates_low}     # Loving the type transformations here....
                                       - {tuple(y.tolist()) for y in candidates_high})
         predicted_values = self.top_level_model.predict(np.array(interesting_candidates))
@@ -236,9 +236,9 @@ class MultiFidelityBO:
         green_cross = {'marker': '+', 'color': 'green'}
         surfaces = createsurfaces(self.functions_to_plot, l_bound=self.func.l_bound, u_bound=self.func.u_bound)
         points = [
-                     [ScatterPoints(*self.archive.get_candidates(fidelity='high'), style=red_dot)],
-                     [ScatterPoints(*self.archive.get_candidates(fidelity='medium'), style=blue_circle)],
-                     [ScatterPoints(*self.archive.get_candidates(fidelity='low'), style=green_cross)],
+                     [ScatterPoints(*self.archive.getcandidates(fidelity='high'), style=red_dot)],
+                     [ScatterPoints(*self.archive.getcandidates(fidelity='medium'), style=blue_circle)],
+                     [ScatterPoints(*self.archive.getcandidates(fidelity='low'), style=green_cross)],
                  ] * 4
 
         plotsurfaces(surfaces, all_points=points, titles=self.titles, as_3d=False, shape=(4, 3), show=self.show_plot)

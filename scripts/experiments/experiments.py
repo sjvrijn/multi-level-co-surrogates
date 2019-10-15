@@ -156,8 +156,8 @@ def create_experiment_instance(func, mfbo_options, ndim, instance):
 
     archive = mlcs.CandidateArchive(ndim=ndim,
                                     fidelities=['high', 'low', 'high-low'])
-    archive.add_candidates(low_x, func.low(low_x), fidelity='low')
-    archive.add_candidates(high_x, func.high(high_x), fidelity='high')
+    archive.addcandidates(low_x, func.low(low_x), fidelity='low')
+    archive.addcandidates(high_x, func.high(high_x), fidelity='high')
 
     mfbo = mlcs.MultiFidelityBO(func, archive, **mfbo_options)
 
@@ -257,8 +257,8 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
         plt.plot(plot_x, case.func.low(plot_x), label='True low-fidelity')
         plt.plot(plot_x, mfbo.models['high'].predict(plot_x), label='Hierarchical model')
 
-        plt.scatter(*mfbo.archive.get_candidates(fidelity='high'), label='High-fidelity samples')
-        plt.scatter(*mfbo.archive.get_candidates(fidelity='low'), label='low-fidelity samples')
+        plt.scatter(*mfbo.archive.getcandidates(fidelity='high'), label='High-fidelity samples')
+        plt.scatter(*mfbo.archive.getcandidates(fidelity='low'), label='low-fidelity samples')
 
         plt.title(f'{case.ndim}D {case.func.name}: {instance.high}/{instance.low}'
                   f' samples (repetition {instance.rep})')
@@ -277,8 +277,8 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
         surf_model_low = mlcs.createsurface(partial(mlcs.gpplot, func=mfbo.models['low'].predict),
                                              **bounds)
 
-        points = [mlcs.ScatterPoints(*mfbo.archive.get_candidates(fidelity='high'), red_dot),
-                  mlcs.ScatterPoints(*mfbo.archive.get_candidates(fidelity='low'), blue_circle)]
+        points = [mlcs.ScatterPoints(*mfbo.archive.getcandidates(fidelity='high'), red_dot),
+                  mlcs.ScatterPoints(*mfbo.archive.getcandidates(fidelity='low'), blue_circle)]
 
         mlcs.plotsurfaces([surf_high, surf_low, surf_model_high, surf_model_low],
                           titles=['True High', 'True Low', 'Hierarchical model', 'Low-fidelity model'],
