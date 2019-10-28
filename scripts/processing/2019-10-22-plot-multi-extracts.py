@@ -30,7 +30,7 @@ CaseSet = namedtuple('CaseSet', 'generic_name ndim cases')
 
 case_sets = [
     CaseSet(f'Adjustable{name}', ndim, [
-        Case(f"Adjustable{name}{a1}", {ndim}, None, None, None)
+        Case(f"Adjustable{name}{a1}", ndim, None, None, None)
         for a1 in np.round(np.linspace(0.0, 1.0, 21), 2)
     ])
     for name, ndim in (('Branin', 2),
