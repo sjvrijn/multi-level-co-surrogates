@@ -2,17 +2,14 @@
 # -*- coding: utf-8 -*-
 
 """
-2019-09-30-plot-wedges.py: Plot the wedge-shaped MSE-grids
-for various parametrizations of the Adjustable Branin
-function.
+2019-10-22-plot-multi-extracts.py: Plot extracts over all parameter
+values for the adjustable MFF's in single plots to show the progression
 """
 
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-import csv
 from collections import namedtuple
-from pprint import pprint
 
 import numpy as np
 import xarray as xr
@@ -23,44 +20,38 @@ import processing as proc
 experiment_name = "2019-09-mse-r2"
 
 data_dir = here("files") / experiment_name
-plot_dir = here("TMP") / experiment_name
+plot_dir = here("plots") / "2019-10-multi-extracts"
 plot_dir.mkdir(parents=True, exist_ok=True)
 
 plot_extension = "png"
 
 Case = namedtuple('Case', 'name ndim vmin vmax max_diff')
+CaseSet = namedtuple('CaseSet', 'generic_name ndim cases')
 
-cases = [
-    Case(f"AdjustableBranin{a1}", 2, None, None, None)
-    for a1 in np.round(np.linspace(-0.4, 1.0, 15), 1)
-    if a1 != 0.5
+case_sets = [
+    CaseSet(f'Adjustable{name}', ndim, [
+        Case(f"Adjustable{name}{a1}", {ndim}, None, None, None)
+        for a1 in np.round(np.linspace(0.0, 1.0, 21), 2)
+    ])
+    for name, ndim in (('Branin', 2),
+                       ('Paciorek', 2),
+                       ('Hartmann3', 3),
+                       ('Trid', 10))
 ]
 
 
-data_arrays = xr.open_dataset(
+for case_set in case_sets:
+    data_arrays = []
+    for case in case_set.cases:
+        fname = data_dir / f'Matern_{case.ndim}d_{case.name}.nc'
+        if not fname.exists():
+            print(f"Could not find {fname}! Skipping...")
+            continue
+        ds = xr.open_dataset(fname)
+        data_arrays.append(ds['mses'])
 
+    plot_name = f'{case_set.ndim}d-{case_set.generic_name}-high-low-samples-linear'
+    title = f'{case_set.generic_name} ({case_set.ndim}D)'
 
-for c in cases:
-    fname = data_dir / f'Matern_{c.ndim}d_{c.name}.nc'
-    if not fname.exists():
-        print(f"Could not find {fname}! Skipping...")
-        continue
-
-    with xr.open_dataset(fname) as ds:
-        mses = ds['mses'].load()
-
-    print(mses.coords)
-    print('median')
-    pprint([(f'{95 + i}%-ile', np.nanpercentile(mses.median(dim='rep'), 95 + i)) for i in range(6)])
-
-    plot_name = f'{c.ndim}d-{c.name}-high-low-samples-linear'
-    title = f'{c.name} ({c.ndim}D)'
-
-    proc.plot_high_vs_low_num_samples(mses, title, vmin=c.vmin, vmax=c.vmax,
-                                      save_as=plot_dir / f'{plot_name}.{plot_extension}')
-    proc.plot_high_vs_low_num_samples_diff(mses, title, max_diff=c.max_diff,
-                                           save_as=plot_dir / f'{plot_name}-diff.{plot_extension}')
-
-    proc.plot_t_scores(mses, title=title,
-                       save_as=plot_dir / f'{plot_name}-significance.{plot_extension}')
-    proc.plot_extracts(mses, title, save_as=plot_dir / f'{plot_name}-extracts.{plot_extension}', show=True)
+    proc.plot_multi_file_extracts(data_arrays, title=title,
+                                  save_as=plot_dir / f'{plot_name}-multi-extracts.{plot_extension}')
