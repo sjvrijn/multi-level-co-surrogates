@@ -14,6 +14,7 @@ from itertools import product
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colors
+from matplotlib.lines import Line2D
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
@@ -171,3 +172,36 @@ def plot_extracts(data, title, save_as=None, show=False):
     if show:
         plt.show()
     plt.close()
+
+
+def plot_multi_file_extracts(data_arrays, title, save_as=None, show=False):
+    if not (save_as or show):
+        return
+
+    fig, ax = plt.subplots(1, 2, figsize=(9, 3.5))
+
+    for data in data_arrays:
+        data.load()
+        n_highs = data.coords['n_high'].values
+        n_lows = data.coords['n_low'].values
+        for i, nhigh in enumerate(range(np.min(n_highs), np.max(n_highs) + 1, 10)):
+            to_plot = data.sel(n_high=nhigh, model='high_hier').median(dim='rep')
+            ax[0].plot(n_lows, to_plot, color=f'C{i}')
+            ax[1].plot(n_lows, to_plot, color=f'C{i}')
+
+    ax[0].set_title(title)
+    ax[1].set_title(title + ' log-scale')
+    ax[1].set_yscale('log')
+
+    legend_input = [(Line2D([0], [0], color=f'C{i}'), nhigh)
+                    for i, nhigh in enumerate(range(np.min(n_highs), np.max(n_highs) + 1, 10))]
+
+    plt.legend(*zip(*legend_input), loc=0)
+    plt.tight_layout()
+
+    if save_as:
+        plt.savefig(save_as)
+    if show:
+        plt.show()
+    plt.close()
+
