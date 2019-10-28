@@ -208,7 +208,7 @@ def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
         start = time.time()
         print(f"Starting case {case} at {start}")
 
-        output_path = save_dir / f"{k}{case.ndim}d-{case.func.name}.nc"
+        output_path = save_dir / f"{k}-{case.ndim}d-{case.func.name}.nc"
         if output_path.exists():
             ds = xr.open_dataset(output_path)
             instances = filter_instances(instances, ds['mses'])
@@ -216,7 +216,7 @@ def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
             ds = None
 
         test_sample = get_test_sample(case.ndim, save_dir)
-        options = {'kernel': k[:-1], 'scaling': scale, 'test_sample': test_sample}
+        options = {'kernel': k, 'scaling': scale, 'test_sample': test_sample}
         output = create_mse_tracking(func=case.func, mfbo_options=options,
                                      ndim=case.ndim, instances=instances)
 
@@ -246,7 +246,7 @@ def get_test_sample(ndim, save_dir):
 
 
 def plot_model_and_samples(case, kernel, scaling_option, instance):
-    options = {'kernel': kernel[:-1], 'scaling': scaling_option}
+    options = {'kernel': kernel, 'scaling': scaling_option}
     mfbo = create_experiment_instance(case.func, options, case.ndim, instance)
 
     if case.ndim == 1:

@@ -28,7 +28,7 @@ cases = [
     for x in sys.argv[1:]
 ]
 
-kernels = ['Matern_']
+kernels = ['Matern']
 scaling_options = ['off']  # , 'on', 'inverted']  # , 'regularized']
 
 min_high, max_high = 2, 50

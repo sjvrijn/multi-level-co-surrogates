@@ -40,7 +40,7 @@ cases = [
     # Case(8, mff.borehole),
 ]
 
-kernels = ['Matern_']
+kernels = ['Matern']
 scaling_options = ['off']  # , 'on', 'inverted']  # , 'regularized']
 
 
