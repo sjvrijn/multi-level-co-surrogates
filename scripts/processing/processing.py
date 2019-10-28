@@ -175,7 +175,7 @@ def plot_extracts(data, title, save_as=None, show=False):
 
 
 def plot_multi_file_extracts(data_arrays, title, save_as=None, show=False):
-    if not (save_as or show):
+    if not (save_as or show) or not data_arrays:
         return
 
     fig, ax = plt.subplots(1, 2, figsize=(9, 3.5))
