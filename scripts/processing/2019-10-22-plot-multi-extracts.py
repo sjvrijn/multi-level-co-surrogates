@@ -43,7 +43,7 @@ case_sets = [
 for case_set in case_sets:
     data_arrays = []
     for case in case_set.cases:
-        fname = data_dir / f'Matern_{case.ndim}d_{case.name}.nc'
+        fname = data_dir / f'Matern-{case.ndim}d-{case.name}.nc'
         if not fname.exists():
             print(f"Could not find {fname}! Skipping...")
             continue
