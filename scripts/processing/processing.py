@@ -180,14 +180,16 @@ def plot_multi_file_extracts(data_arrays, title, save_as=None, show=False):
 
     fig, ax = plt.subplots(1, 2, figsize=(9, 3.5))
 
-    for data in data_arrays:
+    for idx, data in enumerate(data_arrays):
+        alpha = 1 - (idx/len(data_arrays))
         data.load()
         n_highs = data.coords['n_high'].values
         n_lows = data.coords['n_low'].values
         for i, nhigh in enumerate(range(np.min(n_highs), np.max(n_highs) + 1, 10)):
             to_plot = data.sel(n_high=nhigh, model='high_hier').median(dim='rep')
-            ax[0].plot(n_lows, to_plot, color=f'C{i}')
-            ax[1].plot(n_lows, to_plot, color=f'C{i}')
+            ax[0].plot(n_lows, to_plot, color=f'C{i}', alpha=alpha)
+            ax[1].plot(n_lows, to_plot, color=f'C{i}', alpha=alpha)
+        data.close()
 
     ax[0].set_title(title)
     ax[1].set_title(title + ' log-scale')
