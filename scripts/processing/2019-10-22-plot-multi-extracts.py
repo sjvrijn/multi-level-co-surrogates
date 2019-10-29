@@ -18,12 +18,13 @@ from pyprojroot import here
 import processing as proc
 
 experiment_name = "2019-09-mse-r2"
+#experiment_name = "2019-10-07-adjustables"
 
 data_dir = here("files") / experiment_name
 plot_dir = here("plots") / "2019-10-multi-extracts"
 plot_dir.mkdir(parents=True, exist_ok=True)
 
-plot_extension = "png"
+plot_extension = "pdf"
 
 Case = namedtuple('Case', 'name ndim vmin vmax max_diff')
 CaseSet = namedtuple('CaseSet', 'generic_name ndim cases')
