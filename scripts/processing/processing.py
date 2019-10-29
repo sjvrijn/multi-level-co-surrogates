@@ -151,15 +151,22 @@ def plot_t_scores(data, title, t_range=5, num_colors=10, save_as=None):
     plt.show()
 
 
-def plot_extracts(data, title, save_as=None, show=False):
+def plot_extracts(data, title, save_as=None, show=False, *, normalize=False):
     fig, ax = plt.subplots(1, 2, figsize=(9, 3.5))
 
     n_highs = data.coords['n_high'].values
     n_lows = data.coords['n_low'].values
     for nhigh in range(np.min(n_highs), np.max(n_highs) + 1, 10):
         to_plot = data.sel(n_high=nhigh, model='high_hier').median(dim='rep')
-        ax[0].plot(n_lows, to_plot, label=nhigh)
-        ax[1].plot(n_lows, to_plot, label=nhigh)
+
+        if normalize:
+            x = n_lows/nhigh
+            to_plot /= to_plot[0]
+        else:
+            x = n_lows
+
+        ax[0].plot(x, to_plot, label=nhigh)
+        ax[1].plot(x, to_plot, label=nhigh)
 
     ax[0].set_title(title)
     ax[1].set_title(title + ' log-scale')
