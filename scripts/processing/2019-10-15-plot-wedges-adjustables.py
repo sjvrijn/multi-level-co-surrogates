@@ -33,7 +33,7 @@ Case = namedtuple('Case', 'name ndim vmin vmax max_diff')
 cases = [
     Case(f"Adjustable{name}{a1}", ndim, vmin, vmax, None)
     for a1 in np.round(np.linspace(0.0, 1.0, 21), 2)
-    for name, ndim, vmin, vmax in [("Trid", 10, 1e7, 1e10), ("Paciorek", 2, 1e-3, 1e2), ("Hartmann3", 3, 1e-2, 1e1)]
+    for name, ndim, vmin, vmax in [("Trid", 10, 1e7, 1e10), ("Paciorek", 2, 1e-2, 1e2), ("Hartmann3", 3, 5e-2, 5e0)]
 ]
 
 
