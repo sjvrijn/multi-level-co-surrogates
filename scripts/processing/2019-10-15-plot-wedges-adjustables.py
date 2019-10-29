@@ -60,4 +60,5 @@ for c in cases:
                        save_as=plot_dir / f'{plot_name}-significance.{plot_extension}')
     proc.plot_extracts(mses, title,
                        save_as=plot_dir / f'{plot_name}-extracts.{plot_extension}')
-
+    proc.plot_extracts(mses, title, normalize=True,
+                       save_as=plot_dir / f'{plot_name}-normalized-extracts.{plot_extension}')
