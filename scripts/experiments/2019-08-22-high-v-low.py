@@ -29,7 +29,7 @@ cases = [
     Case(2, mff.branin),
     Case(2, mff.currin),
     Case(2, mff.himmelblau),
-    Case(2, mff.sixHumpCamelBack),
+    Case(2, mff.six_hump_camelback),
 
     Case(4, mff.forrester),
     Case(4, mff.park91a),

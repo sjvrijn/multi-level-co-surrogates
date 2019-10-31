@@ -29,7 +29,7 @@ fit_funcs = {
     'booth': booth,
     'himmelblau': himmelblau,
     'himmelblau_seb': himmelblau_seb,
-    'sixHumpCamelBack': sixHumpCamelBack,
+    'sixHumpCamelBack': six_hump_camelback,
     # 'curretal88exp': curretal88exp,
     'park91a': park91a,
     'park91b': park91b,
