@@ -25,7 +25,7 @@ blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
 
 
 Case = namedtuple('Case', 'ndim func')
-Instance = namedtuple('Instance', 'high low rep')
+Instance = namedtuple('Instance', 'n_high n_low rep')
 
 
 def low_lhs_sample(ndim, nlow):
@@ -47,21 +47,19 @@ def indexify(sequence, index_source):
 def extract_existing_instances(data):
     """Return a list of Instances that are non-NaN in the given xr.DataArray"""
 
-    all_instances = product(*[x.values.tolist() for x in data.coords.values()])
-    all_instances = list(map(Instance, all_instances))
-    array_instances = np.array(all_instances)
+    instance_coords = [data.coords[coord].values.tolist()
+                       for coord in Instance._fields]
+
+    array_instances = np.array([
+        Instance(*instance)
+        for instance in product(*instance_coords)
+    ])
 
     indices = np.arange(np.prod(data.shape)).reshape(data.shape)
     valid_indices = np.where(np.isfinite(data), indices, np.nan).flatten()
     valid_indices = valid_indices[np.isfinite(valid_indices)].astype(int)
 
     return array_instances[valid_indices].tolist()
-
-
-def extend_existing_dataset(dataset, instances):
-    """Take the given dataset, extend it with all given instances not already present
-    in the dataset, and return this extended version."""
-    pass
 
 
 def create_mse_tracking(func, ndim, mfbo_options, instances):
@@ -194,7 +192,6 @@ def filter_instances(instances, data):
     """Return `instances` with all instances removed that are already present in
     the file located at `output_path`"""
 
-    data.load()
     existing_instances = extract_existing_instances(data)
 
     return [instance
@@ -211,7 +208,8 @@ def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
         output_path = save_dir / f"{k}-{case.ndim}d-{case.func.name}.nc"
         if output_path.exists():
             ds = xr.open_dataset(output_path)
-            instances = filter_instances(instances, ds['mses'])
+            da = ds['mses'].load()
+            instances = filter_instances(instances, da.sel(model='high_hier'))
         else:
             ds = None
 
@@ -228,6 +226,9 @@ def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
         end = time.time()
         print(f"Ended case {case} at {end}\n"
               f"Time spent: {end-start}")
+
+        if ds:
+            ds.close()
 
 
 def get_test_sample(ndim, save_dir):
@@ -260,7 +261,7 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
         plt.scatter(*mfbo.archive.getcandidates(fidelity='high'), label='High-fidelity samples')
         plt.scatter(*mfbo.archive.getcandidates(fidelity='low'), label='low-fidelity samples')
 
-        plt.title(f'{case.ndim}D {case.func.name}: {instance.high}/{instance.low}'
+        plt.title(f'{case.ndim}D {case.func.name}: {instance.n_high}/{instance.n_low}'
                   f' samples (repetition {instance.rep})')
         plt.legend(loc=0)
         plt.tight_layout()
