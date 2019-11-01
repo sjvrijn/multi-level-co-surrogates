@@ -37,6 +37,7 @@ cases = [
     Case('Forrester',        8,  None,    None,   10),
     Case('Bohachevsky',      2,  None,    None,  100),
     Case('Booth',            2,  None,    None, 1000),
+    Case('Branin',           2,  None,    None, None),
     Case('Currin',           2,   .01,      10,   50),
     Case('Himmelblau',       2,  None,    None, 1000),
     Case('SixHumpCamelback', 2,  None,    None,  100),
@@ -56,10 +57,6 @@ with open(data_dir/"DoE-configs.csv", newline="") as infile:
 for c in cases:
     with xr.open_dataset(data_dir / f'Matern-{c.ndim}d-{c.name}.nc') as ds:
         mses = ds['mses'].load()
-
-    print(mses.coords)
-    print('median')
-    pprint([(f'{95 + i}%-ile', np.nanpercentile(mses.median(dim='rep'), 95 + i)) for i in range(6)])
 
     plot_name = f'{c.ndim}d-{c.name}-high-low-samples-linear'
     title = f'{c.name} ({c.ndim}D)'
