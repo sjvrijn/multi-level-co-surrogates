@@ -43,8 +43,8 @@ class MultiFidelityBO:
 
         if len(self.func.u_bound) == self.ndim and len(self.func.l_bound) == self.ndim:
             self.bounds = np.array([self.func.l_bound, self.func.u_bound], dtype=np.float)
-        elif len(self.func.u_bound) == 1 and len(self.func.u_bound) == 1:
-            self.bounds = np.array([self.func.l_bound * self.ndim, self.func.u_bound * self.ndim], dtype=np.float)
+        elif len(self.func.u_bound) == 1 and len(self.func.l_bound) == 1:
+            self.bounds = np.array([np.repeat(self.func.l_bound, self.ndim), np.repeat(self.func.u_bound, self.ndim)], dtype=np.float)
         else:
             raise ValueError(f"Unclear how to extend lower/upper bound into {self.ndim} dimensions")
 
