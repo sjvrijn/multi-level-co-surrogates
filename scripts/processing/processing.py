@@ -152,7 +152,7 @@ def plot_t_scores(data, title, t_range=5, num_colors=10, save_as=None):
 
 
 def plot_extracts(data, title, save_as=None, show=False, *, normalize=False):
-    fig, ax = plt.subplots(1, 2, figsize=(9, 3.5))
+    fig, axes = plt.subplots(1, 2, figsize=(9, 3.5))
 
     n_highs = data.coords['n_high'].values
     n_lows = data.coords['n_low'].values
@@ -161,16 +161,27 @@ def plot_extracts(data, title, save_as=None, show=False, *, normalize=False):
 
         if normalize:
             x = n_lows/nhigh
-            to_plot /= to_plot[0]
+            to_plot /= to_plot.sel(n_low=nhigh+1)
         else:
             x = n_lows
 
-        ax[0].plot(x, to_plot, label=nhigh)
-        ax[1].plot(x, to_plot, label=nhigh)
+        axes[0].plot(x, to_plot, label=nhigh, zorder=nhigh)
+        axes[1].plot(x, to_plot, label=nhigh, zorder=nhigh)
 
-    ax[0].set_title(title)
-    ax[1].set_title(title + ' log-scale')
-    ax[1].set_yscale('log')
+    axes[0].set_title(title)
+    axes[1].set_title(title + ' log-scale')
+    axes[1].set_yscale('log')
+
+    if normalize:
+        x_label = "Ratio high-fidelity/low-fidelity samples"
+        y_label = "Relative Median MSE"
+    else:
+        x_label = "Number of low-fidelity samples"
+        y_label = "Median MSE"
+
+    for ax in axes:
+        ax.set_xlabel(x_label)
+        ax.set_ylabel(y_label)
 
     plt.legend(loc=0)
     plt.tight_layout()
