@@ -103,18 +103,18 @@ def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
                           save_as=savename_3d, as_3d=True, **plot_opts)
 
 
-boha = fit_funcs['himmelblau']
+func = fit_funcs['himmelblau']
 bounds = {
-    'x': (boha.l_bound[0], boha.u_bound[0]),
-    'y': (boha.l_bound[1], boha.u_bound[1]),
+    'x': (func.l_bound[0], func.u_bound[0]),
+    'y': (func.l_bound[1], func.u_bound[1]),
 }
 
 
 def fit_func_high(x):
-    return -boha.high(x)
+    return -func.high(x)
 
 def fit_func_low(x):
-    return -boha.low(x)
+    return -func.low(x)
 
 surfaces = mlcs.createsurfaces([fit_func_high, fit_func_low])
 surfaces.append(surfaces[0] - surfaces[1])
