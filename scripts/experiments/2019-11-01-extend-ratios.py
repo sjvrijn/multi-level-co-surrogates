@@ -54,20 +54,27 @@ min_high, max_high = 2, 50
 min_low, max_low = 3, 125
 step = 1
 num_reps = 50
-max_ratio = 20
+max_ratio = 3  #20
 
 n_highs = np.arange(min_high, max_high + 1, 10)
 default_n_lows = np.arange(min_low, max_low + 1, step)
 ratios = default_n_lows / n_highs[0]
+print(ratios)
 ratios = ratios[ratios <= max_ratio]
 
 instances = [Instance(h, int(ratio*h), rep)
              for h, ratio, rep in product(n_highs, ratios, range(num_reps))
              if int(ratio*h) > max_low]
 
-if len(sys.argv) > 1:
-    case_idx = int(sys.argv[1])
-    cases = cases[case_idx:case_idx+1]
+print(len(instances))
 
-calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir=save_dir)
+if instances:
 
+    if len(sys.argv) > 1:
+        case_idx = int(sys.argv[1])
+        cases = cases[case_idx:case_idx+1]
+
+    calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir=save_dir)
+
+else:
+    print("No instances to run")
