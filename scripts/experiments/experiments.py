@@ -221,14 +221,12 @@ def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
         if ds:
             ds.load()
             output = ds.merge(output)
+            ds.close()
 
         output.to_netcdf(output_path)
         end = time.time()
         print(f"Ended case {case} at {end}\n"
               f"Time spent: {end-start}")
-
-        if ds:
-            ds.close()
 
 
 def get_test_sample(ndim, save_dir):
