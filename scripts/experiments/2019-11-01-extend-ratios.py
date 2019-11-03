@@ -11,6 +11,7 @@ numbers of high-fidelity samples.
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
+import sys
 from itertools import product
 
 import numpy as np
@@ -61,6 +62,12 @@ ratios = default_n_lows / n_highs[0]
 ratios = ratios[ratios <= max_ratio]
 
 instances = [Instance(h, int(ratio*h), rep)
-             for h, ratio, rep in product(n_highs, ratios, range(num_reps))]
+             for h, ratio, rep in product(n_highs, ratios, range(num_reps))
+             if int(ratio*h) > max_low]
+
+if len(sys.argv) > 1:
+    case_idx = int(sys.argv[1])
+    cases = cases[case_idx:case_idx+1]
 
 calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir=save_dir)
+
