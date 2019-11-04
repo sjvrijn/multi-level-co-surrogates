@@ -207,21 +207,18 @@ def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
 
         output_path = save_dir / f"{k}-{case.ndim}d-{case.func.name}.nc"
         if output_path.exists():
-            ds = xr.open_dataset(output_path)
-            da = ds['mses'].load()
-            instances = filter_instances(instances, da.sel(model='high_hier'))
-        else:
-            ds = None
+            with xr.open_dataset(output_path) as ds:
+                da = ds['mses'].load()
+                instances = filter_instances(instances, da.sel(model='high_hier'))
 
         test_sample = get_test_sample(case.ndim, save_dir)
         options = {'kernel': k, 'scaling': scale, 'test_sample': test_sample}
         output = create_mse_tracking(func=case.func, mfbo_options=options,
                                      ndim=case.ndim, instances=instances)
 
-        if ds:
-            ds.load()
-            output = ds.merge(output)
-            ds.close()
+        if output_path.exists():
+            with xr.load_dataset(output_path) as ds:
+                output = ds.merge(output)
 
         output.to_netcdf(output_path)
         end = time.time()
