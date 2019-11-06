@@ -15,5 +15,5 @@ import numpy as np
 
 arguments = np.round(np.linspace(0, 0.5, 10, endpoint=False), 2)
 for arg in arguments:
-    subprocess.run(f'NQDIR=ed nq python3 20191007_adjustables.py {arg}', shell=True)
+    subprocess.run(f'NQDIR=ed nq python3 2019-10-07-adjustables.py {arg}', shell=True)
 
