@@ -10,8 +10,9 @@ __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 import subprocess
+import numpy as np
 
-arguments = [.3, .4, .6, .7, .8, .9, 1.0]
+arguments = np.round(np.linspace(0.25, 1.0, 16), 2)
 for arg in arguments:
-    subprocess.run(f'NQDIR=edd nq python3 20190925_adjustable_branin.py {arg} > edd.log', shell=True)
+    subprocess.run(f'NQDIR=ed nq python3 2019-09-25-adjustable-branin.py {arg}', shell=True)
 
