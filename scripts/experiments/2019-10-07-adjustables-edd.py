@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-20191007_adjustables_edd.py: Experiment runner file for generating data for
+2019-10-07-adjustables-edd.py: Experiment runner file for generating data for
 many combinations of numbers of high- vs. low-fidelity samples of multiple 
 adjustable functions
 """
@@ -11,8 +11,9 @@ __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 import subprocess
+import numpy as np
 
-arguments = [1.0, 0,8, 0.6, 0.9, 0.7, 0.95, 0.85, 0.75, 0.65, 0.55]
+arguments = np.round(np.linspace(0.5, 1.0, 11), 2)
 for arg in arguments:
-    subprocess.run(f'NQDIR=edd nq python3 20191007_adjustables.py {arg} > edd.log', shell=True)
+    subprocess.run(f'NQDIR=edd nq python3 20191007_adjustables.py {arg}', shell=True)
 
