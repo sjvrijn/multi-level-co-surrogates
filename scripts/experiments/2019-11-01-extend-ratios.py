@@ -54,7 +54,7 @@ min_high, max_high = 2, 50
 min_low, max_low = 3, 125
 step = 1
 num_reps = 50
-max_ratio = 3  #20
+max_ratio = 20
 
 n_highs = np.arange(min_high, max_high + 1, 10)
 default_n_lows = np.arange(min_low, max_low + 1, step)

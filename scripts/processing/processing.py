@@ -151,13 +151,13 @@ def plot_t_scores(data, title, t_range=5, num_colors=10, save_as=None):
     plt.show()
 
 
-def plot_extracts(data, title, save_as=None, show=False, *, normalize=False):
+def plot_extracts(data, title, save_as=None, show=False, *, normalize=False, max_x=None):
     fig, axes = plt.subplots(1, 2, figsize=(9, 3.5))
 
     n_highs = data.coords['n_high'].values
-    n_lows = data.coords['n_low'].values
     for nhigh in range(np.min(n_highs), np.max(n_highs) + 1, 10):
-        to_plot = data.sel(n_high=nhigh, model='high_hier').median(dim='rep')
+        to_plot = data.sel(n_high=nhigh, model='high_hier').median(dim='rep').dropna(dim='n_low')
+        n_lows = to_plot.coords['n_low'].values
 
         if normalize:
             x = n_lows/nhigh
@@ -182,6 +182,7 @@ def plot_extracts(data, title, save_as=None, show=False, *, normalize=False):
     for ax in axes:
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)
+        ax.set_xlim(left=0, right=max_x)
 
     plt.legend(loc=0)
     plt.tight_layout()
