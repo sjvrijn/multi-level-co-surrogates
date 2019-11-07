@@ -14,7 +14,6 @@ import csv
 from collections import namedtuple
 from pprint import pprint
 
-import numpy as np
 import xarray as xr
 from pyprojroot import here
 

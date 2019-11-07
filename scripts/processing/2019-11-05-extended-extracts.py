@@ -10,11 +10,8 @@ to plot relative/normalized extracts up to a consistent high/low ratio
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-import csv
 from collections import namedtuple
-from pprint import pprint
 
-import numpy as np
 import xarray as xr
 from pyprojroot import here
 
