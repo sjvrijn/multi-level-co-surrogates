@@ -242,6 +242,9 @@ def get_test_sample(ndim, save_dir):
 
 
 def plot_model_and_samples(case, kernel, scaling_option, instance):
+    """Create a multi-fidelity model based on given instance and show a plot of
+    the surfaces and sampled points.
+    Can be used for 1D or 2D functions."""
     options = {'kernel': kernel, 'scaling': scaling_option}
     mfbo = create_experiment_instance(case.func, options, case.ndim, instance)
 
@@ -262,7 +265,7 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
         plt.tight_layout()
         plt.show()
 
-    else:
+    elif case.ndim == 2:
         bounds = {'l_bound': case.func.l_bound, 'u_bound': case.func.u_bound}
 
         surf_high = mlcs.createsurface(case.func.high, **bounds)
@@ -279,3 +282,7 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
         mlcs.plotsurfaces([surf_high, surf_low, surf_model_high, surf_model_low],
                           titles=['True High', 'True Low', 'Hierarchical model', 'Low-fidelity model'],
                           all_points=[points, points, points, points], shape=(2,2))
+
+    else:
+        raise ValueError(f"Dimensionality case.ndim={case.ndim} not supported by"
+                         f"plot_model_and_samples. Only 1D and 2D are supported")

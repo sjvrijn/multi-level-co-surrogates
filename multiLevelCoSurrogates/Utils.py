@@ -345,6 +345,8 @@ def plotsurfaceonaxis(ax, surf, title, point_sets=None, plot_type='wireframe', c
     elif plot_type == 'surface':
         surface = ax.plot_surface(surf.X, surf.Y, surf.Z, cmap='viridis_r', rcount=rows, ccount=cols,
                                   linewidth=0, antialiased=True)
+    else:
+        raise ValueError(f"Unrecognised plot_type: '{plot_type}'")
 
     if contour:
         ax.contour(surf.X, surf.Y, surf.Z, zdir='z', levels=33,
