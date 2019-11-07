@@ -38,10 +38,12 @@ for experiment_name in experiments:
             Case(f"Adjustable{name}{a1}", ndim, None, None, None)
             for a1 in np.round(np.linspace(0.0, 1.0, 21), 2)
         ])
-        for name, ndim in (('Branin', 2),
-                           ('Paciorek', 2),
-                           ('Hartmann3', 3),
-                           ('Trid', 10))
+        for name, ndim in (
+            ('Branin',    2),
+            ('Paciorek',  2),
+            ('Hartmann3', 3),
+            ('Trid',     10),
+        )
     ]
 
 
