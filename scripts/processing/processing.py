@@ -67,8 +67,9 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100,
     pts = []
     for p, style in zip(points, single_point_styles):
         ph, pl = tuple(map(int, p.DoE.split(':')))
-        handle = ax.scatter(pl, ph, edgecolor='black', **style)
-        pts.append((handle, f'{p.Author} ({p.Year}'))
+        if ph <= np.max(data.n_high) and pl <= np.max(data.n_low):
+            handle = ax.scatter(pl, ph, edgecolor='black', **style)
+            pts.append((handle, f'{p.Author} ({p.Year}'))
 
     fig.colorbar(img, ax=ax, orientation='vertical')
     axy.set_ylabel('#High-fid samples')
