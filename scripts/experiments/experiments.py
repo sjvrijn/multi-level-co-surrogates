@@ -259,32 +259,38 @@ def create_mse_tracking(func, ndim, mfbo_options, instances):
     output = xr.Dataset({'mses': mse_tracking,
                          'r2': r2_tracking,
                          'values': value_tracking})
-
     return output
 
 
 def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
 
     for case, k, scale in product(cases, kernels, scaling_options):
-        start = time.time()
-        print(f"Starting case {case} at {start}")
+        create_model_error_grid(case, k, scale, instances, save_dir)
 
-        output_path = save_dir / f"{k}-{case.ndim}d-{case.func.name}.nc"
-        if output_path.exists():
-            with xr.open_dataset(output_path) as ds:
-                da = ds['mses'].load()
-                instances = filter_instances(instances, da.sel(model='high_hier'))
 
-        test_sample = get_test_sample(case.ndim, save_dir)
-        options = {'kernel': k, 'scaling': scale, 'test_sample': test_sample}
-        output = create_mse_tracking(func=case.func, mfbo_options=options,
-                                     ndim=case.ndim, instances=instances)
+def create_model_error_grid(case, kernel, scale, instances, save_dir):
+    """Create a grid of model errors for the given MFF-function case at the
+    given list of instances.
+    The results are saved in a NETCDF .nc file at the specified `save_dir`"""
 
-        if output_path.exists():
-            with xr.load_dataset(output_path) as ds:
-                output = ds.merge(output)
+    start = time.time()
+    print(f"Starting case {case} at {start}")
 
-        output.to_netcdf(output_path)
-        end = time.time()
-        print(f"Ended case {case} at {end}\n"
-              f"Time spent: {end-start}")
+    output_path = save_dir / f"{kernel}-{case.ndim}d-{case.func.name}.nc"
+    if output_path.exists():
+        with xr.open_dataset(output_path) as ds:
+            da = ds['mses'].load()
+            instances = filter_instances(instances, da.sel(model='high_hier'))
+
+    test_sample = get_test_sample(case.ndim, save_dir)
+    options = {'kernel': kernel, 'scaling': scale, 'test_sample': test_sample}
+    output = create_mse_tracking(func=case.func, mfbo_options=options,
+                                 ndim=case.ndim, instances=instances)
+    if output_path.exists():
+        with xr.load_dataset(output_path) as ds:
+            output = ds.merge(output)
+    output.to_netcdf(output_path)
+
+    end = time.time()
+    print(f"Ended case {case} at {end}\n"
+          f"Time spent: {end - start}")
