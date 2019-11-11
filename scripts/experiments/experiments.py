@@ -35,133 +35,6 @@ def low_lhs_sample(ndim, nlow):
         return lhs(ndim, nlow)
 
 
-def uniquify(sequence):
-    """Reduce a list to it's unique elements while preserving order"""
-    return list(dict.fromkeys(sequence))
-
-
-def indexify(sequence, index_source):
-    return [index_source.index(item) for item in sequence]
-
-
-def extract_existing_instances(data):
-    """Return a list of Instances that are non-NaN in the given xr.DataArray"""
-
-    instance_coords = [data.coords[coord].values.tolist()
-                       for coord in Instance._fields]
-
-    array_instances = np.array([
-        Instance(*instance)
-        for instance in product(*instance_coords)
-    ])
-
-    indices = np.arange(np.prod(data.shape)).reshape(data.shape)
-    valid_indices = np.where(np.isfinite(data), indices, np.nan).flatten()
-    valid_indices = valid_indices[np.isfinite(valid_indices)].astype(int)
-
-    return array_instances[valid_indices].tolist()
-
-
-def create_mse_tracking(func, ndim, mfbo_options, instances):
-
-    n_test_samples = mfbo_options['test_sample'].shape[0]
-    models = ['high_hier', 'high', 'low']
-
-    n_highs, n_lows, reps = map(uniquify, zip(*instances))
-    array_size = (len(n_highs), len(n_lows), len(reps), len(models))
-
-    mse_tracking = np.full(array_size, np.nan)
-    r2_tracking = np.full(array_size, np.nan)
-    value_tracking = np.full((*array_size, n_test_samples), np.nan)
-
-    indices = indexify_instances(instances)
-
-    print('starting loops')
-    for i, (instance, indices) in enumerate(zip(instances, indices)):
-        if i % 100 == 0:
-            print(f'{i}/{len(instances)}')
-
-        mfbo = create_experiment_instance(func, mfbo_options, ndim, instance)
-
-        mse_tracking[indices] = mfbo.getMSE()
-        r2_tracking[indices] = mfbo.getR2()
-        for m, model in enumerate([mfbo.models['high'],
-                                   mfbo.direct_models['high'],
-                                   mfbo.models['low']]):
-            value_tracking[(*indices), m] = model.predict(mfbo.test_sample).flatten()
-    print(f'{len(instances)}/{len(instances)}')
-
-    # Iteration finished, arranging data into xr.Dataset
-    attributes = dict(experiment='create_mse_tracking',
-                      function=func.name, ndim=ndim,
-                      kernel=mfbo_options['kernel'],
-                      scaling=mfbo_options['scaling'])
-
-    mse_tracking = xr.DataArray(mse_tracking,
-                                dims=['n_high', 'n_low', 'rep', 'model'],
-                                coords=[n_highs, n_lows, reps, models],
-                                attrs=attributes)
-    r2_tracking = xr.DataArray(r2_tracking,
-                                dims=['n_high', 'n_low', 'rep', 'model'],
-                                coords=[n_highs, n_lows, reps, models],
-                                attrs=attributes)
-    value_tracking = xr.DataArray(value_tracking,
-                                  dims=['n_high', 'n_low', 'rep', 'model', 'idx'],
-                                  coords={'n_high': n_highs, 'n_low': n_lows,
-                                          'rep': reps, 'model': models,
-                                          'idx': range(n_test_samples)},
-                                  attrs=attributes)
-
-    output = xr.Dataset({'mses': mse_tracking,
-                         'r2': r2_tracking,
-                         'values': value_tracking})
-
-    return output
-
-
-def indexify_instances(instances):
-    """Return an 'indexified' version of the list of instances, i.e. each
-    instance is replaced by a tuple of indices.
-    These indices can then be used to write values into a size-correct numpy-
-    array as part of a xr.DataArray whose coordinates do not necessarily
-    start at 0 or increase by 1.
-    """
-    n_highs, n_lows, reps = map(uniquify, zip(*instances))
-
-    all_n_high, all_n_low, all_reps = list(zip(*instances))
-    n_high_indices = indexify(all_n_high, n_highs)
-    n_low_indices = indexify(all_n_low, n_lows)
-    reps_indices = indexify(all_reps, reps)
-    indices = list(zip(n_high_indices, n_low_indices, reps_indices))
-    return indices
-
-
-def create_experiment_instance(func, mfbo_options, ndim, instance):
-    """Create a consistent instantiated MFBO instance with the given parameters.
-
-    :returns MultiFidelityBO instance
-    """
-    num_high, num_low, rep = instance
-
-    np.random.seed(int(f'{num_high:03}{num_low:03}{rep:03}'))
-
-    high_x, low_x = multi_fidelity_doe(ndim, num_high, num_low)
-
-    range_out = (np.array(func.l_bound), np.array(func.u_bound))
-
-    high_x = mlcs.rescale(high_x, range_in=(0,1), range_out=range_out)
-    low_x = mlcs.rescale(low_x, range_in=(0,1), range_out=range_out)
-
-    archive = mlcs.CandidateArchive(ndim=ndim,
-                                    fidelities=['high', 'low', 'high-low'])
-    archive.addcandidates(low_x, func.low(low_x), fidelity='low')
-    archive.addcandidates(high_x, func.high(high_x), fidelity='high')
-
-    mfbo = mlcs.MultiFidelityBO(func, archive, **mfbo_options)
-
-    return mfbo
-
-
 def multi_fidelity_doe(ndim, num_high, num_low):
     """Create a Design of Experiments (DoE) for two fidelities in `ndim`
     dimensions. The high-fidelity samples are guaranteed to be a subset
@@ -188,44 +61,6 @@ def multi_fidelity_doe(ndim, num_high, num_low):
     return high_x, low_x
 
 
-def filter_instances(instances, data):
-    """Return `instances` with all instances removed that are already present in
-    the file located at `output_path`"""
-
-    existing_instances = extract_existing_instances(data)
-
-    return [instance
-            for instance in instances
-            if instance not in existing_instances]
-
-
-def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
-
-    for case, k, scale in product(cases, kernels, scaling_options):
-        start = time.time()
-        print(f"Starting case {case} at {start}")
-
-        output_path = save_dir / f"{k}-{case.ndim}d-{case.func.name}.nc"
-        if output_path.exists():
-            with xr.open_dataset(output_path) as ds:
-                da = ds['mses'].load()
-                instances = filter_instances(instances, da.sel(model='high_hier'))
-
-        test_sample = get_test_sample(case.ndim, save_dir)
-        options = {'kernel': k, 'scaling': scale, 'test_sample': test_sample}
-        output = create_mse_tracking(func=case.func, mfbo_options=options,
-                                     ndim=case.ndim, instances=instances)
-
-        if output_path.exists():
-            with xr.load_dataset(output_path) as ds:
-                output = ds.merge(output)
-
-        output.to_netcdf(output_path)
-        end = time.time()
-        print(f"Ended case {case} at {end}\n"
-              f"Time spent: {end-start}")
-
-
 def get_test_sample(ndim, save_dir):
     """Get the test-sample for an `ndim`-dimensional function. If a sample has
     been previously generated and saved, load it from file. Else, generate it
@@ -239,6 +74,88 @@ def get_test_sample(ndim, save_dir):
     test_sample = low_lhs_sample(ndim, n_test_samples)
     np.save(test_sample_save_name, test_sample)
     return test_sample
+
+
+def uniquify(sequence):
+    """Reduce a list to it's unique elements while preserving order"""
+    return list(dict.fromkeys(sequence))
+
+
+def indexify(sequence, index_source):
+    return [index_source.index(item) for item in sequence]
+
+
+def indexify_instances(instances):
+    """Return an 'indexified' version of the list of instances, i.e. each
+    instance is replaced by a tuple of indices.
+    These indices can then be used to write values into a size-correct numpy-
+    array as part of a xr.DataArray whose coordinates do not necessarily
+    start at 0 or increase by 1.
+    """
+    n_highs, n_lows, reps = map(uniquify, zip(*instances))
+    all_n_high, all_n_low, all_reps = list(zip(*instances))
+
+    n_high_indices = indexify(all_n_high, n_highs)
+    n_low_indices = indexify(all_n_low, n_lows)
+    reps_indices = indexify(all_reps, reps)
+
+    indices = list(zip(n_high_indices, n_low_indices, reps_indices))
+    return indices
+
+
+def extract_existing_instances(data):
+    """Return a list of Instances that are non-NaN in the given xr.DataArray"""
+
+    instance_coords = [data.coords[coord].values.tolist()
+                       for coord in Instance._fields]
+
+    array_instances = np.array([
+        Instance(*instance)
+        for instance in product(*instance_coords)
+    ])
+
+    indices = np.arange(np.prod(data.shape)).reshape(data.shape)
+    valid_indices = np.where(np.isfinite(data), indices, np.nan).flatten()
+    valid_indices = valid_indices[np.isfinite(valid_indices)].astype(int)
+
+    return array_instances[valid_indices].tolist()
+
+
+def filter_instances(instances, data):
+    """Return `instances` with all instances removed that are already present in
+    the file located at `output_path`"""
+
+    existing_instances = extract_existing_instances(data)
+
+    return [instance
+            for instance in instances
+            if instance not in existing_instances]
+
+
+def create_experiment_instance(func, mfbo_options, ndim, instance):
+    """Create a consistent instantiated MFBO instance with the given parameters.
+
+    :returns MultiFidelityBO instance
+    """
+    num_high, num_low, rep = instance
+
+    np.random.seed(int(f'{num_high:03}{num_low:03}{rep:03}'))
+
+    high_x, low_x = multi_fidelity_doe(ndim, num_high, num_low)
+
+    range_out = (np.array(func.l_bound), np.array(func.u_bound))
+
+    high_x = mlcs.rescale(high_x, range_in=(0,1), range_out=range_out)
+    low_x = mlcs.rescale(low_x, range_in=(0,1), range_out=range_out)
+
+    archive = mlcs.CandidateArchive(ndim=ndim,
+                                    fidelities=['high', 'low', 'high-low'])
+    archive.addcandidates(low_x, func.low(low_x), fidelity='low')
+    archive.addcandidates(high_x, func.high(high_x), fidelity='high')
+
+    mfbo = mlcs.MultiFidelityBO(func, archive, **mfbo_options)
+
+    return mfbo
 
 
 def plot_model_and_samples(case, kernel, scaling_option, instance):
@@ -286,3 +203,88 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
     else:
         raise ValueError(f"Dimensionality case.ndim={case.ndim} not supported by"
                          f"plot_model_and_samples. Only 1D and 2D are supported")
+
+
+def create_mse_tracking(func, ndim, mfbo_options, instances):
+
+    n_test_samples = mfbo_options['test_sample'].shape[0]
+    models = ['high_hier', 'high', 'low']
+
+    n_highs, n_lows, reps = map(uniquify, zip(*instances))
+    array_size = (len(n_highs), len(n_lows), len(reps), len(models))
+
+    mse_tracking = np.full(array_size, np.nan)
+    r2_tracking = np.full(array_size, np.nan)
+    value_tracking = np.full((*array_size, n_test_samples), np.nan)
+
+    indices = indexify_instances(instances)
+
+    print('starting loops')
+    for i, (instance, indices) in enumerate(zip(instances, indices)):
+        if i % 100 == 0:
+            print(f'{i}/{len(instances)}')
+
+        mfbo = create_experiment_instance(func, mfbo_options, ndim, instance)
+
+        mse_tracking[indices] = mfbo.getMSE()
+        r2_tracking[indices] = mfbo.getR2()
+        for m, model in enumerate([mfbo.models['high'],
+                                   mfbo.direct_models['high'],
+                                   mfbo.models['low']]):
+            value_tracking[(*indices), m] = model.predict(mfbo.test_sample).flatten()
+
+    print(f'{len(instances)}/{len(instances)}')
+
+    # Iteration finished, arranging data into xr.Dataset
+    attributes = dict(experiment='create_mse_tracking',
+                      function=func.name, ndim=ndim,
+                      kernel=mfbo_options['kernel'],
+                      scaling=mfbo_options['scaling'])
+
+    mse_tracking = xr.DataArray(mse_tracking,
+                                dims=['n_high', 'n_low', 'rep', 'model'],
+                                coords=[n_highs, n_lows, reps, models],
+                                attrs=attributes)
+    r2_tracking = xr.DataArray(r2_tracking,
+                                dims=['n_high', 'n_low', 'rep', 'model'],
+                                coords=[n_highs, n_lows, reps, models],
+                                attrs=attributes)
+    value_tracking = xr.DataArray(value_tracking,
+                                  dims=['n_high', 'n_low', 'rep', 'model', 'idx'],
+                                  coords={'n_high': n_highs, 'n_low': n_lows,
+                                          'rep': reps, 'model': models,
+                                          'idx': range(n_test_samples)},
+                                  attrs=attributes)
+
+    output = xr.Dataset({'mses': mse_tracking,
+                         'r2': r2_tracking,
+                         'values': value_tracking})
+
+    return output
+
+
+def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
+
+    for case, k, scale in product(cases, kernels, scaling_options):
+        start = time.time()
+        print(f"Starting case {case} at {start}")
+
+        output_path = save_dir / f"{k}-{case.ndim}d-{case.func.name}.nc"
+        if output_path.exists():
+            with xr.open_dataset(output_path) as ds:
+                da = ds['mses'].load()
+                instances = filter_instances(instances, da.sel(model='high_hier'))
+
+        test_sample = get_test_sample(case.ndim, save_dir)
+        options = {'kernel': k, 'scaling': scale, 'test_sample': test_sample}
+        output = create_mse_tracking(func=case.func, mfbo_options=options,
+                                     ndim=case.ndim, instances=instances)
+
+        if output_path.exists():
+            with xr.load_dataset(output_path) as ds:
+                output = ds.merge(output)
+
+        output.to_netcdf(output_path)
+        end = time.time()
+        print(f"Ended case {case} at {end}\n"
+              f"Time spent: {end-start}")
