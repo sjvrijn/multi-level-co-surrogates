@@ -74,8 +74,9 @@ if instances:
         case_idx = int(sys.argv[1])
         cases = cases[case_idx:case_idx+1]
 
-    for case, k, scale in product(cases, kernels, scaling_options):
-        create_model_error_grid(case, k, scale, instances, save_dir=save_dir)
+    for case, kernel, scale in product(cases, kernels, scaling_options):
+        mfbo_options = {'kernel': kernel, 'scaling': scale}
+        create_model_error_grid(case, mfbo_options, instances, save_dir=save_dir)
 
 else:
     print("No instances to run")

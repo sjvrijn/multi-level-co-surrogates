@@ -210,14 +210,13 @@ def create_mse_tracking(func, ndim, mfbo_options, instances):
     n_test_samples = mfbo_options['test_sample'].shape[0]
     models = ['high_hier', 'high', 'low']
 
+    indices = indexify_instances(instances)
     n_highs, n_lows, reps = map(uniquify, zip(*instances))
     array_size = (len(n_highs), len(n_lows), len(reps), len(models))
 
     mse_tracking = np.full(array_size, np.nan)
     r2_tracking = np.full(array_size, np.nan)
     value_tracking = np.full((*array_size, n_test_samples), np.nan)
-
-    indices = indexify_instances(instances)
 
     print('starting loops')
     for i, (instance, indices) in enumerate(zip(instances, indices)):
@@ -262,7 +261,7 @@ def create_mse_tracking(func, ndim, mfbo_options, instances):
     return output
 
 
-def create_model_error_grid(case, kernel, scale, instances, save_dir):
+def create_model_error_grid(case, mfbo_options, instances, save_dir):
     """Create a grid of model errors for the given MFF-function case at the
     given list of instances.
     The results are saved in a NETCDF .nc file at the specified `save_dir`"""
@@ -270,15 +269,19 @@ def create_model_error_grid(case, kernel, scale, instances, save_dir):
     start = time.time()
     print(f"Starting case {case} at {start}")
 
-    output_path = save_dir / f"{kernel}-{case.ndim}d-{case.func.name}.nc"
+    surr_name = mfbo_options['kernel'] \
+        if mfbo_options['surrogate'] == 'Kriging' \
+        else mfbo_options['surrogate']
+
+    output_path = save_dir / f"{surr_name}-{case.ndim}d-{case.func.name}.nc"
     if output_path.exists():
         with xr.open_dataset(output_path) as ds:
             da = ds['mses'].load()
             instances = filter_instances(instances, da.sel(model='high_hier'))
 
     test_sample = get_test_sample(case.ndim, save_dir)
-    options = {'kernel': kernel, 'scaling': scale, 'test_sample': test_sample}
-    output = create_mse_tracking(func=case.func, mfbo_options=options,
+    mfbo_options['test_sample'] = test_sample
+    output = create_mse_tracking(func=case.func, mfbo_options=mfbo_options,
                                  ndim=case.ndim, instances=instances)
     if output_path.exists():
         with xr.load_dataset(output_path) as ds:
