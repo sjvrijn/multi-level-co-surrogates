@@ -132,7 +132,7 @@ def filter_instances(instances, data):
             if instance not in existing_instances]
 
 
-def create_experiment_instance(func, mfbo_options, ndim, instance):
+def create_hierarchical_model_instance(func, mfbo_options, ndim, instance):
     """Create a consistent instantiated MFBO instance with the given parameters.
 
     :returns MultiFidelityBO instance
@@ -163,7 +163,7 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
     the surfaces and sampled points.
     Can be used for 1D or 2D functions."""
     options = {'kernel': kernel, 'scaling': scaling_option}
-    mfbo = create_experiment_instance(case.func, options, case.ndim, instance)
+    mfbo = create_hierarchical_model_instance(case.func, options, case.ndim, instance)
 
     if case.ndim == 1:
         plot_x = np.linspace(case.func.l_bound, case.func.u_bound, 1001)
@@ -224,7 +224,7 @@ def create_mse_tracking(func, ndim, mfbo_options, instances):
         if i % 100 == 0:
             print(f'{i}/{len(instances)}')
 
-        mfbo = create_experiment_instance(func, mfbo_options, ndim, instance)
+        mfbo = create_hierarchical_model_instance(func, mfbo_options, ndim, instance)
 
         mse_tracking[indices] = mfbo.getMSE()
         r2_tracking[indices] = mfbo.getR2()
