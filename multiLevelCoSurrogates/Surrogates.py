@@ -12,6 +12,7 @@ import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor, kernels
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
+from sklearn.linear_model import ElasticNet as EN
 from scipy.interpolate import Rbf
 
 from .Utils import ValueRange, determinerange, rescale
@@ -367,6 +368,29 @@ class SVM(Surrogate):
     def __init__(self, candidate_archive, num_points=None, fidelity=None, normalized=True):
         super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity, normalized=normalized)
         self._surr = SVR()
+        self.is_trained = False
+
+    def do_predict(self, X):
+        return self._surr.predict(X).reshape((-1, ))
+
+    def train(self):
+        self._updatevalues()
+        self._surr.fit(self.X, self.y)
+        self.is_trained = True
+
+
+class ElasticNet(Surrogate):
+    """Generic Elastic Net regressor surrogate, implemented by
+    sklearn.linear_models.ElasticNet.
+
+    Assumes input and output vectors are given as column vectors.
+    """
+    name = 'ElasticNet'
+
+    def __init__(self, candidate_archive, num_points=None, fidelity=None, normalized=True):
+        super(self.__class__, self).__init__(candidate_archive, num_points=num_points,
+                                             fidelity=fidelity, normalized=normalized)
+        self._surr = EN()
         self.is_trained = False
 
     def do_predict(self, X):
