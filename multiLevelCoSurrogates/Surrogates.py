@@ -245,16 +245,12 @@ class HierarchicalSurrogate:
 
 
 class RBF(Surrogate):
-    """Generic RBF surrogate, implemented by scipy.interpolate.
-
-    Assumes input and output are given as column vectors.
-    :param X: input coordinates
-    :param y: expected output values
-    """
+    """Generic RBF surrogate, implemented by scipy.interpolate."""
     name = 'RBF'
 
     def __init__(self, candidate_archive, num_points=None, fidelity=None, normalized=True):
-        super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity, normalized=normalized)
+        super(self.__class__, self).__init__(candidate_archive, num_points=num_points,
+                                             fidelity=fidelity, normalized=normalized)
         self.is_trained = False
 
     def do_predict(self, X):
@@ -268,17 +264,14 @@ class RBF(Surrogate):
 
 
 class Kriging(Surrogate):
-    """Generic Kriging surrogate, implemented by sklearn.gaussian_process.GaussianProcessRegressor.
-
-    Assumes input and output are given as column vectors.
-    :param X: input coordinates
-    :param y: expected output values
-    """
+    """Generic Kriging surrogate, implemented by
+    sklearn.gaussian_process.GaussianProcessRegressor."""
     provides_std = True
     name = 'Kriging'
 
     def __init__(self, candidate_archive, num_points=None, fidelity=None, normalized=True, **kwargs):
-        super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity, normalized=normalized)
+        super(self.__class__, self).__init__(candidate_archive, num_points=num_points,
+                                             fidelity=fidelity, normalized=normalized)
 
         kernel = kwargs.get('kernel', 'RBF')
 
@@ -323,17 +316,14 @@ class Kriging(Surrogate):
 
 
 class RandomForest(Surrogate):
-    """Generic Random Forest surrogate, implemented by sklearn.ensemble.RandomForestRegressor.
-
-    Assumes input and output are given as column vectors.
-    :param X: input coordinates
-    :param y: expected output values
-    """
+    """Generic Random Forest surrogate, implemented by
+    sklearn.ensemble.RandomForestRegressor."""
     provides_std = True
     name = 'RandomForest'
 
     def __init__(self, candidate_archive, num_points=None, fidelity=None, normalized=True):
-        super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity, normalized=normalized)
+        super(self.__class__, self).__init__(candidate_archive, num_points=num_points,
+                                             fidelity=fidelity, normalized=normalized)
         self._surr = RandomForestRegressor(n_estimators=100)
         self.is_trained = False
 
@@ -357,16 +347,12 @@ class RandomForest(Surrogate):
 
 
 class SVM(Surrogate):
-    """Generic SVM regressor surrogate, implemented by sklearn.svm.SVR.
-
-    Assumes input and output are given as column vectors.
-    :param X: input coordinates
-    :param y: expected output values
-    """
+    """Generic SVM regressor surrogate, implemented by sklearn.svm.SVR."""
     name = 'SVM'
 
     def __init__(self, candidate_archive, num_points=None, fidelity=None, normalized=True):
-        super(self.__class__, self).__init__(candidate_archive, num_points=num_points, fidelity=fidelity, normalized=normalized)
+        super(self.__class__, self).__init__(candidate_archive, num_points=num_points,
+                                             fidelity=fidelity, normalized=normalized)
         self._surr = SVR()
         self.is_trained = False
 
@@ -381,10 +367,7 @@ class SVM(Surrogate):
 
 class ElasticNet(Surrogate):
     """Generic Elastic Net regressor surrogate, implemented by
-    sklearn.linear_models.ElasticNet.
-
-    Assumes input and output vectors are given as column vectors.
-    """
+    sklearn.linear_models.ElasticNet."""
     name = 'ElasticNet'
 
     def __init__(self, candidate_archive, num_points=None, fidelity=None, normalized=True):
