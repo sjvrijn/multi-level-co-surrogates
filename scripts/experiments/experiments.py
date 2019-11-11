@@ -262,12 +262,6 @@ def create_mse_tracking(func, ndim, mfbo_options, instances):
     return output
 
 
-def calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir):
-
-    for case, k, scale in product(cases, kernels, scaling_options):
-        create_model_error_grid(case, k, scale, instances, save_dir)
-
-
 def create_model_error_grid(case, kernel, scale, instances, save_dir):
     """Create a grid of model errors for the given MFF-function case at the
     given list of instances.

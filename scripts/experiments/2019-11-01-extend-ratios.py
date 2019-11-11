@@ -19,7 +19,7 @@ from pyprojroot import here
 
 import multifidelityfunctions as mff
 
-from experiments import Case, Instance, calculate_mse_grid
+from experiments import Case, Instance, create_model_error_grid
 
 
 save_dir = here('files/2019-11-01-extend-ratios/')
@@ -74,7 +74,8 @@ if instances:
         case_idx = int(sys.argv[1])
         cases = cases[case_idx:case_idx+1]
 
-    calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir=save_dir)
+    for case, k, scale in product(cases, kernels, scaling_options):
+        create_model_error_grid(case, k, scale, instances, save_dir=save_dir)
 
 else:
     print("No instances to run")

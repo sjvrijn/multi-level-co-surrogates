@@ -9,11 +9,13 @@ test the new implementation using the xarray package
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
+from itertools import product
+
 from pyprojroot import here
 
 import multifidelityfunctions as mff
 
-from experiments import Case, Instance, calculate_mse_grid
+from experiments import Case, Instance, create_model_error_grid
 
 save_dir = here('files/2019-09-xarray-test/')
 save_dir.mkdir(parents=True, exist_ok=True)
@@ -55,5 +57,5 @@ instances = map(Instance, [
     (6, 7, 5), (6, 9, 5), (7, 9, 5),
 ])
 
-
-calculate_mse_grid(cases, kernels, scaling_options, instances, save_dir=save_dir)
+for case, k, scale in product(cases, kernels, scaling_options):
+    create_model_error_grid(case, k, scale, instances, save_dir=save_dir)
