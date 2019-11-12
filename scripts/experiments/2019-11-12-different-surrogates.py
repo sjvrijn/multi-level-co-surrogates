@@ -22,7 +22,7 @@ from experiments import Case, Instance, create_model_error_grid
 save_dir = here('files/2019-11-12-different-surrogates/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
-cases = [
+function_cases = [
     Case(1, mff.forrester),
 
     Case(2, mff.forrester),
@@ -68,10 +68,12 @@ instances = [Instance(h, l, r)
                                     range(num_reps))
              if h < l]
 
+full_cases = list(product(function_cases, surrogate_names, scaling_options))
+
 if len(sys.argv) > 1:
     case_idx = int(sys.argv[1])
-    cases = cases[case_idx:case_idx+1]
+    full_cases = full_cases[case_idx:case_idx + 1]
 
-for case, surr_name, scale in product(cases, surrogate_names, scaling_options):
+for function_case, surr_name, scale in full_cases:
     mfbo_options = {'surrogate_name': surr_name, 'scaling': scale}
-    create_model_error_grid(case, mfbo_options, instances, save_dir=save_dir)
+    create_model_error_grid(function_case, mfbo_options, instances, save_dir=save_dir)
