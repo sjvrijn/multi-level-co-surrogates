@@ -269,9 +269,10 @@ def create_model_error_grid(case, mfbo_options, instances, save_dir):
     start = time.time()
     print(f"Starting case {case} at {start}")
 
+    #TODO: make use of dict.get(key, default) instead
     surr_name = mfbo_options['kernel'] \
-        if mfbo_options['surrogate'] == 'Kriging' \
-        else mfbo_options['surrogate']
+        if mfbo_options['surrogate_name'] == 'Kriging' \
+        else mfbo_options['surrogate_name']
 
     output_path = save_dir / f"{surr_name}-{case.ndim}d-{case.func.name}.nc"
     if output_path.exists():

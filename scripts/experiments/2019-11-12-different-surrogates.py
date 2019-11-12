@@ -68,5 +68,5 @@ instances = [Instance(h, l, r)
              if h < l]
 
 for case, surr_name, scale in product(cases, surrogate_names, scaling_options):
-    mfbo_options = {'surrogate': surr_name, 'scaling': scale}
+    mfbo_options = {'surrogate_name': surr_name, 'scaling': scale}
     create_model_error_grid(case, mfbo_options, instances, save_dir=save_dir)

@@ -48,7 +48,8 @@ class MultiFidelityBO:
                                     np.repeat(self.func.u_bound, self.ndim)],
                                    dtype=np.float)
         else:
-            raise ValueError(f"Unclear how to extend lower/upper bound into {self.ndim} dimensions")
+            raise ValueError(f"Unclear how to extend lower/upper "
+                             f"bound into {self.ndim} dimensions")
 
         self.input_range = ValueRange(*self.bounds)
         self.fidelities = list(self.func.fidelity_names)
