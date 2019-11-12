@@ -81,6 +81,16 @@ def uniquify(sequence):
     return list(dict.fromkeys(sequence))
 
 
+def get_repr_surrogate_name(mfbo_options):
+    """Create a representative name for the used surrogate according to
+    `mfbo_options`. This is `surrogate_name` except when Kriging is used, then
+    the kernel name is returned instead."""
+    surr_name = mfbo_options.get('kernel') \
+        if mfbo_options.get('surrogate_name', 'Kriging') == 'Kriging' \
+        else mfbo_options['surrogate_name']
+    return surr_name
+
+
 def indexify(sequence, index_source):
     return [index_source.index(item) for item in sequence]
 
@@ -237,7 +247,8 @@ def create_mse_tracking(func, ndim, mfbo_options, instances):
     # Iteration finished, arranging data into xr.Dataset
     attributes = dict(experiment='create_mse_tracking',
                       function=func.name, ndim=ndim,
-                      kernel=mfbo_options['kernel'],
+                      kernel=mfbo_options.get('kernel'),
+                      surrogate_name=mfbo_options.get('surrogate_name', 'Kriging'),
                       scaling=mfbo_options['scaling'])
 
     mse_tracking = xr.DataArray(mse_tracking,
@@ -270,9 +281,7 @@ def create_model_error_grid(case, mfbo_options, instances, save_dir):
     print(f"Starting case {case} at {start}")
 
     #TODO: make use of dict.get(key, default) instead
-    surr_name = mfbo_options['kernel'] \
-        if mfbo_options['surrogate_name'] == 'Kriging' \
-        else mfbo_options['surrogate_name']
+    surr_name = get_repr_surrogate_name(mfbo_options)
 
     output_path = save_dir / f"{surr_name}-{case.ndim}d-{case.func.name}.nc"
     if output_path.exists():
