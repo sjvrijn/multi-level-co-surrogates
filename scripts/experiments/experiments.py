@@ -4,6 +4,7 @@ import time
 from collections import namedtuple
 from functools import partial
 from itertools import product
+from multiprocessing import Pool, cpu_count
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -168,6 +169,18 @@ def create_hierarchical_model_instance(func, mfbo_options, ndim, instance):
     return mfbo
 
 
+def get_model_errors_for_instance(instance, func, mfbo_options, ndim):
+    mfbo = create_hierarchical_model_instance(func, mfbo_options, ndim, instance)
+    mses = mfbo.getMSE()
+    r2s = mfbo.getR2()
+    values = [model.predict(mfbo.test_sample).flatten()
+              for model in [mfbo.models['high'],
+                            mfbo.direct_models['high'],
+                            mfbo.models['low']]
+              ]
+    return mses, r2s, values
+
+
 def plot_model_and_samples(case, kernel, scaling_option, instance):
     """Create a multi-fidelity model based on given instance and show a plot of
     the surfaces and sampled points.
@@ -228,21 +241,36 @@ def create_mse_tracking(func, ndim, mfbo_options, instances):
     r2_tracking = np.full(array_size, np.nan)
     value_tracking = np.full((*array_size, n_test_samples), np.nan)
 
+    # if mfbo_options.get('surrogate_name', 'Kriging') == 'Kriging':
+
     print('starting loops')
-    for i, (instance, indices) in enumerate(zip(instances, indices)):
+    for i, (instance, index) in enumerate(zip(instances, indices)):
         if i % 100 == 0:
             print(f'{i}/{len(instances)}')
 
-        mfbo = create_hierarchical_model_instance(func, mfbo_options, ndim, instance)
+        mses, r2s, values = get_model_errors_for_instance(instance, func,
+                                                          mfbo_options, ndim)
+        mse_tracking[index] = mses
+        r2_tracking[index] = r2s
+        value_tracking[index] = values
 
-        mse_tracking[indices] = mfbo.getMSE()
-        r2_tracking[indices] = mfbo.getR2()
-        for m, model in enumerate([mfbo.models['high'],
-                                   mfbo.direct_models['high'],
-                                   mfbo.models['low']]):
-            value_tracking[(*indices), m] = model.predict(mfbo.test_sample).flatten()
 
     print(f'{len(instances)}/{len(instances)}')
+
+    # else:
+    #     f = partial(get_model_errors_for_instance,
+    #                 func=func,
+    #                 mfbo_options=mfbo_options,
+    #                 ndim=ndim)
+    #
+    #     with Pool(cpu_count()) as p:
+    #         all_results = p.map(f, instances)
+    #
+    #     for index, (mses, r2s, values) in zip(indices, zip(*all_results)):
+    #         mse_tracking[index] = mses
+    #         r2_tracking[index] = r2s
+    #         value_tracking[index] = values
+
 
     # Iteration finished, arranging data into xr.Dataset
     attributes = dict(experiment='create_mse_tracking',
