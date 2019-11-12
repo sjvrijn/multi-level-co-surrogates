@@ -11,6 +11,7 @@ __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 from itertools import product
+import sys
 
 from pyprojroot import here
 
@@ -66,6 +67,10 @@ instances = [Instance(h, l, r)
                                     range(min_low, max_low + 1, step),
                                     range(num_reps))
              if h < l]
+
+if len(sys.argv) > 1:
+    case_idx = int(sys.argv[1])
+    cases = cases[case_idx:case_idx+1]
 
 for case, surr_name, scale in product(cases, surrogate_names, scaling_options):
     mfbo_options = {'surrogate_name': surr_name, 'scaling': scale}
