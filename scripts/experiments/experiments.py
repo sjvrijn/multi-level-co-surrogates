@@ -247,7 +247,7 @@ def create_mse_tracking(func, ndim, mfbo_options, instances):
     # Iteration finished, arranging data into xr.Dataset
     attributes = dict(experiment='create_mse_tracking',
                       function=func.name, ndim=ndim,
-                      kernel=mfbo_options.get('kernel'),
+                      kernel=mfbo_options.get('kernel', 'N/A'),
                       surrogate_name=mfbo_options.get('surrogate_name', 'Kriging'),
                       scaling=mfbo_options['scaling'])
 
