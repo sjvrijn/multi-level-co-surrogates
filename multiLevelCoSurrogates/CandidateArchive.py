@@ -36,7 +36,7 @@ class CandidateArchive:
 
 
     @classmethod
-    def from_multi_fidelity_function(cls, func, ndim=None):
+    def from_multi_fidelity_function(cls, multi_fid_func, ndim=None):
         """Create a CandidateArchive based on a multi-fidelity function. This
         creates an archive with 'columns' for every fidelity of the function
         *plus* a difference-column for each consequtive pair of fidelities.
@@ -52,12 +52,14 @@ class CandidateArchive:
             `fidelities=('high', 'medium', 'low', 'high-medium', 'medium-low')`
         """
         if ndim is None:
-            ndim = func.ndim
+            ndim = multi_fid_func.ndim
 
         diff_fidelities = tuple('-'.join(fidelities)
-                                for fidelities in pairwise(func.fidelity_names))
+                                for fidelities in pairwise(multi_fid_func.fidelity_names))
 
-        return cls(ndim=ndim, fidelities=func.fidelity_names + diff_fidelities)
+        fidelities = tuple(multi_fid_func.fidelity_names) + diff_fidelities
+
+        return cls(ndim=ndim, fidelities=fidelities)
 
 
     def __len__(self):
