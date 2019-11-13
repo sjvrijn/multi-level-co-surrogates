@@ -62,6 +62,33 @@ def multi_fidelity_doe(ndim, num_high, num_low):
     return high_x, low_x
 
 
+def subselect_doe(DoE, num_high, num_low):
+    """Given an existing bi-fidelity Design of Experiments (DoE) `high, low`,
+    creates a subselection of given size `num_high, num_low` based on uniform
+    selection. The subselection maintains the property that all high-fidelity
+    samples are a subset of the low-fidelity samples.
+
+    Raises a `ValueError` if invalid `num_high` or `num_low` are given."""
+    high, low = DoE
+    if 1 <= num_high >= len(high) or num_low > len(low) or num_low <= num_high:
+        raise ValueError
+
+    sub_high = high[np.random.choice(len(high), num_high, replace=False)]
+
+    if num_low == len(low):
+        sub_low = low
+    else:
+        # remove all sub_high from low
+        filtered_low = np.array([x for x in low if x not in high])
+        # randomly select (num_low - num_high) remaining
+        extra_low = filtered_low[
+            np.random.choice(len(filtered_low), num_low - num_high, replace=False)]
+        # concatenate sub_high with selected sub_low
+        sub_low = np.concatenate([sub_high, extra_low], axis=0)
+
+    return sub_high, sub_low
+
+
 def get_test_sample(ndim, save_dir):
     """Get the test-sample for an `ndim`-dimensional function. If a sample has
     been previously generated and saved, load it from file. Else, generate it
