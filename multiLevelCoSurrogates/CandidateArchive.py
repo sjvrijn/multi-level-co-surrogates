@@ -7,6 +7,8 @@ CandidateArchive.py: Class to store candidate solutions in an optimization proce
 """
 from collections import namedtuple
 
+from more_itertools import pairwise
+
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
@@ -31,6 +33,31 @@ class CandidateArchive:
         self.data = {}
         self.max = {fid: -np.inf for fid in self.fidelities}
         self.min = {fid: np.inf for fid in self.fidelities}
+
+
+    @classmethod
+    def from_multi_fidelity_function(cls, func, ndim=None):
+        """Create a CandidateArchive based on a multi-fidelity function. This
+        creates an archive with 'columns' for every fidelity of the function
+        *plus* a difference-column for each consequtive pair of fidelities.
+
+        Dimensionality `ndim` is taken from `func.ndim` by default, but can be
+        overwritten manually.
+
+        Examples:
+            For `fidelities=('high', 'low')`, creates an archive with
+            `fidelities=('high', 'low', 'high-low')`
+
+            For `fidelities=('high', 'medium', 'low')`, creates an archive with
+            `fidelities=('high', 'medium', 'low', 'high-medium', 'medium-low')`
+        """
+        if ndim is None:
+            ndim = func.ndim
+
+        diff_fidelities = tuple('-'.join(fidelities)
+                                for fidelities in pairwise(func.fidelity_names))
+
+        return cls(ndim=ndim, fidelities=func.fidelity_names + diff_fidelities)
 
 
     def __len__(self):
