@@ -8,9 +8,14 @@ test_CandidateArchive.py: Set of tests for the mlcs.CandidateArchive
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-import pytest
-import multiLevelCoSurrogates as mlcs
+from collections import namedtuple
+
+from hypothesis import given
+from hypothesis.strategies import lists, text, integers
 import numpy as np
+import pytest
+
+import multiLevelCoSurrogates as mlcs
 from multiLevelCoSurrogates import CandidateArchive
 
 
@@ -38,6 +43,25 @@ def test_fidelity_not_specified():
     archive = CandidateArchive(ndim=0, fidelities=fids)
     with pytest.raises(ValueError):
         archive.addcandidate([1, 2, 3], fitness=1)
+
+
+MultiFidFunc = namedtuple('MultiFidFunc', 'ndim fidelity_names')
+
+@given(lists(text(), min_size=2), integers())
+def test_from_mff(fidelities, ndim):
+    mff = MultiFidFunc(ndim, fidelities)
+
+    archive = CandidateArchive.from_multi_fidelity_function(mff)
+
+    # Each of the n-1 consecutive pairs has to be added as a new fidelity,
+    # so len(archive.fidelities) should be n + (n-1) = 2n - 1
+    assert len(archive.fidelities) == 2*len(fidelities) - 1
+    assert archive.ndim == ndim
+
+    mff = MultiFidFunc(0.5, fidelities)
+    archive = CandidateArchive.from_multi_fidelity_function(mff, ndim=ndim)
+    # archive.ndim should not be the non-integer value of 0.5 when overwritten
+    assert archive.ndim == ndim
 
 
 ### A 'happy path' is a simple run through some functionality that just works
