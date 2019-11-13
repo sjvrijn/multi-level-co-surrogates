@@ -183,16 +183,13 @@ def create_hierarchical_model_instance(func, mfbo_options, ndim, instance):
     """
     num_high, num_low, rep = instance
     high_x, low_x = multi_fidelity_doe(ndim, num_high, num_low)
+    high_x, low_x = scale_to_function(func, [high_x, low_x])
+    high_y, low_y = func.high(high_x), \
+                    func.low(low_x)
 
-    range_out = (np.array(func.l_bound), np.array(func.u_bound))
-
-    high_x = mlcs.rescale(high_x, range_in=(0,1), range_out=range_out)
-    low_x = mlcs.rescale(low_x, range_in=(0,1), range_out=range_out)
-
-    archive = mlcs.CandidateArchive(ndim=ndim,
-                                    fidelities=['high', 'low', 'high-low'])
-    archive.addcandidates(low_x, func.low(low_x), fidelity='low')
-    archive.addcandidates(high_x, func.high(high_x), fidelity='high')
+    archive = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=ndim)
+    archive.addcandidates(low_x, low_y, fidelity='low')
+    archive.addcandidates(high_x, high_y, fidelity='high')
 
     mfbo = mlcs.MultiFidelityBO(func, archive, **mfbo_options)
 
