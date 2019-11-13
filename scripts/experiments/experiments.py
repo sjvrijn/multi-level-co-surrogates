@@ -199,6 +199,11 @@ def create_hierarchical_model_instance(func, mfbo_options, ndim, instance):
     return mfbo
 
 
+def scale_to_function(func, xx, range_in=mlcs.ValueRange(0, 1)):
+    range_out = (np.array(func.l_bound), np.array(func.u_bound))
+    return [mlcs.rescale(x, range_in=range_in, range_out=range_out) for x in xx]
+
+
 def get_model_errors_for_instance(instance, func, mfbo_options, ndim):
     set_seed_by_instance(instance)
     mfbo = create_hierarchical_model_instance(func, mfbo_options, ndim, instance)
