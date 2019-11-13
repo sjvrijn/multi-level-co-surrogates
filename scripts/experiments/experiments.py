@@ -29,6 +29,12 @@ Case = namedtuple('Case', 'ndim func')
 Instance = namedtuple('Instance', 'n_high n_low rep')
 
 
+def set_seed_by_instance(instance):
+    """Fix the numpy random seed based on an Instance"""
+    num_high, num_low, rep = instance
+    np.random.seed(int(f'{num_high:03}{num_low:03}{rep:03}'))
+
+
 def low_lhs_sample(ndim, nlow):
     if ndim == 1:
         return np.linspace(0,1,nlow).reshape(-1,1)
@@ -176,9 +182,6 @@ def create_hierarchical_model_instance(func, mfbo_options, ndim, instance):
     :returns MultiFidelityBO instance
     """
     num_high, num_low, rep = instance
-
-    np.random.seed(int(f'{num_high:03}{num_low:03}{rep:03}'))
-
     high_x, low_x = multi_fidelity_doe(ndim, num_high, num_low)
 
     range_out = (np.array(func.l_bound), np.array(func.u_bound))
@@ -197,6 +200,7 @@ def create_hierarchical_model_instance(func, mfbo_options, ndim, instance):
 
 
 def get_model_errors_for_instance(instance, func, mfbo_options, ndim):
+    set_seed_by_instance(instance)
     mfbo = create_hierarchical_model_instance(func, mfbo_options, ndim, instance)
     mses = mfbo.getMSE()
     r2s = mfbo.getR2()
@@ -213,6 +217,7 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
     the surfaces and sampled points.
     Can be used for 1D or 2D functions."""
     options = {'kernel': kernel, 'scaling': scaling_option}
+    set_seed_by_instance(instance)
     mfbo = create_hierarchical_model_instance(case.func, options, case.ndim, instance)
 
     if case.ndim == 1:
@@ -223,8 +228,10 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
         plt.plot(plot_x, case.func.low(plot_x), label='True low-fidelity')
         plt.plot(plot_x, mfbo.models['high'].predict(plot_x), label='Hierarchical model')
 
-        plt.scatter(*mfbo.archive.getcandidates(fidelity='high'), label='High-fidelity samples')
-        plt.scatter(*mfbo.archive.getcandidates(fidelity='low'), label='low-fidelity samples')
+        plt.scatter(*mfbo.archive.getcandidates(fidelity='high'),
+                    label='High-fidelity samples')
+        plt.scatter(*mfbo.archive.getcandidates(fidelity='low'),
+                    label='low-fidelity samples')
 
         plt.title(f'{case.ndim}D {case.func.name}: {instance.n_high}/{instance.n_low}'
                   f' samples (repetition {instance.rep})')
@@ -238,16 +245,21 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
         surf_high = mlcs.createsurface(case.func.high, **bounds)
         surf_low = mlcs.createsurface(case.func.low, **bounds)
 
-        surf_model_high = mlcs.createsurface(partial(mlcs.gpplot, func=mfbo.models['high'].predict),
+        surf_model_high = mlcs.createsurface(partial(mlcs.gpplot,
+                                                     func=mfbo.models['high'].predict),
                                              **bounds)
-        surf_model_low = mlcs.createsurface(partial(mlcs.gpplot, func=mfbo.models['low'].predict),
+        surf_model_low = mlcs.createsurface(partial(mlcs.gpplot,
+                                                    func=mfbo.models['low'].predict),
                                              **bounds)
 
-        points = [mlcs.ScatterPoints(*mfbo.archive.getcandidates(fidelity='high'), red_dot),
-                  mlcs.ScatterPoints(*mfbo.archive.getcandidates(fidelity='low'), blue_circle)]
+        points = [mlcs.ScatterPoints(*mfbo.archive.getcandidates(fidelity='high'),
+                                     red_dot),
+                  mlcs.ScatterPoints(*mfbo.archive.getcandidates(fidelity='low'),
+                                     blue_circle)]
 
         mlcs.plotsurfaces([surf_high, surf_low, surf_model_high, surf_model_low],
-                          titles=['True High', 'True Low', 'Hierarchical model', 'Low-fidelity model'],
+                          titles=['True High', 'True Low',
+                                  'Hierarchical model', 'Low-fidelity model'],
                           all_points=[points, points, points, points], shape=(2,2))
 
     else:
