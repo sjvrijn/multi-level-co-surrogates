@@ -144,8 +144,7 @@ class MultiFidelityBO:
         if archive is not None:
             return archive
 
-        archive_fidelities = self.fidelities + [f'{a}-{b}' for a, b in pairwise(self.fidelities)]
-        archive = CandidateArchive(ndim=self.ndim, fidelities=archive_fidelities)
+        archive = CandidateArchive.from_multi_fidelity_function(self.func, ndim=self.ndim)
 
         samples = create_random_sample_set(self.ndim, zip(self.fidelities, [5, 8, 13]),
                                            desired_range=self.input_range)
