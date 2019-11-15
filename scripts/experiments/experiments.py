@@ -252,7 +252,7 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
                          f"plot_model_and_samples. Only 1D and 2D are supported")
 
 
-def create_model_error_grid(case, mfbo_options, instances, save_dir):
+def create_model_error_grid(case, instances, mfbo_options, save_dir):
     """Create a grid of model errors for the given MFF-function case at the
     given list of instances.
     The results are saved in a NETCDF .nc file at the specified `save_dir`"""

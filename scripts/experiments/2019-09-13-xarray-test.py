@@ -59,4 +59,4 @@ instances = map(Instance, [
 
 for case, kernel, scale in product(cases, kernels, scaling_options):
     mfbo_options = {'kernel': kernel, 'scaling': scale}
-    create_model_error_grid(case, mfbo_options, instances, save_dir=save_dir)
+    create_model_error_grid(case, instances, mfbo_options, save_dir=save_dir)

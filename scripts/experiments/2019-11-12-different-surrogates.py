@@ -76,4 +76,4 @@ if len(sys.argv) > 1:
 
 for function_case, surr_name, scale in full_cases:
     mfbo_options = {'surrogate_name': surr_name, 'scaling': scale}
-    create_model_error_grid(function_case, mfbo_options, instances, save_dir=save_dir)
+    create_model_error_grid(function_case, instances, mfbo_options, save_dir=save_dir)
