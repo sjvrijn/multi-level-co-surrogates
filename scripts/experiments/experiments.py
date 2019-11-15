@@ -344,6 +344,106 @@ def create_model_error_grid(case, instances, mfbo_options, save_dir):
           f"Time spent: {end - start}")
 
 
+def create_resampling_error_grid(case, DoE_spec, instances, mfbo_options, save_dir):
+    """Create a grid of model errors for the given MFF-function case at the
+    given list of instances, with all data for training the model being based
+    on an initial given DoE specification.
+    The results are saved in a NETCDF .nc file at the specified `save_dir`"""
+
+    start = time.time()
+    print(f"Starting case {case} at {start}")
+
+    # Determine unique output path for this experiment
+    surr_name = repr_surrogate_name(mfbo_options)
+    doe_high, doe_low = DoE_spec
+    output_path = save_dir / f"{surr_name}-{case.ndim}d-{case.func.name}-sub{doe_high}-{doe_low}.nc"
+
+
+    # Don't redo any prior data that already exists
+    if output_path.exists():
+        with xr.open_dataset(output_path) as ds:
+            da = ds['mses'].load()
+            instances = filter_instances(instances, da.sel(model='high_hier'))
+
+        # Return early if there is nothing left to do
+        if not instances:
+            return
+
+
+    # Setup some (final) options for the hierarchical model
+    mfbo_options['test_sample'] = get_test_sample(case.ndim, save_dir)
+
+
+    # Create initial DoE
+    DoE = multi_fidelity_doe(case.ndim, doe_high, doe_low)
+    DoE = scale_to_function(case.func, DoE)
+
+
+    results = []
+    print('starting loops')
+    for i, (num_high, num_low, rep) in enumerate(instances):
+        if i % 100 == 0:
+            print(f'{i}/{len(instances)}')
+
+        set_seed_by_instance(num_high, num_low, rep)
+
+        # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
+        high_x, low_x = subselect_doe(DoE, num_high, num_low)
+        # TODO: precompute output values and include them when subselecting
+        high_y, low_y = case.func.high(high_x), \
+                        case.func.low(low_x)
+
+        # Create an archive from the MF-function and MF-DoE data
+        archive = mlcs.CandidateArchive.from_multi_fidelity_function(case.func, ndim=case.ndim)
+        archive.addcandidates(low_x, low_y, fidelity='low')
+        archive.addcandidates(high_x, high_y, fidelity='high')
+
+        # (Automatically) Create the hierarchical model
+        mfbo = mlcs.MultiFidelityBO(case.func, archive, **mfbo_options)
+
+        # Get the results we're interested in from the model for this instance
+        mses = mfbo.getMSE()
+        r2s = mfbo.getR2()
+        values = [model.predict(mfbo.test_sample).flatten()
+                  for model in [mfbo.models['high'],
+                                mfbo.direct_models['high'],
+                                mfbo.models['low']]
+                  ]
+
+        # Store the results
+        results.append((mses, r2s, values))
+
+    print(f'{len(instances)}/{len(instances)}')
+
+
+
+    # Create attributes dictionary
+    attributes = dict(experiment='create_resampling_error_grid',
+                      doe=f"{doe_high},{doe_low}",
+                      function=case.func.name,
+                      ndim=case.ndim,
+                      kernel=mfbo_options.get('kernel', 'N/A'),
+                      surrogate_name=mfbo_options.get('surrogate_name', 'Kriging'),
+                      scaling=mfbo_options['scaling'])
+
+    ## Iteration finished, arranging data into xr.Dataset
+    output = results_to_dataset(results, instances, mfbo_options, attributes)
+
+
+    # Merge with prior existing data
+    # NOTE: even if `output` is empty, attributes will be overwitten/updated
+    if output_path.exists():
+        with xr.load_dataset(output_path) as ds:
+            output = output.merge(ds)
+
+    # Store results
+    output.to_netcdf(output_path)
+
+    end = time.time()
+    print(f"Ended case {case} at {end}\n"
+          f"Time spent: {end - start}")
+
+
 def results_to_dataset(results, instances, mfbo_options, attributes):
     """"Manually creating numpy arrays to store the data for eventual
     reading in as XArray DataArray/DataSet"""
