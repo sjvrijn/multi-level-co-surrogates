@@ -319,7 +319,7 @@ def create_model_error_grid(case, instances, mfbo_options, save_dir):
 
 
     # Create attributes dictionary
-    attributes = dict(experiment='create_mse_tracking',
+    attributes = dict(experiment='create_model_error_grid',
                       function=case.func.name,
                       ndim=case.ndim,
                       kernel=mfbo_options.get('kernel', 'N/A'),
