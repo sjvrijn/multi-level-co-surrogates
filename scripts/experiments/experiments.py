@@ -317,8 +317,17 @@ def create_model_error_grid(case, instances, mfbo_options, save_dir):
     print(f'{len(instances)}/{len(instances)}')
 
 
+
+    # Create attributes dictionary
+    attributes = dict(experiment='create_mse_tracking',
+                      function=case.func.name,
+                      ndim=case.ndim,
+                      kernel=mfbo_options.get('kernel', 'N/A'),
+                      surrogate_name=mfbo_options.get('surrogate_name', 'Kriging'),
+                      scaling=mfbo_options['scaling'])
+
     ## Iteration finished, arranging data into xr.Dataset
-    output = results_to_dataset(results, case, instances, mfbo_options)
+    output = results_to_dataset(results, instances, mfbo_options, attributes)
 
 
     # Merge with prior existing data
@@ -335,7 +344,7 @@ def create_model_error_grid(case, instances, mfbo_options, save_dir):
           f"Time spent: {end - start}")
 
 
-def results_to_dataset(results, case, instances, mfbo_options):
+def results_to_dataset(results, instances, mfbo_options, attributes):
     """"Manually creating numpy arrays to store the data for eventual
     reading in as XArray DataArray/DataSet"""
 
@@ -361,14 +370,6 @@ def results_to_dataset(results, case, instances, mfbo_options):
         mse_tracking[index] = mses
         r2_tracking[index] = r2s
         value_tracking[index] = values
-
-    # Create attributes dictionary
-    attributes = dict(experiment='create_mse_tracking',
-                      function=case.func.name,
-                      ndim=case.ndim,
-                      kernel=mfbo_options.get('kernel', 'N/A'),
-                      surrogate_name=mfbo_options.get('surrogate_name', 'Kriging'),
-                      scaling=mfbo_options['scaling'])
 
     # Create separate DataArrays for each numpy array
     mse_tracking = xr.DataArray(mse_tracking,
