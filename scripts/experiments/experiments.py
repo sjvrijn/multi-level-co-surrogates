@@ -85,7 +85,7 @@ def subselect_doe(DoE, num_high, num_low):
         sub_low = low
     else:
         # remove all sub_high from low
-        filtered_low = np.array([x for x in low if x not in high])
+        filtered_low = np.array([x for x in low if x not in sub_high])
         # randomly select (num_low - num_high) remaining
         extra_low = filtered_low[
             np.random.choice(len(filtered_low), num_low - num_high, replace=False)]
