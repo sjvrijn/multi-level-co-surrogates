@@ -59,7 +59,7 @@ DoE_high, DoE_low = 50, 125
 min_high, max_high = 2, int(DoE_high * scale)
 min_low, max_low = 3, int(DoE_low * scale)
 step = 1
-num_reps = 5
+num_reps = int(50 * scale)
 
 instances = [Instance(h, l, r)
              for h, l, r in product(range(min_high, max_high),
