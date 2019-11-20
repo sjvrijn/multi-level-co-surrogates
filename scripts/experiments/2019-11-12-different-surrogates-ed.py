@@ -12,6 +12,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 import subprocess
 
-arguments = [0, 1, 6, 7]
+arguments = range(0, 24, 2)
 for arg in arguments:
-    subprocess.run(f'NQDIR=ed nq python3 2019-11-12-different-surrogates.py {arg}', shell=True)
+    out_log = open(f'out{arg:02d}.log', 'w')
+    subprocess.run(f'python3 2019-11-12-different-surrogates.py {arg} &', shell=True, stdout=out_log)
