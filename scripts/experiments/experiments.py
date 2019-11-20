@@ -375,6 +375,7 @@ def create_resampling_error_grid(case, DoE_spec, instances, mfbo_options, save_d
 
 
     # Create initial DoE
+    np.random.seed(20160501)  # Setting seed for reproducibility
     DoE = multi_fidelity_doe(case.ndim, doe_high, doe_low)
     DoE = scale_to_function(case.func, DoE)
 
