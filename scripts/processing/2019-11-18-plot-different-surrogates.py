@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-2019-09-19-plot-wedges.py: Plot the wedge-shaped MSE-grids
+2019-11-18-different-surrogates.py: Plot the wedge-shaped MSE-grids
 for all available (standard) cases, with DoE's as used in
 literature plotted.
 """
@@ -20,7 +20,7 @@ from pyprojroot import here
 
 import processing as proc
 
-experiment_name = "2019-09-mse-nc"
+experiment_name = "2019-11-12-different-surrogates"
 
 data_dir = here("files") / experiment_name
 plot_dir = here("plots") / experiment_name
@@ -61,11 +61,17 @@ surr_names = [
 
 
 for case, surr_name in product(cases, surr_names):
-    with xr.open_dataset(data_dir / f'Matern-{case.ndim}d-{case.name}.nc') as ds:
+    fname = data_dir / f'{surr_name}-{case.ndim}d-{case.name}.nc'
+
+    if not fname.exists():
+        print(f"{fname} not found, skipping...")
+        continue
+
+    with xr.open_dataset(fname) as ds:
         mses = ds['mses'].load()
 
-    plot_name = f'{case.ndim}d-{case.name}-high-low-samples-linear'
-    title = f'{case.name} ({case.ndim}D)'
+    plot_name = f'{surr_name}-{case.ndim}d-{case.name}-high-low-samples-linear'
+    title = f'{surr_name} {case.name} ({case.ndim}D)'
 
     # data_points = [d for d in data
     #                if d.function == c.name and int(d.D) == c.ndim]
