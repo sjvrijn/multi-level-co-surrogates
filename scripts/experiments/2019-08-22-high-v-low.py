@@ -10,6 +10,7 @@ __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 from itertools import product
+import sys
 
 from pyprojroot import here
 
@@ -17,7 +18,7 @@ import multifidelityfunctions as mff
 
 from experiments import Case, Instance, create_model_error_grid
 
-save_dir = here('files/2019-08-mse-npy/')
+save_dir = here('files/2019-08-mse-nc/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
 cases = [
@@ -56,6 +57,13 @@ instances = [Instance(h, l, r)
                                     range(num_reps))
              if h < l]
 
-for case, kernel, scale in product(cases, kernels, scaling_options):
+full_cases = list(product(cases, kernels, scaling_options))
+
+if len(sys.argv) > 1:
+    case_idx = int(sys.argv[1])
+    full_cases = full_cases[case_idx:case_idx+1]
+
+
+for case, kernel, scale in full_cases:
     mfbo_options = {'kernel': kernel, 'scaling': scale}
     create_model_error_grid(case, instances, mfbo_options, save_dir=save_dir)
