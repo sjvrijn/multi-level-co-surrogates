@@ -19,32 +19,32 @@ from pyprojroot import here
 
 import multifidelityfunctions as mff
 
-from experiments import Case, Instance, create_model_error_grid
+from experiments import Instance, create_model_error_grid
 
 
 save_dir = here('files/2019-11-01-extend-ratios/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
 cases = [
-    Case(1, mff.forrester),
+    mff.forrester,
 
-    Case(2, mff.forrester),
-    Case(2, mff.bohachevsky),
-    Case(2, mff.booth),
-    Case(2, mff.branin),
-    Case(2, mff.currin),
-    Case(2, mff.himmelblau),
-    Case(2, mff.six_hump_camelback),
+    mff.Forrester(ndim=2),
+    mff.bohachevsky,
+    mff.booth,
+    mff.branin,
+    mff.currin,
+    mff.himmelblau,
+    mff.six_hump_camelback,
 
-    Case(4, mff.forrester),
-    Case(4, mff.park91a),
-    Case(4, mff.park91b),
+    mff.Forrester(ndim=4),
+    mff.park91a,
+    mff.park91b,
 
-    Case(6, mff.forrester),
-    Case(6, mff.hartmann6),
+    mff.Forrester(ndim=6),
+    mff.hartmann6,
 
-    Case(8, mff.forrester),
-    Case(8, mff.borehole),
+    mff.Forrester(ndim=8),
+    mff.borehole,
 ]
 
 kernels = ['Matern']

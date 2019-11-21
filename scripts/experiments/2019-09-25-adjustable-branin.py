@@ -18,13 +18,13 @@ from pyprojroot import here
 
 import multifidelityfunctions as mff
 
-from experiments import Case, Instance, create_model_error_grid
+from experiments import Instance, create_model_error_grid
 
 save_dir = here('files/2019-09-25-adjustable-branin/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
 cases = [
-    Case(2, mff.adjustable_branin(float(x)))
+    mff.adjustable_branin(float(x))
     for x in sys.argv[1:]
 ]
 

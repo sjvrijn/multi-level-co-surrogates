@@ -26,7 +26,6 @@ red_dot = {'marker': '.', 'color': 'red'}
 blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
 
 
-Case = namedtuple('Case', 'ndim func')
 Instance = namedtuple('Instance', 'n_high n_low rep')
 
 
@@ -181,7 +180,7 @@ def scale_to_function(func, xx, range_in=mlcs.ValueRange(0, 1)):
     return [mlcs.rescale(x, range_in=range_in, range_out=range_out) for x in xx]
 
 
-def plot_model_and_samples(case, kernel, scaling_option, instance):
+def plot_model_and_samples(func, kernel, scaling_option, instance):
     """Create a multi-fidelity model based on given instance and show a plot of
     the surfaces and sampled points.
     Can be used for 1D or 2D functions."""
@@ -192,25 +191,25 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
 
 
 
-    high_x, low_x = multi_fidelity_doe(case.func.ndim, num_high, num_low)
-    high_x, low_x = scale_to_function(case.func, [high_x, low_x])
-    high_y, low_y = case.func.high(high_x), \
-                    case.func.low(low_x)
+    high_x, low_x = multi_fidelity_doe(func.ndim, num_high, num_low)
+    high_x, low_x = scale_to_function(func, [high_x, low_x])
+    high_y, low_y = func.high(high_x), \
+                    func.low(low_x)
 
-    archive = mlcs.CandidateArchive.from_multi_fidelity_function(case.func, ndim=case.func.ndim)
+    archive = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
     archive.addcandidates(low_x, low_y, fidelity='low')
     archive.addcandidates(high_x, high_y, fidelity='high')
 
-    mfbo = mlcs.MultiFidelityBO(case.func, archive, **options)
+    mfbo = mlcs.MultiFidelityBO(func, archive, **options)
 
 
 
-    if case.func.ndim == 1:
-        plot_x = np.linspace(case.func.l_bound, case.func.u_bound, 1001)
+    if func.ndim == 1:
+        plot_x = np.linspace(func.l_bound, func.u_bound, 1001)
 
         plt.figure()
-        plt.plot(plot_x, case.func.high(plot_x), label='True high-fidelity')
-        plt.plot(plot_x, case.func.low(plot_x), label='True low-fidelity')
+        plt.plot(plot_x, func.high(plot_x), label='True high-fidelity')
+        plt.plot(plot_x, func.low(plot_x), label='True low-fidelity')
         plt.plot(plot_x, mfbo.models['high'].predict(plot_x), label='Hierarchical model')
 
         plt.scatter(*mfbo.archive.getcandidates(fidelity='high'),
@@ -218,17 +217,17 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
         plt.scatter(*mfbo.archive.getcandidates(fidelity='low'),
                     label='low-fidelity samples')
 
-        plt.title(f'{case.func.ndim}D {case.func.name}: {instance.n_high}/{instance.n_low}'
+        plt.title(f'{func.ndim}D {func.name}: {instance.n_high}/{instance.n_low}'
                   f' samples (repetition {instance.rep})')
         plt.legend(loc=0)
         plt.tight_layout()
         plt.show()
 
-    elif case.func.ndim == 2:
-        bounds = {'l_bound': case.func.l_bound, 'u_bound': case.func.u_bound}
+    elif func.ndim == 2:
+        bounds = {'l_bound': func.l_bound, 'u_bound': func.u_bound}
 
-        surf_high = mlcs.createsurface(case.func.high, **bounds)
-        surf_low = mlcs.createsurface(case.func.low, **bounds)
+        surf_high = mlcs.createsurface(func.high, **bounds)
+        surf_low = mlcs.createsurface(func.low, **bounds)
 
         surf_model_high = mlcs.createsurface(partial(mlcs.gpplot,
                                                      func=mfbo.models['high'].predict),
@@ -248,21 +247,21 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
                           all_points=[points, points, points, points], shape=(2,2))
 
     else:
-        raise ValueError(f"Dimensionality case.func.ndim={case.func.ndim} not supported by"
+        raise ValueError(f"Dimensionality case.func.ndim={func.ndim} not supported by"
                          f"plot_model_and_samples. Only 1D and 2D are supported")
 
 
-def create_model_error_grid(case, instances, mfbo_options, save_dir):
+def create_model_error_grid(func, instances, mfbo_options, save_dir):
     """Create a grid of model errors for the given MFF-function case at the
     given list of instances.
     The results are saved in a NETCDF .nc file at the specified `save_dir`"""
 
     start = time.time()
-    print(f"Starting case {case} at {start}")
+    print(f"Starting case {func} at {start}")
 
     # Determine unique output path for this experiment
     surr_name = repr_surrogate_name(mfbo_options)
-    output_path = save_dir / f"{surr_name}-{case.func.ndim}d-{case.func.name}.nc"
+    output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name}.nc"
 
 
     # Don't redo any prior data that already exists
@@ -277,7 +276,7 @@ def create_model_error_grid(case, instances, mfbo_options, save_dir):
 
 
     # Setup some (final) options for the hierarchical model
-    mfbo_options['test_sample'] = get_test_sample(case.func.ndim, save_dir)
+    mfbo_options['test_sample'] = get_test_sample(func.ndim, save_dir)
 
 
     results = []
@@ -289,18 +288,18 @@ def create_model_error_grid(case, instances, mfbo_options, save_dir):
         set_seed_by_instance(num_high, num_low, rep)
 
         # Create Multi-Fidelity DoE in- and output according to instance specification
-        high_x, low_x = multi_fidelity_doe(case.func.ndim, num_high, num_low)
-        high_x, low_x = scale_to_function(case.func, [high_x, low_x])
-        high_y, low_y = case.func.high(high_x), \
-                        case.func.low(low_x)
+        high_x, low_x = multi_fidelity_doe(func.ndim, num_high, num_low)
+        high_x, low_x = scale_to_function(func, [high_x, low_x])
+        high_y, low_y = func.high(high_x), \
+                        func.low(low_x)
 
         # Create an archive from the MF-function and MF-DoE data
-        archive = mlcs.CandidateArchive.from_multi_fidelity_function(case.func, ndim=case.func.ndim)
+        archive = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
         archive.addcandidates(low_x, low_y, fidelity='low')
         archive.addcandidates(high_x, high_y, fidelity='high')
 
         # (Automatically) Create the hierarchical model
-        mfbo = mlcs.MultiFidelityBO(case.func, archive, **mfbo_options)
+        mfbo = mlcs.MultiFidelityBO(func, archive, **mfbo_options)
 
         # Get the results we're interested in from the model for this instance
         mses = mfbo.getMSE()
@@ -320,8 +319,8 @@ def create_model_error_grid(case, instances, mfbo_options, save_dir):
 
     # Create attributes dictionary
     attributes = dict(experiment='create_model_error_grid',
-                      function=case.func.name,
-                      ndim=case.func.ndim,
+                      function=func.name,
+                      ndim=func.ndim,
                       kernel=mfbo_options.get('kernel', 'N/A'),
                       surrogate_name=mfbo_options.get('surrogate_name', 'Kriging'),
                       scaling=mfbo_options['scaling'])
@@ -340,23 +339,23 @@ def create_model_error_grid(case, instances, mfbo_options, save_dir):
     output.to_netcdf(output_path)
 
     end = time.time()
-    print(f"Ended case {case} at {end}\n"
+    print(f"Ended case {func} at {end}\n"
           f"Time spent: {end - start}")
 
 
-def create_resampling_error_grid(case, DoE_spec, instances, mfbo_options, save_dir):
-    """Create a grid of model errors for the given MFF-function case at the
+def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options, save_dir):
+    """Create a grid of model errors for the given MFF-function at the
     given list of instances, with all data for training the model being based
     on an initial given DoE specification.
     The results are saved in a NETCDF .nc file at the specified `save_dir`"""
 
     start = time.time()
-    print(f"Starting case {case} at {start}")
+    print(f"Starting case {func} at {start}")
 
     # Determine unique output path for this experiment
     surr_name = repr_surrogate_name(mfbo_options)
     doe_high, doe_low = DoE_spec
-    output_path = save_dir / f"{surr_name}-{case.func.ndim}d-{case.func.name}-sub{doe_high}-{doe_low}.nc"
+    output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name}-sub{doe_high}-{doe_low}.nc"
 
 
     # Don't redo any prior data that already exists
@@ -371,13 +370,13 @@ def create_resampling_error_grid(case, DoE_spec, instances, mfbo_options, save_d
 
 
     # Setup some (final) options for the hierarchical model
-    mfbo_options['test_sample'] = get_test_sample(case.func.ndim, save_dir)
+    mfbo_options['test_sample'] = get_test_sample(func.ndim, save_dir)
 
 
     # Create initial DoE
     np.random.seed(20160501)  # Setting seed for reproducibility
-    DoE = multi_fidelity_doe(case.func.ndim, doe_high, doe_low)
-    DoE = scale_to_function(case.func, DoE)
+    DoE = multi_fidelity_doe(func.ndim, doe_high, doe_low)
+    DoE = scale_to_function(func, DoE)
 
 
     results = []
@@ -391,16 +390,16 @@ def create_resampling_error_grid(case, DoE_spec, instances, mfbo_options, save_d
         # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
         high_x, low_x = subselect_doe(DoE, num_high, num_low)
         # TODO: precompute output values and include them when subselecting
-        high_y, low_y = case.func.high(high_x), \
-                        case.func.low(low_x)
+        high_y, low_y = func.high(high_x), \
+                        func.low(low_x)
 
         # Create an archive from the MF-function and MF-DoE data
-        archive = mlcs.CandidateArchive.from_multi_fidelity_function(case.func, ndim=case.func.ndim)
+        archive = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
         archive.addcandidates(low_x, low_y, fidelity='low')
         archive.addcandidates(high_x, high_y, fidelity='high')
 
         # (Automatically) Create the hierarchical model
-        mfbo = mlcs.MultiFidelityBO(case.func, archive, **mfbo_options)
+        mfbo = mlcs.MultiFidelityBO(func, archive, **mfbo_options)
 
         # Get the results we're interested in from the model for this instance
         mses = mfbo.getMSE()
@@ -421,8 +420,8 @@ def create_resampling_error_grid(case, DoE_spec, instances, mfbo_options, save_d
     # Create attributes dictionary
     attributes = dict(experiment='create_resampling_error_grid',
                       doe=f"{doe_high},{doe_low}",
-                      function=case.func.name,
-                      ndim=case.func.ndim,
+                      function=func.name,
+                      ndim=func.ndim,
                       kernel=mfbo_options.get('kernel', 'N/A'),
                       surrogate_name=mfbo_options.get('surrogate_name', 'Kriging'),
                       scaling=mfbo_options['scaling'])
@@ -441,7 +440,7 @@ def create_resampling_error_grid(case, DoE_spec, instances, mfbo_options, save_d
     output.to_netcdf(output_path)
 
     end = time.time()
-    print(f"Ended case {case} at {end}\n"
+    print(f"Ended case {func} at {end}\n"
           f"Time spent: {end - start}")
 
 

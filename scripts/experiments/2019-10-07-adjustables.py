@@ -18,21 +18,21 @@ from pyprojroot import here
 
 import multifidelityfunctions as mff
 
-from experiments import Case, Instance, create_model_error_grid
+from experiments import Instance, create_model_error_grid
 
 save_dir = here('files/2019-10-07-adjustables/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
 funcs = [
-    (2, mff.adjustable_branin),
-    (2, mff.adjustable_paciorek),
-    (3, mff.adjustable_hartmann3),
-    (10, mff.adjustable_trid),
+    mff.adjustable_branin,
+    mff.adjustable_paciorek,
+    mff.adjustable_hartmann3,
+    mff.adjustable_trid,
 ]
 
 cases = [
-    Case(ndim, f(float(x)))
-    for ndim, f in funcs
+    f(float(x))
+    for f in funcs
     for x in sys.argv[1:]
 ]
 

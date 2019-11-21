@@ -15,21 +15,21 @@ from pyprojroot import here
 
 import multifidelityfunctions as mff
 
-from experiments import Case, Instance, plot_model_and_samples
+from experiments import Instance, plot_model_and_samples
 
 save_dir = here('plots/2019-09-plot-specifics/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
 cases = [
-    # Case(1, mff.forrester),
+    # mff.forrester,
 
-    # Case(2, mff.forrester),
-    # Case(2, mff.bohachevsky),
-    # Case(2, mff.booth),
-    Case(2, mff.branin),
-    # Case(2, mff.currin),
-    # Case(2, mff.himmelblau),
-    # Case(2, mff.sixHumpCamelBack),
+    # mff.Forrester(ndim=2),
+    # mff.bohachevsky,
+    # mff.booth,
+    mff.branin,
+    # mff.currin,
+    # mff.himmelblau,
+    # mff.sixHumpCamelBack,
 ]
 
 kernels = ['Matern']
