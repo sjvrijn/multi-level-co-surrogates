@@ -3,3 +3,4 @@ python3 ./2019-09-30-plot-wedges-r2.py
 python3 ./2019-10-15-plot-wedges-adjustables.py
 python3 ./2019-10-22-plot-multi-extracts.py
 python3 ./2019-11-05-extended-extracts.py
+python3 ./2019-11-18-plot-different-surrogates.py
