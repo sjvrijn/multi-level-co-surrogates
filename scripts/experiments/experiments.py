@@ -494,14 +494,14 @@ def results_to_dataset(results, instances, mfbo_options, attributes):
     #
     # multi_index_values = [(*instance, model) for instance, model in
     #                       product(instances, models)]
-    # multi_index = pd.MultiIndex.from_arrays(arrays=zip(*multi_index_values),
+    # multi_index = pd.MultiIndex.from_tuples(tuples=multi_index_values,
     #                                         names=['n_high', 'n_low', 'rep', 'model'])
     # mse_tracking = xr.DataArray.from_series(pd.Series(data=mses.flatten(), index=multi_index))
     # r2_tracking = xr.DataArray.from_series(pd.Series(data=r2s.flatten(), index=multi_index))
     #
     # multi_index_values = [(*instance, model, idx) for instance, model, idx in
     #                       product(instances, models, range(n_test_samples))]
-    # multi_index = pd.MultiIndex.from_arrays(arrays=zip(*multi_index_values),
+    # multi_index = pd.MultiIndex.from_tuples(tuples=multi_index_values,
     #                                         names=['n_high', 'n_low', 'rep', 'model', 'idx'])
     # value_tracking = xr.DataArray.from_series(pd.Series(data=values.flatten(), index=multi_index))
 
