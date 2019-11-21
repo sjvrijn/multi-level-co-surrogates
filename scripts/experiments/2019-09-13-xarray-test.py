@@ -9,7 +9,7 @@ test the new implementation using the xarray package
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-from itertools import product
+from itertools import product, starmap
 
 from pyprojroot import here
 
@@ -53,14 +53,14 @@ scaling_options = [
 
 # Some manually selected combinations to confirm that the resulting array is
 # still somewhat sparse, but that everything can be indexed as intended
-instances = map(Instance, [
+instances = list(starmap(Instance, [
     (2, 4, 0), (2, 7, 0), (2, 9, 0),
     (2, 4, 1), (2, 7, 1), (2, 9, 1),
     (4, 7, 0), (5, 7, 0), (5, 9, 0),
     (4, 7, 3), (5, 7, 3), (5, 9, 3),
     (6, 7, 0), (6, 9, 0), (7, 9, 0),
     (6, 7, 5), (6, 9, 5), (7, 9, 5),
-])
+]))
 
 for case, kernel, scale in product(cases, kernels, scaling_options):
     mfbo_options = {'kernel': kernel, 'scaling': scale}
