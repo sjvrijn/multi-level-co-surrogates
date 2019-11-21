@@ -192,12 +192,12 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
 
 
 
-    high_x, low_x = multi_fidelity_doe(case.ndim, num_high, num_low)
+    high_x, low_x = multi_fidelity_doe(case.func.ndim, num_high, num_low)
     high_x, low_x = scale_to_function(case.func, [high_x, low_x])
     high_y, low_y = case.func.high(high_x), \
                     case.func.low(low_x)
 
-    archive = mlcs.CandidateArchive.from_multi_fidelity_function(case.func, ndim=case.ndim)
+    archive = mlcs.CandidateArchive.from_multi_fidelity_function(case.func, ndim=case.func.ndim)
     archive.addcandidates(low_x, low_y, fidelity='low')
     archive.addcandidates(high_x, high_y, fidelity='high')
 
@@ -205,7 +205,7 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
 
 
 
-    if case.ndim == 1:
+    if case.func.ndim == 1:
         plot_x = np.linspace(case.func.l_bound, case.func.u_bound, 1001)
 
         plt.figure()
@@ -218,13 +218,13 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
         plt.scatter(*mfbo.archive.getcandidates(fidelity='low'),
                     label='low-fidelity samples')
 
-        plt.title(f'{case.ndim}D {case.func.name}: {instance.n_high}/{instance.n_low}'
+        plt.title(f'{case.func.ndim}D {case.func.name}: {instance.n_high}/{instance.n_low}'
                   f' samples (repetition {instance.rep})')
         plt.legend(loc=0)
         plt.tight_layout()
         plt.show()
 
-    elif case.ndim == 2:
+    elif case.func.ndim == 2:
         bounds = {'l_bound': case.func.l_bound, 'u_bound': case.func.u_bound}
 
         surf_high = mlcs.createsurface(case.func.high, **bounds)
@@ -248,7 +248,7 @@ def plot_model_and_samples(case, kernel, scaling_option, instance):
                           all_points=[points, points, points, points], shape=(2,2))
 
     else:
-        raise ValueError(f"Dimensionality case.ndim={case.ndim} not supported by"
+        raise ValueError(f"Dimensionality case.func.ndim={case.func.ndim} not supported by"
                          f"plot_model_and_samples. Only 1D and 2D are supported")
 
 
@@ -262,7 +262,7 @@ def create_model_error_grid(case, instances, mfbo_options, save_dir):
 
     # Determine unique output path for this experiment
     surr_name = repr_surrogate_name(mfbo_options)
-    output_path = save_dir / f"{surr_name}-{case.ndim}d-{case.func.name}.nc"
+    output_path = save_dir / f"{surr_name}-{case.func.ndim}d-{case.func.name}.nc"
 
 
     # Don't redo any prior data that already exists
@@ -277,7 +277,7 @@ def create_model_error_grid(case, instances, mfbo_options, save_dir):
 
 
     # Setup some (final) options for the hierarchical model
-    mfbo_options['test_sample'] = get_test_sample(case.ndim, save_dir)
+    mfbo_options['test_sample'] = get_test_sample(case.func.ndim, save_dir)
 
 
     results = []
@@ -289,13 +289,13 @@ def create_model_error_grid(case, instances, mfbo_options, save_dir):
         set_seed_by_instance(num_high, num_low, rep)
 
         # Create Multi-Fidelity DoE in- and output according to instance specification
-        high_x, low_x = multi_fidelity_doe(case.ndim, num_high, num_low)
+        high_x, low_x = multi_fidelity_doe(case.func.ndim, num_high, num_low)
         high_x, low_x = scale_to_function(case.func, [high_x, low_x])
         high_y, low_y = case.func.high(high_x), \
                         case.func.low(low_x)
 
         # Create an archive from the MF-function and MF-DoE data
-        archive = mlcs.CandidateArchive.from_multi_fidelity_function(case.func, ndim=case.ndim)
+        archive = mlcs.CandidateArchive.from_multi_fidelity_function(case.func, ndim=case.func.ndim)
         archive.addcandidates(low_x, low_y, fidelity='low')
         archive.addcandidates(high_x, high_y, fidelity='high')
 
@@ -321,7 +321,7 @@ def create_model_error_grid(case, instances, mfbo_options, save_dir):
     # Create attributes dictionary
     attributes = dict(experiment='create_model_error_grid',
                       function=case.func.name,
-                      ndim=case.ndim,
+                      ndim=case.func.ndim,
                       kernel=mfbo_options.get('kernel', 'N/A'),
                       surrogate_name=mfbo_options.get('surrogate_name', 'Kriging'),
                       scaling=mfbo_options['scaling'])
@@ -356,7 +356,7 @@ def create_resampling_error_grid(case, DoE_spec, instances, mfbo_options, save_d
     # Determine unique output path for this experiment
     surr_name = repr_surrogate_name(mfbo_options)
     doe_high, doe_low = DoE_spec
-    output_path = save_dir / f"{surr_name}-{case.ndim}d-{case.func.name}-sub{doe_high}-{doe_low}.nc"
+    output_path = save_dir / f"{surr_name}-{case.func.ndim}d-{case.func.name}-sub{doe_high}-{doe_low}.nc"
 
 
     # Don't redo any prior data that already exists
@@ -371,12 +371,12 @@ def create_resampling_error_grid(case, DoE_spec, instances, mfbo_options, save_d
 
 
     # Setup some (final) options for the hierarchical model
-    mfbo_options['test_sample'] = get_test_sample(case.ndim, save_dir)
+    mfbo_options['test_sample'] = get_test_sample(case.func.ndim, save_dir)
 
 
     # Create initial DoE
     np.random.seed(20160501)  # Setting seed for reproducibility
-    DoE = multi_fidelity_doe(case.ndim, doe_high, doe_low)
+    DoE = multi_fidelity_doe(case.func.ndim, doe_high, doe_low)
     DoE = scale_to_function(case.func, DoE)
 
 
@@ -395,7 +395,7 @@ def create_resampling_error_grid(case, DoE_spec, instances, mfbo_options, save_d
                         case.func.low(low_x)
 
         # Create an archive from the MF-function and MF-DoE data
-        archive = mlcs.CandidateArchive.from_multi_fidelity_function(case.func, ndim=case.ndim)
+        archive = mlcs.CandidateArchive.from_multi_fidelity_function(case.func, ndim=case.func.ndim)
         archive.addcandidates(low_x, low_y, fidelity='low')
         archive.addcandidates(high_x, high_y, fidelity='high')
 
@@ -422,7 +422,7 @@ def create_resampling_error_grid(case, DoE_spec, instances, mfbo_options, save_d
     attributes = dict(experiment='create_resampling_error_grid',
                       doe=f"{doe_high},{doe_low}",
                       function=case.func.name,
-                      ndim=case.ndim,
+                      ndim=case.func.ndim,
                       kernel=mfbo_options.get('kernel', 'N/A'),
                       surrogate_name=mfbo_options.get('surrogate_name', 'Kriging'),
                       scaling=mfbo_options['scaling'])
