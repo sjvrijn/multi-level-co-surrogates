@@ -43,7 +43,12 @@ cases = [
 ]
 
 kernels = ['Matern']
-scaling_options = ['off']  # , 'on', 'inverted']  # , 'regularized']
+scaling_options = [
+    'off',
+    # 'on',
+    # 'inverted',
+    # 'regularized'
+]
 
 
 # Some manually selected combinations to confirm that the resulting array is

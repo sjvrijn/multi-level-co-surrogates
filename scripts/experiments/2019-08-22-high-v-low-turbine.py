@@ -12,7 +12,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 import subprocess
 
-arguments = range(5)
+arguments = [0, 1, 8, 11, 13]
 for arg in arguments:
     subprocess.run(f'NQDIR=turbine nq nice -n 5 python3 2019-08-22-high-v-low.py {arg}', shell=True)
 

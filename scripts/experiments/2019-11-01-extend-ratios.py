@@ -48,7 +48,12 @@ cases = [
 ]
 
 kernels = ['Matern']
-scaling_options = ['off']  # , 'on', 'inverted']  # , 'regularized']
+scaling_options = [
+    'off',
+    # 'on',
+    # 'inverted',
+    # 'regularized'
+]
 
 min_high, max_high = 2, 50
 min_low, max_low = 3, 125

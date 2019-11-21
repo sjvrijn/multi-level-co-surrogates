@@ -33,7 +33,12 @@ cases = [
 ]
 
 kernels = ['Matern']
-scaling_options = ['off']  # , 'on', 'inverted']  # , 'regularized']
+scaling_options = [
+    'off',
+    # 'on',
+    # 'inverted',
+    # 'regularized'
+]
 instances = [Instance(h, l, r)
              for h, l, r in product(range(20, 51, 10),
                                     range(25, 126, 20),

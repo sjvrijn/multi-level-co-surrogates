@@ -29,12 +29,17 @@ cases = [
 ]
 
 kernels = ['Matern']
-scaling_options = ['off']  # , 'on', 'inverted']  # , 'regularized']
+scaling_options = [
+    'off',
+    # 'on',
+    # 'inverted',
+    # 'regularized'
+]
 
 min_high, max_high = 2, 50
 min_low, max_low = 3, 125
 step = 1
-num_reps = 15 #50
+num_reps = 50
 
 instances = [Instance(h, l, r)
              for h, l, r in product(range(min_high, max_high + 1, step),
