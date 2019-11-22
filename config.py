@@ -9,7 +9,7 @@ __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 
-from multifidelityfunctions import *
+from mf2 import *
 from local import base_dir
 
 

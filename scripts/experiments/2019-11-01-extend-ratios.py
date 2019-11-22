@@ -17,7 +17,7 @@ from itertools import product
 import numpy as np
 from pyprojroot import here
 
-import multifidelityfunctions as mff
+import mf2 as mff
 
 from experiments import Instance, create_model_error_grid
 

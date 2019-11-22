@@ -13,7 +13,7 @@ from itertools import product
 
 from pyprojroot import here
 
-import multifidelityfunctions as mff
+import mf2 as mff
 
 from experiments import Instance, plot_model_and_samples
 
