@@ -16,7 +16,7 @@ from itertools import product
 
 from pyprojroot import here
 
-import mf2 as mff
+import mf2
 
 from experiments import Instance, create_model_error_grid
 
@@ -24,7 +24,7 @@ save_dir = here('files/2019-09-25-adjustable-branin/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
 cases = [
-    mff.adjustable_branin(float(x))
+    mf2.adjustable.branin(float(x))
     for x in sys.argv[1:]
 ]
 

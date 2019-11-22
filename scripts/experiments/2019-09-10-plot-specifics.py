@@ -13,7 +13,7 @@ from itertools import product
 
 from pyprojroot import here
 
-import mf2 as mff
+import mf2
 
 from experiments import Instance, plot_model_and_samples
 
@@ -21,15 +21,15 @@ save_dir = here('plots/2019-09-plot-specifics/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
 cases = [
-    # mff.forrester,
+    # mf2.forrester,
 
-    # mff.Forrester(ndim=2),
-    # mff.bohachevsky,
-    # mff.booth,
-    mff.branin,
-    # mff.currin,
-    # mff.himmelblau,
-    # mff.sixHumpCamelBack,
+    # mf2.Forrester(ndim=2),
+    # mf2.bohachevsky,
+    # mf2.booth,
+    mf2.branin,
+    # mf2.currin,
+    # mf2.himmelblau,
+    # mf2.sixHumpCamelBack,
 ]
 
 kernels = ['Matern']

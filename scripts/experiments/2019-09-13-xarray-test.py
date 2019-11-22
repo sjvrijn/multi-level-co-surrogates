@@ -13,7 +13,7 @@ from itertools import product, starmap
 
 from pyprojroot import here
 
-import mf2 as mff
+import mf2
 
 from experiments import Instance, create_model_error_grid
 
@@ -21,25 +21,25 @@ save_dir = here('files/2019-09-xarray-test/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
 cases = [
-    mff.forrester,
+    mf2.forrester,
 
-    mff.Forrester(ndim=2),
-    mff.bohachevsky,
-    mff.booth,
-    mff.branin,
-    mff.currin,
-    mff.himmelblau,
-    mff.six_hump_camelback,
+    mf2.Forrester(ndim=2),
+    mf2.bohachevsky,
+    mf2.booth,
+    mf2.branin,
+    mf2.currin,
+    mf2.himmelblau,
+    mf2.six_hump_camelback,
 
-    mff.Forrester(ndim=4),
-    mff.park91a,
-    mff.park91b,
+    mf2.Forrester(ndim=4),
+    mf2.park91a,
+    mf2.park91b,
 
-    mff.Forrester(ndim=6),
-    mff.hartmann6,
+    mf2.Forrester(ndim=6),
+    mf2.hartmann6,
 
-    mff.Forrester(ndim=8),
-    mff.borehole,
+    mf2.Forrester(ndim=8),
+    mf2.borehole,
 ]
 
 kernels = ['Matern']

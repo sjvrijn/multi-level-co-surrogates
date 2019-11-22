@@ -16,7 +16,7 @@ from itertools import product
 
 from pyprojroot import here
 
-import mf2 as mff
+import mf2
 
 from experiments import Instance, create_model_error_grid
 
@@ -24,10 +24,10 @@ save_dir = here('files/2019-10-07-adjustables/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
 funcs = [
-    mff.adjustable_branin,
-    mff.adjustable_paciorek,
-    mff.adjustable_hartmann3,
-    mff.adjustable_trid,
+    mf2.adjustable.branin,
+    mf2.adjustable.paciorek,
+    mf2.adjustable.hartmann3,
+    mf2.adjustable.trid,
 ]
 
 cases = [

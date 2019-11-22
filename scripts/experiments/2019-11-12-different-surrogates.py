@@ -15,7 +15,7 @@ import sys
 
 from pyprojroot import here
 
-import mf2 as mff
+import mf2
 
 from experiments import Instance, create_model_error_grid
 
@@ -23,25 +23,25 @@ save_dir = here('files/2019-11-12-different-surrogates/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
 cases = [
-    mff.forrester,
+    mf2.forrester,
 
-    mff.Forrester(ndim=2),
-    # mff.bohachevsky,
-    # mff.booth,
-    mff.branin,
-    mff.currin,
-    # mff.himmelblau,
-    # mff.six_hump_camelback,
+    mf2.Forrester(ndim=2),
+    # mf2.bohachevsky,
+    # mf2.booth,
+    mf2.branin,
+    mf2.currin,
+    # mf2.himmelblau,
+    # mf2.six_hump_camelback,
 
-    mff.Forrester(ndim=4),
-    mff.park91a,
-    # mff.park91b,
+    mf2.Forrester(ndim=4),
+    mf2.park91a,
+    # mf2.park91b,
 
-    # mff.Forrester(ndim=6),
-    mff.hartmann6,
+    # mf2.Forrester(ndim=6),
+    mf2.hartmann6,
 
-    # mff.Forrester(ndim=8),
-    mff.borehole,
+    # mf2.Forrester(ndim=8),
+    mf2.borehole,
 ]
 
 surrogate_names = [
@@ -68,12 +68,12 @@ instances = [Instance(h, l, r)
                                     range(num_reps))
              if h < l]
 
-full_cases = list(product(function_cases, surrogate_names, scaling_options))
+full_cases = list(product(cases, surrogate_names, scaling_options))
 
 if len(sys.argv) > 1:
     case_idx = int(sys.argv[1])
     full_cases = full_cases[case_idx:case_idx + 1]
 
-for function_case, surr_name, scale in full_cases:
+for function, surr_name, scale in full_cases:
     mfbo_options = {'surrogate_name': surr_name, 'scaling': scale}
-    create_model_error_grid(function_case, instances, mfbo_options, save_dir=save_dir)
+    create_model_error_grid(function, instances, mfbo_options, save_dir=save_dir)
