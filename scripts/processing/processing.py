@@ -37,7 +37,10 @@ def get_extent(data):
 
 
 def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100,
-                                 points=(), save_as=None):
+                                 points=(), save_as=None, show=False):
+
+    if not (show or save_as):
+        return  # no need to make the plot if not showing or saving it
     norm = colors.LogNorm(vmin=vmin, vmax=vmax, clip=True)
     fig, ax = plt.subplots(figsize=(9,3.5))
 
@@ -82,7 +85,8 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100,
     plt.tight_layout()
     if save_as:
         plt.savefig(save_as)
-    plt.show()
+    if show:
+        plt.show()
 
 
 def plot_high_vs_low_num_samples_diff(data, title, max_diff=None, save_as=None):
@@ -115,7 +119,9 @@ def plot_inter_method_diff(data_A, data_B, name, model='high_hier',
     plot_high_v_low_diff(to_plot, long_title, norm, save_as)
 
 
-def plot_high_v_low_diff(to_plot, long_title, norm, save_as):
+def plot_high_v_low_diff(to_plot, long_title, norm, save_as=None, show=False):
+    if not (save_as or show):
+        return  # no need to make the plot if not showing or saving it
     fig, ax = plt.subplots(figsize=(9, 3.5))
 
     img = ax.imshow(to_plot, cmap='PiYG', norm=norm,
@@ -127,10 +133,13 @@ def plot_high_v_low_diff(to_plot, long_title, norm, save_as):
     plt.tight_layout()
     if save_as:
         plt.savefig(save_as)
-    plt.show()
+    if show:
+        plt.show()
 
 
-def plot_t_scores(data, title, t_range=5, num_colors=10, save_as=None):
+def plot_t_scores(data, title, t_range=5, num_colors=10, save_as=None, show=False):
+    if not (save_as or show):
+        return  # no need to make the plot if not showing or saving it
     paired_differences = data.sel(model='high') - data.sel(model='high_hier')
     mean_paired_diff = paired_differences.mean(dim='rep')
     std_paired_diff = paired_differences.std(dim='rep', ddof=1)
@@ -149,10 +158,13 @@ def plot_t_scores(data, title, t_range=5, num_colors=10, save_as=None):
     plt.tight_layout()
     if save_as:
         plt.savefig(save_as)
-    plt.show()
+    if show:
+        plt.show()
 
 
 def plot_extracts(data, title, save_as=None, show=False, *, normalize=False, max_x=None):
+    if not (save_as or show):
+        return  # no need to make the plot if not showing or saving it
     fig, axes = plt.subplots(1, 2, figsize=(9, 3.5))
 
     n_highs = data.coords['n_high'].values
@@ -226,4 +238,3 @@ def plot_multi_file_extracts(data_arrays, title, save_as=None, show=False):
     if show:
         plt.show()
     plt.close()
-
