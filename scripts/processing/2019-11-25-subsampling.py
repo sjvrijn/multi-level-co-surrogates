@@ -10,10 +10,8 @@ procedure
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-import csv
 from collections import namedtuple
 from itertools import product
-from pprint import pprint
 
 import xarray as xr
 from pyprojroot import here
