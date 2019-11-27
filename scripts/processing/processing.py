@@ -6,16 +6,20 @@ processing.py: Collection of data processing procedures that can be called
 by explicit runner files.
 """
 
-__author__ = 'Sander van Rijn'
-__email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
-
 from itertools import product
+from collections import namedtuple
 
 import matplotlib.pyplot as plt
 import numpy as np
+import xarray as xr
 from matplotlib import colors
 from matplotlib.lines import Line2D
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from sklearn.linear_model import LinearRegression
+
+
+__author__ = 'Sander van Rijn'
+__email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 
 # defining some point styles
@@ -238,3 +242,28 @@ def plot_multi_file_extracts(data_arrays, title, save_as=None, show=False):
     if show:
         plt.show()
     plt.close()
+
+
+def fit_lin_reg_coefficients(da: xr.DataArray):
+    """Return lin-reg coefficients after training index -> value"""
+
+    # clean data
+    series = da.to_series().dropna()
+
+    # extract X and y
+    X = np.array(series.index.tolist())
+    y = np.log10(series.values)
+
+    # compute and return coefficients
+    reg = LinearRegression().fit(X, y)
+
+    ### calculate statistics ###
+    # mean = np.mean(y)
+    # TSS = np.sum((y-mean) ** 2)
+    # SSE = reg._residues
+    # r_2 = (TSS-SSE)/TSS
+    # t_score = np.sqrt(r_2) / np.sqrt((1-r_2) / (len(y)-2))
+
+    # return results nicely
+    Coefficients = namedtuple('Coefficients', series.index.names)
+    return Coefficients(*reg.coef_)
