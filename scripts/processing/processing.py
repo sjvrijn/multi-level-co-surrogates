@@ -54,6 +54,7 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100,
     plt.title(f'Median MSE for high (hierarchical) model - {title}')
     img = ax.imshow(data.sel(model='high_hier'), cmap='viridis_r', norm=norm,
                     origin='lower', extent=get_extent(data))
+    ax.contour(data.sel(model='high_hier'), levels=10, colors='black', alpha=.2, linewidths=1)
 
     divider = make_axes_locatable(ax)
     axx = divider.append_axes("bottom", size=.2, pad=0.05, sharex=ax)
@@ -244,7 +245,7 @@ def plot_multi_file_extracts(data_arrays, title, save_as=None, show=False):
     plt.close()
 
 
-def fit_lin_reg_coefficients(da: xr.DataArray):
+def fit_lin_reg(da: xr.DataArray):
     """Return lin-reg coefficients after training index -> value"""
 
     # clean data
@@ -257,6 +258,8 @@ def fit_lin_reg_coefficients(da: xr.DataArray):
     # compute and return coefficients
     reg = LinearRegression().fit(X, y)
 
+    return reg
+
     ### calculate statistics ###
     # mean = np.mean(y)
     # TSS = np.sum((y-mean) ** 2)
@@ -265,5 +268,5 @@ def fit_lin_reg_coefficients(da: xr.DataArray):
     # t_score = np.sqrt(r_2) / np.sqrt((1-r_2) / (len(y)-2))
 
     # return results nicely
-    Coefficients = namedtuple('Coefficients', series.index.names)
-    return Coefficients(*reg.coef_)
+    # Coefficients = namedtuple('Coefficients', series.index.names)
+    # return Coefficients(*reg.coef_)

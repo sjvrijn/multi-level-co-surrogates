@@ -9,6 +9,8 @@ mse-grid files
 from collections import namedtuple
 from itertools import product
 
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import xarray as xr
 from pyprojroot import here
@@ -31,10 +33,28 @@ for directory in [d for d in data_dir.iterdir() if d.is_dir()]:
         # TODO: properly use with-statement here?
         ds = xr.open_dataset(file)
         da = ds['mses'].load().sel(model='high_hier')
-        coef = proc.fit_lin_reg_coefficients(da)
+        reg = proc.fit_lin_reg(da)
+        coef = reg.coef_
+
+        records.append(Record(directory.name, file.stem, *coef))
+
+        # create lin-reg based plots
+        #TODO: factor out into separate function
+        n_high_y = np.array(da.coords['n_high'].values).reshape((-1, 1))
+        n_low_x = np.array(da.coords['n_low'].values).reshape((1, -1))
+
+        out = n_high_y*coef[0] + n_low_x*coef[1] + reg.intercept_
+        out = np.triu(out)
+        out[out == 0] = np.nan
+        plt.imshow(out, origin='lower', cmap='viridis_r')
+        plt.contour(out, levels=10, colors='black', alpha=.2, linewidths=1)
+        plt.title(f"{directory.name}: {file.stem}")
+        plt.show()
+
+
         da.close()
 
-        records.append(Record(directory.name, file.name, *coef))
+
 
 df = pd.DataFrame.from_records(records, columns=Record._fields)
 print(df.to_latex())
