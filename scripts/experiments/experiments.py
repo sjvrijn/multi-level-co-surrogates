@@ -41,7 +41,7 @@ def low_lhs_sample(ndim, nlow):
         return lhs(ndim, nlow)
 
 
-def multi_fidelity_doe(ndim, num_high, num_low):
+def bi_fidelity_doe(ndim, num_high, num_low):
     """Create a Design of Experiments (DoE) for two fidelities in `ndim`
     dimensions. The high-fidelity samples are guaranteed to be a subset
     of the low-fidelity samples.
@@ -67,7 +67,7 @@ def multi_fidelity_doe(ndim, num_high, num_low):
     return high_x, low_x
 
 
-def subselect_doe(DoE, num_high, num_low):
+def subselect_bi_fidelity_doe(DoE, num_high, num_low):
     """Given an existing bi-fidelity Design of Experiments (DoE) `high, low`,
     creates a subselection of given size `num_high, num_low` based on uniform
     selection. The subselection maintains the property that all high-fidelity
@@ -191,7 +191,7 @@ def plot_model_and_samples(func, kernel, scaling_option, instance):
 
 
 
-    high_x, low_x = multi_fidelity_doe(func.ndim, num_high, num_low)
+    high_x, low_x = bi_fidelity_doe(func.ndim, num_high, num_low)
     high_x, low_x = scale_to_function(func, [high_x, low_x])
     high_y, low_y = func.high(high_x), \
                     func.low(low_x)
@@ -288,7 +288,7 @@ def create_model_error_grid(func, instances, mfbo_options, save_dir):
         set_seed_by_instance(num_high, num_low, rep)
 
         # Create Multi-Fidelity DoE in- and output according to instance specification
-        high_x, low_x = multi_fidelity_doe(func.ndim, num_high, num_low)
+        high_x, low_x = bi_fidelity_doe(func.ndim, num_high, num_low)
         high_x, low_x = scale_to_function(func, [high_x, low_x])
         high_y, low_y = func.high(high_x), \
                         func.low(low_x)
@@ -375,7 +375,7 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options, save_d
 
     # Create initial DoE
     np.random.seed(20160501)  # Setting seed for reproducibility
-    DoE = multi_fidelity_doe(func.ndim, doe_high, doe_low)
+    DoE = bi_fidelity_doe(func.ndim, doe_high, doe_low)
     DoE = scale_to_function(func, DoE)
 
 
@@ -388,7 +388,7 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options, save_d
         set_seed_by_instance(num_high, num_low, rep)
 
         # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
-        high_x, low_x = subselect_doe(DoE, num_high, num_low)
+        high_x, low_x = subselect_bi_fidelity_doe(DoE, num_high, num_low)
         # TODO: precompute output values and include them when subselecting
         high_y, low_y = func.high(high_x), \
                         func.low(low_x)
