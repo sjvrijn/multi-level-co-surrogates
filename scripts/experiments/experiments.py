@@ -13,6 +13,7 @@ import xarray as xr
 from pyDOE import lhs
 from pyprojroot import here
 from scipy.spatial import distance
+from sklearn.metrics import mean_squared_error, r2_score
 
 module_path = str(here())
 if module_path not in sys.path:
@@ -399,7 +400,6 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options, save_d
 
         # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
         (high_x, low_x), _ = split_bi_fidelity_doe(DoE, num_high, num_low)
-        # TODO: precompute output values and include them when subselecting
         high_y, low_y = func.high(high_x), \
                         func.low(low_x)
 
@@ -429,6 +429,127 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options, save_d
 
     # Create attributes dictionary
     attributes = dict(experiment='create_resampling_error_grid',
+                      doe=f"{doe_high},{doe_low}",
+                      function=func.name,
+                      ndim=func.ndim,
+                      kernel=mfbo_options.get('kernel', 'N/A'),
+                      surrogate_name=mfbo_options.get('surrogate_name', 'Kriging'),
+                      scaling=mfbo_options['scaling'])
+
+    ## Iteration finished, arranging data into xr.Dataset
+    output = results_to_dataset(results, instances, mfbo_options, attributes)
+
+
+    # Merge with prior existing data
+    # NOTE: even if `output` is empty, attributes will be overwitten/updated
+    if output_path.exists():
+        with xr.load_dataset(output_path) as ds:
+            output = output.merge(ds)
+
+    # Store results
+    output.to_netcdf(output_path)
+
+    end = time.time()
+    print(f"Ended case {func} at {end}\n"
+          f"Time spent: {end - start}")
+
+
+def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_options, save_dir):
+    """Create a grid of model errors for the given MFF-function at the
+    given list of instances, with all data for training the model being based
+    on an initial given DoE specification.
+    The results are saved in a NETCDF .nc file at the specified `save_dir`"""
+
+    start = time.time()
+    print(f"Starting case {func} at {start}")
+
+    # Determine unique output path for this experiment
+    surr_name = repr_surrogate_name(mfbo_options)
+    doe_high, doe_low = DoE_spec
+    output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name}-sub{doe_high}-{doe_low}.nc"
+
+
+    # Don't redo any prior data that already exists
+    if output_path.exists():
+        with xr.open_dataset(output_path) as ds:
+            da = ds['mses'].load()
+            instances = filter_instances(instances, da.sel(model='high_hier'))
+
+        # Return early if there is nothing left to do
+        if not instances:
+            return
+
+
+    # Setup some (final) options for the hierarchical model
+    mfbo_options['test_sample'] = get_test_sample(func.ndim, save_dir)
+
+
+    # Create initial DoE
+    np.random.seed(20160501)  # Setting seed for reproducibility
+    DoE = bi_fidelity_doe(func.ndim, doe_high, doe_low)
+    DoE = scale_to_function(func, DoE)
+
+
+    results = []
+    print('starting loops')
+    for i, (num_high, num_low, rep) in enumerate(instances):
+        if i % 100 == 0:
+            print(f'{i}/{len(instances)}')
+
+        set_seed_by_instance(num_high, num_low, rep)
+
+        # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
+        selected, test = split_bi_fidelity_doe(DoE, num_high, num_low)
+        high_y, low_y = func.high(selected.high), \
+                        func.low(selected.low)
+
+        # Create an archive from the MF-function and MF-DoE data
+        archive = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
+        archive.addcandidates(selected.low, low_y, fidelity='low')
+        archive.addcandidates(selected.high, high_y, fidelity='high')
+
+        # (Automatically) Create the hierarchical model
+        mfbo = mlcs.MultiFidelityBO(func, archive, **mfbo_options)
+
+        test_high_y, test_low_y = func.high(test.high), \
+                                  func.low(test.low)
+
+        models = [
+            mfbo.models['high'],
+            mfbo.direct_models['high'],
+            mfbo.models['low']
+        ]
+        test_samples = [
+            (test.high, test_high_y),
+            (test.high, test_high_y),
+            (test.low, test_low_y),
+        ]
+
+        # Get the results we're interested in from the model for this instance
+        mses = mfbo.MSECollection(*[
+            mean_squared_error(y_true, model.predict(x_pred))
+            for (x_pred, y_true), model in zip(test_samples, models)
+        ])
+        r2s = mfbo.R2Collection(*[
+            r2_score(y_true, model.predict(x_pred))
+            for (x_pred, y_true), model in zip(test_samples, models)
+        ])
+
+        #TODO still old-style...
+        values = [
+            model.predict(mfbo.test_sample).flatten()
+            for model in models
+        ]
+
+        # Store the results
+        results.append((mses, r2s, values))
+
+    print(f'{len(instances)}/{len(instances)}')
+
+
+
+    # Create attributes dictionary
+    attributes = dict(experiment='create_resampling_leftover_error_grid',
                       doe=f"{doe_high},{doe_low}",
                       function=func.name,
                       ndim=func.ndim,
