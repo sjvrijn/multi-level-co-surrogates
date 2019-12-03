@@ -27,7 +27,7 @@ blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
 
 
 Instance = namedtuple('Instance', 'n_high n_low rep')
-
+BiFidelityDoE = namedtuple("BiFidelityDoE", "high low")
 
 def set_seed_by_instance(num_high, num_low, rep):
     """Fix the numpy random seed based on an Instance"""
@@ -64,7 +64,7 @@ def bi_fidelity_doe(ndim, num_high, num_low):
         dists[high_idx,:] = np.inf
         dists[:,low_idx] = np.inf
         highs_to_match.remove(high_idx)
-    return high_x, low_x
+    return BiFidelityDoE(high_x, low_x)
 
 
 def subselect_bi_fidelity_doe(DoE, num_high, num_low):
@@ -75,8 +75,12 @@ def subselect_bi_fidelity_doe(DoE, num_high, num_low):
 
     Raises a `ValueError` if invalid `num_high` or `num_low` are given."""
     high, low = DoE
-    if 1 <= num_high >= len(high) or num_low > len(low) or num_low <= num_high:
-        raise ValueError
+    if not 1 < num_high < len(high):
+        raise ValueError(f"'num_high' must be in the range [2, len(DoE.high)], but is {num_high}")
+    elif num_low > len(low):
+        raise ValueError(f"'num_low' cannot be greater than len(DoE.low), but is {num_low}")
+    elif num_low <= num_high:
+        raise ValueError(f"'num_low' must be greater than 'num_high', but {num_low} <= {num_high}")
 
     sub_high = high[np.random.choice(len(high), num_high, replace=False)]
 
@@ -87,11 +91,12 @@ def subselect_bi_fidelity_doe(DoE, num_high, num_low):
         filtered_low = np.array([x for x in low if x not in sub_high])
         # randomly select (num_low - num_high) remaining
         extra_low = filtered_low[
-            np.random.choice(len(filtered_low), num_low - num_high, replace=False)]
+            np.random.choice(len(filtered_low), num_low - num_high, replace=False)
+        ]
         # concatenate sub_high with selected sub_low
         sub_low = np.concatenate([sub_high, extra_low], axis=0)
 
-    return sub_high, sub_low
+    return BiFidelityDoE(sub_high, sub_low)
 
 
 def get_test_sample(ndim, save_dir):
