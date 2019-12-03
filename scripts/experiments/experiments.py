@@ -60,7 +60,7 @@ def bi_fidelity_doe(ndim, num_high, num_low):
         high_idx, low_idx = np.argwhere(dists == min_dist)[0]
 
         low_x[low_idx] = high_x[high_idx]
-
+        # make sure just selected samples are not re-selectable
         dists[high_idx,:] = np.inf
         dists[:,low_idx] = np.inf
         highs_to_match.remove(high_idx)
@@ -82,7 +82,8 @@ def subselect_bi_fidelity_doe(DoE, num_high, num_low):
     elif num_low <= num_high:
         raise ValueError(f"'num_low' must be greater than 'num_high', but {num_low} <= {num_high}")
 
-    sub_high = high[np.random.choice(len(high), num_high, replace=False)]
+    indices = np.random.permutation(len(high))
+    sub_high = high[indices[:num_high]]
 
     if num_low == len(low):
         sub_low = low
