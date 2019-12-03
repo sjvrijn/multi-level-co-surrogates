@@ -92,8 +92,10 @@ def split_bi_fidelity_doe(DoE, num_high, num_low):
         # remove all sub_high from low
         filtered_low = np.array([x for x in low if x not in sub_high])
         # randomly select (num_low - num_high) remaining
-        indices = np.random.permutation(len(low))
-        extra_low, leave_out_low = filtered_low[indices[:num_low]], filtered_low[indices[num_low:]]
+        indices = np.random.permutation(len(filtered_low))
+        num_low_left = num_low - num_high
+        extra_low, leave_out_low = filtered_low[indices[:num_low_left]], \
+                                   filtered_low[indices[num_low_left:]]
         # concatenate sub_high with selected sub_low
         sub_low = np.concatenate([sub_high, extra_low], axis=0)
 

@@ -4,6 +4,7 @@ cycler>=0.10.0
 kiwisolver>=1.0.1
 matplotlib>=2.2.3
 mf2==2019.11.2
+more-itertools==8.0.0
 netCDF4>=1.5.2
 numpy>=1.15.1
 pandas>=0.23.4
