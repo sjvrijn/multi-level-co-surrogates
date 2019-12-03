@@ -67,7 +67,7 @@ def bi_fidelity_doe(ndim, num_high, num_low):
     return BiFidelityDoE(high_x, low_x)
 
 
-def subselect_bi_fidelity_doe(DoE, num_high, num_low):
+def split_bi_fidelity_doe(DoE, num_high, num_low):
     """Given an existing bi-fidelity Design of Experiments (DoE) `high, low`,
     creates a subselection of given size `num_high, num_low` based on uniform
     selection. The subselection maintains the property that all high-fidelity
@@ -83,21 +83,23 @@ def subselect_bi_fidelity_doe(DoE, num_high, num_low):
         raise ValueError(f"'num_low' must be greater than 'num_high', but {num_low} <= {num_high}")
 
     indices = np.random.permutation(len(high))
-    sub_high = high[indices[:num_high]]
+    sub_high, leave_out_high = high[indices[:num_high]], high[indices[num_high:]]
 
     if num_low == len(low):
         sub_low = low
+        leave_out_low = []
     else:
         # remove all sub_high from low
         filtered_low = np.array([x for x in low if x not in sub_high])
         # randomly select (num_low - num_high) remaining
-        extra_low = filtered_low[
-            np.random.choice(len(filtered_low), num_low - num_high, replace=False)
-        ]
+        indices = np.random.permutation(len(low))
+        extra_low, leave_out_low = filtered_low[indices[:num_low]], filtered_low[indices[num_low:]]
         # concatenate sub_high with selected sub_low
         sub_low = np.concatenate([sub_high, extra_low], axis=0)
 
-    return BiFidelityDoE(sub_high, sub_low)
+    selected = BiFidelityDoE(sub_high, sub_low)
+    left_out = BiFidelityDoE(leave_out_high, leave_out_low)
+    return selected, left_out
 
 
 def get_test_sample(ndim, save_dir):
@@ -394,7 +396,7 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options, save_d
         set_seed_by_instance(num_high, num_low, rep)
 
         # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
-        high_x, low_x = subselect_bi_fidelity_doe(DoE, num_high, num_low)
+        (high_x, low_x), _ = split_bi_fidelity_doe(DoE, num_high, num_low)
         # TODO: precompute output values and include them when subselecting
         high_y, low_y = func.high(high_x), \
                         func.low(low_x)
