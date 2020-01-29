@@ -180,9 +180,10 @@ def filter_instances(instances, data):
     the file located at `output_path`"""
 
     existing_instances = extract_existing_instances(data)
+    existing_instances = set(map(tuple, existing_instances))
 
     return [instance
-            for instance in instances
+            for instance in map(tuple, instances)
             if instance not in existing_instances]
 
 
