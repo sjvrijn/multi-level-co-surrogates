@@ -1,6 +1,6 @@
 # coding: utf-8
 import sys
-import time
+from datetime import datetime
 from collections import namedtuple
 from functools import partial
 from itertools import product
@@ -268,7 +268,7 @@ def create_model_error_grid(func, instances, mfbo_options, save_dir):
     given list of instances.
     The results are saved in a NETCDF .nc file at the specified `save_dir`"""
 
-    start = time.time()
+    start = datetime.now()
     print(f"Starting case {func} at {start}")
 
     # Determine unique output path for this experiment
@@ -350,9 +350,9 @@ def create_model_error_grid(func, instances, mfbo_options, save_dir):
     # Store results
     output.to_netcdf(output_path)
 
-    end = time.time()
+    end = datetime.now()
     print(f"Ended case {func} at {end}\n"
-          f"Time spent: {end - start}")
+          f"Time spent: {str(end - start)}")
 
 
 def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options, save_dir):
@@ -361,7 +361,7 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options, save_d
     on an initial given DoE specification.
     The results are saved in a NETCDF .nc file at the specified `save_dir`"""
 
-    start = time.time()
+    start = datetime.now()
     print(f"Starting case {func} at {start}")
 
     # Determine unique output path for this experiment
@@ -450,9 +450,9 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options, save_d
     # Store results
     output.to_netcdf(output_path)
 
-    end = time.time()
+    end = datetime.now()
     print(f"Ended case {func} at {end}\n"
-          f"Time spent: {end - start}")
+          f"Time spent: {str(end - start)}")
 
 
 def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_options, save_dir):
@@ -461,7 +461,7 @@ def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_option
     on an initial given DoE specification.
     The results are saved in a NETCDF .nc file at the specified `save_dir`"""
 
-    start = time.time()
+    start = datetime.now()
     print(f"Starting case {func} at {start}")
 
     # Determine unique output path for this experiment
@@ -571,9 +571,9 @@ def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_option
     # Store results
     output.to_netcdf(output_path)
 
-    end = time.time()
+    end = datetime.now()
     print(f"Ended case {func} at {end}\n"
-          f"Time spent: {end - start}")
+          f"Time spent: {str(end - start)}")
 
 
 def results_to_dataset(results, instances, mfbo_options, attributes):
