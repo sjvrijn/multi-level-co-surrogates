@@ -269,7 +269,9 @@ def create_model_error_grid(func, instances, mfbo_options, save_dir):
     The results are saved in a NETCDF .nc file at the specified `save_dir`"""
 
     start = datetime.now()
-    print(f"Starting case {func} at {start}")
+    print(f"Timestamp: {start}")
+    print(f"Starting case {func}")
+    print(f"{len(instances)} instances passed in")
 
     # Determine unique output path for this experiment
     surr_name = repr_surrogate_name(mfbo_options)
@@ -278,10 +280,13 @@ def create_model_error_grid(func, instances, mfbo_options, save_dir):
 
     # Don't redo any prior data that already exists
     if output_path.exists():
+        print(f"existing file '{output_path.name}' found, loading instances...")
+        num_orig_instances = len(instances)
         with xr.open_dataset(output_path) as ds:
             da = ds['mses'].load()
             instances = filter_instances(instances, da.sel(model='high_hier'))
 
+        print(f"{len(instances)} out of {num_orig_instances} instances left to do")
         # Return early if there is nothing left to do
         if not instances:
             return
