@@ -75,11 +75,11 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
                      extent=(np.min(data.n_low)-.5, np.max(data.n_low)-.5, -0.5, 0.5))
 
     pts = []
-    for p, style in zip(points, single_point_styles):
-        ph, pl = tuple(map(int, p.DoE.split(':')))
-        if ph <= np.max(data.n_high) and pl <= np.max(data.n_low):
-            handle = ax.scatter(pl, ph, edgecolor='black', **style)
-            pts.append((handle, f'{p.Author} ({p.Year})'))
+    for point, style in zip(points, single_point_styles):
+        point_high, point_low = tuple(map(int, point.DoE.split(':')))
+        if point_high <= np.max(data.n_high) and point_low <= np.max(data.n_low):
+            handle = ax.scatter(point_low, point_high, edgecolor='black', **style)
+            pts.append((handle, f'{point.Author} ({point.Year})'))
 
     fig.colorbar(img, ax=ax, orientation='vertical')
     axy.set_ylabel('#High-fid samples')
