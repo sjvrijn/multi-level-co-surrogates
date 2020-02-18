@@ -30,9 +30,8 @@ for directory in [d for d in data_dir.iterdir() if d.is_dir()]:
     print(directory.name)
 
     for file in [f for f in directory.iterdir() if f.suffix == '.nc']:
-        # TODO: properly use with-statement here?
-        ds = xr.open_dataset(file)
-        da = ds['mses'].load().sel(model='high_hier')
+        with xr.open_dataset(file) as ds:
+            da = ds['mses'].sel(model='high_hier').load()
         reg = proc.fit_lin_reg(da)
         coef = reg.coef_
 
