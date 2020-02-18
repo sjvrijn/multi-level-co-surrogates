@@ -40,8 +40,8 @@ def get_extent(data):
     ]
 
 
-def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100,
-                                 points=(), save_as=None, show=False):
+def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
+                                 contours=0, save_as=None, show=False):
 
     if not (show or save_as):
         return  # no need to make the plot if not showing or saving it
@@ -54,7 +54,9 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100,
     plt.title(f'Median MSE for high (hierarchical) model - {title}')
     img = ax.imshow(data.sel(model='high_hier'), cmap='viridis_r', norm=norm,
                     origin='lower', extent=get_extent(data))
-    ax.contour(data.sel(model='high_hier'), levels=10, colors='black', alpha=.2, linewidths=1)
+    if contours:
+        ax.contour(data.sel(model='high_hier'), levels=contours,
+                   colors='black', alpha=.2, linewidths=1)
 
     divider = make_axes_locatable(ax)
     axx = divider.append_axes("bottom", size=.2, pad=0.05, sharex=ax)
