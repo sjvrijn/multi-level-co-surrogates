@@ -130,9 +130,7 @@ def plot_two_high_vs_low_num_samples(datas, titles, as_log=True,
     if not (show or save_as):
         return  # no need to make the plot if not showing or saving it
 
-
     fig, axes = plt.subplots(ncols=2, figsize=(16,3.5))
-    # fig.subplots_adjust(top=0.8)
 
     for ax, data, title in zip(axes, datas, titles):
 
@@ -140,23 +138,21 @@ def plot_two_high_vs_low_num_samples(datas, titles, as_log=True,
         if as_log:
             data = np.log10(data)
 
-        if not vmin:
-            vmin = np.min(data)
-        if not vmax:
-            vmax = np.max(data)
+        vmin = np.min(data) if not vmin else vmin
+        vmax = np.max(data) if not vmax else vmax
         norm = colors.Normalize(vmin=vmin, vmax=vmax, clip=True)
 
         ax.set_aspect(1.)
-        ax.set_title(f'{title}')
+        extent = get_extent(data)
         img = ax.imshow(data, cmap='viridis_r', norm=norm,
-                        origin='lower', extent=get_extent(data))
+                        origin='lower', extent=extent)
         if contours:
-            ax.contour(data, levels=contours, antialiased=False,
+            ax.contour(data, levels=contours, antialiased=False, extent=extent,
                        colors='black', alpha=.2, linewidths=1)
 
+        ax.set_title(f'{title}')
         ax.set_ylabel('#High-fid samples')
         ax.set_xlabel('#Low-fid samples')
-
 
     fig.colorbar(img, ax=ax, orientation='vertical')
     plt.suptitle('Median MSE for high (hierarchical) model: comparison')
