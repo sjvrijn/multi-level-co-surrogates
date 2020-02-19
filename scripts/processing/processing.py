@@ -42,9 +42,23 @@ def get_extent(data):
 
 def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
                                  contours=0, save_as=None, show=False):
+    """Plot a heatmap of the median MSE for each possible combination of high
+    and low-fidelity samples. For comparison, the MSE for the high-only and
+    low-only models are displayed as a bar to the left and bottom respectively.
 
+    :param data: `xr.DataArray` containing the MSE values
+    :param title: title to use at top of the image
+    :param vmin: minimum value for colorscale normalization
+    :param vmax: maximum value for colorscale normalization
+    :param points: iterable of namedtuples for fixed DoE's to plot
+    :param contours: number of contour lines to draw. Default: 0
+    :param save_as: desired filename for saving the image. Not saved if `None`
+    :param show: whether or not to call `plt.show()`. Default: False
+    :return:
+    """
     if not (show or save_as):
         return  # no need to make the plot if not showing or saving it
+
     norm = colors.LogNorm(vmin=vmin, vmax=vmax, clip=True)
     fig, ax = plt.subplots(figsize=(9,3.5))
 
