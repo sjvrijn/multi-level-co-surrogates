@@ -158,7 +158,7 @@ def plot_two_high_vs_low_num_samples(datas, titles, as_log=True,
         ax.set_xlabel('#Low-fid samples')
 
     plt.suptitle('Median MSE for high (hierarchical) model: comparison')
-    plt.tight_layout(rect=[0, 0, 1, 0.90])
+    plt.tight_layout(rect=[0, 0.05, 1, 0.90])
     if save_as:
         plt.savefig(save_as)
     if show:
