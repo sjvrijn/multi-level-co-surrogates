@@ -80,6 +80,6 @@ for case, surr_name, sub in product(cases, surr_names, sub_from):
 
     plot_name = f'comparison-{surr_name}-{case.ndim}d-{case.name}-sub{sub.high}-{sub.low}-high-low-samples-linear'
 
-    proc.plot_two_high_vs_low_num_samples(mses, titles, case.as_log,
+    proc.plot_two_high_vs_low_num_samples(mses, titles, case.as_log, contours=8,
                                           save_as=plot_dir / f'{plot_name}.pdf')
 
