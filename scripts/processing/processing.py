@@ -110,6 +110,61 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
         plt.show()
 
 
+def plot_two_high_vs_low_num_samples(datas, titles, as_log=True,
+                                     vmin=None, vmax=None, contours=0,
+                                     save_as=None, show=False):
+    """Plot a heatmap of the median MSE for each possible combination of high
+    and low-fidelity samples. For comparison, the MSE for the high-only and
+    low-only models are displayed as a bar to the left and bottom respectively.
+
+    :param datas: `xr.DataArray`s containing the MSE values
+    :param titles: titles to use at top of the image
+    :param as_log: boolean to log-normalize the data or not
+    :param vmin: minimum value for colorscale normalization
+    :param vmax: maximum value for colorscale normalization
+    :param contours: number of contour lines to draw. Default: 0
+    :param save_as: desired filename for saving the image. Not saved if `None`
+    :param show: whether or not to call `plt.show()`. Default: False
+    :return:
+    """
+    if not (show or save_as):
+        return  # no need to make the plot if not showing or saving it
+
+
+    fig, axes = plt.subplots(ncols=2, figsize=(16,3.5))
+    # fig.subplots_adjust(top=0.8)
+
+    for ax, data, title in zip(axes, datas, titles):
+
+        data = data.sel(model='high_hier').median(dim='rep')
+        if as_log:
+            data = np.log10(data)
+
+        if not vmin:
+            vmin = np.min(data)
+        if not vmax:
+            vmax = np.max(data)
+        norm = colors.Normalize(vmin=vmin, vmax=vmax, clip=True)
+
+        ax.set_aspect(1.)
+        ax.set_title(f'{title}')
+        img = ax.imshow(data, cmap='viridis_r', norm=norm,
+                        origin='lower', extent=get_extent(data))
+        if contours:
+            ax.contour(data, levels=contours, antialiased=False,
+                       colors='black', alpha=.2, linewidths=1)
+
+        ax.set_ylabel('#High-fid samples')
+        ax.set_xlabel('#Low-fid samples')
+
+    plt.suptitle('Median MSE for high (hierarchical) model: comparison')
+    plt.tight_layout(rect=[0, 0, 1, 0.90])
+    if save_as:
+        plt.savefig(save_as)
+    if show:
+        plt.show()
+
+
 def plot_high_vs_low_num_samples_diff(data, title, max_diff=None, save_as=None):
 
     paired_diffs = data.sel(model='high') - data.sel(model='high_hier')
