@@ -130,7 +130,7 @@ def plot_two_high_vs_low_num_samples(datas, titles, as_log=True,
     if not (show or save_as):
         return  # no need to make the plot if not showing or saving it
 
-    fig, axes = plt.subplots(ncols=2, figsize=(16,3.5))
+    fig, axes = plt.subplots(ncols=2, figsize=(13,3.5))
 
     for ax, data, title in zip(axes, datas, titles):
 
