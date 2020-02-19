@@ -7,7 +7,6 @@ mse-grid files
 """
 
 from collections import namedtuple
-from itertools import product
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -31,16 +30,17 @@ for directory in [d for d in data_dir.iterdir() if d.is_dir()]:
 
     for file in [f for f in directory.iterdir() if f.suffix == '.nc']:
         with xr.open_dataset(file) as ds:
-            da = ds['mses'].sel(model='high_hier').load()
-        reg = proc.fit_lin_reg(da)
-        coef = reg.coef_
+            da = ds['mses'].sel(model='high_hier')
+        with da.load() as da:
+            reg = proc.fit_lin_reg(da)
+            coef = reg.coef_
 
-        records.append(Record(directory.name, file.stem, *coef))
+            records.append(Record(directory.name, file.stem, *coef))
 
-        # create lin-reg based plots
-        #TODO: factor out into separate function
-        n_high_y = np.array(da.coords['n_high'].values).reshape((-1, 1))
-        n_low_x = np.array(da.coords['n_low'].values).reshape((1, -1))
+            # create lin-reg based plots
+            #TODO: factor out into separate function
+            n_high_y = np.array(da.coords['n_high'].values).reshape((-1, 1))
+            n_low_x = np.array(da.coords['n_low'].values).reshape((1, -1))
 
         out = n_high_y*coef[0] + n_low_x*coef[1] + reg.intercept_
         out = np.triu(out)
@@ -49,11 +49,6 @@ for directory in [d for d in data_dir.iterdir() if d.is_dir()]:
         plt.contour(out, levels=10, colors='black', alpha=.2, linewidths=1)
         plt.title(f"{directory.name}: {file.stem}")
         plt.show()
-
-
-        da.close()
-
-
 
 df = pd.DataFrame.from_records(records, columns=Record._fields)
 print(df.to_latex())
