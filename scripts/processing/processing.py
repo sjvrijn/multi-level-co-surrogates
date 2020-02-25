@@ -41,7 +41,7 @@ def get_extent(data):
 
 
 def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
-                                 contours=0, save_as=None, show=False):
+                                 contours=0, as_log=False, save_as=None, show=False):
     """Plot a heatmap of the median MSE for each possible combination of high
     and low-fidelity samples. For comparison, the MSE for the high-only and
     low-only models are displayed as a bar to the left and bottom respectively.
@@ -52,6 +52,7 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
     :param vmax: maximum value for colorscale normalization
     :param points: iterable of namedtuples for fixed DoE's to plot
     :param contours: number of contour lines to draw. Default: 0
+    :param as_log: display the log10 of the data or not (default False)
     :param save_as: desired filename for saving the image. Not saved if `None`
     :param show: whether or not to call `plt.show()`. Default: False
     :return:
@@ -59,18 +60,27 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
     if not (show or save_as):
         return  # no need to make the plot if not showing or saving it
 
-    norm = colors.LogNorm(vmin=vmin, vmax=vmax, clip=True)
     fig, ax = plt.subplots(figsize=(9,3.5))
 
     ax.set_aspect(1.)
     data = data.median(dim='rep')
+    vmin = np.min(data) if vmin is None else vmin
+    vmax = np.max(data) if vmax is None else vmax
+    if as_log:
+        data = np.log10(data)
+        vmin = np.log10(vmin)
+        vmax = np.log10(vmax)
+        norm = colors.Normalize(vmin=vmin, vmax=vmax, clip=True)
+    else:
+        norm = colors.LogNorm(vmin=vmin, vmax=vmax, clip=True)
 
+    extent = get_extent(data)
     plt.title(f'Median MSE for high (hierarchical) model - {title}')
     img = ax.imshow(data.sel(model='high_hier'), cmap='viridis_r', norm=norm,
-                    origin='lower', extent=get_extent(data))
+                    origin='lower', extent=extent)
     if contours:
-        ax.contour(data.sel(model='high_hier'), levels=contours,
-                   colors='black', alpha=.2, linewidths=1)
+        ax.contour(data.sel(model='high_hier'), levels=contours, antialiased=False,
+                   extent=extent, colors='black', alpha=.2, linewidths=1)
 
     divider = make_axes_locatable(ax)
     axx = divider.append_axes("bottom", size=.2, pad=0.05, sharex=ax)
@@ -108,6 +118,7 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
         plt.savefig(save_as)
     if show:
         plt.show()
+    plt.close()
 
 
 def plot_two_high_vs_low_num_samples(datas, titles, as_log=True,
@@ -159,6 +170,7 @@ def plot_two_high_vs_low_num_samples(datas, titles, as_log=True,
         plt.savefig(save_as)
     if show:
         plt.show()
+    plt.close()
 
 
 def plot_high_vs_low_num_samples_diff(data, title, max_diff=None, save_as=None):
