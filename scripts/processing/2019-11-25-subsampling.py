@@ -29,20 +29,20 @@ Case = namedtuple('Case', 'name ndim vmin vmax max_diff')
 Subsample = namedtuple('Subsample', 'high low')
 
 cases = [
-    Case('Forrester',        1,  None,    None,  100),
+    Case('Forrester',        1,  1e-5,     1e2,  100),
     Case('Forrester',        2,  None,    None,  100),
     Case('Forrester',        4,  None,    None,   10),
     # Case('Forrester',        6,  None,    None,   10),
     # Case('Forrester',        8,  None,    None,   10),
     # Case('Bohachevsky',      2,  None,    None,  100),
     # Case('Booth',            2,  None,    None, 1000),
-    Case('Branin',           2,  None,    None, None),
+    Case('Branin',           2,   1e1,     1e4, None),
     Case('Currin',           2,   .01,      10,   50),
     # Case('Himmelblau',       2,  None,    None, 1000),
     # Case('SixHumpCamelback', 2,  None,    None,  100),
-    Case('Park91A',          4,  None,    None,    1),
+    Case('Park91A',          4,  1e-3,     1e2,    1),
     # Case('Park91B',          4,  None,    None,    1),
-    Case('Hartmann6',        6,  None,    None, None),
+    Case('Hartmann6',        6,  1e-2,    1e-1, None),
     Case('Borehole',         8,    10,    3000,  1e4),
 ]
 
