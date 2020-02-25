@@ -263,7 +263,7 @@ def plot_model_and_samples(func, kernel, scaling_option, instance):
                          f"plot_model_and_samples. Only 1D and 2D are supported")
 
 
-def create_model_error_grid(func, instances, mfbo_options, save_dir):
+def create_model_error_grid(func, instances, mfbo_options, save_dir, plot_1d=False):
     """Create a grid of model errors for the given MFF-function case at the
     given list of instances.
     The results are saved in a NETCDF .nc file at the specified `save_dir`"""
@@ -326,6 +326,15 @@ def create_model_error_grid(func, instances, mfbo_options, save_dir):
                                 mfbo.direct_models['high'],
                                 mfbo.models['low']]
                   ]
+
+        if plot_1d:
+            X = np.linspace(0, 1, 1001).reshape((-1, 1))
+            plt.scatter(low_x, low_y, s=20)
+            plt.scatter(high_x, high_y, s=15)
+            plt.plot(X, mfbo.models['high'].predict(X))
+            plt.plot(X, func.high(X))
+            plt.savefig(save_dir / f'1d-forrester-visualization-{num_high}-{num_low}.png')
+            plt.close()
 
         # Store the results
         results.append((mses, r2s, values))
