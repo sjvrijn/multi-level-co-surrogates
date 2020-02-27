@@ -27,21 +27,21 @@ function_cases = [
     mf2.forrester,
 
     mf2.Forrester(ndim=2),
-    # mf2.bohachevsky,
-    # mf2.booth,
+    mf2.bohachevsky,
+    mf2.booth,
     mf2.branin,
     mf2.currin,
-    # mf2.himmelblau,
-    # mf2.six_hump_camelback,
+    mf2.himmelblau,
+    mf2.six_hump_camelback,
 
     mf2.Forrester(ndim=4),
     mf2.park91a,
-    # mf2.park91b,
+    mf2.park91b,
 
-    # mf2.Forrester(ndim=6),
+    mf2.Forrester(ndim=6),
     mf2.hartmann6,
 
-    # mf2.Forrester(ndim=8),
+    mf2.Forrester(ndim=8),
     mf2.borehole,
 ]
 
@@ -55,11 +55,12 @@ else:
 
 
 DoE_high, DoE_low = 50, 125
+final_num_reps = 15
 
 min_high, max_high = 2, int(DoE_high * scale)
 min_low, max_low = 3, int(DoE_low * scale)
 step = 1
-num_reps = int(50 * scale)
+num_reps = max(1, int(final_num_reps * scale))
 
 instances = [Instance(h, l, r)
              for h, l, r in product(range(min_high, max_high),
