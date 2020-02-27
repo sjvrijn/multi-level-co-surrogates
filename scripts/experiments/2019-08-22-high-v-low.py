@@ -18,7 +18,7 @@ import mf2
 
 from experiments import Instance, create_model_error_grid
 
-save_dir = here('files/2019-08-mse-nc/')
+save_dir = here('files/2019-09-mse-nc/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
 cases = [
