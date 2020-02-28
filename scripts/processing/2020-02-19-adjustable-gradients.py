@@ -25,43 +25,51 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 data_dir = here("files/2019-10-07-adjustables")
 
 fname_template = re.compile('[A-Za-z]*-(\d+)d-Adjustable([A-Za-z]*3?)([01].\d+).nc')
-Record = namedtuple('Record', 'fname ndim param pearson_r pearson_r2 spearman_r spearman_r2 alpha beta gamma theta')
-records = []
 
 correlations = pd.read_csv(here('files') / 'correlations.csv', index_col=0)
+extended_correlations_path = here('files') / 'extended_correlations.csv'
 
 to_plot = defaultdict(list)
 
 
 
+def store_extended_correlations():
 
-for file in [f for f in sorted(data_dir.iterdir()) if f.suffix == '.nc']:
-    match = fname_template.match(file.name)
-    if not match:
-        continue
-
-    ndim, func_name, value = match.groups()
-    row = correlations.loc[(correlations['name'] == func_name.lower()) & (correlations['param'] == float(value))].squeeze()
-    corrs = row['pearson_r':'spearman_r2']
-
-    with xr.open_dataset(file) as ds:
-        da = ds['mses'].sel(model='high_hier')
-    with da.load() as da:
-        reg = proc.fit_lin_reg(da)
-    coef = reg.coef_
-    angle = np.arctan2(*reg.coef_[:2])
-    deg_angle = (angle*180 / np.pi) % 180
-    print(coef[:2], angle, deg_angle)
-
-    records.append(Record(*row, *coef, angle))
-
-    to_plot[func_name].append((corrs['pearson_r'], deg_angle))
+    Record = namedtuple('Record', 'fname ndim param pearson_r pearson_r2 spearman_r spearman_r2 alpha beta gamma theta')
+    records = []
 
 
-#from pprint import pprint
-#pprint(to_plot)
+    for file in [f for f in sorted(data_dir.iterdir()) if f.suffix == '.nc']:
+        match = fname_template.match(file.name)
+        if not match:
+            continue
 
-pd.DataFrame.from_records(records, columns=Record._fields).to_csv(here('files') / 'extended_correlations.csv', index=False)
+        ndim, func_name, value = match.groups()
+        row = correlations.loc[(correlations['name'] == func_name.lower()) & (correlations['param'] == float(value))].squeeze()
+        corrs = row['pearson_r':'spearman_r2']
+
+        with xr.open_dataset(file) as ds:
+            da = ds['mses'].sel(model='high_hier')
+        with da.load() as da:
+            reg = proc.fit_lin_reg(da)
+        coef = reg.coef_
+        angle = np.arctan2(*reg.coef_[:2])
+        deg_angle = (angle*180 / np.pi) % 180
+        print(coef[:2], angle, deg_angle)
+
+        records.append(Record(*row, *coef, angle))
+
+        to_plot[func_name].append((corrs['pearson_r'], deg_angle))
+
+    pd.DataFrame.from_records(records, columns=Record._fields).to_csv(here('files') / 'extended_correlations.csv', index=False)
+
+
+if not extended_correlations_path.exists():
+    store_extended_correlations()
+
+extended_correlations = pd.read_csv(extended_correlations_path)
+
+
 
 
 for func_name, data in to_plot.items():
