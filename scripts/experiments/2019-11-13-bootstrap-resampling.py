@@ -69,7 +69,10 @@ instances = [Instance(h, l, r)
              if h < l]
 
 
-mfbo_options = {'kernel': 'Matern', 'scaling': 'off'}
+mfbo_options = {
+    'surrogate_name': 'ElasticNet',
+    # 'kernel': 'Matern',
+    'scaling': 'off'}
 
 
 for case in function_cases:
