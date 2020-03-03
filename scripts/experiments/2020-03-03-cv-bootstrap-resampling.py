@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-2019-11-13-bootstrap-resampling.py: runner file for bootstrap resampling
+2020-03-03-cv-bootstrap-resampling.py: runner file for bootstrap resampling
 experiments: is the mse-plot gradient also visible in mse-plots based on
-bootstrap-resampled DoE's?
+bootstrap-resampled DoE's? Additionally calculates MSE and R^2 based on
+cross-validation principle by using only the left-out data
 """
 
 __author__ = 'Sander van Rijn'
@@ -18,9 +19,9 @@ from pyprojroot import here
 
 import mf2
 
-from experiments import Instance, create_resampling_error_grid
+from experiments import Instance, create_resampling_leftover_error_grid
 
-save_dir = here('files/2019-11-15-subsampling/')
+save_dir = here('files/2020-03-03-cv-subsampling/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
 function_cases = [
@@ -70,10 +71,12 @@ instances = [Instance(h, l, r)
 
 
 mfbo_options = {
-    'surrogate_name': 'ElasticNet',
-    # 'kernel': 'Matern',
-    'scaling': 'off'}
+    # 'surrogate_name': 'ElasticNet',
+    'kernel': 'Matern',
+    'scaling': 'off'
+}
 
 
 for case in function_cases:
-    create_resampling_error_grid(case, (DoE_high, DoE_low), instances, mfbo_options, save_dir)
+    create_resampling_leftover_error_grid(case, (DoE_high, DoE_low),
+                                          instances, mfbo_options, save_dir)

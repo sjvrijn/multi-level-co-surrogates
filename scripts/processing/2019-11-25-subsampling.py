@@ -49,6 +49,7 @@ cases = [
 
 surr_names = [
     'Matern',
+    # 'ElasticNet',
 ]
 
 # with open(data_dir/"DoE-configs.csv", newline="") as infile:

@@ -273,6 +273,8 @@ def create_model_error_grid(func, instances, mfbo_options, save_dir, plot_1d=Fal
     print(f"Starting case {func}")
     print(f"{len(instances)} instances passed in")
 
+    Results = namedtuple('Results', 'mses r2 values')
+
     # Determine unique output path for this experiment
     surr_name = repr_surrogate_name(mfbo_options)
     output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name}.nc"
@@ -337,7 +339,7 @@ def create_model_error_grid(func, instances, mfbo_options, save_dir, plot_1d=Fal
             plt.close()
 
         # Store the results
-        results.append((mses, r2s, values))
+        results.append(Results(mses, r2s, values))
 
     print(f'{len(instances)}/{len(instances)}')
 
@@ -377,6 +379,8 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options, save_d
 
     start = datetime.now()
     print(f"Starting case {func} at {start}")
+
+    Results = namedtuple('Results', 'mses r2 values')
 
     # Determine unique output path for this experiment
     surr_name = repr_surrogate_name(mfbo_options)
@@ -436,7 +440,7 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options, save_d
                   ]
 
         # Store the results
-        results.append((mses, r2s, values))
+        results.append(Results(mses, r2s, values))
 
     print(f'{len(instances)}/{len(instances)}')
 
@@ -477,6 +481,8 @@ def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_option
 
     start = datetime.now()
     print(f"Starting case {func} at {start}")
+
+    Results = namedtuple('Results', 'mses r2 values cv_mses cv_r2')
 
     # Determine unique output path for this experiment
     surr_name = repr_surrogate_name(mfbo_options)
@@ -540,24 +546,25 @@ def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_option
             (test.low, test_low_y),
         ]
 
-        # Get the results we're interested in from the model for this instance
-        mses = mfbo.MSECollection(*[
-            mean_squared_error(y_true, model.predict(x_pred))
-            for (x_pred, y_true), model in zip(test_samples, models)
-        ])
-        r2s = mfbo.R2Collection(*[
-            r2_score(y_true, model.predict(x_pred))
-            for (x_pred, y_true), model in zip(test_samples, models)
-        ])
-
-        #TODO still old-style...
+        mses = mfbo.getMSE()
+        r2s = mfbo.getR2()
         values = [
             model.predict(mfbo.test_sample).flatten()
             for model in models
         ]
 
+        # Get the results we're interested in from the model for this instance
+        cv_mses = mfbo.MSECollection(*[
+            mean_squared_error(y_true, model.predict(x_pred))
+            for (x_pred, y_true), model in zip(test_samples, models)
+        ])
+        cv_r2s = mfbo.R2Collection(*[
+            r2_score(y_true, model.predict(x_pred))
+            for (x_pred, y_true), model in zip(test_samples, models)
+        ])
+
         # Store the results
-        results.append((mses, r2s, values))
+        results.append(Results(mses, r2s, values, cv_mses, cv_r2s))
 
     print(f'{len(instances)}/{len(instances)}')
 
@@ -572,7 +579,7 @@ def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_option
                       surrogate_name=mfbo_options.get('surrogate_name', 'Kriging'),
                       scaling=mfbo_options['scaling'])
 
-    ## Iteration finished, arranging data into xr.Dataset
+    ## Iteration finished, arranging data into an xr.Dataset
     output = results_to_dataset(results, instances, mfbo_options, attributes)
 
 
@@ -594,66 +601,37 @@ def results_to_dataset(results, instances, mfbo_options, attributes):
     """"Manually creating numpy arrays to store the data for eventual
     reading in as XArray DataArray/DataSet"""
 
-    n_test_samples = mfbo_options['test_sample'].shape[0]
-
     # Hardcoded model names
     models = ['high_hier', 'high', 'low']
-
     # Get lists of unique entries per instance parameter
     n_highs, n_lows, reps = map(uniquify, zip(*instances))
+    n_test_samples = mfbo_options['test_sample'].shape[0]
+
+    common_shape = (len(n_highs), len(n_lows), len(reps), len(models))
+    arrays = {}
 
     # Create empty numpy arrays with the correct minimal size according
-    common_shape = (len(n_highs), len(n_lows), len(reps), len(models))
-    mse_tracking = np.full(common_shape, np.nan)
-    r2_tracking = np.full(common_shape, np.nan)
-    value_tracking = np.full((*common_shape, n_test_samples), np.nan)
+    for name, example in zip(results[0]._fields, results[0]):
+        if np.array(example).size > len(models):
+            shape = (*common_shape, n_test_samples)
+        else:
+            shape = common_shape
+        arrays[name] = np.full(shape, np.nan)
 
     # Create explicit indices at which values have to be inserted in numpy arrays
     indices = indexify_instances(instances)
 
-    # Transfer the results from sipmle list to numpy array
-    for index, (mses, r2s, values) in zip(indices, results):
-        mse_tracking[index] = mses
-        r2_tracking[index] = r2s
-        value_tracking[index] = values
+    for index, result in zip(indices, results):
+        for name, values in zip(result._fields, result):
+            arrays[name][index] = values
 
-    # Create separate DataArrays for each numpy array
-    mse_tracking = xr.DataArray(mse_tracking,
-                                dims=['n_high', 'n_low', 'rep', 'model'],
-                                coords=[n_highs, n_lows, reps, models],
-                                attrs=attributes)
-    r2_tracking = xr.DataArray(r2_tracking,
-                               dims=['n_high', 'n_low', 'rep', 'model'],
-                               coords=[n_highs, n_lows, reps, models],
-                               attrs=attributes)
-    value_tracking = xr.DataArray(value_tracking,
-                                  dims=['n_high', 'n_low', 'rep', 'model', 'idx'],
-                                  coords={'n_high': n_highs, 'n_low': n_lows,
-                                          'rep': reps, 'model': models,
-                                          'idx': range(n_test_samples)},
-                                  attrs=attributes)
-
-
-    ### Pandas-based alternative:
-    # mses, r2s, values = [np.array(x) for x in zip(*results)]
-    #
-    # multi_index_values = [(*instance, model) for instance, model in
-    #                       product(instances, models)]
-    # multi_index = pd.MultiIndex.from_tuples(tuples=multi_index_values,
-    #                                         names=['n_high', 'n_low', 'rep', 'model'])
-    # mse_tracking = xr.DataArray.from_series(pd.Series(data=mses.flatten(), index=multi_index))
-    # r2_tracking = xr.DataArray.from_series(pd.Series(data=r2s.flatten(), index=multi_index))
-    #
-    # multi_index_values = [(*instance, model, idx) for instance, model, idx in
-    #                       product(instances, models, range(n_test_samples))]
-    # multi_index = pd.MultiIndex.from_tuples(tuples=multi_index_values,
-    #                                         names=['n_high', 'n_low', 'rep', 'model', 'idx'])
-    # value_tracking = xr.DataArray.from_series(pd.Series(data=values.flatten(), index=multi_index))
-
-
-    # Assembling Dataset from DataArrays
-    output = xr.Dataset({'mses': mse_tracking,
-                         'r2': r2_tracking,
-                         'values': value_tracking})
+    all_dims = ['n_high', 'n_low', 'rep', 'model', 'idx']
+    output = xr.Dataset(data_vars={name: (all_dims[:values.ndim], values, attributes)
+                                   for name, values in arrays.items()},
+                        coords={'n_high': n_highs,
+                                'n_low': n_lows,
+                                'rep': reps,
+                                'model': models,
+                                'idx': range(n_test_samples),})
 
     return output
