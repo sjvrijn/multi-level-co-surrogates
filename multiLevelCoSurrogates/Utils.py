@@ -222,7 +222,7 @@ def rescale(values, *, range_in=None, range_out=ValueRange(0, 1), scale_only=Fal
 
 def calc_numsteps(low, high, step, endpoint=True):
     """Calculate the number of 'step' steps between 'low' and 'high'"""
-    num_steps = (high - low) / step
+    num_steps = (high - low) // step
     if endpoint:
         num_steps += 1
     return num_steps
