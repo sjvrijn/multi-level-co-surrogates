@@ -4,7 +4,8 @@
 """
 2020-02-19-adjustable0gradients.py: script to create scatterplots of the
 gradients in the error versus the actual correlation between high- and low-
-fidelity functions.
+fidelity functions. Creates a csv of the all relevant values as intermediate
+step to speed up any potential rerun.
 """
 
 from collections import namedtuple
@@ -35,7 +36,10 @@ extended_correlations_path = here('files') / 'extended_correlations.csv'
 
 def store_extended_correlations():
 
-    Record = namedtuple('Record', 'fname ndim param pearson_r pearson_r2 spearman_r spearman_r2 alpha beta gamma theta')
+    Record = namedtuple(
+        'Record', 'fname ndim param pearson_r pearson_r2 spearman_r spearman_r2 '
+                  'alpha beta gamma theta deg'
+    )
     records = []
 
     for file in [f for f in sorted(data_dir.iterdir()) if f.suffix == '.nc']:
@@ -44,28 +48,31 @@ def store_extended_correlations():
             continue
 
         ndim, func_name, value = match.groups()
-        row = correlations.loc[(correlations['name'] == func_name.lower()) & (correlations['param'] == float(value))].squeeze()
+        row = correlations.loc[(correlations['name'] == func_name.lower())
+                               & (correlations['param'] == float(value))].squeeze()
 
         with xr.open_dataset(file) as ds:
             da = ds['mses'].sel(model='high_hier')
         with da.load() as da:
             reg = proc.fit_lin_reg(da)
         coef = reg.coef_
-        angle = np.arctan2(*reg.coef_[:2])
-        records.append(Record(*row, *coef, angle))
+        theta = np.arctan2(*reg.coef_[:2])
+        deg = np.rad2deg(theta) % 180
+        records.append(Record(*row, *coef, theta, deg))
 
-    pd.DataFrame.from_records(records, columns=Record._fields).to_csv(here('files') / 'extended_correlations.csv', index=False)
+    df = pd.DataFrame.from_records(records, columns=Record._fields)
+    df.to_csv(here('files') / 'extended_correlations.csv', index=False)
+    return df
 
 
 if not extended_correlations_path.exists():
-    store_extended_correlations()
-
-extended_correlations = pd.read_csv(extended_correlations_path)
+    extended_correlations = store_extended_correlations()
+else:
+    extended_correlations = pd.read_csv(extended_correlations_path)
 
 
 for func_name, sub_df in extended_correlations.groupby('fname'):
-    x, y = sub_df['pearson_r'].values, sub_df['theta'].values
-    y = np.rad2deg(y) % 180
+    x, y = sub_df['pearson_r'].values, sub_df['deg'].values
     plt.scatter(x, y)
     plt.axhline(y=90, alpha=.5, color='black')
     plt.title(func_name)
@@ -78,8 +85,7 @@ for func_name, sub_df in extended_correlations.groupby('fname'):
 
 
 for func_name, sub_df in extended_correlations.groupby('fname'):
-    x, y = sub_df['pearson_r'].values, sub_df['theta'].values
-    y = np.rad2deg(y) % 180
+    x, y = sub_df['pearson_r'].values, sub_df['deg'].values
     plt.scatter(x, y, label=func_name)
 
 
