@@ -94,25 +94,36 @@ ylabel = 'Angle of Gradient'
 xticks = np.linspace(-1, 1, 11)
 
 
+for category, df in extended_correlations.groupby('category'):
+    for func_name, sub_df in df.groupby('fname'):
+        x, y = sub_df['pearson_r'].values, sub_df['deg'].values
+        plt.scatter(x, y)
+        plt.axhline(**line_at_90)
+        plt.title(func_name)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.xticks(xticks)
+        plt.grid(**grid_style)
+        plt.tight_layout()
+        plt.savefig(plot_dir / f'{category}-{func_name}.png')
+        plt.savefig(plot_dir / f'{category}-{func_name}.pdf')
+        plt.close()
 
-for func_name, sub_df in extended_correlations.groupby('fname'):
+
+fig, ax = plt.subplots(figsize=(8,4.8), constrained_layout=True)
+
+adjustables = extended_correlations.loc[extended_correlations['category'] == 'adjustable']
+for func_name, sub_df in adjustables.groupby('fname'):
     x, y = sub_df['pearson_r'].values, sub_df['deg'].values
-    plt.scatter(x, y)
-    plt.axhline(**line_at_90)
-    plt.title(func_name)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.xticks(xticks)
-    plt.grid(**grid_style)
-    plt.tight_layout()
-    plt.savefig(plot_dir / f'{func_name}.png')
-    plt.savefig(plot_dir / f'{func_name}.pdf')
-    plt.close()
+    #plt.scatter(x, y, marker='.', label=func_name)
+    plt.plot(x, y, linestyle='-', linewidth=.3, marker='.', label=f'adjustable {func_name}')
 
 
-for func_name, sub_df in extended_correlations.groupby('fname'):
+regulars = extended_correlations.loc[extended_correlations['category'] == 'regular']
+markers = 'ov^<>+x*1234'
+for (func_name, sub_df), marker in zip(regulars.groupby('fname'), markers):
     x, y = sub_df['pearson_r'].values, sub_df['deg'].values
-    plt.scatter(x, y, label=func_name)
+    plt.scatter(x, y, marker=marker, label=func_name)
 
 
 plt.axhline(**line_at_90)
@@ -121,8 +132,14 @@ plt.xlabel(xlabel)
 plt.ylabel(ylabel)
 plt.xticks(xticks)
 plt.grid(**grid_style)
-plt.legend(loc=0)
-plt.tight_layout()
+
+# Shrink current axis by 20%
+box = ax.get_position()
+ax.set_position([box.x0, box.y0, box.width * 0.75, box.height])
+
+# Put a legend to the right of the current axis
+ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
 plt.savefig(plot_dir / 'comparison.png')
 plt.savefig(plot_dir / 'comparison.pdf')
 plt.close()
