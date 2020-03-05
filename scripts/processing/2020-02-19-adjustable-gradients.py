@@ -30,17 +30,16 @@ plot_dir.mkdir(exist_ok=True, parents=True)
 
 fname_template = re.compile(r'[A-Za-z]*-(\d+)d-Adjustable([A-Za-z]*3?)([01].\d+).nc')
 
-correlations = pd.read_csv(here('files') / 'correlations.csv', index_col=0)
+correlations = pd.read_csv(here('files') / 'correlations.csv')
 extended_correlations_path = here('files') / 'extended_correlations.csv'
-
 
 
 def store_extended_correlations():
 
     Record = namedtuple(
 
-        'Record', 'category fname ndim param '
-                  'pearson_r pearson_r2 spearman_r spearman_r2 '
+        'Record', 'category fname ndim pearson_r pearson_r2 '
+                  'spearman_r spearman_r2 param '
                   'alpha beta gamma theta deg'
     )
     records = []
@@ -52,14 +51,16 @@ def store_extended_correlations():
         else:
             fname_template = re.compile(r'[A-Za-z]*-(\d+)d-Adjustable([A-Za-z]*3?)([01].\d+).nc')
 
-        for file in sorted(adjustables_dir.iterdir()):
+        for file in sorted(directory.iterdir()):
             match = fname_template.match(file.name)
             if not match:
                 continue
 
             if category == 'regular':
                 ndim, func_name = match.groups()
-                row = correlations.loc[correlations['name'] == func_name.lower()].squeeze()
+                row = correlations.loc[(correlations['category'] == 'regular')
+                                       & (correlations['name'] == func_name.lower())
+                                       & (correlations['ndim'] == int(ndim))].squeeze()
             else:
                 ndim, func_name, value = match.groups()
                 row = correlations.loc[(correlations['name'] == func_name.lower())
@@ -72,7 +73,7 @@ def store_extended_correlations():
             coef = reg.coef_
             theta = np.arctan2(*reg.coef_[:2])
             deg = np.rad2deg(theta) % 180
-            records.append(Record(category, *row, *coef, theta, deg))
+            records.append(Record(*row, *coef, theta, deg))
 
     df = pd.DataFrame.from_records(records, columns=Record._fields)
     df.to_csv(here('files') / 'extended_correlations.csv', index=False)
