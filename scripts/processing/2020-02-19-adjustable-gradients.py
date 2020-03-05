@@ -48,7 +48,7 @@ def store_extended_correlations():
     for category, directory in zip(('regular', 'adjustable'),
                                    [regulars_dir, adjustables_dir]):
         if category == 'regular':
-            fname_template = re.compile(r'[A-Za-z]*-(\d+)d-([A-Za-z0-9]).nc')
+            fname_template = re.compile(r'[A-Za-z]*-(\d+)d-([A-Za-z0-9]*).nc')
         else:
             fname_template = re.compile(r'[A-Za-z]*-(\d+)d-Adjustable([A-Za-z]*3?)([01].\d+).nc')
 
