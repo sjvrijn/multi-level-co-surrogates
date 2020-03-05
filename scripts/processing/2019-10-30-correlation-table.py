@@ -95,5 +95,5 @@ adjustables_correlations.to_latex(save_dir / 'adjustables-correlations.tex')
 all_correlations = pd.concat([regular_correlations, adjustables_correlations],
                              keys=['regular', 'adjustable'],
                              names=['category'],
-                             sort=False,).reset_index()
+                             sort=False,).reset_index('category')
 all_correlations.to_csv(here('files') / 'correlations.csv', index=False)
