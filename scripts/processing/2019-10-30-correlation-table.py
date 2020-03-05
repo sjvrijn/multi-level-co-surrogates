@@ -66,7 +66,8 @@ forrester_correlations.to_latex(save_dir / 'forrester-correlations-table.tex',
                                 index=False)
 
 
-regular_correlations = pd.concat([bi_fid_correlations, forrester_correlations])
+regular_correlations = pd.concat([bi_fid_correlations, forrester_correlations],
+                                 ignore_index=True)
 regular_correlations = regular_correlations.drop_duplicates()
 
 
@@ -87,12 +88,13 @@ for func in mf2.adjustable.bifidelity_functions:
             Adj_Corr_result(func.__name__, f.ndim, a, pear, pear**2, spear, spear**2))
 
 adjustables_correlations = pd.DataFrame.from_records(results, columns=Adj_Corr_result._fields)
-adjustables_correlations.to_csv(here('files') / 'adjustables_correlations.csv')
+adjustables_correlations.to_csv(here('files') / 'adjustables_correlations.csv', index=False)
 adjustables_correlations.to_latex(save_dir / 'adjustables-correlations.tex')
 
-# %%
 
 all_correlations = pd.concat([regular_correlations, adjustables_correlations],
                              keys=['regular', 'adjustable'],
-                             sort=False)
-all_correlations.to_csv(here('files') / 'correlations.csv')
+                             names=['category'],
+                             sort=False,
+                             ignore_index=True,)
+all_correlations.to_csv(here('files') / 'correlations.csv', index=False)
