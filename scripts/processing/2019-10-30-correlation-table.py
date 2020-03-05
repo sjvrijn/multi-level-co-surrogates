@@ -44,7 +44,7 @@ for i, f in enumerate(mf2.bi_fidelity_functions):
 
     y_h, y_l = f.high(sample), f.low(sample)
     pear, spear = pearsonr(y_h, y_l)[0], spearmanr(y_h, y_l)[0]
-    results.append(Corr_result(f.name, f.ndim, pear, pear**2, spear, spear**2))
+    results.append(Corr_result(f.name.lower(), f.ndim, pear, pear**2, spear, spear**2))
 
 bi_fid_correlations = pd.DataFrame.from_records(results, columns=Corr_result._fields)
 bi_fid_correlations = bi_fid_correlations.sort_values(by=['ndim', 'name'])
@@ -58,7 +58,7 @@ for ndim, sample in test_sample.items():
     y_h, y_l = mf2.forrester.high(sample), mf2.forrester.low(sample)
     pear, spear = pearsonr(y_h, y_l)[0], spearmanr(y_h, y_l)[0]
     results.append(
-        Corr_result(mf2.forrester.name, ndim, pear, pear**2, spear, spear**2))
+        Corr_result(mf2.forrester.name.lower(), ndim, pear, pear**2, spear, spear**2))
 
 forrester_correlations = pd.DataFrame.from_records(results,
                                                    columns=Corr_result._fields)
