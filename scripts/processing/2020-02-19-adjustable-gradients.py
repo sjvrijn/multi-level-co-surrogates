@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-2020-02-19-adjustable0gradients.py: script to create scatterplots of the
+2020-02-19-adjustable-gradients.py: script to create scatterplots of the
 gradients in the error versus the actual correlation between high- and low-
 fidelity functions. Creates a csv of the all relevant values as intermediate
 step to speed up any potential rerun.
@@ -71,13 +71,24 @@ else:
     extended_correlations = pd.read_csv(extended_correlations_path)
 
 
+line_at_90 = dict(y=90, alpha=.5, color='black')
+grid_style = dict(b=True, alpha=.5, linestyle=':')
+xlabel = 'Correlation $r$'
+ylabel = 'Angle of Gradient'
+
+xticks = np.linspace(-1, 1, 11)
+
+
+
 for func_name, sub_df in extended_correlations.groupby('fname'):
     x, y = sub_df['pearson_r'].values, sub_df['deg'].values
     plt.scatter(x, y)
-    plt.axhline(y=90, alpha=.5, color='black')
+    plt.axhline(**line_at_90)
     plt.title(func_name)
-    plt.xlabel('Correlation $r$')
-    plt.ylabel('Angle of gradient')
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.xticks(xticks)
+    plt.grid(**grid_style)
     plt.tight_layout()
     plt.savefig(plot_dir / f'{func_name}.png')
     plt.savefig(plot_dir / f'{func_name}.pdf')
@@ -89,10 +100,12 @@ for func_name, sub_df in extended_correlations.groupby('fname'):
     plt.scatter(x, y, label=func_name)
 
 
-plt.axhline(y=90, alpha=.5, color='black')
+plt.axhline(**line_at_90)
 plt.title("Comparing Adjustable Functions")
-plt.xlabel('Correlation $r$')
-plt.ylabel('Angle of gradient')
+plt.xlabel(xlabel)
+plt.ylabel(ylabel)
+plt.xticks(xticks)
+plt.grid(**grid_style)
 plt.legend(loc=0)
 plt.tight_layout()
 plt.savefig(plot_dir / 'comparison.png')
