@@ -23,7 +23,8 @@ import processing as proc
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-data_dir = here("files/2019-10-07-adjustables")
+regulars_dir = here('files/2019-09-mse-nc/')
+adjustables_dir = here("files/2019-10-07-adjustables/")
 plot_dir = here("plots") / '2020-02-19-adjustable-gradients/'
 plot_dir.mkdir(exist_ok=True, parents=True)
 
@@ -37,28 +38,41 @@ extended_correlations_path = here('files') / 'extended_correlations.csv'
 def store_extended_correlations():
 
     Record = namedtuple(
-        'Record', 'fname ndim param pearson_r pearson_r2 spearman_r spearman_r2 '
+
+        'Record', 'category fname ndim param '
+                  'pearson_r pearson_r2 spearman_r spearman_r2 '
                   'alpha beta gamma theta deg'
     )
     records = []
 
-    for file in [f for f in sorted(data_dir.iterdir()) if f.suffix == '.nc']:
-        match = fname_template.match(file.name)
-        if not match:
-            continue
+    for category, directory in zip(('regular', 'adjustable'),
+                                   [regulars_dir, adjustables_dir]):
+        if category == 'regular':
+            fname_template = re.compile(r'[A-Za-z]*-(\d+)d-([A-Za-z0-9]).nc')
+        else:
+            fname_template = re.compile(r'[A-Za-z]*-(\d+)d-Adjustable([A-Za-z]*3?)([01].\d+).nc')
 
-        ndim, func_name, value = match.groups()
-        row = correlations.loc[(correlations['name'] == func_name.lower())
-                               & (correlations['param'] == float(value))].squeeze()
+        for file in sorted(adjustables_dir.iterdir()):
+            match = fname_template.match(file.name)
+            if not match:
+                continue
 
-        with xr.open_dataset(file) as ds:
-            da = ds['mses'].sel(model='high_hier')
-        with da.load() as da:
-            reg = proc.fit_lin_reg(da)
-        coef = reg.coef_
-        theta = np.arctan2(*reg.coef_[:2])
-        deg = np.rad2deg(theta) % 180
-        records.append(Record(*row, *coef, theta, deg))
+            if category == 'regular':
+                ndim, func_name = match.groups()
+                row = correlations.loc[correlations['name'] == func_name.lower()].squeeze()
+            else:
+                ndim, func_name, value = match.groups()
+                row = correlations.loc[(correlations['name'] == func_name.lower())
+                                       & (correlations['param'] == float(value))].squeeze()
+
+            with xr.open_dataset(file) as ds:
+                da = ds['mses'].sel(model='high_hier')
+            with da.load() as da:
+                reg = proc.fit_lin_reg(da)
+            coef = reg.coef_
+            theta = np.arctan2(*reg.coef_[:2])
+            deg = np.rad2deg(theta) % 180
+            records.append(Record(category, *row, *coef, theta, deg))
 
     df = pd.DataFrame.from_records(records, columns=Record._fields)
     df.to_csv(here('files') / 'extended_correlations.csv', index=False)
