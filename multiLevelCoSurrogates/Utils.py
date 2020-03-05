@@ -225,7 +225,7 @@ def calc_numsteps(low, high, step, endpoint=True):
     num_steps = (high - low) // step
     if endpoint:
         num_steps += 1
-    return num_steps
+    return int(num_steps)
 
 
 def create_meshgrid(l_bound, step, u_bound):
