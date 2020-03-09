@@ -121,9 +121,9 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
     plt.close()
 
 
-def plot_two_high_vs_low_num_samples(datas, titles, as_log=True,
-                                     vmin=None, vmax=None, contours=0,
-                                     save_as=None, show=False):
+def plot_multiple_high_vs_low_num_samples(datas, titles, as_log=True,
+                                          vmin=None, vmax=None, contours=0,
+                                          save_as=None, show=False):
     """Plot a heatmap of the median MSE for each possible combination of high
     and low-fidelity samples. For comparison, the MSE for the high-only and
     low-only models are displayed as a bar to the left and bottom respectively.
@@ -141,7 +141,9 @@ def plot_two_high_vs_low_num_samples(datas, titles, as_log=True,
     if not (show or save_as):
         return  # no need to make the plot if not showing or saving it
 
-    fig, axes = plt.subplots(ncols=2, figsize=(13,3.25))
+    ncols = len(datas)
+    figsize = (6.5*ncols, 3.25)
+    fig, axes = plt.subplots(ncols=ncols, figsize=figsize)
 
     for ax, data, title in zip(axes, datas, titles):
 
