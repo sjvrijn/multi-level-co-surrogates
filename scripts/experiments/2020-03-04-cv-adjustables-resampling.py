@@ -33,12 +33,16 @@ function_cases = [
 ]
 
 
-if len(sys.argv) > 1:
+scale = 1
+seed_offset = 0
+
+if len(sys.argv) >= 3:
     case_idx = int(sys.argv[1])
     function_cases = function_cases[case_idx:case_idx+1]
     scale = float(sys.argv[2])
-else:
-    scale = 1
+
+if len(sys.argv) == 4:
+    seed_offset = int(sys.argv[3])
 
 
 DoE_high, DoE_low = 50, 125
@@ -65,4 +69,5 @@ mfbo_options = {
 
 for case in function_cases:
     create_resampling_leftover_error_grid(case, (DoE_high, DoE_low),
-                                          instances, mfbo_options, save_dir)
+                                          instances, mfbo_options, save_dir,
+                                          seed_offset=seed_offset)

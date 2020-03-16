@@ -473,7 +473,8 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options, save_d
           f"Time spent: {str(end - start)}")
 
 
-def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_options, save_dir):
+def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_options,
+                                          save_dir, seed_offset=0):
     """Create a grid of model errors for the given MFF-function at the
     given list of instances, with all data for training the model being based
     on an initial given DoE specification.
@@ -487,7 +488,7 @@ def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_option
     # Determine unique output path for this experiment
     surr_name = repr_surrogate_name(mfbo_options)
     doe_high, doe_low = DoE_spec
-    output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name}-sub{doe_high}-{doe_low}.nc"
+    output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name}-sub{doe_high}-{doe_low}-seed{seed_offset}.nc"
 
 
     # Don't redo any prior data that already exists
@@ -506,7 +507,7 @@ def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_option
 
 
     # Create initial DoE
-    np.random.seed(20160501)  # Setting seed for reproducibility
+    np.random.seed(20160501 + seed_offset)  # Setting seed for reproducibility
     DoE = bi_fidelity_doe(func.ndim, doe_high, doe_low)
     DoE = scale_to_function(func, DoE)
 
@@ -577,7 +578,8 @@ def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_option
                       ndim=func.ndim,
                       kernel=mfbo_options.get('kernel', 'N/A'),
                       surrogate_name=mfbo_options.get('surrogate_name', 'Kriging'),
-                      scaling=mfbo_options['scaling'])
+                      scaling=mfbo_options['scaling'],
+                      seed_offset=seed_offset)
 
     ## Iteration finished, arranging data into an xr.Dataset
     output = results_to_dataset(results, instances, mfbo_options, attributes)
