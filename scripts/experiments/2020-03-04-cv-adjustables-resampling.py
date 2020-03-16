@@ -27,9 +27,9 @@ save_dir.mkdir(parents=True, exist_ok=True)
 
 function_cases = [
     *[mf2.adjustable.branin(a1)    for a1 in [0.00, 0.05, 0.25]],
-    *[mf2.adjustable.paciorek(a2)  for a2 in [0.05, 0.10, 0.20, 0.25]],
-    *[mf2.adjustable.hartmann3(a3) for a3 in [0.20, 0.25, 0.35, 0.40]],
-    *[mf2.adjustable.trid(a4)      for a4 in [0.65, 0.70, 0.80, 0.90, 1.00]],
+    *[mf2.adjustable.paciorek(a2)  for a2 in [0.05, 0.10, 0.15, 0.20, 0.25]],
+    *[mf2.adjustable.hartmann3(a3) for a3 in [0.20, 0.25, 0.30, 0.35, 0.40]],
+    *[mf2.adjustable.trid(a4)      for a4 in [0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00]],
 ]
 
 
