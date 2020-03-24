@@ -43,10 +43,11 @@ surr_names = [
 sub_from = [
     Subsample(50, 125),
 ]
+seed_offsets = range(0, 5)
 as_log = True
 
-for case, surr_name, sub in product(cases, surr_names, sub_from):
-    subsample_fname = subsample_dir / f'{surr_name}-{case.ndim}d-{case.name}-sub{sub.high}-{sub.low}.nc'
+for case, surr_name, sub, seed_offset in product(cases, surr_names, sub_from, seed_offsets):
+    subsample_fname = subsample_dir / f'{surr_name}-{case.ndim}d-{case.name}-sub{sub.high}-{sub.low}-seed{seed_offset}.nc'
     regular_fname = regular_dir / f'Matern-{case.ndim}d-{case.name}.nc'
 
     if not subsample_fname.exists():
@@ -65,11 +66,11 @@ for case, surr_name, sub in product(cases, surr_names, sub_from):
     mses = [regular_mses, subsample_mses, cv_mses]
     titles = [
         f'{case.name} ({case.ndim}D)',
-        f'Subsampling {surr_name} {case.name} ({case.ndim}D) from ({sub.high}, {sub.low})',
+        f'Subsampling {surr_name} {case.name} ({case.ndim}D) from ({sub.high}, {sub.low}, seed+{seed_offset})',
         f'Cross-validation of subsampling',
     ]
 
-    plot_name = f'comparison-{surr_name}-{case.ndim}d-{case.name}-sub{sub.high}-{sub.low}-high-low-samples-linear'
+    plot_name = f'comparison-{surr_name}-{case.ndim}d-{case.name}-sub{sub.high}-{sub.low}-seed{seed_offset}-high-low-samples'
 
     proc.plot_multiple_high_vs_low_num_samples(mses, titles, as_log, contours=8,
                                                save_as=plot_dir / f'{plot_name}.pdf')

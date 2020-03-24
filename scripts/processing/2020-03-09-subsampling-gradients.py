@@ -33,8 +33,8 @@ correlations = pd.read_csv(here('files') / 'extended_correlations.csv')
 
 
 
-fname_template = re.compile(r'[A-Za-z]*-(\d+)d-Adjustable([A-Za-z]*3?)([01].\d+)-sub50-125.nc')
-Record = namedtuple('Record', 'name param pearson_r orig_deg sub_deg cv_deg')
+fname_template = re.compile(r'[A-Za-z]*-(\d+)d-Adjustable([A-Za-z]*3?)([01].\d+)-sub50-125-seed(\d).nc')
+Record = namedtuple('Record', 'name param seed_offset pearson_r orig_deg sub_deg cv_deg')
 records = []
 names = set()
 for file in sorted(subsampling_dir.iterdir()):
@@ -42,10 +42,10 @@ for file in sorted(subsampling_dir.iterdir()):
     if not match:
         continue
 
-    ndim, func_name, value = match.groups()
+    ndim, func_name, param, seed_offset = match.groups()
     names.add(func_name)
     orig_row = correlations.loc[(correlations['fname'] == func_name.lower())
-                                & (correlations['param'] == float(value))]
+                                & (correlations['param'] == float(param))]
     orig_deg = orig_row['deg'].values[0]
     pearson_r = orig_row['pearson_r'].values[0]
 
@@ -60,7 +60,7 @@ for file in sorted(subsampling_dir.iterdir()):
             reg = proc.fit_lin_reg(da)
         cv_deg = np.rad2deg(np.arctan2(*reg.coef_[:2])) % 180
 
-    records.append(Record(func_name, value, pearson_r, orig_deg, sub_deg, cv_deg))
+    records.append(Record(func_name, param, seed_offset, pearson_r, orig_deg, sub_deg, cv_deg))
 
 df = pd.DataFrame(records)
 print(df)
