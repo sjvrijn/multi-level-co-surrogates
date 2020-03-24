@@ -103,13 +103,20 @@ all_correlations = pd.concat([regular_correlations, adjustables_correlations],
 all_correlations.to_csv(here('files') / 'correlations.csv', index=False)
 
 
-plt.rc('axes', prop_cycle=plt.rcParams['axes.prop_cycle'][:4] + cycler(linestyle=['-', '--', ':', '-.']))
+styles = plt.rcParams['axes.prop_cycle'][:4] + cycler(linestyle=['-', '--', ':', '-.'])
+plt.rc('axes', prop_cycle=styles)
 figsize = (3.6, 2.7)
+labels = {
+    'pearson_r': 'Pearson $r$',
+    'pearson_r2': 'Pearson $r^2$',
+    'spearman_r': 'Spearman $r$',
+    'spearman_r2': 'Spearman $r^2$',
+}
 grouped_df = adjustables_correlations.groupby('name')
 for idx, (name, subdf) in enumerate(grouped_df, start=1):
     plt.figure(figsize=figsize, constrained_layout=True)
-    for col in 'pearson_r pearson_r2 spearman_r spearman_r2'.split():
-        plt.plot(subdf['param'], subdf[col], label=col)
+    for col in ['pearson_r', 'pearson_r2', 'spearman_r', 'spearman_r2']:
+        plt.plot(subdf['param'], subdf[col], label=labels[col])
     plt.axhline(y=0, color='black', alpha=.5)
     plt.xlim([0,1])
     plt.ylabel('Correlation')
