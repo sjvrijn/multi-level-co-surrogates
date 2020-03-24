@@ -128,13 +128,13 @@ class MultiFidelityBO:
 
         self.mse_tester = {
             fid: partial(mean_squared_error,
-                         y_pred=getattr(self.func, fid)(self.test_sample))
+                         y_pred=self.func[fid](self.test_sample))
             for fid in self.fidelities
         }
 
         self.r2_tester = {
             fid: partial(r2_score,
-                         y_pred=getattr(self.func, fid)(self.test_sample))
+                         y_pred=self.func[fid](self.test_sample))
             for fid in self.fidelities
         }
 
@@ -151,7 +151,7 @@ class MultiFidelityBO:
         for fidelity in self.fidelities:
             archive.addcandidates(
                 samples[fidelity],
-                getattr(self.func, fidelity)(samples[fidelity]),
+                self.func[fidelity](samples[fidelity]),
                 fidelity=fidelity
             )
 
