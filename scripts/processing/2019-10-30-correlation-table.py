@@ -12,6 +12,8 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 import sys
 from collections import namedtuple
 
+from cycler import cycler
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pyprojroot import here
@@ -26,6 +28,8 @@ np.set_printoptions(linewidth=200, edgeitems=5)
 
 save_dir = here() / "tables/2020-03-04-correlations/"
 save_dir.mkdir(parents=True, exist_ok=True)
+plot_dir = here() / "plots/2019-10-correlation-exploration/"
+plot_dir.mkdir(parents=True, exist_ok=True)
 
 
 size_per_dim = 2000
@@ -38,8 +42,6 @@ test_sample = {
 Corr_result = namedtuple("Corr_result", "name ndim pearson_r pearson_r2 spearman_r spearman_r2")
 results = []
 for i, f in enumerate(mf2.bi_fidelity_functions):
-    if i == 5:  # TODO: remove mf2.Forrester from bi_fidelity_functions
-        continue
     sample = mlcs.rescale(test_sample[f.ndim], range_in=(0, 1), range_out=f.bounds)
 
     y_h, y_l = f.high(sample), f.low(sample)
@@ -48,7 +50,8 @@ for i, f in enumerate(mf2.bi_fidelity_functions):
 
 bi_fid_correlations = pd.DataFrame.from_records(results, columns=Corr_result._fields)
 bi_fid_correlations = bi_fid_correlations.sort_values(by=['ndim', 'name'])
-bi_fid_correlations.to_latex(save_dir / 'correlations-table.tex', index=False)
+bi_fid_correlations.to_latex(save_dir / 'correlations-table.tex',
+                             float_format="{:0.3f}".format, index=False)
 
 
 results = []
@@ -63,7 +66,7 @@ for ndim, sample in test_sample.items():
 forrester_correlations = pd.DataFrame.from_records(results,
                                                    columns=Corr_result._fields)
 forrester_correlations.to_latex(save_dir / 'forrester-correlations-table.tex',
-                                index=False)
+                                float_format="{:0.3f}".format, index=False)
 
 
 regular_correlations = pd.concat([bi_fid_correlations, forrester_correlations],
@@ -89,7 +92,8 @@ for func in mf2.adjustable.bifidelity_functions:
 
 adjustables_correlations = pd.DataFrame.from_records(results, columns=Adj_Corr_result._fields)
 adjustables_correlations.to_csv(here('files') / 'adjustables_correlations.csv', index=False)
-adjustables_correlations.to_latex(save_dir / 'adjustables-correlations.tex')
+adjustables_correlations.to_latex(save_dir / 'adjustables-correlations.tex',
+                                  float_format="{:0.3f}".format, index=False)
 
 
 all_correlations = pd.concat([regular_correlations, adjustables_correlations],
@@ -97,3 +101,19 @@ all_correlations = pd.concat([regular_correlations, adjustables_correlations],
                              names=['category'],
                              sort=False,).reset_index('category')
 all_correlations.to_csv(here('files') / 'correlations.csv', index=False)
+
+
+plt.rc('axes', prop_cycle=plt.rcParams['axes.prop_cycle'][:4] + cycler(linestyle=['-', '--', ':', '-.']))
+figsize = (3.6, 2.7)
+grouped_df = adjustables_correlations.groupby('name')
+for idx, (name, subdf) in enumerate(grouped_df, start=1):
+    plt.figure(figsize=figsize, constrained_layout=True)
+    for col in 'pearson_r pearson_r2 spearman_r spearman_r2'.split():
+        plt.plot(subdf['param'], subdf[col], label=col)
+    plt.axhline(y=0, color='black', alpha=.5)
+    plt.xlim([0,1])
+    plt.ylabel('Correlation')
+    plt.xlabel(f'A{idx}')
+    plt.legend(loc=0)
+    plt.title(name)
+    plt.savefig(plot_dir / f'{name}_correlation.pdf')
