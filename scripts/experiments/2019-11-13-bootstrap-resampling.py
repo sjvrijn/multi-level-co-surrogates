@@ -73,7 +73,9 @@ mfbo_options = {
     'surrogate_name': 'ElasticNet',
     # 'kernel': 'Matern',
     'scaling': 'off'}
+extra_attributes = {'mf2_version': mf2.__version__}
 
 
 for case in function_cases:
-    create_resampling_error_grid(case, (DoE_high, DoE_low), instances, mfbo_options, save_dir)
+    create_resampling_error_grid(case, (DoE_high, DoE_low), instances, mfbo_options,
+                                 save_dir, extra_attributes=extra_attributes)

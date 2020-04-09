@@ -70,8 +70,9 @@ ratios = ratios[ratios <= max_ratio]
 instances = [Instance(h, int(ratio*h), rep)
              for h, ratio, rep in product(n_highs, ratios, range(num_reps))
              if int(ratio*h) > max_low]
-
 print(len(instances))
+
+extra_attributes = {'mf2_version': mf2.__version__}
 
 if instances:
 
@@ -81,7 +82,8 @@ if instances:
 
     for case, kernel, scale in product(cases, kernels, scaling_options):
         mfbo_options = {'kernel': kernel, 'scaling': scale}
-        create_model_error_grid(case, instances, mfbo_options, save_dir=save_dir)
+        create_model_error_grid(case, instances, mfbo_options, save_dir=save_dir,
+                                extra_attributes=extra_attributes)
 
 else:
     print("No instances to run")

@@ -55,10 +55,12 @@ instances = [Instance(h, l, r)
                                     range(num_reps))
              if h < l]
 
+extra_attributes = {'mf2_version': mf2.__version__}
 
 for case, kernel, scale in product(cases, kernels, scaling_options):
     if 'Paciorek' in case.name and case.name[-3:] == '0.0':
         # In this case the functions are equal, leading to badly defined diff models
         continue
     mfbo_options = {'kernel': kernel, 'scaling': scale}
-    create_model_error_grid(case, instances, mfbo_options, save_dir=save_dir)
+    create_model_error_grid(case, instances, mfbo_options, save_dir=save_dir,
+                            extra_attributes=extra_attributes)

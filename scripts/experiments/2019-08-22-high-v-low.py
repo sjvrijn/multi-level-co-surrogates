@@ -63,6 +63,7 @@ instances = [Instance(h, l, r)
              if h < l]
 
 full_cases = list(product(cases, kernels, scaling_options))
+extra_attributes = {'mf2_version': mf2.__version__}
 
 if len(sys.argv) > 1:
     case_idx = int(sys.argv[1])
@@ -71,4 +72,5 @@ if len(sys.argv) > 1:
 
 for case, kernel, scale in full_cases:
     mfbo_options = {'kernel': kernel, 'scaling': scale}
-    create_model_error_grid(case, instances, mfbo_options, save_dir=save_dir)
+    create_model_error_grid(case, instances, mfbo_options, save_dir=save_dir,
+                            extra_attributes=extra_attributes)

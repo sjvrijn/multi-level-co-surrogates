@@ -75,8 +75,10 @@ mfbo_options = {
     'kernel': 'Matern',
     'scaling': 'off'
 }
+extra_attributes = {'mf2_version': mf2.__version__}
 
 
 for case in function_cases:
     create_resampling_leftover_error_grid(case, (DoE_high, DoE_low),
-                                          instances, mfbo_options, save_dir)
+                                          instances, mfbo_options, save_dir,
+                                          extra_attributes=extra_attributes)
