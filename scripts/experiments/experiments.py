@@ -394,9 +394,10 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options, save_d
             da = ds['mses'].load()
             instances = filter_instances(instances, da.sel(model='high_hier'))
 
-        # Return early if there is nothing left to do
-        if not instances:
-            return
+    # Return early if there is nothing left to do
+    if not instances:
+        print('Nothing to do...')
+        return
 
 
     # Setup some (final) options for the hierarchical model
@@ -497,9 +498,10 @@ def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_option
             da = ds['mses'].load()
             instances = filter_instances(instances, da.sel(model='high_hier'))
 
-        # Return early if there is nothing left to do
-        if not instances:
-            return
+    # Return early if there is nothing left to do
+    if not instances:
+        print('Nothing to do...')
+        return
 
 
     # Setup some (final) options for the hierarchical model
