@@ -4,11 +4,9 @@ from datetime import datetime
 from collections import namedtuple
 from functools import partial
 from itertools import product
-from multiprocessing import Pool, cpu_count
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import xarray as xr
 from pyDOE import lhs
 from pyprojroot import here
@@ -263,7 +261,8 @@ def plot_model_and_samples(func, kernel, scaling_option, instance):
                          f"plot_model_and_samples. Only 1D and 2D are supported")
 
 
-def create_model_error_grid(func, instances, mfbo_options, save_dir, plot_1d=False):
+def create_model_error_grid(func, instances, mfbo_options, save_dir,
+                            extra_attributes=dict(), plot_1d=False):
     """Create a grid of model errors for the given MFF-function case at the
     given list of instances.
     The results are saved in a NETCDF .nc file at the specified `save_dir`"""
@@ -351,7 +350,9 @@ def create_model_error_grid(func, instances, mfbo_options, save_dir, plot_1d=Fal
                       ndim=func.ndim,
                       kernel=mfbo_options.get('kernel', 'N/A'),
                       surrogate_name=mfbo_options.get('surrogate_name', 'Kriging'),
-                      scaling=mfbo_options['scaling'])
+                      scaling=mfbo_options['scaling'],
+                      **extra_attributes,
+                      )
 
     ## Iteration finished, arranging data into xr.Dataset
     output = results_to_dataset(results, instances, mfbo_options, attributes)
@@ -371,7 +372,8 @@ def create_model_error_grid(func, instances, mfbo_options, save_dir, plot_1d=Fal
           f"Time spent: {str(end - start)}")
 
 
-def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options, save_dir):
+def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options,
+                                 save_dir, extra_attributes=dict()):
     """Create a grid of model errors for the given MFF-function at the
     given list of instances, with all data for training the model being based
     on an initial given DoE specification.
@@ -454,7 +456,9 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options, save_d
                       ndim=func.ndim,
                       kernel=mfbo_options.get('kernel', 'N/A'),
                       surrogate_name=mfbo_options.get('surrogate_name', 'Kriging'),
-                      scaling=mfbo_options['scaling'])
+                      scaling=mfbo_options['scaling'],
+                      **extra_attributes,
+                      )
 
     ## Iteration finished, arranging data into xr.Dataset
     output = results_to_dataset(results, instances, mfbo_options, attributes)
@@ -475,7 +479,7 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options, save_d
 
 
 def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_options,
-                                          save_dir, seed_offset=0):
+                                          save_dir, seed_offset=0, extra_attributes=dict()):
     """Create a grid of model errors for the given MFF-function at the
     given list of instances, with all data for training the model being based
     on an initial given DoE specification.
@@ -581,7 +585,9 @@ def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_option
                       kernel=mfbo_options.get('kernel', 'N/A'),
                       surrogate_name=mfbo_options.get('surrogate_name', 'Kriging'),
                       scaling=mfbo_options['scaling'],
-                      seed_offset=seed_offset)
+                      seed_offset=seed_offset,
+                      **extra_attributes,
+                      )
 
     ## Iteration finished, arranging data into an xr.Dataset
     output = results_to_dataset(results, instances, mfbo_options, attributes)
