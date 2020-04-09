@@ -355,7 +355,7 @@ class SVM(Surrogate):
     def __init__(self, candidate_archive, num_points=None, fidelity=None, normalized=True):
         super(self.__class__, self).__init__(candidate_archive, num_points=num_points,
                                              fidelity=fidelity, normalized=normalized)
-        self._surr = SVR()
+        self._surr = SVR(gamma='auto')
         self.is_trained = False
 
     def do_predict(self, X):
