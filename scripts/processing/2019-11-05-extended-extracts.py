@@ -49,11 +49,16 @@ cases = [
 
 
 for c in cases:
-    fname = f'Matern-{c.ndim}d-{c.name}.nc'
-    with xr.open_dataset(base_data / fname) as ds:
-        base_mses = ds['mses'].load()
-    with xr.open_dataset(extended_data / fname) as ds:
-        extended_mses = ds['mses'].load()
+    try:
+        fname = f'Matern-{c.ndim}d-{c.name}.nc'
+        with xr.open_dataset(base_data / fname) as ds:
+            base_mses = ds['mses'].load()
+        with xr.open_dataset(extended_data / fname) as ds:
+            extended_mses = ds['mses'].load()
+    except FileNotFoundError:
+        print(f'One of {fname} files not found, skipping...')
+        continue
+
     try:
         mses = base_mses.combine_first(extended_mses)
     except Exception as e:
