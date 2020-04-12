@@ -18,7 +18,6 @@ from pyprojroot import here
 import processing as proc
 
 experiments = [
-    "2019-09-mse-r2", 
     "2019-10-07-adjustables"
 ]
 

@@ -63,8 +63,6 @@ for file in sorted(subsampling_dir.iterdir()):
     records.append(Record(func_name, param, seed_offset, pearson_r, orig_deg, sub_deg, cv_deg))
 
 df = pd.DataFrame(records)
-print(df)
-
 
 grid_style = dict(b=True, alpha=.5, linestyle=':')
 scatter_style = {'s': 12}
