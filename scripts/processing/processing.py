@@ -221,6 +221,7 @@ def plot_high_v_low_diff(to_plot, long_title, norm, save_as=None, show=False):
         plt.savefig(save_as)
     if show:
         plt.show()
+    plt.close()
 
 
 def plot_t_scores(data, title, t_range=5, num_colors=10, save_as=None, show=False):
@@ -246,6 +247,7 @@ def plot_t_scores(data, title, t_range=5, num_colors=10, save_as=None, show=Fals
         plt.savefig(save_as)
     if show:
         plt.show()
+    plt.close()
 
 
 def plot_extracts(data, title, save_as=None, show=False, *, normalize=False, max_x=None):
