@@ -21,6 +21,9 @@ __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 data_dir = here("files")
+save_dir = here() / "tables/2019-11-27-gradients/"
+save_dir.mkdir(parents=True, exist_ok=True)
+
 
 Record = namedtuple('Record', 'experiment file high low rep')
 
@@ -51,4 +54,5 @@ for directory in [d for d in data_dir.iterdir() if d.is_dir()]:
         plt.show()
 
 df = pd.DataFrame.from_records(records, columns=Record._fields)
-print(df.to_latex())
+adjustables_correlations.to_latex(save_dir / 'all_gradients.tex',
+                                  float_format="{:0.3f}".format, index=False)
