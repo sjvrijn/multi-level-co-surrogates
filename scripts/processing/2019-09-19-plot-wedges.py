@@ -54,8 +54,13 @@ with open(data_dir/"DoE-configs.csv", newline="") as infile:
 
 
 for c in cases:
-    with xr.open_dataset(data_dir / f'Matern-{c.ndim}d-{c.name}.nc') as ds:
-        mses = ds['mses'].load()
+    fname = f'Matern-{c.ndim}d-{c.name}.nc'
+    try:
+        with xr.open_dataset(data_dir / fname) as ds:
+            mses = ds['mses'].load()
+    except FileNotFoundError:
+        print(f"File {fname} not found, skipping ...")
+        continue
 
     plot_name = f'{c.ndim}d-{c.name}-high-low-samples-linear'
     title = f'{c.name} ({c.ndim}D)'
