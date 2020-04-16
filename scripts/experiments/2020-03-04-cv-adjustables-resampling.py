@@ -34,7 +34,7 @@ function_cases = [
 
 
 scale = 1
-seed_offset = 0
+seed_offset = range(5)
 
 if len(sys.argv) >= 3:
     case_idx = int(sys.argv[1])
@@ -42,7 +42,7 @@ if len(sys.argv) >= 3:
     scale = float(sys.argv[2])
 
 if len(sys.argv) == 4:
-    seed_offset = int(sys.argv[3])
+    seed_offset = [int(sys.argv[3])]
 
 
 DoE_high, DoE_low = 50, 125
@@ -68,8 +68,8 @@ mfbo_options = {
 extra_attributes = {'mf2_version': mf2.__version__}
 
 
-for case in function_cases:
+for case, offset in product(function_cases, seed_offset):
     create_resampling_leftover_error_grid(case, (DoE_high, DoE_low),
                                           instances, mfbo_options, save_dir,
-                                          seed_offset=seed_offset,
+                                          seed_offset=offset,
                                           extra_attributes=extra_attributes)
