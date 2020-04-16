@@ -64,13 +64,11 @@ max_ratio = 20
 n_highs = np.arange(min_high, max_high + 1, 10)
 default_n_lows = np.arange(min_low, max_low + 1, step)
 ratios = default_n_lows / n_highs[0]
-print(ratios)
 ratios = ratios[ratios <= max_ratio]
 
 instances = [Instance(h, int(ratio*h), rep)
              for h, ratio, rep in product(n_highs, ratios, range(num_reps))
              if int(ratio*h) > max_low]
-print(len(instances))
 
 extra_attributes = {'mf2_version': mf2.__version__}
 

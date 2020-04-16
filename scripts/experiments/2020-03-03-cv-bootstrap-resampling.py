@@ -49,6 +49,9 @@ function_cases = [
 
 if len(sys.argv) > 1:
     case_idx = int(sys.argv[1])
+    if case_idx >= len(function_cases):
+        print(f'case {case_idx} not available')
+        sys.exit(0)
     function_cases = function_cases[case_idx:case_idx+1]
     scale = float(sys.argv[2])
 else:
