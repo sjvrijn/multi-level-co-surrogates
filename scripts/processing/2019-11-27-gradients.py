@@ -54,5 +54,5 @@ for directory in [d for d in data_dir.iterdir() if d.is_dir()]:
         plt.show()
 
 df = pd.DataFrame.from_records(records, columns=Record._fields)
-adjustables_correlations.to_latex(save_dir / 'all_gradients.tex',
-                                  float_format="{:0.3f}".format, index=False)
+df.to_latex(save_dir / 'all_gradients.tex',
+            float_format="{:0.3f}".format, index=False)

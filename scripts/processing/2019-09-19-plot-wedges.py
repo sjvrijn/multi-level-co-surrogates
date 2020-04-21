@@ -70,7 +70,7 @@ for c in cases:
     pprint(data_points)
 
     proc.plot_high_vs_low_num_samples(mses, title, vmin=c.vmin, vmax=c.vmax,
-                                      points=data_points,
+                                      points=data_points, contours=8, as_log=True,
                                       save_as=plot_dir / f'{plot_name}.pdf')
     proc.plot_high_vs_low_num_samples_diff(mses, title, max_diff=c.max_diff,
                                            save_as=plot_dir / f'{plot_name}-diff.pdf')
