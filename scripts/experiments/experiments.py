@@ -278,6 +278,8 @@ def create_model_error_grid(func, instances, mfbo_options, save_dir,
     surr_name = repr_surrogate_name(mfbo_options)
     output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name}.nc"
 
+    tmp_path = get_tmp_path(output_path)
+
 
     # Don't redo any prior data that already exists
     if output_path.exists():
@@ -361,8 +363,15 @@ def create_model_error_grid(func, instances, mfbo_options, save_dir,
     # Merge with prior existing data
     # NOTE: even if `output` is empty, attributes will be overwitten/updated
     if output_path.exists():
-        with xr.load_dataset(output_path) as ds:
-            output = output.merge(ds)
+        # write output to tmp_path first
+        output.to_netcdf(tmp_path)
+        # with xr.open_mfdataset([output_path, tmp_path],
+        #                        chunks={'rep': 5, 'n_high': 10},
+        #                        concat_dim=None) as output:
+        #     output.to_netcdf(output_path)
+    else:
+        # Store results
+        output.to_netcdf(output_path)
 
     # Store results
     output.to_netcdf(output_path)
@@ -388,6 +397,8 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options,
     surr_name = repr_surrogate_name(mfbo_options)
     doe_high, doe_low = DoE_spec
     output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name}-sub{doe_high}-{doe_low}.nc"
+
+    tmp_path = get_tmp_path(output_path)
 
 
     # Don't redo any prior data that already exists
@@ -467,11 +478,15 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options,
     # Merge with prior existing data
     # NOTE: even if `output` is empty, attributes will be overwitten/updated
     if output_path.exists():
-        with xr.load_dataset(output_path) as ds:
-            output = output.merge(ds)
-
-    # Store results
-    output.to_netcdf(output_path)
+        # write output to tmp_path first
+        output.to_netcdf(tmp_path)
+        # with xr.open_mfdataset([output_path, tmp_path],
+        #                        chunks={'rep': 5, 'n_high': 10},
+        #                        concat_dim=None) as output:
+        #     output.to_netcdf(output_path)
+    else:
+        # Store results
+        output.to_netcdf(output_path)
 
     end = datetime.now()
     print(f"Ended case {func} at {end}\n"
@@ -495,6 +510,7 @@ def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_option
     doe_high, doe_low = DoE_spec
     output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name}-sub{doe_high}-{doe_low}-seed{seed_offset}.nc"
 
+    tmp_path = get_tmp_path(output_path)
 
     # Don't redo any prior data that already exists
     if output_path.exists():
@@ -596,11 +612,15 @@ def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_option
     # Merge with prior existing data
     # NOTE: even if `output` is empty, attributes will be overwitten/updated
     if output_path.exists():
-        with xr.load_dataset(output_path) as ds:
-            output = output.merge(ds)
-
-    # Store results
-    output.to_netcdf(output_path)
+        # write output to tmp_path first
+        output.to_netcdf(tmp_path)
+        # with xr.open_mfdataset([output_path, tmp_path],
+        #                        chunks={'rep': 5, 'n_high': 10},
+        #                        concat_dim=None) as output:
+        #     output.to_netcdf(output_path)
+    else:
+        # Store results
+        output.to_netcdf(output_path)
 
     end = datetime.now()
     print(f"Ended case {func} at {end}\n"
@@ -645,3 +665,17 @@ def results_to_dataset(results, instances, mfbo_options, attributes):
                                 'idx': range(n_test_samples),})
 
     return output
+
+
+def get_tmp_path(path):
+    if not path.exists():
+        return path
+
+    name = path.name
+
+    tmp_path, tmp_count = path, 0
+    while tmp_path.exists():
+        tmp_path = path.with_name(f"{name}TMP{tmp_count}")
+        tmp_count += 1
+
+    return tmp_path
