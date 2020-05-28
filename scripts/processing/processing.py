@@ -43,7 +43,8 @@ def get_extent(data):
 
 
 def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
-                                 contours=0, as_log=False, save_as=None, show=False):
+                                 contours=0, as_log=False, save_as=None,
+                                 show=False, include_comparisons=False):
     """Plot a heatmap of the median MSE for each possible combination of high
     and low-fidelity samples. For comparison, the MSE for the high-only and
     low-only models are displayed as a bar to the left and bottom respectively.
@@ -85,34 +86,39 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
         ax.contour(data.sel(model='high_hier'), levels=contours, antialiased=False,
                    extent=extent, colors='black', alpha=.2, linewidths=1)
 
-    divider = make_axes_locatable(ax)
-    axx = divider.append_axes("bottom", size=.2, pad=0.05, sharex=ax)
-    axy = divider.append_axes("left", size=.2, pad=0.05, sharey=ax)
+    if include_comparisons:
+        divider = make_axes_locatable(ax)
+        axx = divider.append_axes("bottom", size=.2, pad=0.05, sharex=ax)
+        axy = divider.append_axes("left", size=.2, pad=0.05, sharey=ax)
 
-    ax.xaxis.set_tick_params(labelbottom=False)
-    ax.yaxis.set_tick_params(labelleft=False)
-    axy.xaxis.set_tick_params(labelbottom=False)
-    axx.yaxis.set_tick_params(labelleft=False)
+        ax.xaxis.set_tick_params(labelbottom=False)
+        ax.yaxis.set_tick_params(labelleft=False)
+        axy.xaxis.set_tick_params(labelbottom=False)
+        axx.yaxis.set_tick_params(labelleft=False)
 
-    img = axy.imshow(data.sel(model='high').mean(dim='n_low').values.reshape(-1,1),
-                     extent=(-0.5, 0.5, np.min(data.n_high)-.5, np.max(data.n_high)-.5),
-                     **imshow_style)
-    img = axx.imshow(data.sel(model='low').mean(dim='n_high').values.reshape(1,-1),
-                     extent=(np.min(data.n_low)-.5, np.max(data.n_low)-.5, -0.5, 0.5),
-                     **imshow_style)
+        img = axy.imshow(data.sel(model='high').mean(dim='n_low').values.reshape(-1,1),
+                         extent=(-0.5, 0.5, np.min(data.n_high)-.5, np.max(data.n_high)-.5),
+                         **imshow_style)
+        img = axx.imshow(data.sel(model='low').mean(dim='n_high').values.reshape(1,-1),
+                         extent=(np.min(data.n_low)-.5, np.max(data.n_low)-.5, -0.5, 0.5),
+                         **imshow_style)
 
-    pts = []
-    for point, point_style in zip(points, single_point_styles):
-        point_high, point_low = tuple(map(int, point.DoE.split(':')))
-        if point_high <= np.max(data.n_high) and point_low <= np.max(data.n_low):
-            handle = ax.scatter(point_low, point_high, edgecolor='black', **point_style)
-            pts.append((handle, f'{point.Author} ({point.Year})'))
+        fig.colorbar(img, ax=ax, orientation='vertical')
+        axy.set_ylabel(LABEL_N_HIGH)
+        axx.set_xlabel(LABEL_N_LOW)
+    else:
+        ax.set_ylabel(LABEL_N_HIGH)
+        ax.set_xlabel(LABEL_N_LOW)
 
-    fig.colorbar(img, ax=ax, orientation='vertical')
-    axy.set_ylabel(LABEL_N_HIGH)
-    axx.set_xlabel(LABEL_N_LOW)
 
-    if pts:
+    if points:
+        pts = []
+        for point, point_style in zip(points, single_point_styles):
+            point_high, point_low = tuple(map(int, point.DoE.split(':')))
+            if point_high <= np.max(data.n_high) and point_low <= np.max(data.n_low):
+                handle = ax.scatter(point_low, point_high, edgecolor='black', **point_style)
+                pts.append((handle, f'{point.Author} ({point.Year})'))
+
         handles, labels = zip(*pts)
         ax.legend(handles, labels, bbox_to_anchor=(1.2, 0.5), loc='center left')
 
