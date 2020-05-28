@@ -75,7 +75,8 @@ else:
 grid_style = dict(b=True, alpha=.5, linestyle=':')
 scatter_style = {'s': 12}
 diag_line = {'linestyle': '--', 'color': 'black', 'alpha':.3, 'linewidth':.5}
-fig, axes = plt.subplots(ncols=2, figsize=(9, 4.5), constrained_layout=True)
+width, height = 9, 4.5
+fig, axes = plt.subplots(ncols=2, figsize=(width, height), constrained_layout=True)
 
 
 for name, sub_df in gradients.groupby('name'):
@@ -96,11 +97,7 @@ for idx, ax in enumerate(axes):
     ax.set_xlim([0,90])
     ax.set_ylim([0,90])
 
-    sep_fig = plt.figure()
-    sep_fig.axes.append(ax)
-    for extension in save_extensions:
-        sep_fig.tight_layout()
-        sep_fig.savefig(plot_dir / f'scatter_compare-sub{idx}.{extension}')
-
 for extension in save_extensions:
     fig.savefig(plot_dir / f'scatter_compare.{extension}')
+    fig.savefig(plot_dir / f'scatter_compare-sub0.{extension}', bbox_inches=(0, 0, width/2, height))
+    fig.savefig(plot_dir / f'scatter_compare-sub1.{extension}', bbox_inches=(width/2, 0, width/2, height))
