@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from pyprojroot import here
+from matplotlib.transforms import Bbox
 
 import processing as proc
 
@@ -99,5 +100,7 @@ for idx, ax in enumerate(axes):
 
 for extension in save_extensions:
     fig.savefig(plot_dir / f'scatter_compare.{extension}')
-    fig.savefig(plot_dir / f'scatter_compare-sub0.{extension}', bbox_inches=(0, 0, width/2, height))
-    fig.savefig(plot_dir / f'scatter_compare-sub1.{extension}', bbox_inches=(width/2, 0, width/2, height))
+    fig.savefig(plot_dir / f'scatter_compare-sub0.{extension}',
+                bbox_inches=Bbox.from_bounds(0, 0, width/2, height))
+    fig.savefig(plot_dir / f'scatter_compare-sub1.{extension}',
+                bbox_inches=Bbox.from_bounds(width/2, 0, width/2, height))
