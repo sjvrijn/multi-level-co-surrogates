@@ -105,22 +105,46 @@ all_correlations.to_csv(here('files') / 'correlations.csv', index=False)
 
 styles = plt.rcParams['axes.prop_cycle'][:4] + cycler(linestyle=['-', '--', ':', '-.'])
 plt.rc('axes', prop_cycle=styles)
-figsize = (3.6, 2.7)
+figsize=(7.2, 5.6)
+single_figsize = (3.6, 2.7)
 labels = {
     'pearson_r': 'Pearson $r$',
     'pearson_r2': 'Pearson $r^2$',
     'spearman_r': 'Spearman $r$',
     'spearman_r2': 'Spearman $r^2$',
 }
+
+param_idx = {'branin': 1, 'paciorek': 2, 'hartmann3': 3, 'trid': 4}
+
 grouped_df = adjustables_correlations.groupby('name')
-for idx, (name, subdf) in enumerate(grouped_df, start=1):
-    plt.figure(figsize=figsize, constrained_layout=True)
-    for col in ['pearson_r', 'pearson_r2', 'spearman_r', 'spearman_r2']:
-        plt.plot(subdf['param'], subdf[col], label=labels[col])
-    plt.axhline(y=0, color='black', alpha=.5)
-    plt.xlim([0,1])
-    plt.ylabel('Correlation')
-    plt.xlabel(f'A{idx}')
-    plt.legend(loc=0)
-    plt.title(name)
-    plt.savefig(plot_dir / f'{name}_correlation.pdf')
+fig = plt.figure(figsize=figsize)  #, constrained_layout=True)
+gs = fig.add_gridspec(nrows=2, ncols=2, bottom=0.16, wspace=0.3, hspace=0.45, right=0.975, top=0.95, left=0.1)
+axes = [
+    fig.add_subplot(gs[0,0]),
+    fig.add_subplot(gs[1,0]),
+    fig.add_subplot(gs[0,1]),
+    fig.add_subplot(gs[1,1]),
+]
+
+for ax_i, (name, subdf) in zip(axes, grouped_df):
+    single_fig, single_ax = plt.subplots(figsize=single_figsize, constrained_layout=True)
+
+    for ax in [single_ax, ax_i]:
+        for col in ['pearson_r', 'pearson_r2', 'spearman_r', 'spearman_r2']:
+            ax.plot(subdf['param'], subdf[col], label=labels[col])
+
+        ax.axhline(y=0, color='black', alpha=.5)
+        ax.set_xlim([0,1])
+        ax.set_ylim([-1,1])
+        ax.set_ylabel('Correlation')
+        ax.set_xlabel(f'A{param_idx[name]}')
+        ax.set_title(name.title())
+
+    single_ax.legend(loc=0)
+    single_fig.savefig(plot_dir / f'{name}_correlation.pdf')
+
+handles, labels = axes[0].get_legend_handles_labels()
+fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, 0.0), ncol=len(handles))
+#fig.tight_layout()
+fig.savefig(plot_dir / 'combined_correlations.pdf')
+
