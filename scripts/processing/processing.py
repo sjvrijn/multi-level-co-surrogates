@@ -26,9 +26,11 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 red_dot = {'marker': '.', 'color': 'red'}
 blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
 
-single_point_styles = [{'marker': m}  # 'fillstyle': f,
-                       for m in 'osHDPX*v^><']
-                       #for f, m in product(['full', None], 'oSHDPX*v^><')]
+single_point_styles = [{'marker': m} for m in 'osHDPX*v^><']
+
+
+LABEL_N_HIGH = "#High-fid samples"
+LABEL_N_LOW = "#Low-fid samples"
 
 
 def get_extent(data):
@@ -106,8 +108,8 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
             pts.append((handle, f'{point.Author} ({point.Year})'))
 
     fig.colorbar(img, ax=ax, orientation='vertical')
-    axy.set_ylabel('#High-fid samples')
-    axx.set_xlabel('#Low-fid samples')
+    axy.set_ylabel(LABEL_N_HIGH)
+    axx.set_xlabel(LABEL_N_LOW)
 
     if pts:
         handles, labels = zip(*pts)
@@ -164,8 +166,8 @@ def plot_multiple_high_vs_low_num_samples(datas, titles, as_log=True,
                        colors='black', alpha=.2, linewidths=1)
 
         ax.set_title(f'{title}')
-        ax.set_ylabel('#High-fid samples')
-        ax.set_xlabel('#Low-fid samples')
+        ax.set_ylabel(LABEL_N_HIGH)
+        ax.set_xlabel(LABEL_N_LOW)
 
     plt.tight_layout()
     if save_as:
@@ -213,8 +215,8 @@ def plot_high_v_low_diff(to_plot, long_title, norm, save_as=None, show=False):
     img = ax.imshow(to_plot, cmap='PiYG', norm=norm,
                     origin='lower', extent=get_extent(to_plot))
     fig.colorbar(img, ax=ax, orientation='vertical')
-    ax.set_ylabel('#High-fid samples')
-    ax.set_xlabel('#Low-fid samples')
+    ax.set_ylabel(LABEL_N_HIGH)
+    ax.set_xlabel(LABEL_N_LOW)
     plt.title(long_title)
     plt.tight_layout()
     if save_as:
