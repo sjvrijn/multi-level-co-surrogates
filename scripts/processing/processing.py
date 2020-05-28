@@ -103,12 +103,13 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
                          extent=(np.min(data.n_low)-.5, np.max(data.n_low)-.5, -0.5, 0.5),
                          **imshow_style)
 
-        fig.colorbar(img, ax=ax, orientation='vertical')
         axy.set_ylabel(LABEL_N_HIGH)
         axx.set_xlabel(LABEL_N_LOW)
     else:
         ax.set_ylabel(LABEL_N_HIGH)
         ax.set_xlabel(LABEL_N_LOW)
+
+    fig.colorbar(img, ax=ax, orientation='vertical')
 
 
     if points:
