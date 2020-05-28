@@ -35,6 +35,9 @@ correlations = pd.read_csv(here('files') / 'extended_correlations.csv')
 
 fname_template = re.compile(r'[A-Za-z]*-(\d+)d-Adjustable([A-Za-z]*3?)([01].\d+)-sub50-125-seed(\d).nc')
 Record = namedtuple('Record', 'name param seed_offset pearson_r orig_deg sub_deg cv_deg')
+
+save_extensions = ['pdf', 'png']
+
 records = []
 names = set()
 for file in sorted(subsampling_dir.iterdir()):
@@ -81,13 +84,18 @@ axes[0].legend(loc=0)
 axes[1].set_title('Actual gradient vs cross-validated gradient')
 axes[1].set_ylabel('cross-validated gradient')
 
-for ax in axes:
+for idx, ax in enumerate(axes):
     ax.set_xlabel('actual gradient')
     ax.grid(**grid_style)
     ax.plot(np.arange(100), **diag_line)
     ax.set_xlim([0,90])
     ax.set_ylim([0,90])
 
-plt.savefig(plot_dir / 'scatter_compare.pdf')
-plt.savefig(plot_dir / 'scatter_compare.png')
+    sep_fig = plt.figure()
+    sep_fig.axes.append(ax)
+    for extension in save_extensions:
+        sep_fig.tight_layout()
+        sep_fig.savefig(plot_dir / f'scatter_compare-sub{idx}.{extension}')
 
+for extension in save_extensions:
+    fig.savefig(plot_dir / f'scatter_compare.{extension}')
