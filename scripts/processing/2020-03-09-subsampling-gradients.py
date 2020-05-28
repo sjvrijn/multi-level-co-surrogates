@@ -29,43 +29,48 @@ subsampling_dir = here("files/2020-03-04-cv-adjustables-subsampling")
 plot_dir = here("plots") / '2020-03-09-subsampling-gradients/'
 plot_dir.mkdir(exist_ok=True, parents=True)
 
+gradients_file = here('files') / 'gradient_comparison.csv'
 correlations = pd.read_csv(here('files') / 'extended_correlations.csv')
-
-
-
 fname_template = re.compile(r'[A-Za-z]*-(\d+)d-Adjustable([A-Za-z]*3?)([01].\d+)-sub50-125-seed(\d).nc')
-Record = namedtuple('Record', 'name param seed_offset pearson_r orig_deg sub_deg cv_deg')
 
 save_extensions = ['pdf', 'png']
 
-records = []
-names = set()
-for file in sorted(subsampling_dir.iterdir()):
-    match = fname_template.match(file.name)
-    if not match:
-        continue
 
-    ndim, func_name, param, seed_offset = match.groups()
-    names.add(func_name)
-    orig_row = correlations.loc[(correlations['fname'] == func_name.lower())
-                                & (correlations['param'] == float(param))]
-    orig_deg = orig_row['deg'].values[0]
-    pearson_r = orig_row['pearson_r'].values[0]
+def calculate_gradient_comparisons():
+    Record = namedtuple('Record', 'name param seed_offset pearson_r orig_deg sub_deg cv_deg')
+    records = []
+    for file in sorted(subsampling_dir.iterdir()):
+        match = fname_template.match(file.name)
+        if not match:
+            continue
 
-    with xr.open_dataset(file) as ds:
-        da = ds['mses'].sel(model='high_hier')
-        with da.load() as da:
-            reg = proc.fit_lin_reg(da)
-        sub_deg = np.rad2deg(np.arctan2(*reg.coef_[:2])) % 180
+        ndim, func_name, param, seed_offset = match.groups()
+        orig_row = correlations.loc[(correlations['fname'] == func_name.lower())
+                                    & (correlations['param'] == float(param))]
+        orig_deg = orig_row['deg'].values[0]
+        pearson_r = orig_row['pearson_r'].values[0]
 
-        da = ds['cv_mses'].sel(model='high_hier')
-        with da.load() as da:
-            reg = proc.fit_lin_reg(da)
-        cv_deg = np.rad2deg(np.arctan2(*reg.coef_[:2])) % 180
+        with xr.open_dataset(file) as ds:
+            da = ds['mses'].sel(model='high_hier')
+            with da.load() as da:
+                reg = proc.fit_lin_reg(da)
+            sub_deg = np.rad2deg(np.arctan2(*reg.coef_[:2])) % 180
 
-    records.append(Record(func_name, param, seed_offset, pearson_r, orig_deg, sub_deg, cv_deg))
+            da = ds['cv_mses'].sel(model='high_hier')
+            with da.load() as da:
+                reg = proc.fit_lin_reg(da)
+            cv_deg = np.rad2deg(np.arctan2(*reg.coef_[:2])) % 180
 
-df = pd.DataFrame(records)
+        records.append(Record(func_name, param, seed_offset, pearson_r, orig_deg, sub_deg, cv_deg))
+    return pd.DataFrame(records)
+
+
+if gradients_file.exists():
+    gradients = pd.read_csv(gradients_file)
+else:
+    gradients = calculate_gradient_comparisons()
+    gradients.to_csv(gradients_file, index=False)
+
 
 grid_style = dict(b=True, alpha=.5, linestyle=':')
 scatter_style = {'s': 12}
@@ -73,7 +78,7 @@ diag_line = {'linestyle': '--', 'color': 'black', 'alpha':.3, 'linewidth':.5}
 fig, axes = plt.subplots(ncols=2, figsize=(9, 4.5), constrained_layout=True)
 
 
-for name, sub_df in df.groupby('name'):
+for name, sub_df in gradients.groupby('name'):
     axes[0].scatter(sub_df['orig_deg'], sub_df['sub_deg'], label=name, **scatter_style)
     axes[1].scatter(sub_df['orig_deg'], sub_df['cv_deg'], label=name, **scatter_style)
 
