@@ -301,9 +301,9 @@ def plot_multi_file_extracts(data_arrays, title, save_as=None, show=False):
         return
 
     fig, ax = plt.subplots(1, 2, figsize=(9, 3.5))
+    alphas = 1 - np.linspace(0, 1, len(data_arrays), endpoint=False)
 
-    for idx, data in enumerate(data_arrays):
-        alpha = 1 - (idx/len(data_arrays))
+    for data, alpha in zip(data_arrays, alphas):
         data.load()
         n_highs = data.coords['n_high'].values
         n_lows = data.coords['n_low'].values
