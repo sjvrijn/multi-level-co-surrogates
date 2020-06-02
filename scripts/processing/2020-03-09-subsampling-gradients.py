@@ -100,7 +100,8 @@ fig, axes = plt.subplots(ncols=2, figsize=(width, height), constrained_layout=Tr
 
 for comparison in ['sub_deg', 'cv_deg']:
     print(f'comparison: orig_deg vs {comparison}')
-    X, y = gradients['orig_deg'].values, gradients[comparison].values
+    X = gradients['orig_deg'].values.reshape(-1, 1)
+    y = gradients[comparison].values.reshape(-1, 1)
     reg = LinearRegression()
     reg = reg.fit(X, y, )
     print(reg.coef_, reg.intercept_)
