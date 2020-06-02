@@ -14,6 +14,7 @@ import numpy as np
 import xarray as xr
 from matplotlib import colors
 from matplotlib.lines import Line2D
+from matplotlib.transforms import Bbox
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from sklearn.linear_model import LinearRegression
 

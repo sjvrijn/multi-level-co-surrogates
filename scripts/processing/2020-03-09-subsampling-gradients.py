@@ -17,7 +17,6 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from pyprojroot import here
-from matplotlib.transforms import Bbox
 from sklearn.linear_model import LinearRegression
 
 import processing as proc
