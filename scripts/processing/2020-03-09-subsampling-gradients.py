@@ -118,6 +118,6 @@ for idx, ax in enumerate(axes):
 for extension in save_extensions:
     fig.savefig(plot_dir / f'scatter_compare.{extension}')
     fig.savefig(plot_dir / f'scatter_compare-sub0.{extension}',
-                bbox_inches=full_extent(axes[0]))
+                bbox_inches=full_extent(fig, axes[0]))
     fig.savefig(plot_dir / f'scatter_compare-sub1.{extension}',
-                bbox_inches=full_extent(axes[1]))
+                bbox_inches=full_extent(fig, axes[1]))
