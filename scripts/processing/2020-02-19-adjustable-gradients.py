@@ -131,6 +131,8 @@ plt.title("Comparing Adjustable Functions")
 plt.xlabel(xlabel)
 plt.ylabel(ylabel)
 plt.xticks(xticks)
+plt.xlim([-1, 1.05])
+plt.ylim([0, 120])
 plt.grid(**grid_style)
 
 # Shrink current axis by 20%

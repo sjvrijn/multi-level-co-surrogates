@@ -59,7 +59,7 @@ else:
 
 
 DoE_high, DoE_low = 50, 125
-final_num_reps = 15
+final_num_reps = 30
 
 min_high, max_high = 2, int(DoE_high * scale)
 min_low, max_low = 3, int(DoE_low * scale)

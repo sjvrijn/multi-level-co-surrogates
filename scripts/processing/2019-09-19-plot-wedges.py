@@ -47,10 +47,11 @@ cases = [
 ]
 
 
-with open(data_dir/"DoE-configs.csv", newline="") as infile:
-    reader = csv.reader(infile)
-    Data = namedtuple("Data", next(reader))
-    data = list(map(Data._make, reader))
+#with open(data_dir/"DoE-configs.csv", newline="") as infile:
+#    reader = csv.reader(infile)
+#    Data = namedtuple("Data", next(reader))
+#    data = list(map(Data._make, reader))
+data = []
 
 
 for c in cases:
@@ -75,9 +76,9 @@ for c in cases:
     proc.plot_high_vs_low_num_samples_diff(mses, title, max_diff=c.max_diff,
                                            save_as=plot_dir / f'{plot_name}-diff.pdf')
 
-    proc.plot_t_scores(mses, title=title,
-                       save_as=plot_dir / f'{plot_name}-significance.pdf')
-    proc.plot_extracts(mses, title,
-                       save_as=plot_dir / f'{plot_name}-extracts.pdf', show=True)
-    proc.plot_extracts(mses, title, normalize=True,
-                       save_as=plot_dir / f'{plot_name}-normalized-extracts.pdf', show=True)
+    #proc.plot_t_scores(mses, title=title,
+    #                   save_as=plot_dir / f'{plot_name}-significance.pdf')
+    #proc.plot_extracts(mses, title,
+    #                   save_as=plot_dir / f'{plot_name}-extracts.pdf', show=True)
+    #proc.plot_extracts(mses, title, normalize=True,
+    #                   save_as=plot_dir / f'{plot_name}-normalized-extracts.pdf', show=True)
