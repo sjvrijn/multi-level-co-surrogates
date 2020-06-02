@@ -18,6 +18,7 @@ import pandas as pd
 import xarray as xr
 from pyprojroot import here
 from matplotlib.transforms import Bbox
+from sklearn.linear_model import LinearRegression
 
 import processing as proc
 
@@ -95,6 +96,15 @@ scatter_style = {'s': 12}
 diag_line = {'linestyle': '--', 'color': 'black', 'alpha':.3, 'linewidth':.5}
 width, height = 9, 4.5
 fig, axes = plt.subplots(ncols=2, figsize=(width, height), constrained_layout=True)
+
+
+for comparison in ['sub_deg', 'cv_deg']:
+    print(f'comparison: orig_deg vs {comparison}')
+    X, y = gradients['orig_deg'].values, gradients[comparison].values
+    reg = LinearRegression()
+    reg = reg.fit(X, y, )
+    print(reg.coef_, reg.intercept_)
+    print(reg.score(X, y))
 
 
 for name, sub_df in gradients.groupby('name'):
