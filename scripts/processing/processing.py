@@ -43,7 +43,7 @@ def get_extent(data):
     ]
 
 
-def full_extent(fix, ax, pad=0.0):
+def full_extent(fig, ax, pad=0.0):
     """Get the full extent of an axes, including axes labels, tick labels, and
     titles.
     Source:
