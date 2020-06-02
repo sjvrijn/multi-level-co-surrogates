@@ -36,6 +36,23 @@ fname_template = re.compile(r'[A-Za-z]*-(\d+)d-Adjustable([A-Za-z]*3?)([01].\d+)
 save_extensions = ['pdf', 'png']
 
 
+def full_extent(fix, ax, pad=0.0):
+    """Get the full extent of an axes, including axes labels, tick labels, and
+    titles.
+    Source:
+    https://stackoverflow.com/questions/4325733/save-a-subplot-in-matplotlib"""
+    # For text objects, we need to draw the figure first, otherwise the extents
+    # are undefined.
+    ax.figure.canvas.draw()
+    items = ax.get_xticklabels() + ax.get_yticklabels()
+    items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
+    bbox = Bbox.union([item.get_window_extent() for item in items])
+    bbox = bbox.expanded(1.0 + pad, 1.0 + pad)
+
+    return bbox.transformed(fig.dpi_scale_trans.inverted())
+
+
+
 def calculate_gradient_comparisons():
     correlations = pd.read_csv(correlations_file)
     Record = namedtuple('Record', 'name param seed_offset pearson_r orig_deg sub_deg cv_deg')
@@ -101,6 +118,6 @@ for idx, ax in enumerate(axes):
 for extension in save_extensions:
     fig.savefig(plot_dir / f'scatter_compare.{extension}')
     fig.savefig(plot_dir / f'scatter_compare-sub0.{extension}',
-                bbox_inches=Bbox.from_bounds(0, 0, width/2, height))
+                bbox_inches=full_extent(axes[0]))
     fig.savefig(plot_dir / f'scatter_compare-sub1.{extension}',
-                bbox_inches=Bbox.from_bounds(width/2, 0, width/2, height))
+                bbox_inches=full_extent(axes[1]))
