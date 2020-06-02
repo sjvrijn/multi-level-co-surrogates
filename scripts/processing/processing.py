@@ -341,25 +341,7 @@ def plot_multi_file_extracts(data_arrays, title, save_as=None, show=False):
 def fit_lin_reg(da: xr.DataArray):
     """Return lin-reg coefficients after training index -> value"""
 
-    # clean data
     series = da.to_series().dropna()
-
-    # extract X and y
     X = np.array(series.index.tolist())
     y = np.log10(series.values)
-
-    # compute and return coefficients
-    reg = LinearRegression().fit(X, y)
-
-    return reg
-
-    ### calculate statistics ###
-    # mean = np.mean(y)
-    # TSS = np.sum((y-mean) ** 2)
-    # SSE = reg._residues
-    # r_2 = (TSS-SSE)/TSS
-    # t_score = np.sqrt(r_2) / np.sqrt((1-r_2) / (len(y)-2))
-
-    # return results nicely
-    # Coefficients = namedtuple('Coefficients', series.index.names)
-    # return Coefficients(*reg.coef_)
+    return LinearRegression().fit(X, y)
