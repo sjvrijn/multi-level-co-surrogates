@@ -42,6 +42,22 @@ def get_extent(data):
     ]
 
 
+def full_extent(fix, ax, pad=0.0):
+    """Get the full extent of an axes, including axes labels, tick labels, and
+    titles.
+    Source:
+    https://stackoverflow.com/questions/4325733/save-a-subplot-in-matplotlib"""
+    # For text objects, we need to draw the figure first, otherwise the extents
+    # are undefined.
+    ax.figure.canvas.draw()
+    items = ax.get_xticklabels() + ax.get_yticklabels()
+    items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
+    bbox = Bbox.union([item.get_window_extent() for item in items])
+    bbox = bbox.expanded(1.0 + pad, 1.0 + pad)
+
+    return bbox.transformed(fig.dpi_scale_trans.inverted())
+
+
 def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
                                  contours=0, as_log=False, save_as=None,
                                  show=False, include_comparisons=False):
