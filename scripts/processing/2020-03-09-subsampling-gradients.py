@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-"""
+'''
 2020-03-09-subsampling-gradients.py: script to create scatterplots of the
 gradients in the error for the actual, subsampled, and cross-validated MSE
 measures.
 Creates a csv of the all relevant values as intermediate step to speed up any
 potential rerun.
-"""
+'''
 
 from collections import namedtuple
 import re
@@ -25,19 +25,19 @@ import processing as proc
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-adjustables_dir = here("files/2019-10-07-adjustables/")
-subsampling_dir = here("files/2020-03-04-cv-adjustables-subsampling")
-plot_dir = here("plots") / '2020-03-09-subsampling-gradients/'
+subsampling_dir = here('files/2020-03-04-cv-adjustables-subsampling')
+plot_dir = here('plots/2020-03-09-subsampling-gradients/', warn=False)
 plot_dir.mkdir(exist_ok=True, parents=True)
 
-gradients_file = here('files') / 'gradient_comparison.csv'
-correlations = pd.read_csv(here('files') / 'extended_correlations.csv')
+correlations_file = here('files/extended_correlations.csv', warn=False)
+gradients_file = here('files/gradient_comparison.csv', warn=False)
 fname_template = re.compile(r'[A-Za-z]*-(\d+)d-Adjustable([A-Za-z]*3?)([01].\d+)-sub50-125-seed(\d).nc')
 
 save_extensions = ['pdf', 'png']
 
 
 def calculate_gradient_comparisons():
+    correlations = pd.read_csv(correlations_file)
     Record = namedtuple('Record', 'name param seed_offset pearson_r orig_deg sub_deg cv_deg')
     records = []
     for file in sorted(subsampling_dir.iterdir()):
