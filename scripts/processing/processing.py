@@ -30,8 +30,8 @@ blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
 single_point_styles = [{'marker': m} for m in 'osHDPX*v^><']
 
 
-LABEL_N_HIGH = "#High-fid samples"
-LABEL_N_LOW = "#Low-fid samples"
+LABEL_N_HIGH = "$n_h$"
+LABEL_N_LOW = "$n_l$"
 
 
 def get_extent(data):
