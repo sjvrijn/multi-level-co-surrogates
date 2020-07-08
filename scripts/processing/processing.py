@@ -75,7 +75,6 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
     :param as_log: display the log10 of the data or not (default False)
     :param save_as: desired filename for saving the image. Not saved if `None`
     :param show: whether or not to call `plt.show()`. Default: False
-    :return:
     """
     if not (show or save_as):
         return  # no need to make the plot if not showing or saving it
