@@ -1,11 +1,16 @@
 # coding: utf-8
 import numpy as np
 import matplotlib.pyplot as plt
+from pyprojroot import here
 
 
-def calc_intercept(b, h0, l0, grad, r):
-    l = (b - h0 + grad*l0) / (grad + r)
-    h = b - r*l
+plot_dir = here('plots/', warn=False)
+plot_dir.mkdir(exist_ok=True, parents=True)
+
+
+def calc_intercept(b, h0, l0, gradient, costratio):
+    l = (b - h0 + gradient*l0) / (gradient + costratio)
+    h = b - costratio*l
     return h, l
 
 
@@ -35,7 +40,7 @@ def do_plot():
     plt.ylim([0, 55])
     plt.xticks(np.arange(6)*25)
     plt.legend(loc=2)
-    plt.savefig('budget-extension-intercept.png', bbox_inches='tight')
+    plt.savefig(plot_dir / 'budget-extension-intercept.png', bbox_inches='tight')
 
 
 if __name__ == '__main__':
