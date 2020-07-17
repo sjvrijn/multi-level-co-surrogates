@@ -130,7 +130,7 @@ for ax_i, (name, subdf) in zip(axes, grouped_df):
     single_fig, single_ax = plt.subplots(figsize=single_figsize, constrained_layout=True)
 
     for ax in [single_ax, ax_i]:
-        for col in ['pearson_r', 'pearson_r2', 'spearman_r', 'spearman_r2']:
+        for col in ['pearson_r', 'pearson_r2']:  #, 'spearman_r', 'spearman_r2']:
             ax.plot(subdf['param'], subdf[col], label=labels[col])
 
         ax.axhline(y=0, color='black', alpha=.5)
