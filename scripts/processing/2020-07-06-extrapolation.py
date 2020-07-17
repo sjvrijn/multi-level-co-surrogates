@@ -75,26 +75,28 @@ def plot_extrapolation_suggestion(file_small, file_large):
     smallest_at_angle = angles[np.argmin(data_along_budget_line)]
     gradient_budget_intercept = calc_intercept(80, 30, 75, gradient, costratio)
 
+    plt.figure(figsize=(4.8, 2.4), constrained_layout=True)
     plt.plot(angles, data_along_budget_line, marker='o', label='MSEs from DoE enumeration')
     plt.ylabel('$\log$10(MSE)')
     plt.xlabel('angle measured from (30, 75)')
-    plt.axvline(smallest_at_angle, ls=':', label='Minimum')
-    plt.axvline(deg_small, ls=':', label='Predicted best angle')
+    #plt.axvline(smallest_at_angle, ls=':', label='Minimum', color='C1')
+    plt.axvline(deg_small, ls=':', label='Predicted best angle', color='C1')
     plt.legend(loc=0)
     plt.xlim([0,90])
+    plt.ylim(bottom=0)
     plt.title(file_large.stem)
-    plt.tight_layout()
-    plt.savefig(plot_dir / file_small.with_suffix('.pdf'), bbox_inches='tight')
+    #plt.tight_layout()
+    plt.savefig(plot_dir / f'{file_small.stem.replace(".", "")}.pdf', bbox_inches='tight')
     plt.close()
 
 
 
 
 
-for file_small in filter(lambda f: 'sub30-75' in f, subsampling_dir.iterdir()):
+for file_small in filter(lambda f: 'sub30-75' in str(f), subsampling_dir.iterdir()):
     file_large = regular_dir / file_small.name.replace('-sub30-75-seed0', '')
     plot_extrapolation_suggestion(file_small, file_large)
 
-for file_small in filter(lambda f: 'sub30-75' in f, adjustables_subsampling_dir.iterdir()):
+for file_small in filter(lambda f: 'sub30-75' in str(f), adjustables_subsampling_dir.iterdir()):
     file_large = adjustables_dir / file_small.name.replace('-sub30-75-seed0', '')
     plot_extrapolation_suggestion(file_small, file_large)
