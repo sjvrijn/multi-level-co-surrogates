@@ -77,7 +77,6 @@ grid_style = dict(b=True, alpha=.5, linestyle=':')
 scatter_style = {'s': 12}
 diag_line = {'linestyle': '--', 'color': 'black', 'alpha':.3, 'linewidth':.5}
 width, height = 9, 4.5
-fig, axes = plt.subplots(ncols=2, figsize=(width, height), constrained_layout=True)
 
 
 for comparison in ['sub_deg', 'cv_deg']:
@@ -90,19 +89,20 @@ for comparison in ['sub_deg', 'cv_deg']:
     print(reg.score(X, y))
 
 
+fig, axes = plt.subplots(ncols=2, figsize=(width, height), constrained_layout=True)
 for name, sub_df in gradients.groupby('name'):
     axes[0].scatter(sub_df['orig_deg'], sub_df['sub_deg'], label=name, **scatter_style)
     axes[1].scatter(sub_df['orig_deg'], sub_df['cv_deg'], label=name, **scatter_style)
 
-axes[0].set_title('Actual gradient vs sub-sampled gradient')
-axes[0].set_ylabel('subsampled gradient')
+axes[0].set_title('Enumeration angle vs subsampled angle')
+axes[0].set_ylabel('angle (subsampling)')
 axes[0].legend(loc=0)
 
-axes[1].set_title('Actual gradient vs cross-validated gradient')
-axes[1].set_ylabel('cross-validated gradient')
+axes[1].set_title('Enumeration angle vs cross-validated angle')
+axes[1].set_ylabel('angle (cross-validated subsampling)')
 
 for idx, ax in enumerate(axes):
-    ax.set_xlabel('actual gradient')
+    ax.set_xlabel('angle (full enumeration)')
     ax.grid(**grid_style)
     ax.plot(np.arange(100), **diag_line)
     ax.set_xlim([0,90])
