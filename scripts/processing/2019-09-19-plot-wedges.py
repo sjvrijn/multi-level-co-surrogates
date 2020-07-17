@@ -26,26 +26,25 @@ plot_dir = here("plots") / experiment_name
 plot_dir.mkdir(parents=True, exist_ok=True)
 
 
-Case = namedtuple('Case', 'name ndim vmin vmax max_diff')
+Case = namedtuple('Case', 'name ndim vmin vmax max_diff as_log')
 
 cases = [
-    Case('Forrester',        1,  1e-5,     1e2,  100),
-    Case('Forrester',        2,  None,    None,  100),
-    Case('Forrester',        4,  None,    None,   10),
-    Case('Forrester',        6,  None,    None,   10),
-    Case('Forrester',        8,  None,    None,   10),
-    Case('Bohachevsky',      2,  None,    None,  100),
-    Case('Booth',            2,  None,    None, 1000),
-    Case('Branin',           2,   1e1,     1e4, None),
-    Case('Currin',           2,   .01,      10,   50),
-    Case('Himmelblau',       2,  None,    None, 1000),
-    Case('SixHumpCamelback', 2,  None,    None,  100),
-    Case('Park91A',          4,  1e-3,     1e2,    1),
-    Case('Park91B',          4,  None,    None,    1),
-    Case('Hartmann6',        6,  1e-2,    1e-1, None),
-    Case('Borehole',         8,    10,    3000,  1e4),
+    Case('Forrester',        1,   1e-5  ,   1e2  ,  100,  True),
+    Case('Forrester',        2, 10**-0.8,   1e1  ,  100,  True),
+    Case('Forrester',        4,    1e0  ,   1e1  ,   10, False),
+    Case('Forrester',        6,    1e0  ,   1e1  ,   10, False),
+    Case('Forrester',        8,    1e0  ,   1e1  ,   10, False),
+    Case('Bohachevsky',      2, 10**-0.5,   1e3  ,  100,  True),
+    Case('Booth',            2,    1e2  ,   1e5  , 1000,  True),
+    Case('Branin',           2,    1e1  ,   1e4  , None,  True),
+    Case('Currin',           2,   1e-2  ,   1e1  ,   50,  True),
+    Case('Himmelblau',       2,    1e2  ,   1e4  , 1000,  True),
+    Case('SixHumpCamelback', 2,  10**0.5,   1e3  ,  100,  True),
+    Case('Park91A',          4,   1e-3  ,   1e1  ,    1,  True),
+    Case('Park91B',          4,   1e-4  ,   1e0  ,    1,  True),
+    Case('Hartmann6',        6,   1e-2  ,  1e-1  , None, False),
+    Case('Borehole',         8,    1e1  ,   1e4  ,  1e4,  True),
 ]
-
 
 #with open(data_dir/"DoE-configs.csv", newline="") as infile:
 #    reader = csv.reader(infile)
@@ -68,13 +67,14 @@ for c in cases:
 
     data_points = [d for d in data
                    if d.function == c.name and int(d.D) == c.ndim]
-    pprint(data_points)
+    if data_points:
+        pprint(data_points)
 
     proc.plot_high_vs_low_num_samples(mses, title, vmin=c.vmin, vmax=c.vmax,
-                                      points=data_points, contours=8, as_log=True,
+                                      points=data_points, contours=8, as_log=c.as_log,
                                       save_as=plot_dir / f'{plot_name}.pdf')
-    proc.plot_high_vs_low_num_samples_diff(mses, title, max_diff=c.max_diff,
-                                           save_as=plot_dir / f'{plot_name}-diff.pdf')
+    #proc.plot_high_vs_low_num_samples_diff(mses, title, max_diff=c.max_diff,
+    #                                       save_as=plot_dir / f'{plot_name}-diff.pdf')
 
     #proc.plot_t_scores(mses, title=title,
     #                   save_as=plot_dir / f'{plot_name}-significance.pdf')
