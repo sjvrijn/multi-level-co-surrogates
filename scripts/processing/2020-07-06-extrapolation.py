@@ -77,15 +77,13 @@ def plot_extrapolation_suggestion(file_small, file_large):
 
     plt.figure(figsize=(4.8, 2.4), constrained_layout=True)
     plt.plot(angles, data_along_budget_line, marker='o', label='MSEs from DoE enumeration')
-    plt.ylabel('$\log$10(MSE)')
+    plt.ylabel('$MSE')
     plt.xlabel('angle measured from (30, 75)')
-    #plt.axvline(smallest_at_angle, ls=':', label='Minimum', color='C1')
     plt.axvline(deg_small, ls=':', label='Predicted best angle', color='C1')
     plt.legend(loc=0)
     plt.xlim([0,90])
     plt.ylim(bottom=0)
     plt.title(file_large.stem)
-    #plt.tight_layout()
     plt.savefig(plot_dir / f'{file_small.stem.replace(".", "")}.pdf', bbox_inches='tight')
     plt.close()
 
