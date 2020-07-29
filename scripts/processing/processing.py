@@ -16,6 +16,7 @@ from matplotlib import colors
 from matplotlib.lines import Line2D
 from matplotlib.transforms import Bbox
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from sklearn.linear_model import LinearRegression
 
 
@@ -79,7 +80,9 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
     if not (show or save_as):
         return  # no need to make the plot if not showing or saving it
 
-    fig, ax = plt.subplots(figsize=(9,3.5))
+    figsize = (9,3.5) if include_comparisons else (7,3.5)
+
+    fig, ax = plt.subplots(figsize=figsize)
 
     ax.set_aspect(1.)
     data = data.median(dim='rep')
@@ -96,14 +99,19 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
     extent = get_extent(data)
     imshow_style = {'cmap': 'viridis_r', 'norm': norm, 'origin': 'lower'}
 
-    plt.title(f'Median MSE for high (hierarchical) model - {title}')
-    img = ax.imshow(data.sel(model='high_hier'), extent=extent, **imshow_style)
+    plt.title(f'{"log10 " if as_log else ""}Median MSE for $z_h$ - {title}')
+
+    da_hh = data.sel(model='high_hier')
+
+
+    img = ax.imshow(da_hh, extent=extent, **imshow_style)
     if contours:
-        ax.contour(data.sel(model='high_hier'), levels=contours, antialiased=False,
+        ax.contour(da_hh, levels=contours, antialiased=False,
                    extent=extent, colors='black', alpha=.2, linewidths=1)
 
+    divider = make_axes_locatable(ax)
+
     if include_comparisons:
-        divider = make_axes_locatable(ax)
         axx = divider.append_axes("bottom", size=.2, pad=0.05, sharex=ax)
         axy = divider.append_axes("left", size=.2, pad=0.05, sharey=ax)
 
@@ -125,7 +133,8 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
         ax.set_ylabel(LABEL_N_HIGH)
         ax.set_xlabel(LABEL_N_LOW)
 
-    fig.colorbar(img, ax=ax, orientation='vertical')
+    cax = divider.append_axes("right", size=0.2, pad=0.05)
+    fig.colorbar(img, cax=cax)
 
 
     if points:
