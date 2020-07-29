@@ -141,7 +141,7 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
 
     plt.tight_layout()
     if save_as:
-        plt.savefig(save_as)
+        plt.savefig(save_as, bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -195,7 +195,7 @@ def plot_multiple_high_vs_low_num_samples(datas, titles, as_log=True,
 
     plt.tight_layout()
     if save_as:
-        plt.savefig(save_as)
+        plt.savefig(save_as, bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -244,7 +244,7 @@ def plot_high_v_low_diff(to_plot, long_title, norm, save_as=None, show=False):
     plt.title(long_title)
     plt.tight_layout()
     if save_as:
-        plt.savefig(save_as)
+        plt.savefig(save_as, bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -270,7 +270,7 @@ def plot_t_scores(data, title, t_range=5, num_colors=10, save_as=None, show=Fals
 
     plt.tight_layout()
     if save_as:
-        plt.savefig(save_as)
+        plt.savefig(save_as, bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -314,7 +314,7 @@ def plot_extracts(data, title, save_as=None, show=False, *, normalize=False, max
     plt.legend(loc=0)
     plt.tight_layout()
     if save_as:
-        plt.savefig(save_as)
+        plt.savefig(save_as, bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -348,7 +348,7 @@ def plot_multi_file_extracts(data_arrays, title, save_as=None, show=False):
     plt.tight_layout()
 
     if save_as:
-        plt.savefig(save_as)
+        plt.savefig(save_as, bbox_inches='tight')
     if show:
         plt.show()
     plt.close()

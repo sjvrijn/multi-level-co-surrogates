@@ -51,7 +51,7 @@ for c in cases:
 
     print(fname)
 
-    plot_name = f'{c.ndim}d-{c.name}-high-low-samples-linear'
+    plot_name = f'{c.ndim}d-{c.name.replace(".","")}-high-low-samples-linear'
     title = f'{c.name} ({c.ndim}D)'
 
     proc.plot_high_vs_low_num_samples(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
