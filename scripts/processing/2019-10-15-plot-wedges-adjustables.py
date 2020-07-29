@@ -56,12 +56,12 @@ for c in cases:
 
     proc.plot_high_vs_low_num_samples(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
                                       save_as=plot_dir / f'{plot_name}.{plot_extension}')
-    proc.plot_high_vs_low_num_samples_diff(mses, title, max_diff=c.max_diff,
-                                           save_as=plot_dir / f'{plot_name}-diff.{plot_extension}')
+    #proc.plot_high_vs_low_num_samples_diff(mses, title, max_diff=c.max_diff,
+    #                                       save_as=plot_dir / f'{plot_name}-diff.{plot_extension}')
 
-    proc.plot_t_scores(mses, title=title,
-                       save_as=plot_dir / f'{plot_name}-significance.{plot_extension}')
-    proc.plot_extracts(mses, title,
-                       save_as=plot_dir / f'{plot_name}-extracts.{plot_extension}')
-    proc.plot_extracts(mses, title, normalize=True,
-                       save_as=plot_dir / f'{plot_name}-normalized-extracts.{plot_extension}')
+    #proc.plot_t_scores(mses, title=title,
+    #                   save_as=plot_dir / f'{plot_name}-significance.{plot_extension}')
+    #proc.plot_extracts(mses, title,
+    #                   save_as=plot_dir / f'{plot_name}-extracts.{plot_extension}')
+    #proc.plot_extracts(mses, title, normalize=True,
+    #                   save_as=plot_dir / f'{plot_name}-normalized-extracts.{plot_extension}')
