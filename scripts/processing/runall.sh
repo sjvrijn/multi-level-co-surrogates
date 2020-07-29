@@ -10,4 +10,6 @@ python3 ./2020-02-18-combined-wedges.py && \
 python3 ./2020-02-19-adjustable-gradients.py && \
 python3 ./2020-03-09-adjustables-subsampling-comparisons.py && \
 python3 ./2020-03-09-subsampling-gradients.py && \
+python3 ./2020-07-06-extrapolation.py && \
+python3 ./2020-07-07-intercept-illustration.py && \
 python3 ./plot-linreg-example.py
