@@ -12,6 +12,7 @@ from collections import namedtuple
 import re
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -88,7 +89,7 @@ else:
 
 
 line_at_90 = dict(y=90, alpha=.5, color='black')
-grid_style = dict(b=True, alpha=.5, linestyle=':')
+grid_style = dict(alpha=.5, linestyle=':')
 xlabel = '{corr_type} Correlation $r$'
 ylabel = 'Angle of Gradient'
 
@@ -113,7 +114,7 @@ for corr_type in correlation_types:
             plt.close()
 
 
-    fig, ax = plt.subplots(figsize=(8,4.8), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(7.0,5.2), constrained_layout=True)
 
     adjustables = extended_correlations.loc[extended_correlations['category'] == 'adjustable']
     for func_name, sub_df in adjustables.groupby('fname'):
@@ -134,16 +135,20 @@ for corr_type in correlation_types:
     plt.xlabel(xlabel.format(corr_type=corr_type.title()))
     plt.ylabel(ylabel)
     plt.xticks(xticks)
+    ax = plt.gca()
+    ax.xaxis.set_minor_locator(MultipleLocator(0.1))
+    ax.yaxis.set_minor_locator(MultipleLocator(10))
     plt.xlim([-1, 1.05])
     plt.ylim([0, 120])
-    plt.grid(**grid_style)
+    plt.grid(**grid_style, which='both')
 
+    plt.legend(loc='lower left')
     # Shrink current axis by 20%
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.75, box.height])
+    #box = ax.get_position()
+    #ax.set_position([box.x0, box.y0, box.width * 0.75, box.height])
 
     # Put a legend to the right of the current axis
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    #ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
     plt.savefig(plot_dir / f'comparison_{corr_type}.png')
     plt.savefig(plot_dir / f'comparison_{corr_type}.pdf')
