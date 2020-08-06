@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-2019-08-22-high-v-low.py: Experiment runner file for generating data for
+2019-09-01-error-grids.py: Experiment runner file for generating data for
 many combinations of numbers of high- vs. low-fidelity samples
+
+Takes a single optional argument: the index of the case to run (0-14)
 """
 
 __author__ = 'Sander van Rijn'

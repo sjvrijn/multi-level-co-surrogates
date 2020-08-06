@@ -1,4 +1,4 @@
-python3 ./2019-08-22-high-v-low.py && \
+python3 ./2019-09-01-error-grids.py && \
 python3 ./2019-09-10-plot-specifics.py && \
 python3 ./2019-09-13-xarray-test.py && \
 python3 ./2019-10-07-adjustables.py && \
