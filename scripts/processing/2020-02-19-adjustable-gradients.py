@@ -35,6 +35,28 @@ correlations_path = here('files/correlations.csv')
 extended_correlations_path = here('files/extended_correlations.csv', warn=False)
 
 
+def calc_and_print_CIs(da):
+    reg, SSE = proc.fit_lin_reg(da, calc_SSE=True)
+
+    alpha, beta, gamma, epsilon = reg.coef_
+    df = 4
+    s_nhigh = np.std(da.coords['nhigh'], ddof=0)
+    s_nlow = np.std(da.coords['nlow'], ddof=0)
+
+    se_nhigh = np.sqrt(SSE / (da.size-df)) / s_nhigh
+    se_nlow = np.sqrt(SSE / (da.size-df)) / s_nlow
+
+    ci_alpha = [alpha-1.96*se_nhigh, alpha+1.96*se_nhigh]
+    ci_beta = [beta-1.96*se_nlow, beta+1.96*se_nlow]
+    ci_angle = [np.atan(ci_alpha[0]/ci_beta[1]),
+                np.atan(ci_alpha[1]/ci_beta[0])]
+
+    print(f'95% CI alpha: {ci_alpha}')
+    print(f'95% CI beta: {ci_beta}')
+    print(f'95% CI angle: {ci_angle}')
+
+
+
 def store_extended_correlations():
 
     Record = namedtuple(
@@ -76,6 +98,8 @@ def store_extended_correlations():
             theta = np.arctan2(*reg.coef_[:2])
             deg = np.rad2deg(theta) % 180
             records.append(Record(*row, *coef, theta, deg))
+
+            calc_and_print_CIs(da)
 
     df = pd.DataFrame.from_records(records, columns=Record._fields)
     return df
