@@ -363,10 +363,17 @@ def plot_multi_file_extracts(data_arrays, title, save_as=None, show=False):
     plt.close()
 
 
-def fit_lin_reg(da: xr.DataArray):
+def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
     """Return lin-reg coefficients after training index -> value"""
 
     series = da.to_series().dropna()
     X = np.array(series.index.tolist())
     y = np.log10(series.values)
-    return LinearRegression().fit(X, y)
+    reg = LinearRegression().fit(X, y)
+
+    if not calc_SSE:
+        return reg
+
+    SSE = np.sum((reg.predict(X) - y)**2)
+    return reg, SSE
+
