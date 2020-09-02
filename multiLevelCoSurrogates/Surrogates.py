@@ -363,7 +363,7 @@ class SVM(Surrogate):
 
     def train(self):
         self._updatevalues()
-        self._surr.fit(self.X, self.y)
+        self._surr.fit(self.X, self.y.reshape((-1,)))
         self.is_trained = True
 
 
