@@ -25,17 +25,17 @@ save_dir.mkdir(parents=True, exist_ok=True)
 cases = [
     mf2.forrester,
 
-    mf2.Forrester(ndim=2),
-    # mf2.bohachevsky,
-    # mf2.booth,
+    # mf2.Forrester(ndim=2),
+    mf2.bohachevsky,
+    mf2.booth,
     mf2.branin,
     mf2.currin,
-    # mf2.himmelblau,
-    # mf2.six_hump_camelback,
+    mf2.himmelblau,
+    mf2.six_hump_camelback,
 
-    mf2.Forrester(ndim=4),
+    # mf2.Forrester(ndim=4),
     mf2.park91a,
-    # mf2.park91b,
+    mf2.park91b,
 
     # mf2.Forrester(ndim=6),
     mf2.hartmann6,
@@ -48,6 +48,7 @@ surrogate_names = [
     'RandomForest',
     'ElasticNet',
     'SVM'
+    'RBF'
 ]
 
 scaling_options = [
