@@ -514,7 +514,7 @@ def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_option
 
     # Don't redo any prior data that already exists
     if output_path.exists():
-        with xr.open_dataset(output_path) as ds:
+        with xr.open_mfdataset(f"{output_path}*") as ds:
             da = ds['mses'].load()
             instances = filter_instances(instances, da.sel(model='high_hier'))
 
