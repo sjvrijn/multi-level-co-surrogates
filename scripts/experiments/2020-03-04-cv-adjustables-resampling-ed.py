@@ -16,7 +16,7 @@ import numpy as np
 
 seed_offsets = range(0, 5)
 cases = range(0, 21, 2)
-scales = np.round(np.linspace(0.0, 1.0, 6)[1:], 2)
+scales = [1]  # np.round(np.linspace(0.0, 1.0, 6)[5:], 2)
 
 
 for scale, seed_offset, case_idx in product(scales, seed_offsets, cases):
