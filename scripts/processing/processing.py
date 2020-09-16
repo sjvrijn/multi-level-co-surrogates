@@ -374,6 +374,7 @@ def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
     if not calc_SSE:
         return reg
 
-    SSE = np.sum((reg.predict(X) - y)**2)
+    pred_y = reg.predict(X)
+    SSE = np.sum((pred_y - y)**2)
     return reg, SSE
 

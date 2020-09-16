@@ -9,6 +9,7 @@ step to speed up any potential rerun.
 """
 
 from collections import namedtuple
+from itertools import product
 import re
 
 import matplotlib.pyplot as plt
@@ -35,26 +36,52 @@ correlations_path = here('files/correlations.csv')
 extended_correlations_path = here('files/extended_correlations.csv', warn=False)
 
 
-def calc_and_print_CIs(da):
+
+class ConfidenceInterval(namedtuple('ConfidenceInterval', 'mean se lower upper')):
+
+    def __contains__(self, value):
+        return self.lower < value < self.upper
+
+    def __str__(self):
+        lower = self.lower if self.lower is not None else self.mean - 1.96*self.se
+        upper = self.upper if self.upper is not None else self.mean + 1.96*self.se
+        return f'95% CI: {self.mean:.4f} +/- {1.96*self.se:.4f} {np.array([lower, upper])}: H0{" not" if 0 in self else ""} rejected'
+
+
+def ratio_to_angle(x1, x2):
+    theta = np.arctan2(x1, x2) + np.pi
+    deg = np.rad2deg(theta)
+    if deg > 180:
+        deg -= 360  # Example: instead of 350, we want -10
+    return deg
+
+
+def calc_angle(da):
+    AngleSummary = namedtuple('AngleSummary', 'alpha beta gamma theta deg deg_low deg_high')
     reg, SSE = proc.fit_lin_reg(da, calc_SSE=True)
 
-    alpha, beta, gamma, epsilon = reg.coef_
-    df = 4
-    s_nhigh = np.std(da.coords['nhigh'], ddof=0)
-    s_nlow = np.std(da.coords['nlow'], ddof=0)
+    alpha, beta, gamma = reg.coef_
+    df = da.size - 4
 
-    se_nhigh = np.sqrt(SSE / (da.size-df)) / s_nhigh
-    se_nlow = np.sqrt(SSE / (da.size-df)) / s_nlow
+    nhighs = da.coords['n_high'].values
+    var_nhigh = np.sqrt(np.sum((nhighs - np.mean(nhighs))**2))
 
-    ci_alpha = [alpha-1.96*se_nhigh, alpha+1.96*se_nhigh]
-    ci_beta = [beta-1.96*se_nlow, beta+1.96*se_nlow]
-    ci_angle = [np.atan(ci_alpha[0]/ci_beta[1]),
-                np.atan(ci_alpha[1]/ci_beta[0])]
+    nlows = da.coords['n_low'].values
+    var_nlow = np.sqrt(np.sum((nlows - np.mean(nlows))**2))
 
-    print(f'95% CI alpha: {ci_alpha}')
-    print(f'95% CI beta: {ci_beta}')
-    print(f'95% CI angle: {ci_angle}')
+    s = np.sqrt(SSE / df)
 
+    se_nhigh = s / var_nhigh
+    se_nlow = s / var_nlow
+
+    ci_alpha = ConfidenceInterval(alpha, se_nhigh, alpha-1.96*se_nhigh, alpha+1.96*se_nhigh)
+    ci_beta = ConfidenceInterval(beta, se_nlow, beta-1.96*se_nlow, beta+1.96*se_nlow)
+
+    theta = np.arctan2(alpha, beta) + np.pi
+    mid_angle = np.rad2deg(theta)
+    angles = [ratio_to_angle(a, b) for a, b in product(ci_alpha[2:], ci_beta[2:])]
+
+    return AngleSummary(alpha, beta, gamma, theta, mid_angle, min(angles), max(angles))
 
 
 def store_extended_correlations():
@@ -63,7 +90,7 @@ def store_extended_correlations():
 
         'Record', 'category fname ndim pearson_r pearson_r2 '
                   'spearman_r spearman_r2 param '
-                  'alpha beta gamma theta deg'
+                  'alpha beta gamma theta deg deg_low deg_high'
     )
     records = []
     correlations = pd.read_csv(correlations_path)
@@ -93,13 +120,8 @@ def store_extended_correlations():
             with xr.open_dataset(file) as ds:
                 da = ds['mses'].sel(model='high_hier')
             with da.load() as da:
-                reg = proc.fit_lin_reg(da)
-            coef = reg.coef_
-            theta = np.arctan2(*reg.coef_[:2])
-            deg = np.rad2deg(theta) % 180
-            records.append(Record(*row, *coef, theta, deg))
-
-            calc_and_print_CIs(da)
+                angle_summary = calc_angle(da)
+            records.append(Record(*row, *angle_summary))
 
     df = pd.DataFrame.from_records(records, columns=Record._fields)
     return df
@@ -125,7 +147,8 @@ for corr_type in correlation_types:
     for category, df in extended_correlations.groupby('category'):
         for func_name, sub_df in df.groupby('fname'):
             x, y = sub_df[f'{corr_type}_r'].values, sub_df['deg'].values
-            plt.scatter(x, y)
+            errors = np.stack([y - sub_df['deg_low'].values, sub_df['deg_high'].values - y])
+            plt.errorbar(x, y, yerr=errors, ls='', capsize=1)
             plt.axhline(**line_at_90)
             plt.title(func_name)
             plt.xlabel(xlabel)
@@ -137,21 +160,23 @@ for corr_type in correlation_types:
             plt.savefig(plot_dir / f'{category}-{func_name}.pdf')
             plt.close()
 
-
     fig, ax = plt.subplots(figsize=(7.0,5.2), constrained_layout=True)
 
     adjustables = extended_correlations.loc[extended_correlations['category'] == 'adjustable']
     for func_name, sub_df in adjustables.groupby('fname'):
         x, y = sub_df[f'{corr_type}_r'].values, sub_df['deg'].values
-        #plt.scatter(x, y, marker='.', label=func_name)
-        plt.plot(x, y, linestyle='-', linewidth=.3, marker='.', label=f'adjustable {func_name}')
+        errors = np.stack([y - sub_df['deg_low'].values, sub_df['deg_high'].values - y])
+        plt.errorbar(x, y, yerr=errors, capsize=1, linestyle='-', linewidth=.5, marker='.', label=f'adjustable {func_name}')
 
 
     regulars = extended_correlations.loc[extended_correlations['category'] == 'regular']
     markers = 'ov^<>+x*1234'
     for (func_name, sub_df), marker in zip(regulars.groupby('fname'), markers):
+        if func_name == 'forrester':
+            sub_df = sub_df.loc[sub_df['ndim'] == 1]
         x, y = sub_df[f'{corr_type}_r'].values, sub_df['deg'].values
-        plt.scatter(x, y, marker=marker, label=func_name)
+        errors = np.stack([y - sub_df['deg_low'].values, sub_df['deg_high'].values - y])
+        plt.errorbar(x, y, yerr=errors, ls='', capsize=1, linewidth=.5, marker=marker, label=func_name)
 
 
     plt.axhline(**line_at_90)
@@ -167,12 +192,6 @@ for corr_type in correlation_types:
     plt.grid(**grid_style, which='both')
 
     plt.legend(loc='lower left')
-    # Shrink current axis by 20%
-    #box = ax.get_position()
-    #ax.set_position([box.x0, box.y0, box.width * 0.75, box.height])
-
-    # Put a legend to the right of the current axis
-    #ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
     plt.savefig(plot_dir / f'comparison_{corr_type}.png')
     plt.savefig(plot_dir / f'comparison_{corr_type}.pdf')
