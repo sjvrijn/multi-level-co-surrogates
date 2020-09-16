@@ -12,7 +12,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 import subprocess
 
-arguments = range(0, 24, 2)
+arguments = range(3, 44, 4)
 for arg in arguments:
     out_log = open(f'out{arg:02d}.log', 'w')
-    subprocess.run(f'python3 2019-11-12-different-surrogates.py {arg} &', shell=True, stdout=out_log)
+    subprocess.run(f'python3 2019-11-12-different-surrogates.py {arg}', shell=True, stdout=out_log)

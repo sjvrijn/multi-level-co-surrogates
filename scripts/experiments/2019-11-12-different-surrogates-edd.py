@@ -12,7 +12,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 import subprocess
 
-arguments = range(1, 24, 2)
+arguments = [x for x in range(0, 44) if x%2 != 1]  # exclude ElasticNet and RBF
 for arg in arguments:
     out_log = open(f'out{arg:02d}.log', 'w')
     subprocess.run(f'python3 2019-11-12-different-surrogates.py {arg} &', shell=True, stdout=out_log)

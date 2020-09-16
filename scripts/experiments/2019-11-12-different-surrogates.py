@@ -47,8 +47,8 @@ cases = [
 surrogate_names = [
     'RandomForest',
     'ElasticNet',
-    'SVM'
-    'RBF'
+    'SVM',
+    'RBF',
 ]
 
 scaling_options = [
