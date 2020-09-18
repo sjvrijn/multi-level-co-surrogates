@@ -367,7 +367,7 @@ def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
     """Return lin-reg coefficients after training index -> value"""
 
     series = da.to_series().dropna()
-    X = np.array(series.index.tolist())
+    X = np.array(series.index.tolist())[:,:2]  # remove rep_idx (3rd column)
     y = np.log10(series.values)
     reg = LinearRegression().fit(X, y)
 
