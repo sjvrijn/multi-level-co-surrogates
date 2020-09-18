@@ -58,11 +58,11 @@ def ratio_to_angle(x1, x2):
 
 
 def calc_angle(da):
-    AngleSummary = namedtuple('AngleSummary', 'alpha beta gamma theta deg deg_low deg_high')
+    AngleSummary = namedtuple('AngleSummary', 'alpha beta theta deg deg_low deg_high')
     reg, SSE = proc.fit_lin_reg(da, calc_SSE=True)
 
-    alpha, beta, gamma = reg.coef_
-    df = da.size - 4
+    alpha, beta = reg.coef_
+    df = da.size - 3
 
     nhighs = da.coords['n_high'].values
     var_nhigh = np.sqrt(np.sum((nhighs - np.mean(nhighs))**2))
@@ -82,7 +82,7 @@ def calc_angle(da):
     mid_angle = np.rad2deg(theta)
     angles = [ratio_to_angle(a, b) for a, b in product(ci_alpha[2:], ci_beta[2:])]
 
-    return AngleSummary(alpha, beta, gamma, theta, mid_angle, min(angles), max(angles))
+    return AngleSummary(alpha, beta, theta, mid_angle, min(angles), max(angles))
 
 
 def determine_extended_correlations():
@@ -91,7 +91,7 @@ def determine_extended_correlations():
 
         'Record', 'category fname ndim pearson_r pearson_r2 '
                   'spearman_r spearman_r2 param '
-                  'alpha beta gamma theta deg deg_low deg_high'
+                  'alpha beta theta deg deg_low deg_high'
     )
     records = []
     correlations = pd.read_csv(correlations_path)
