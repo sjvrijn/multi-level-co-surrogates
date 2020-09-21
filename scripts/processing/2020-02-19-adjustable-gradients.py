@@ -11,7 +11,6 @@ step to speed up any potential rerun.
 from collections import namedtuple
 from itertools import product
 import argparse
-import re
 
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
@@ -19,6 +18,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from pyprojroot import here
+from parse import compile
 
 import processing as proc
 
@@ -30,8 +30,6 @@ regulars_dir = here('files/2019-09-mse-nc/')
 adjustables_dir = here("files/2019-10-07-adjustables/")
 plot_dir = here('plots/2020-02-19-adjustable-gradients/', warn=False)
 plot_dir.mkdir(exist_ok=True, parents=True)
-
-fname_template = re.compile(r'[A-Za-z]*-(\d+)d-Adjustable([A-Za-z]*3?)([01].\d+).nc')
 
 correlations_path = here('files/correlations.csv')
 extended_correlations_path = here('files/extended_correlations.csv', warn=False)
@@ -99,24 +97,22 @@ def determine_extended_correlations():
     for category, directory in zip(('regular', 'adjustable'),
                                    [regulars_dir, adjustables_dir]):
         if category == 'regular':
-            fname_template = re.compile(r'[A-Za-z]*-(\d+)d-([A-Za-z0-9]*).nc')
+            fname_template = compile("{surrogate:w}-{ndim:d}d-{fname}.nc")
         else:
-            fname_template = re.compile(r'[A-Za-z]*-(\d+)d-Adjustable([A-Za-z]*3?)([01].\d+).nc')
+            fname_template = compile("{surrogate:w}-{ndim:d}d-Adjustable{fname}{param:f}.nc")
 
         for file in sorted(directory.iterdir()):
-            match = fname_template.match(file.name)
+            match = fname_template.parse(file.name)
             if not match:
                 continue
 
             if category == 'regular':
-                ndim, func_name = match.groups()
                 row = correlations.loc[(correlations['category'] == 'regular')
-                                       & (correlations['name'] == func_name.lower())
-                                       & (correlations['ndim'] == int(ndim))].squeeze()
+                                       & (correlations['name'] == match['fname'].lower())
+                                       & (correlations['ndim'] == match['ndim'])].squeeze()
             else:
-                ndim, func_name, value = match.groups()
-                row = correlations.loc[(correlations['name'] == func_name.lower())
-                                       & (correlations['param'] == float(value))].squeeze()
+                row = correlations.loc[(correlations['name'] == match['fname'].lower())
+                                       & (correlations['param'] == match['param'])].squeeze()
 
             with xr.open_dataset(file) as ds:
                 da = ds['mses'].sel(model='high_hier')
