@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from pyprojroot import here
-from parse import compile
+from parse import Parser
 
 import processing as proc
 
@@ -97,12 +97,12 @@ def determine_extended_correlations():
     for category, directory in zip(('regular', 'adjustable'),
                                    [regulars_dir, adjustables_dir]):
         if category == 'regular':
-            fname_template = compile("{surrogate:w}-{ndim:d}d-{fname}.nc")
+            fname_parser = Parser("{surrogate:w}-{ndim:d}d-{fname}.nc")
         else:
-            fname_template = compile("{surrogate:w}-{ndim:d}d-Adjustable{fname}{param:f}.nc")
+            fname_parser = Parser("{surrogate:w}-{ndim:d}d-Adjustable{fname}{param:f}.nc")
 
         for file in sorted(directory.iterdir()):
-            match = fname_template.parse(file.name)
+            match = fname_parser.parse(file.name)
             if not match:
                 continue
 

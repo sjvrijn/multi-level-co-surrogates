@@ -10,12 +10,12 @@ potential rerun.
 '''
 
 from collections import namedtuple
-import re
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
+from parse import Parser
 from pyprojroot import here
 from sklearn.linear_model import LinearRegression
 
@@ -31,7 +31,7 @@ plot_dir.mkdir(exist_ok=True, parents=True)
 
 correlations_file = here('files/extended_correlations.csv', warn=False)
 gradients_file = here('files/gradient_comparison.csv', warn=False)
-fname_template = re.compile(r'[A-Za-z]*-(\d+)d-Adjustable([A-Za-z]*3?)([01].\d+)-sub50-125-seed(\d).nc')
+fname_parser = Parser('{}-{ndim:d}d-Adjustable{fname:w}{param:f}-sub50-125-seed{seed_offset:d}.nc')
 
 save_extensions = ['pdf', 'png']
 
@@ -41,11 +41,11 @@ def calculate_gradient_comparisons():
     Record = namedtuple('Record', 'name param seed_offset pearson_r orig_deg sub_deg cv_deg')
     records = []
     for file in sorted(subsampling_dir.iterdir()):
-        match = fname_template.match(file.name)
+        match = fname_parser.parse(file.name)
         if not match:
             continue
 
-        ndim, func_name, param, seed_offset = match.groups()
+        func_name, param, seed_offset = match['fname'], match['param'], match['seed_offset']
         orig_row = correlations.loc[(correlations['fname'] == func_name.lower())
                                     & (correlations['param'] == float(param))]
         orig_deg = orig_row['deg'].values[0]

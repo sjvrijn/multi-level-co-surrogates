@@ -6,12 +6,9 @@
 parameter (nhigh * nlow) would add accuracy to a linear regression model.
 """
 
-from itertools import product
-import re
-
 import numpy as np
-import pandas as pd
 import xarray as xr
+from parse import Parser
 from pyprojroot import here
 from sklearn.linear_model import LinearRegression
 
@@ -20,7 +17,6 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 regulars_dir = here('files/2019-09-mse-nc/')
 adjustables_dir = here("files/2019-10-07-adjustables/")
-fname_template = re.compile(r'[A-Za-z]*-(\d+)d-Adjustable([A-Za-z]*3?)([01].\d+).nc')
 
 
 def test_interaction(da: xr.DataArray):
@@ -60,12 +56,12 @@ def check_for_interactions():
     for category, directory in zip(('regular', 'adjustable'),
                                    [regulars_dir, adjustables_dir]):
         if category == 'regular':
-            fname_template = re.compile(r'[A-Za-z]*-(\d+)d-([A-Za-z0-9]*).nc')
+            fname_parser = Parser("{surrogate:w}-{ndim:d}d-{fname}.nc")
         else:
-            fname_template = re.compile(r'[A-Za-z]*-(\d+)d-Adjustable([A-Za-z]*3?)([01].\d+).nc')
+            fname_parser = Parser("{surrogate:w}-{ndim:d}d-Adjustable{fname}{param:f}.nc")
 
         for file in sorted(directory.iterdir()):
-            match = fname_template.match(file.name)
+            match = fname_parser.parse(file.name)
             if not match:
                 continue
 
@@ -74,6 +70,5 @@ def check_for_interactions():
             with da.load() as da:
                 print(f'{file.stem}:', end=' ')
                 is_interaction_zero, b, se = test_interaction(da)
-                #print(f'{is_interaction_zero} [{b:.6f} +- {1.96*se:.6f}]')
 
 check_for_interactions()
