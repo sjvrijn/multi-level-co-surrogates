@@ -4,6 +4,7 @@
 """
 2019-11-27-gradients.py: script to calculate some form of gradients for all
 mse-grid files
+#TODO: review necessity of this file
 """
 
 from collections import namedtuple
@@ -34,25 +35,25 @@ for directory in [d for d in data_dir.iterdir() if d.is_dir()]:
     for file in [f for f in directory.iterdir() if f.suffix == '.nc']:
         with xr.open_dataset(file) as ds:
             da = ds['mses'].sel(model='high_hier')
+
         with da.load() as da:
             reg = proc.fit_lin_reg(da)
             coef = reg.coef_
-
             records.append(Record(directory.name, file.stem, *coef))
-
-            # create lin-reg based plots
-            #TODO: factor out into separate function
             n_high_y = np.array(da.coords['n_high'].values).reshape((-1, 1))
             n_low_x = np.array(da.coords['n_low'].values).reshape((1, -1))
 
+        # create lin-reg based plots
         out = n_high_y*coef[0] + n_low_x*coef[1] + reg.intercept_
         out = np.triu(out)
         out[out == 0] = np.nan
+        #TODO: make plot optional
         plt.imshow(out, origin='lower', cmap='viridis_r')
         plt.contour(out, levels=10, colors='black', alpha=.2, linewidths=1)
         plt.title(f"{directory.name}: {file.stem}")
         plt.show()
 
+#TODO: store as csv
 df = pd.DataFrame.from_records(records, columns=Record._fields)
 df.to_latex(save_dir / 'all_gradients.tex',
             float_format="{:0.3f}".format, index=False)
