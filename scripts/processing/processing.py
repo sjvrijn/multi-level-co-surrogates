@@ -457,4 +457,4 @@ def calc_and_store_gradient_angles(directory):
                               *angle_summary))
 
     df = pd.DataFrame.from_records(records, columns=Record._fields)
-    df.to_csv(directory / 'gradients.csv')
+    df.to_csv(directory / 'gradients.csv', index=False)
