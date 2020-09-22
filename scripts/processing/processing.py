@@ -70,13 +70,15 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
 
     :param data: `xr.DataArray` containing the MSE values
     :param title: title to use at top of the image
-    :param vmin: minimum value for colorscale normalization
-    :param vmax: maximum value for colorscale normalization
+    :param vmin: minimum value for color scale normalization
+    :param vmax: maximum value for color scale normalization
     :param points: iterable of namedtuples for fixed DoE's to plot
     :param contours: number of contour lines to draw. Default: 0
     :param as_log: display the log10 of the data or not (default False)
     :param save_as: desired filename for saving the image. Not saved if `None`
     :param show: whether or not to call `plt.show()`. Default: False
+    :param include_comparisons: whether or not to include single-fidelity model
+                                averages along axes. Default: False
     """
     if not (show or save_as):
         return  # no need to make the plot if not showing or saving it
@@ -103,7 +105,6 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
     plt.title(f'{"log10 " if as_log else ""}Median MSE for $z_h$ - {title}')
 
     da_hh = data.sel(model='high_hier')
-
 
     img = ax.imshow(da_hh, extent=extent, **imshow_style)
     if contours:
@@ -167,8 +168,8 @@ def plot_multiple_high_vs_low_num_samples(datas, titles, as_log=True,
     :param datas: `xr.DataArray`s containing the MSE values
     :param titles: titles to use at top of the image
     :param as_log: boolean to log-normalize the data or not
-    :param vmin: minimum value for colorscale normalization
-    :param vmax: maximum value for colorscale normalization
+    :param vmin: minimum value for color scale normalization
+    :param vmax: maximum value for color scale normalization
     :param contours: number of contour lines to draw. Default: 0
     :param save_as: desired filename for saving the image. Not saved if `None`
     :param show: whether or not to call `plt.show()`. Default: False
@@ -219,9 +220,7 @@ def plot_high_vs_low_num_samples_diff(data, title, max_diff=None, save_as=None):
         max_diff = 2*min(abs(np.nanmin(to_plot)), np.nanmax(to_plot))
 
     norm = colors.SymLogNorm(linthresh=.01, vmin=-max_diff, vmax=max_diff, clip=True)
-
     long_title = f'Median of paired (high (hierarchical) - high (direct)) MSE - {title}'
-
     plot_high_v_low_diff(to_plot, long_title, norm, save_as)
 
 
@@ -235,9 +234,7 @@ def plot_inter_method_diff(data_A, data_B, name, model='high_hier',
         max_diff = 2*min(abs(np.nanmin(to_plot)), np.nanmax(to_plot))
 
     norm = colors.Normalize(vmin=-max_diff, vmax=max_diff, clip=True)
-
     long_title = f'high (hierarchical) MSE: {name}'
-
     plot_high_v_low_diff(to_plot, long_title, norm, save_as)
 
 
@@ -388,7 +385,8 @@ class ConfidenceInterval(namedtuple('ConfidenceInterval', 'mean se lower upper')
     def __str__(self):
         lower = self.lower if self.lower is not None else self.mean - 1.96*self.se
         upper = self.upper if self.upper is not None else self.mean + 1.96*self.se
-        return f'95% CI: {self.mean:.4f} +/- {1.96*self.se:.4f} {np.array([lower, upper])}: H0{" not" if 0 in self else ""} rejected'
+        return f'95% CI: {self.mean:.4f} +/- {1.96*self.se:.4f} {np.array([lower, upper])}: ' \
+               f'H0{" not" if 0 in self else ""} rejected'
 
 
 def ratio_to_angle(x1, x2):
