@@ -88,7 +88,7 @@ for func in mf2.adjustable.bi_fidelity_functions:
         y_h, y_l = f.high(sample), f.low(sample)
         pear, spear = pearsonr(y_h, y_l)[0], spearmanr(y_h, y_l)[0]
         results.append(
-            Adj_Corr_result(func.name.lower(), f.ndim, a, pear, pear**2, spear, spear**2)
+            Adj_Corr_result(func.__name__.lower(), f.ndim, a, pear, pear**2, spear, spear**2)
         )
 
 adjustables_correlations = pd.DataFrame.from_records(results, columns=Adj_Corr_result._fields)
