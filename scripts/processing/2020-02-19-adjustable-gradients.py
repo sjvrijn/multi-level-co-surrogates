@@ -46,6 +46,7 @@ def create_plots(correlations, angles):
     xticks = np.linspace(-1, 1, 11)
     correlation_types = ['pearson', 'spearman']
 
+    extended_correlations = angles.merge(correlations)
 
     markers = 'ov^<>+x*1234'
     for corr_type in correlation_types:
@@ -73,7 +74,6 @@ def create_plots(correlations, angles):
             errors = np.stack([y - sub_df['deg_low'].values, sub_df['deg_high'].values - y])
             plt.errorbar(x, y, yerr=errors, capsize=1, linestyle='-', linewidth=.5, marker='.', label=f'adjustable {func_name}')
 
-
         regulars = extended_correlations.loc[extended_correlations['category'] == 'regular']
         for (func_name, sub_df), marker in zip(regulars.groupby('fname'), markers):
             if func_name == 'forrester':
@@ -81,7 +81,6 @@ def create_plots(correlations, angles):
             x, y = sub_df[f'{corr_type}_r'].values, sub_df['deg'].values
             errors = np.stack([y - sub_df['deg_low'].values, sub_df['deg_high'].values - y])
             plt.errorbar(x, y, yerr=errors, ls='', capsize=1, linewidth=.5, marker=marker, label=func_name)
-
 
         plt.axhline(**line_at_90)
         plt.title("Comparing Adjustable Functions")
@@ -115,11 +114,13 @@ if __name__ == '__main__':
     if args.regen_csv or not (regulars_dir / 'gradients.csv').exists():
         proc.calc_and_store_gradient_angles(regulars_dir)
 
-    correlations = pd.read_csv(correlations_path)
-    adjustable_angles = pd.read_csv(adjustables_dir / 'gradients.csv')
-    regular_angles = pd.read_csv(regulars_dir / 'gradients.csv')
+    index_columns = ['category', 'ndim', 'fname', 'param']
 
-    angles = pd.concat([regular_angles, adjustable_angles], ignore_index=True)
+    correlations = pd.read_csv(correlations_path, index_col=index_columns)
+    adjustable_angles = pd.read_csv(adjustables_dir / 'gradients.csv', index_col=index_columns)
+    regular_angles = pd.read_csv(regulars_dir / 'gradients.csv', index_col=index_columns)
+
+    angles = regular_angles.append(adjustable_angles, ignore_index=True)
 
     if not args.no_plots:
         create_plots(correlations, angles)
