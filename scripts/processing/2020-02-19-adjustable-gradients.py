@@ -115,9 +115,9 @@ if __name__ == '__main__':
     if args.regen_csv or not (regulars_dir / 'gradients.csv').exists():
         proc.calc_and_store_gradient_angles(regulars_dir)
 
-    correlations = pd.read_csv(correlations_path, index=False)
-    adjustable_angles = pd.read_csv(adjustables_dir / 'gradients.csv', index=False)
-    regular_angles = pd.read_csv(regulars_dir / 'gradients.csv', index=False)
+    correlations = pd.read_csv(correlations_path)
+    adjustable_angles = pd.read_csv(adjustables_dir / 'gradients.csv')
+    regular_angles = pd.read_csv(regulars_dir / 'gradients.csv')
 
     angles = pd.concat([regular_angles, adjustable_angles], ignore_index=True)
 
