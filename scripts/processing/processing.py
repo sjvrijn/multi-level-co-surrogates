@@ -424,13 +424,14 @@ def calc_angle(da):
 
     return AngleSummary(alpha, beta, theta, mid_angle, min(angles), max(angles))
 
+
 def calc_and_store_gradient_angles(directory):
     """Given a directory, calculate the gradient angle for each .nc file and
     store them all in a .csv file for easy recall and processing.
     """
     Record = namedtuple(
-        'Record', 'category fname ndim param '
-                  'alpha beta theta deg deg_low deg_high'
+        'Record',
+        'category fname ndim param alpha beta theta deg deg_low deg_high'
     )
     records = []
     adjustable_parser = Parser("{surrogate:w}-{ndim:d}d-Adjustable{fname}{param:f}.nc")
@@ -446,13 +447,13 @@ def calc_and_store_gradient_angles(directory):
 
         if not match:
             continue
+        param = match['param'] if 'param' in match else None
 
         with xr.open_dataset(file) as ds:
             da = ds['mses'].sel(model='high_hier')
         with da.load() as da:
             angle_summary = calc_angle(da)
-        param = match.param if 'param' in match else None
-        records.append(Record(category, match.fname, match.ndim, param,
+        records.append(Record(category, match['fname'], match['ndim'], param,
                               *angle_summary))
 
     df = pd.DataFrame.from_records(records, columns=Record._fields)
