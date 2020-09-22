@@ -79,7 +79,7 @@ Adj_Corr_result = namedtuple("Corr_result",
                              "name ndim param pearson_r pearson_r2 spearman_r spearman_r2")
 
 results = []
-for func in mf2.adjustable.bifidelity_functions:
+for func in mf2.adjustable.bi_fidelity_functions:
     for a in params:
         f = func(np.round(a, 3))
         bounds = (np.array(f.l_bound), np.array(f.u_bound))
