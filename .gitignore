@@ -8,3 +8,4 @@ plots/
 .ipynb_checkpoints/
 *.npy
 *.npz
+.python-version
