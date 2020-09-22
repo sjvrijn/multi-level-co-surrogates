@@ -39,7 +39,7 @@ test_sample = {
     for ndim in dims
 }
 
-Corr_result = namedtuple("Corr_result", "name ndim pearson_r pearson_r2 spearman_r spearman_r2")
+Corr_result = namedtuple("Corr_result", "fname ndim pearson_r pearson_r2 spearman_r spearman_r2")
 results = []
 for i, f in enumerate(mf2.bi_fidelity_functions):
     sample = mlcs.rescale(test_sample[f.ndim], range_in=(0, 1), range_out=f.bounds)
@@ -49,7 +49,7 @@ for i, f in enumerate(mf2.bi_fidelity_functions):
     results.append(Corr_result(f.name.lower(), f.ndim, pear, pear**2, spear, spear**2))
 
 bi_fid_correlations = pd.DataFrame.from_records(results, columns=Corr_result._fields)
-bi_fid_correlations = bi_fid_correlations.sort_values(by=['ndim', 'name'])
+bi_fid_correlations = bi_fid_correlations.sort_values(by=['ndim', 'fname'])
 bi_fid_correlations.to_latex(save_dir / 'correlations-table.tex',
                              float_format="{:0.3f}".format, index=False)
 
@@ -76,7 +76,7 @@ regular_correlations = regular_correlations.drop_duplicates()
 
 params = np.round(np.linspace(0, 1, 101), 3)
 Adj_Corr_result = namedtuple("Corr_result",
-                             "name ndim param pearson_r pearson_r2 spearman_r spearman_r2")
+                             "fname ndim param pearson_r pearson_r2 spearman_r spearman_r2")
 
 results = []
 for func in mf2.adjustable.bi_fidelity_functions:
@@ -117,7 +117,7 @@ labels = {
 
 param_idx = {'branin': 1, 'paciorek': 2, 'hartmann3': 3, 'trid': 4}
 
-grouped_df = adjustables_correlations.groupby('name')
+grouped_df = adjustables_correlations.groupby('fname')
 fig = plt.figure(figsize=figsize)  #, constrained_layout=True)
 gs = fig.add_gridspec(nrows=2, ncols=2, bottom=0.16, wspace=0.3, hspace=0.45, right=0.975, top=0.95, left=0.1)
 axes = [
