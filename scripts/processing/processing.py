@@ -453,7 +453,7 @@ def calc_and_store_gradient_angles(directory):
             da = ds['mses'].sel(model='high_hier')
         with da.load() as da:
             angle_summary = calc_angle(da)
-        records.append(Record(category, match['fname'], match['ndim'], param,
+        records.append(Record(category, match['fname'].lower(), match['ndim'], param,
                               *angle_summary))
 
     df = pd.DataFrame.from_records(records, columns=Record._fields)
