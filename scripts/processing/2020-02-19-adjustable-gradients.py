@@ -55,16 +55,16 @@ def create_plots(correlations, angles, plot_individuals=False):
 
         plt.subplots(figsize=(7.0,5.2), constrained_layout=True)
 
-        adjustables = extended_correlations.loc[extended_correlations['category'] == 'adjustable']
+        adjustables = extended_correlations.loc['adjustable']
         for func_name, sub_df in adjustables.groupby('fname'):
             x, y = sub_df[f'{corr_type}_r'].values, sub_df['deg'].values
             errors = np.stack([y - sub_df['deg_low'].values, sub_df['deg_high'].values - y])
             plt.errorbar(x, y, yerr=errors, capsize=1, linestyle='-', linewidth=.5, marker='.', label=f'adjustable {func_name}')
 
-        regulars = extended_correlations.loc[extended_correlations['category'] == 'regular']
+        regulars = extended_correlations.loc['regular']
         for (func_name, sub_df), marker in zip(regulars.groupby('fname'), markers):
             if func_name == 'forrester':
-                sub_df = sub_df.loc[sub_df['ndim'] == 1]
+                sub_df = sub_df.loc[1]
             x, y = sub_df[f'{corr_type}_r'].values, sub_df['deg'].values
             errors = np.stack([y - sub_df['deg_low'].values, sub_df['deg_high'].values - y])
             plt.errorbar(x, y, yerr=errors, ls='', capsize=1, linewidth=.5, marker=marker, label=func_name)
