@@ -47,8 +47,8 @@ seed_offsets = range(0, 5)
 as_log = True
 
 for case, surr_name, sub, seed_offset in product(cases, surr_names, sub_from, seed_offsets):
-    subsample_fname = subsample_dir / f'{surr_name}-{case.ndim}d-{case.name}-sub{sub.high}-{sub.low}-seed{seed_offset}.nc'
-    regular_fname = regular_dir / f'Matern-{case.ndim}d-{case.name}.nc'
+    subsample_fname = subsample_dir / f'{surr_name}-{case.ndim}d-{case.name.replace(" ", "-")}-sub{sub.high}-{sub.low}-seed{seed_offset}.nc'
+    regular_fname = regular_dir / f'Matern-{case.ndim}d-{case.name.replace(" ", "-")}.nc'
 
     if not subsample_fname.exists():
         print(f"{subsample_fname.name} not found, skipping...")
@@ -57,7 +57,7 @@ for case, surr_name, sub, seed_offset in product(cases, surr_names, sub_from, se
         print(f"{regular_fname.name} not found, skipping...")
         continue
 
-    with xr.open_dataset(regular_dir / f'Matern-{case.ndim}d-{case.name}.nc') as ds:
+    with xr.open_dataset(regular_dir / f'Matern-{case.ndim}d-{case.name.replace(" ", "-")}.nc') as ds:
         regular_mses = ds['mses'].load()
     with xr.open_dataset(subsample_fname) as ds:
         subsample_mses = ds['mses'].load()
@@ -70,7 +70,7 @@ for case, surr_name, sub, seed_offset in product(cases, surr_names, sub_from, se
         f'Cross-validation of subsampling',
     ]
 
-    plot_name = f'comparison-{surr_name}-{case.ndim}d-{case.name.replace(".","")}-sub{sub.high}-{sub.low}-seed{seed_offset}-high-low-samples'
+    plot_name = f'comparison-{surr_name}-{case.ndim}d-{case.name.replace(".","").replace(" ", "-")}-sub{sub.high}-{sub.low}-seed{seed_offset}-high-low-samples'
 
     proc.plot_multiple_high_vs_low_num_samples(mses, titles, as_log, contours=8,
                                                save_as=plot_dir / f'{plot_name}.pdf')

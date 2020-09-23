@@ -29,7 +29,7 @@ plot_extension = "pdf"
 Case = namedtuple('Case', 'name ndim vmin vmax max_diff')
 
 cases = [
-    Case(f"Adjustable{name}{a1}", ndim, vmin, vmax, None)
+    Case(f"Adjustable-{name}-{a1}", ndim, vmin, vmax, None)
     for a1 in np.round(np.linspace(0.0, 1.0, 21), 2)
     for name, ndim, vmin, vmax in (
         ("Branin",     2,   10, 1e4),

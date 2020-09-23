@@ -276,7 +276,7 @@ def create_model_error_grid(func, instances, mfbo_options, save_dir,
 
     # Determine unique output path for this experiment
     surr_name = repr_surrogate_name(mfbo_options)
-    output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name}.nc"
+    output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name.replace(' ', '-')}.nc"
 
 
     # Don't redo any prior data that already exists
@@ -394,7 +394,7 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options,
     # Determine unique output path for this experiment
     surr_name = repr_surrogate_name(mfbo_options)
     doe_high, doe_low = DoE_spec
-    output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name}-sub{doe_high}-{doe_low}.nc"
+    output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name.replace(' ', '-')}-sub{doe_high}-{doe_low}.nc"
 
     # Don't redo any prior data that already exists
     if output_path.exists():
@@ -503,7 +503,7 @@ def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_option
     # Determine unique output path for this experiment
     surr_name = repr_surrogate_name(mfbo_options)
     doe_high, doe_low = DoE_spec
-    output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name}-sub{doe_high}-{doe_low}-seed{seed_offset}.nc"
+    output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name.replace(' ', '-')}-sub{doe_high}-{doe_low}-seed{seed_offset}.nc"
 
     # Don't redo any prior data that already exists
     if output_path.exists():

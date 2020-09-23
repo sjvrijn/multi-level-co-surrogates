@@ -29,21 +29,21 @@ Case = namedtuple('Case', 'name ndim as_log')
 Subsample = namedtuple('Subsample', 'high low')
 
 cases = [
-    Case('Forrester',        1, True),
-    Case('Forrester',        2, True),
-    Case('Forrester',        4, True),
-    Case('Forrester',        6, True),
-    Case('Forrester',        8, True),
-    Case('Bohachevsky',      2, True),
-    Case('Booth',            2, True),
-    Case('Branin',           2, True),
-    Case('Currin',           2, True),
-    Case('Himmelblau',       2, True),
-    Case('SixHumpCamelback', 2, True),
-    Case('Park91A',          4, True),
-    Case('Park91B',          4, True),
-    Case('Hartmann6',        6, True),
-    Case('Borehole',         8, True),
+    Case('Forrester',          1, True),
+    Case('Forrester',          2, True),
+    Case('Forrester',          4, True),
+    Case('Forrester',          6, True),
+    Case('Forrester',          8, True),
+    Case('Bohachevsky',        2, True),
+    Case('Booth',              2, True),
+    Case('Branin',             2, True),
+    Case('Currin',             2, True),
+    Case('Himmelblau',         2, True),
+    Case('Six-Hump-Camelback', 2, True),
+    Case('Park-91A',           4, True),
+    Case('Park-91B',           4, True),
+    Case('Hartmann6',          6, True),
+    Case('Borehole',           8, True),
 ]
 
 surr_names = [

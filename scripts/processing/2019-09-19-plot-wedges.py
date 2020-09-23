@@ -29,21 +29,21 @@ plot_dir.mkdir(parents=True, exist_ok=True)
 Case = namedtuple('Case', 'name ndim vmin vmax max_diff as_log')
 
 cases = [
-    Case('Forrester',        1,   1e-5  ,   1e2  ,  100,  True),
-    Case('Forrester',        2, 10**-0.8,   1e1  ,  100,  True),
-    Case('Forrester',        4,    1e0  ,   1e1  ,   10, False),
-    Case('Forrester',        6,    1e0  ,   1e1  ,   10, False),
-    Case('Forrester',        8,    1e0  ,   1e1  ,   10, False),
-    Case('Bohachevsky',      2, 10**-0.5,   1e3  ,  100,  True),
-    Case('Booth',            2,    1e2  ,   1e5  , 1000,  True),
-    Case('Branin',           2,    1e1  ,   1e4  , None,  True),
-    Case('Currin',           2,   1e-2  ,   1e1  ,   50,  True),
-    Case('Himmelblau',       2,    1e2  ,   1e4  , 1000,  True),
-    Case('SixHumpCamelback', 2,  10**0.5,   1e3  ,  100,  True),
-    Case('Park91A',          4,   1e-3  ,   1e1  ,    1,  True),
-    Case('Park91B',          4,   1e-4  ,   1e0  ,    1,  True),
-    Case('Hartmann6',        6,   1e-2  ,  1e-1  , None, False),
-    Case('Borehole',         8,    1e1  ,   1e4  ,  1e4,  True),
+    Case('Forrester',          1,   1e-5  ,   1e2  ,  100,  True),
+    Case('Forrester',          2, 10**-0.8,   1e1  ,  100,  True),
+    Case('Forrester',          4,    1e0  ,   1e1  ,   10, False),
+    Case('Forrester',          6,    1e0  ,   1e1  ,   10, False),
+    Case('Forrester',          8,    1e0  ,   1e1  ,   10, False),
+    Case('Bohachevsky',        2, 10**-0.5,   1e3  ,  100,  True),
+    Case('Booth',              2,    1e2  ,   1e5  , 1000,  True),
+    Case('Branin',             2,    1e1  ,   1e4  , None,  True),
+    Case('Currin',             2,   1e-2  ,   1e1  ,   50,  True),
+    Case('Himmelblau',         2,    1e2  ,   1e4  , 1000,  True),
+    Case('Six-Hump-Camelback', 2,  10**0.5,   1e3  ,  100,  True),
+    Case('Park-91A',           4,   1e-3  ,   1e1  ,    1,  True),
+    Case('Park-91B',           4,   1e-4  ,   1e0  ,    1,  True),
+    Case('Hartmann6',          6,   1e-2  ,  1e-1  , None, False),
+    Case('Borehole',           8,    1e1  ,   1e4  ,  1e4,  True),
 ]
 
 #with open(data_dir/"DoE-configs.csv", newline="") as infile:
