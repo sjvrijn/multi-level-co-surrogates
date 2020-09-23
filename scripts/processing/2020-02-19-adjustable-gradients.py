@@ -46,7 +46,7 @@ def create_plots(correlations, angles, plot_individuals=False):
 
     correlation_types = ['pearson', 'spearman']
 
-    extended_correlations = angles.merge(correlations)
+    extended_correlations = angles.merge(correlations).set_index(['category', 'ndim', 'fname', 'param'])
 
     markers = 'ov^<>+x*1234'
     for corr_type in correlation_types:
@@ -119,11 +119,9 @@ if __name__ == '__main__':
     if args.regen_csv or not (regulars_dir / 'gradients.csv').exists():
         proc.calc_and_store_gradient_angles(regulars_dir)
 
-    index_columns = ['category', 'ndim', 'fname', 'param']
-
-    correlations = pd.read_csv(correlations_path, index_col=index_columns)
-    adjustable_angles = pd.read_csv(adjustables_dir / 'gradients.csv', index_col=index_columns)
-    regular_angles = pd.read_csv(regulars_dir / 'gradients.csv', index_col=index_columns)
+    correlations = pd.read_csv(correlations_path)
+    adjustable_angles = pd.read_csv(adjustables_dir / 'gradients.csv')
+    regular_angles = pd.read_csv(regulars_dir / 'gradients.csv')
 
     angles = regular_angles.append(adjustable_angles)
 
