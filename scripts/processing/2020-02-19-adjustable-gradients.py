@@ -125,7 +125,7 @@ if __name__ == '__main__':
     adjustable_angles = pd.read_csv(adjustables_dir / 'gradients.csv', index_col=index_columns)
     regular_angles = pd.read_csv(regulars_dir / 'gradients.csv', index_col=index_columns)
 
-    angles = regular_angles.append(adjustable_angles, ignore_index=True)
+    angles = regular_angles.append(adjustable_angles)
 
     if not args.no_plots:
         create_plots(correlations, angles)
