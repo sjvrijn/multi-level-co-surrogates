@@ -434,7 +434,7 @@ def calc_and_store_gradient_angles(directory):
         'category fname ndim param alpha beta theta deg deg_low deg_high'
     )
     records = []
-    adjustable_parser = Parser("{surrogate:w}-{ndim:d}d-Adjustable{fname}{param:f}.nc")
+    adjustable_parser = Parser("{surrogate:w}-{ndim:d}d-Adjustable-{fname}-{param:f}.nc")
     regular_parser = Parser("{surrogate:w}-{ndim:d}d-{fname}.nc")
 
     for file in sorted(directory.iterdir()):

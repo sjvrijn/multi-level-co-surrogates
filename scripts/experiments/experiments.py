@@ -8,6 +8,7 @@ from itertools import product
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from parse import parse
 from pyDOE import lhs
 from pyprojroot import here
 from scipy.spatial import distance
@@ -276,7 +277,8 @@ def create_model_error_grid(func, instances, mfbo_options, save_dir,
 
     # Determine unique output path for this experiment
     surr_name = repr_surrogate_name(mfbo_options)
-    output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name.replace(' ', '-')}.nc"
+    fname = standardize_fname_for_file(func.name)
+    output_path = save_dir / f"{surr_name}-{func.ndim}d-{fname}.nc"
 
 
     # Don't redo any prior data that already exists
@@ -394,7 +396,9 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options,
     # Determine unique output path for this experiment
     surr_name = repr_surrogate_name(mfbo_options)
     doe_high, doe_low = DoE_spec
-    output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name.replace(' ', '-')}-sub{doe_high}-{doe_low}.nc"
+
+    fname = standardize_fname_for_file(func.name)
+    output_path = save_dir / f"{surr_name}-{func.ndim}d-{fname}-sub{doe_high}-{doe_low}.nc"
 
     # Don't redo any prior data that already exists
     if output_path.exists():
@@ -503,7 +507,9 @@ def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_option
     # Determine unique output path for this experiment
     surr_name = repr_surrogate_name(mfbo_options)
     doe_high, doe_low = DoE_spec
-    output_path = save_dir / f"{surr_name}-{func.ndim}d-{func.name.replace(' ', '-')}-sub{doe_high}-{doe_low}-seed{seed_offset}.nc"
+
+    fname = standardize_fname_for_file(func.name)
+    output_path = save_dir / f"{surr_name}-{func.ndim}d-{fname}-sub{doe_high}-{doe_low}-seed{seed_offset}.nc"
 
     # Don't redo any prior data that already exists
     if output_path.exists():
@@ -662,6 +668,14 @@ def results_to_dataset(results, instances, mfbo_options, attributes):
             'idx': range(n_test_samples),
         }
     )
+
+
+def standardize_fname_for_file(name):
+    if 'adjustable' in name:
+        fname, param = parse('{} {:f}', name)
+        name = f'{fname} {param:.2f}'
+    return name.replace(' ', '-')
+
 
 
 def get_tmp_path(path):

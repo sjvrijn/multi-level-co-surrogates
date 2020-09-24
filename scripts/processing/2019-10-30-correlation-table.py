@@ -16,6 +16,7 @@ from cycler import cycler
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from parse import Parser
 from pyprojroot import here
 from scipy.stats import pearsonr, spearmanr
 
@@ -32,6 +33,10 @@ plot_dir = here() / "plots/2019-10-correlation-exploration/"
 plot_dir.mkdir(parents=True, exist_ok=True)
 
 
+def standardize_name(name):
+    return name.lower().replace(' ', '-')
+
+
 size_per_dim = 2000
 dims = [1, 2, 3, 4, 6, 8, 10]
 test_sample = {
@@ -46,7 +51,10 @@ for i, f in enumerate(mf2.bi_fidelity_functions):
 
     y_h, y_l = f.high(sample), f.low(sample)
     pear, spear = pearsonr(y_h, y_l)[0], spearmanr(y_h, y_l)[0]
-    results.append(Corr_result(f.name.lower(), f.ndim, pear, pear**2, spear, spear**2))
+    name = standardize_name(f.name)
+    results.append(
+        Corr_result(name, f.ndim, pear, pear**2, spear, spear**2)
+    )
 
 bi_fid_correlations = pd.DataFrame.from_records(results, columns=Corr_result._fields)
 bi_fid_correlations = bi_fid_correlations.sort_values(by=['ndim', 'fname'])
@@ -60,8 +68,10 @@ for ndim, sample in test_sample.items():
 
     y_h, y_l = mf2.forrester.high(sample), mf2.forrester.low(sample)
     pear, spear = pearsonr(y_h, y_l)[0], spearmanr(y_h, y_l)[0]
+    name = standardize_name(mf2.forrester.name)
     results.append(
-        Corr_result(mf2.forrester.name.lower(), ndim, pear, pear**2, spear, spear**2))
+        Corr_result(name, ndim, pear, pear**2, spear, spear**2)
+    )
 
 forrester_correlations = pd.DataFrame.from_records(results,
                                                    columns=Corr_result._fields)
@@ -78,6 +88,7 @@ params = np.round(np.linspace(0, 1, 101), 3)
 Adj_Corr_result = namedtuple("Corr_result",
                              "fname ndim param pearson_r pearson_r2 spearman_r spearman_r2")
 
+name_parser = Parser('Adjustable {fname} {param:f}')
 results = []
 for func in mf2.adjustable.bi_fidelity_functions:
     for a in params:
@@ -87,8 +98,10 @@ for func in mf2.adjustable.bi_fidelity_functions:
 
         y_h, y_l = f.high(sample), f.low(sample)
         pear, spear = pearsonr(y_h, y_l)[0], spearmanr(y_h, y_l)[0]
+
+        name = standardize_name(name_parser.parse(func.name)['fname'])
         results.append(
-            Adj_Corr_result(func.__name__.lower(), f.ndim, a, pear, pear**2, spear, spear**2)
+            Adj_Corr_result(name, f.ndim, a, pear, pear**2, spear, spear**2)
         )
 
 adjustables_correlations = pd.DataFrame.from_records(results, columns=Adj_Corr_result._fields)
