@@ -51,14 +51,14 @@ class Comparison(Enum):
 
 def determine_match(CI1, CI2):
     # is the midpoint of one CI within the bounds of the other CI?
-    covered_1 = CI1.mid in CI2
-    covered_2 = CI2.mid in CI1
+    covered_1 = CI1.mean in CI2
+    covered_2 = CI2.mean in CI1
 
     if covered_1 and covered_2:
         return Comparison.DOUBLE_MATCH
     if covered_1 or covered_2:
         return Comparison.SINGLE_MATCH
-    if any(bound in CI2 for bound in CI1.bounds):  # reverse is implied
+    if CI1.lower in CI2 or CI1.upper in CI2:  # reverse is implied
         return Comparison.CI_MATCH
     return Comparison.NO_MATCH
 
@@ -66,17 +66,27 @@ def determine_match(CI1, CI2):
 
 
 def plot_kriging_match_angles(df_kriging, df_non_kriging):
-    pass
+    all_models = df_kriging.append(df_non_kriging)\
+        .drop(columns=['category', 'param'])
 
+    surrogates = list(all_models['surrogate'].unique())
+    num_models = len(surrogates)
+    num_functions = all_models.groupby(['ndim', 'fname']).ngroups
 
-    # angle_compare = np.zeros((len(F), len(M - 1)))
-    # for func_name in F:
-    #     CI_kriging = L[func_name, kriging].get_angle_CI()
-    #     for model in M:
-    #         CI = group[m1].get_angle_CI()
-    #         angle_compare[f, model] = determine_match(CI_kriging, CI)
-    #
-    #     plt.imshow(angle_compare, title="comparison with kriging")
+    angle_compare = np.full((num_functions, num_models), np.nan)
+    for f_idx, ((ndim, fname), sub_df) in enumerate(all_models.set_index('surrogate').groupby(['ndim', 'fname'])):
+        row = sub_df.loc['Matern']
+        kriging_CI = ConfidenceInterval(row['deg'], None, row['deg_low'], row['deg_high'])
+        for surr_name, row in sub_df.iterrows():
+            non_kriging_CI = ConfidenceInterval(row['deg'], None, row['deg_low'], row['deg_high'])
+            angle_compare[f_idx, surrogates.index(surr_name)] = determine_match(kriging_CI, non_kriging_CI)
+
+        plt.imshow(angle_compare)
+        plt.title("comparison with kriging")
+        plt.xlabel('models')
+        plt.ylabel('functions')
+        plt.tight_layout()
+        plt.savefig(plot_dir / 'kriging_match_angles.pdf')
 
 
 def plot_model_match_angles(df):
