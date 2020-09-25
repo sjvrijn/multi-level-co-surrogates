@@ -8,6 +8,7 @@ by explicit runner files.
 
 from itertools import product
 from collections import namedtuple
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -425,7 +426,7 @@ def calc_angle(da):
     return AngleSummary(alpha, beta, theta, mid_angle, min(angles), max(angles))
 
 
-def get_gradient_angles(directory, force_regen: bool=False):
+def get_gradient_angles(directory: Path, force_regen: bool=False):
     """Get a Pandas DataFrame of the gradient angles for all .nc files in the
     given directory. If calculated before, they are loaded from a summary file
     'gradients.csv', unless `force_regen` is set to `True`, in which case they
@@ -443,7 +444,7 @@ def get_gradient_angles(directory, force_regen: bool=False):
     return df
 
 
-def calculate_gradient_angles(directory):
+def calculate_gradient_angles(directory: Path):
     """Given a directory, calculate the gradient angle for each .nc file"""
 
     Record = namedtuple(
