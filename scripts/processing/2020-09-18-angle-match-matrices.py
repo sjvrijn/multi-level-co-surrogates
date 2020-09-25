@@ -82,7 +82,9 @@ def plot_kriging_match_angles(df_kriging, df_non_kriging):
     plt.imshow(angle_compare)
     plt.title("comparison with kriging")
     plt.xlabel('models')
+    plt.xticks(range(num_models), labels=surrogates, rotation='vertical')
     plt.ylabel('functions')
+    plt.yticks(range(num_functions), labels=all_models.groupby(['ndim', 'fname']).groups.keys())
     plt.tight_layout()
     plt.savefig(plot_dir / 'kriging_match_angles.pdf')
 
@@ -104,7 +106,6 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--regen-csv', action='store_true')
-
     args = parser.parse_args()
 
     kriging_angles = proc.get_gradient_angles(kriging_path, force_regen=args.regen_csv)
