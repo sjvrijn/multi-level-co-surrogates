@@ -10,7 +10,7 @@ step to speed up any potential rerun.
 
 import argparse
 from collections import namedtuple
-from enum import Enum
+from enum import IntEnum
 from itertools import combinations
 
 import matplotlib.pyplot as plt
@@ -42,7 +42,7 @@ class ConfidenceInterval(namedtuple('ConfidenceInterval', 'mean se lower upper')
         return f'95% CI: {self.mean:.4f} +/- {1.96*self.se:.4f} {np.array([lower, upper])}: H0{" not" if 0 in self else ""} rejected'
 
 
-class Comparison(Enum):
+class Comparison(IntEnum):
     NO_MATCH = 0
     CI_MATCH = 1
     SINGLE_MATCH = 2
@@ -81,12 +81,12 @@ def plot_kriging_match_angles(df_kriging, df_non_kriging):
             non_kriging_CI = ConfidenceInterval(row['deg'], None, row['deg_low'], row['deg_high'])
             angle_compare[f_idx, surrogates.index(surr_name)] = determine_match(kriging_CI, non_kriging_CI)
 
-        plt.imshow(angle_compare)
-        plt.title("comparison with kriging")
-        plt.xlabel('models')
-        plt.ylabel('functions')
-        plt.tight_layout()
-        plt.savefig(plot_dir / 'kriging_match_angles.pdf')
+    plt.imshow(angle_compare)
+    plt.title("comparison with kriging")
+    plt.xlabel('models')
+    plt.ylabel('functions')
+    plt.tight_layout()
+    plt.savefig(plot_dir / 'kriging_match_angles.pdf')
 
 
 def plot_model_match_angles(df):
@@ -112,4 +112,4 @@ if __name__ == '__main__':
     kriging_angles = proc.get_gradient_angles(kriging_path, force_regen=args.regen_csv)
     non_kriging_angles = proc.get_gradient_angles(non_kriging_path, force_regen=args.regen_csv)
 
-    # plot_kriging_match_angles(kriging_angles, non_kriging_angles)
+    plot_kriging_match_angles(kriging_angles, non_kriging_angles)
