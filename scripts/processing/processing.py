@@ -425,10 +425,27 @@ def calc_angle(da):
     return AngleSummary(alpha, beta, theta, mid_angle, min(angles), max(angles))
 
 
-def calc_and_store_gradient_angles(directory):
-    """Given a directory, calculate the gradient angle for each .nc file and
-    store them all in a .csv file for easy recall and processing.
+def get_gradient_angles(directory, force_regen: bool=False):
+    """Get a Pandas DataFrame of the gradient angles for all .nc files in the
+    given directory. If calculated before, they are loaded from a summary file
+    'gradients.csv', unless `force_regen` is set to `True`, in which case they
+    will be recalculated.
+
+    :param directory:   Directory with files to be summarized
+    :param force_regen: (Re)generate summary file, even if it already exists
     """
+    gradients_filename = directory / 'gradients.csv'
+    if force_regen or not gradients_filename.exists():
+        df = calculate_gradient_angles(directory)
+        df.to_csv(gradients_filename, index=False)
+    else:
+        df = pd.read_csv(gradients_filename)
+    return df
+
+
+def calculate_gradient_angles(directory):
+    """Given a directory, calculate the gradient angle for each .nc file"""
+
     Record = namedtuple(
         'Record',
         'category fname ndim param alpha beta theta deg deg_low deg_high'
@@ -436,7 +453,6 @@ def calc_and_store_gradient_angles(directory):
     records = []
     adjustable_parser = Parser("{surrogate:w}-{ndim:d}d-Adjustable-{fname}-{param:f}.nc")
     regular_parser = Parser("{surrogate:w}-{ndim:d}d-{fname}.nc")
-
     for file in sorted(directory.iterdir()):
         if 'Adjustable' in file.name:
             match = adjustable_parser.parse(file.name)
@@ -455,6 +471,4 @@ def calc_and_store_gradient_angles(directory):
             angle_summary = calc_angle(da)
         records.append(Record(category, match['fname'].lower(), match['ndim'], param,
                               *angle_summary))
-
-    df = pd.DataFrame.from_records(records, columns=Record._fields)
-    df.to_csv(directory / 'gradients.csv', index=False)
+    return pd.DataFrame.from_records(records, columns=Record._fields)
