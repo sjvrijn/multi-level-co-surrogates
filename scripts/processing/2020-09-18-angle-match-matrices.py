@@ -73,10 +73,9 @@ def plot_kriging_match_angles(df_kriging, df_non_kriging):
 
     angle_compare = np.full((num_functions, num_models), np.nan)
     for f_idx, ((ndim, fname), sub_df) in enumerate(all_models.set_index('surrogate').groupby(['ndim', 'fname'])):
-        row = sub_df.loc['Matern']
-        kriging_CI = ConfidenceInterval(row['deg'], None, row['deg_low'], row['deg_high'])
+        kriging_CI = get_CI(sub_df.loc['Matern'])
         for surr_name, row in sub_df.iterrows():
-            non_kriging_CI = ConfidenceInterval(row['deg'], None, row['deg_low'], row['deg_high'])
+            non_kriging_CI = get_CI(row)
             angle_compare[f_idx, surrogates.index(surr_name)] = determine_match(kriging_CI, non_kriging_CI)
 
     plt.imshow(angle_compare)
@@ -89,21 +88,39 @@ def plot_kriging_match_angles(df_kriging, df_non_kriging):
     plt.savefig(plot_dir / 'kriging_match_angles.pdf')
 
 
-def plot_model_match_angles(df):
-    pass
-    # for func_name, group in L.groupby(F):
-    #     angle_compare = np.zeros((len(M), len(M)))
-    #     for m1, m2 in combinations(M):
-    #         CI1 = group[m1].get_angle_CI()
-    #         CI2 = group[m2].get_angle_CI()
-    #         angle_compare[m1, m2] = determine_match(CI1, CI2)
-    #         angle_compare[m2, m1] = angle_compare[m1, m2]  # mirror for clarity
-    #
-    #     plt.imshow(angle_compare, title=func_name)
+def plot_model_match_angles(df_kriging, df_non_kriging):
+    all_models = df_kriging.append(df_non_kriging)\
+        .drop(columns=['category', 'param'])
+
+    surrogates = list(all_models['surrogate'].unique())
+    num_models = len(surrogates)
+
+
+    for (ndim, func_name), group in all_models.set_index('surrogate').groupby(['ndim', 'fname']):
+        angle_compare = np.full((num_models, num_models), np.nan)
+        for m1, m2 in combinations(surrogates, 2):
+            idx1, idx2 = surrogates.index(m1), surrogates.index(m2)
+            try:
+                CI1 = get_CI(group.loc[m1])
+                CI2 = get_CI(group.loc[m2])
+            except KeyError:
+                continue
+            angle_compare[idx1, idx2] = determine_match(CI1, CI2)
+            angle_compare[idx2, idx1] = angle_compare[idx1, idx2]  # mirror for clarity
+
+        plt.imshow(angle_compare)
+        plt.title(f'{ndim}D {func_name}')
+        plt.xticks(range(num_models), labels=surrogates, rotation='vertical')
+        plt.yticks(range(num_models), labels=surrogates)
+        plt.tight_layout()
+        plt.savefig(plot_dir / f'model-match-angle-{ndim}D-{func_name}.pdf')
+
+
+def get_CI(row):
+    return ConfidenceInterval(row['deg'], None, row['deg_low'], row['deg_high'])
 
 
 if __name__ == '__main__':
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--regen-csv', action='store_true')
     args = parser.parse_args()
@@ -112,3 +129,4 @@ if __name__ == '__main__':
     non_kriging_angles = proc.get_gradient_angles(non_kriging_path, force_regen=args.regen_csv)
 
     plot_kriging_match_angles(kriging_angles, non_kriging_angles)
+    plot_model_match_angles(kriging_angles, non_kriging_angles)
