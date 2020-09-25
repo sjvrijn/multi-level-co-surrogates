@@ -2,10 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-2020-02-19-adjustable-gradients.py: script to create scatterplots of the
-gradients in the error versus the actual correlation between high- and low-
-fidelity functions. Creates a csv of the all relevant values as intermediate
-step to speed up any potential rerun.
+2020-09-18-angle-match-matrices.py: compare the measured angles
+from using different surrogate models, and plot them as 'heatmaps'.
 """
 
 import argparse
