@@ -448,7 +448,7 @@ def calculate_gradient_angles(directory):
 
     Record = namedtuple(
         'Record',
-        'category fname ndim param alpha beta theta deg deg_low deg_high'
+        'surrogate category fname ndim param alpha beta theta deg deg_low deg_high'
     )
     records = []
     adjustable_parser = Parser("{surrogate:w}-{ndim:d}d-Adjustable-{fname}-{param:f}.nc")
@@ -469,6 +469,8 @@ def calculate_gradient_angles(directory):
             da = ds['mses'].sel(model='high_hier')
         with da.load() as da:
             angle_summary = calc_angle(da)
-        records.append(Record(category, match['fname'].lower(), match['ndim'], param,
-                              *angle_summary))
+        records.append(
+            Record(match['surrogate'], category, match['fname'].lower(), match['ndim'], param,
+                   *angle_summary)
+        )
     return pd.DataFrame.from_records(records, columns=Record._fields)
