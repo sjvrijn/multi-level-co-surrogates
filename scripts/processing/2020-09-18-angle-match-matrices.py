@@ -29,39 +29,6 @@ kriging_path = here('files/2019-09-mse-nc/')
 non_kriging_path = here('files/2019-11-12-different-surrogates/')
 
 
-class ConfidenceInterval(namedtuple('ConfidenceInterval', 'mean se lower upper')):
-
-    def __contains__(self, value):
-        return self.lower < value < self.upper
-
-    def __str__(self):
-        lower = self.lower if self.lower is not None else self.mean - 1.96*self.se
-        upper = self.upper if self.upper is not None else self.mean + 1.96*self.se
-        return f'95% CI: {self.mean:.4f} +/- {1.96*self.se:.4f} {np.array([lower, upper])}: H0{" not" if 0 in self else ""} rejected'
-
-
-class Comparison(IntEnum):
-    NO_MATCH = 0
-    CI_MATCH = 1
-    SINGLE_MATCH = 2
-    DOUBLE_MATCH = 3
-
-
-def determine_match(CI1, CI2):
-    # is the midpoint of one CI within the bounds of the other CI?
-    covered_1 = CI1.mean in CI2
-    covered_2 = CI2.mean in CI1
-
-    if covered_1 and covered_2:
-        return Comparison.DOUBLE_MATCH
-    if covered_1 or covered_2:
-        return Comparison.SINGLE_MATCH
-    if CI1.lower in CI2 or CI1.upper in CI2:  # reverse is implied
-        return Comparison.CI_MATCH
-    return Comparison.NO_MATCH
-
-
-
 
 def plot_kriging_match_angles(df_kriging, df_non_kriging):
     all_models = df_kriging.append(df_non_kriging)\
@@ -76,7 +43,7 @@ def plot_kriging_match_angles(df_kriging, df_non_kriging):
         kriging_CI = get_CI(sub_df.loc['Matern'])
         for surr_name, row in sub_df.iterrows():
             non_kriging_CI = get_CI(row)
-            angle_compare[f_idx, surrogates.index(surr_name)] = determine_match(kriging_CI, non_kriging_CI)
+            angle_compare[f_idx, surrogates.index(surr_name)] = proc.determine_match(kriging_CI, non_kriging_CI)
 
     plt.imshow(angle_compare)
     plt.title("comparison with kriging")
@@ -105,7 +72,7 @@ def plot_model_match_angles(df_kriging, df_non_kriging):
                 CI2 = get_CI(group.loc[m2])
             except KeyError:
                 continue
-            angle_compare[idx1, idx2] = determine_match(CI1, CI2)
+            angle_compare[idx1, idx2] = proc.determine_match(CI1, CI2)
             angle_compare[idx2, idx1] = angle_compare[idx1, idx2]  # mirror for clarity
 
         plt.imshow(angle_compare)
@@ -117,7 +84,7 @@ def plot_model_match_angles(df_kriging, df_non_kriging):
 
 
 def get_CI(row):
-    return ConfidenceInterval(row['deg'], None, row['deg_low'], row['deg_high'])
+    return proc.ConfidenceInterval(row['deg'], None, row['deg_low'], row['deg_high'])
 
 
 if __name__ == '__main__':

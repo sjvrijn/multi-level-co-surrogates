@@ -6,6 +6,7 @@ processing.py: Collection of data processing procedures that can be called
 by explicit runner files.
 """
 
+from enum import IntEnum
 from itertools import product
 from collections import namedtuple
 from pathlib import Path
@@ -477,3 +478,24 @@ def calculate_gradient_angles(directory: Path):
                    *angle_summary)
         )
     return pd.DataFrame.from_records(records, columns=Record._fields)
+
+
+class Comparison(IntEnum):
+    NO_MATCH = 0
+    CI_MATCH = 1
+    SINGLE_MATCH = 2
+    DOUBLE_MATCH = 3
+
+
+def determine_match(CI1, CI2):
+    # is the midpoint of one CI within the bounds of the other CI?
+    covered_1 = CI1.mean in CI2
+    covered_2 = CI2.mean in CI1
+
+    if covered_1 and covered_2:
+        return Comparison.DOUBLE_MATCH
+    if covered_1 or covered_2:
+        return Comparison.SINGLE_MATCH
+    if CI1.lower in CI2 or CI1.upper in CI2:  # reverse is implied
+        return Comparison.CI_MATCH
+    return Comparison.NO_MATCH
