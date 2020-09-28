@@ -258,7 +258,7 @@ def plot_high_v_low_diff(to_plot, long_title, norm, save_as=None, show=False):
     plt.close()
 
 
-def plot_t_scores(data, title, t_range=5, num_colors=10, save_as=None, show=False):
+def plot_t_scores(data: xr.DataArray, title: str, t_range: float=5, num_colors: int=10, save_as: str=None, show: bool=False):
     if not (save_as or show):
         return  # no need to make the plot if not showing or saving it
     paired_differences = data.sel(model='high') - data.sel(model='high_hier')
@@ -284,7 +284,9 @@ def plot_t_scores(data, title, t_range=5, num_colors=10, save_as=None, show=Fals
     plt.close()
 
 
-def plot_extracts(data, title, save_as=None, show=False, *, normalize=False, max_x=None):
+def plot_extracts(data: xr.DataArray, title: str, save_as: str=None, show: bool=False, *,
+                  normalize: bool=False, max_x: int=None):
+
     if not (save_as or show):
         return  # no need to make the plot if not showing or saving it
     fig, axes = plt.subplots(1, 2, figsize=(9, 3.5))
@@ -328,7 +330,7 @@ def plot_extracts(data, title, save_as=None, show=False, *, normalize=False, max
     plt.close()
 
 
-def plot_multi_file_extracts(data_arrays, title, save_as=None, show=False):
+def plot_multi_file_extracts(data_arrays, title: str, save_as: str=None, show: bool=False):
     if not (save_as or show) or not data_arrays:
         return
 
@@ -380,7 +382,7 @@ def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
 
 class ConfidenceInterval(namedtuple('ConfidenceInterval', 'mean se lower upper')):
 
-    def __contains__(self, value):
+    def __contains__(self, value: float):
         return self.lower < value < self.upper
 
     def __str__(self):
@@ -390,7 +392,7 @@ class ConfidenceInterval(namedtuple('ConfidenceInterval', 'mean se lower upper')
                f'H0{" not" if 0 in self else ""} rejected'
 
 
-def ratio_to_angle(x1, x2):
+def ratio_to_angle(x1: float, x2: float):
     theta = np.arctan2(x1, x2) + np.pi
     deg = np.rad2deg(theta)
     if deg > 180:
@@ -398,7 +400,7 @@ def ratio_to_angle(x1, x2):
     return deg
 
 
-def calc_angle(da):
+def calc_angle(da: xr.DataArray):
     AngleSummary = namedtuple('AngleSummary', 'alpha beta theta deg deg_low deg_high')
     reg, SSE = fit_lin_reg(da, calc_SSE=True)
 
