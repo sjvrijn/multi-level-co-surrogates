@@ -26,6 +26,13 @@ def extract_right_upper_square(da: xr.DataArray, num_high, num_low) -> xr.DataAr
     return da.sel(n_high=slice(-num_high, None), n_low=slice(-num_low, None))
 
 
+def extract_at_interval(da: xr.DataArray, num_high_interval, num_low_interval) -> xr.DataArray:
+    return da.sel(
+        n_high=slice(None, None, num_high_interval),
+        n_low=slice(None, None, num_low_interval)
+    )
+
+
 def extract_right_upper_triangle(da: xr.DataArray, num_high, num_low) -> xr.DataArray:
     pass
 
