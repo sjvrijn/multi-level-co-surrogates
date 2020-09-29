@@ -44,13 +44,25 @@ if __name__ == '__main__':
     square_sizes = [(2*size, 5*size) for size in range(1, 21)]
     intervals = range(1, 11)
 
+    coords = {'square_sizes': square_sizes, 'intervals': intervals}
+    dims = list(coords.keys())
+    shape = (*[len(coord) for coord in coords.values()], -1)
+
     for file in filter(lambda x: '.nc' in x.name, kriging_path.iterdir()):
         orig_da = xr.open_dataset(file)['mses'].load()
 
+        results = []
         for square_size, interval in product(square_sizes, intervals):
             smaller_da = extract_right_upper_square(orig_da, 10, 20)
             smaller_da = extract_at_interval(smaller_da, interval)
 
-            angle = proc.calc_angle(smaller_da)
-            #TODO: do storage
-            #TODO: do plotting
+            results.append(proc.calc_angle(smaller_da))
+
+        ds = xr.Dataset(
+            {
+                field: (dims, data)
+                for field, data in zip(results[0]._fields, np.array(results).reshape(shape))
+            },
+            coords=coords
+        )
+        #TODO: do plotting
