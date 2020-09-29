@@ -22,14 +22,12 @@ import processing as proc
 kriging_path = here('files/2019-09-mse-nc/')
 
 
-
 def extract_right_upper_square(da: xr.DataArray, num_high, num_low) -> xr.DataArray:
-    pass
+    return da.sel(n_high=slice(-num_high, None), n_low=slice(-num_low, None))
 
 
 def extract_right_upper_triangle(da: xr.DataArray, num_high, num_low) -> xr.DataArray:
     pass
-
 
 
 if __name__ == '__main__':
