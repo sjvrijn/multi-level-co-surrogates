@@ -20,6 +20,10 @@ import processing as proc
 
 
 kriging_path = here('files/2019-09-mse-nc/')
+output_path = here('files/2020-09-28-shape-reduction/', warn=False)
+output_path.mkdir(exist_ok=True, parents=True)
+plot_path = here('plots/2020-09-28-shape-reduction/', warn=False)
+plot_path.mkdir(exist_ok=True, parents=True)
 
 
 def extract_right_upper_square(da: xr.DataArray, num_high, num_low) -> xr.DataArray:
@@ -41,28 +45,29 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
 
-    square_sizes = [(2*size, 5*size) for size in range(1, 21)]
+    square_sizes = range(1, 21)
     intervals = range(1, 11)
 
-    coords = {'square_sizes': square_sizes, 'intervals': intervals}
-    dims = list(coords.keys())
-    shape = (*[len(coord) for coord in coords.values()], -1)
+    coords = {'intervals': list(intervals), 'square_sizes': list(square_sizes)}#, 'intervals': list(intervals)}
+    dims = tuple(coords.keys())
+    shape = (*[len(coord) for coord in reversed(coords.values())], -1)
 
     for file in filter(lambda x: '.nc' in x.name, kriging_path.iterdir()):
-        orig_da = xr.open_dataset(file)['mses'].load()
+        print(file)
+        orig_da = xr.open_dataset(file)['mses'].load().sel(model='high_hier')
 
         results = []
         for square_size, interval in product(square_sizes, intervals):
-            smaller_da = extract_right_upper_square(orig_da, 10, 20)
+            smaller_da = extract_right_upper_square(orig_da, 2*square_size, 5*square_size)
             smaller_da = extract_at_interval(smaller_da, interval)
-
             results.append(proc.calc_angle(smaller_da))
 
-        ds = xr.Dataset(
-            {
-                field: (dims, data)
-                for field, data in zip(results[0]._fields, np.array(results).reshape(shape))
-            },
-            coords=coords
-        )
+        all_data = np.array(results).reshape(shape).T
+        ds_data = {
+            field: (dims, data)
+            for field, data in zip(results[0]._fields, all_data)
+        }
+        ds = xr.Dataset(ds_data, coords=coords)
+        ds.to_netcdf(output_path / f'gradient-summary-{file.name}')
+
         #TODO: do plotting
