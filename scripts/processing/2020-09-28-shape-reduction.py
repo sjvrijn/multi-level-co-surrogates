@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
+from pathlib import Path
 from pyprojroot import here
 
 import processing as proc
@@ -56,32 +57,51 @@ def reduce_size(da: xr.DataArray, square_size, interval) -> xr.DataArray:
     return reduced_size_da
 
 
+def get_reduced_gradient_summary(filename: Path, reduction_options: dict, *,
+                                 regenerate: bool=False) -> xr.Dataset:
+    """Return gradients for reduced-size Error Grids of given file. Calculate
+    and store in .nc file if needed, loads from pre-calculated file otherwise.
+    """
+    if regenerate or not filename.exists():
+        gradients = calculate_gradients_of_reduced(filename, reduction_options)
+        gradients.to_netcdf(output_path / f'gradient-summary-{filename.name}')
+    else:
+        gradients = xr.load_dataset(filename)
+
+    return gradients
+
+
+def calculate_gradients_of_reduced(filename, reduction_options):
+    """"""
+
+    dims = tuple(reduction_options.keys())
+    shape = (*[len(coord) for coord in reversed(reduction_options.values())], -1)
+
+    orig_da = xr.open_dataset(filename)['mses'].load().sel(model='high_hier')
+    results = [
+        proc.calc_angle(reduce_size(orig_da, *options))
+        for options in product(reduction_options.values())
+    ]
+    all_data = np.array(results).reshape(shape).T
+    ds_data = {
+        field: (dims, data)
+        for field, data in zip(results[0]._fields, all_data)
+    }
+    return xr.Dataset(ds_data, coords=reduction_options)
+
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--regen-gradients', action='store_true')
     args = parser.parse_args()
 
-    square_sizes = range(1, 21)
-    intervals = range(1, 11)
-
-    coords = {'intervals': list(intervals), 'square_sizes': list(square_sizes)}
-    dims = tuple(coords.keys())
-    shape = (*[len(coord) for coord in reversed(coords.values())], -1)
+    reductions = dict(
+        intervals=range(1, 11),
+        square_sizes=range(1, 21),
+    )
 
     for file in filter(lambda x: '.nc' in x.name, kriging_path.iterdir()):
-        print(file)
-        orig_da = xr.open_dataset(file)['mses'].load().sel(model='high_hier')
-
-        results = [
-            proc.calc_angle(reduce_size(orig_da, square_size, interval))
-            for square_size, interval in product(square_sizes, intervals)
-        ]
-
-        all_data = np.array(results).reshape(shape).T
-        ds_data = {
-            field: (dims, data)
-            for field, data in zip(results[0]._fields, all_data)
-        }
-        ds = xr.Dataset(ds_data, coords=coords)
-        ds.to_netcdf(output_path / f'gradient-summary-{file.name}')
+        ds = get_reduced_gradient_summary(file, reductions, regenerate=args.regen_gradients)
 
         #TODO: do plotting
