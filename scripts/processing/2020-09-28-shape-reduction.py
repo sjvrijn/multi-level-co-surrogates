@@ -71,18 +71,20 @@ def get_reduced_gradient_summary(filename: Path, reduction_options: dict, *,
     return gradients
 
 
-def calculate_gradients_of_reduced(filename, reduction_options):
-    """"""
-
-    dims = tuple(reduction_options.keys())
-    shape = (*[len(coord) for coord in reversed(reduction_options.values())], -1)
+def calculate_gradients_of_reduced(filename: Path, reduction_options: dict) -> xr.Dataset:
+    """Calculate the gradients after all specified reductions for a given
+    Error Grid.
+    """
 
     orig_da = xr.open_dataset(filename)['mses'].load().sel(model='high_hier')
     results = [
         proc.calc_angle(reduce_size(orig_da, *options))
         for options in product(reduction_options.values())
     ]
+
+    shape = (*[len(coord) for coord in reversed(reduction_options.values())], -1)
     all_data = np.array(results).reshape(shape).T
+    dims = tuple(reduction_options.keys())
     ds_data = {
         field: (dims, data)
         for field, data in zip(results[0]._fields, all_data)
