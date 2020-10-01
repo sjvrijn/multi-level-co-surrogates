@@ -67,11 +67,12 @@ def get_reduced_gradient_summary(filename: Path, reduction_options: dict, *,
     """Return gradients for reduced-size Error Grids of given file. Calculate
     and store in .nc file if needed, loads from pre-calculated file otherwise.
     """
-    if regenerate or not filename.exists():
+    summary_filename = output_path / f'gradient-summary-{filename.name}'
+    if regenerate or not summary_filename.exists():
         gradients = calculate_gradients_of_reduced(filename, reduction_options)
-        gradients.to_netcdf(output_path / f'gradient-summary-{filename.name}')
+        gradients.to_netcdf(summary_filename)
     else:
-        gradients = xr.load_dataset(filename)
+        gradients = xr.load_dataset(summary_filename)
 
     return gradients
 
