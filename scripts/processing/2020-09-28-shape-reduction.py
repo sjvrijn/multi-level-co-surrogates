@@ -47,6 +47,15 @@ def extract_right_upper_triangle(da: xr.DataArray, num_high, num_low) -> xr.Data
     raise NotImplementedError
 
 
+def reduce_size(da: xr.DataArray, square_size, interval) -> xr.DataArray:
+    """Collection function to perform all relevant size reductions based
+    on the given arguments.
+    """
+    reduced_size_da = extract_right_upper_square(da, 2 * square_size, 5 * square_size)
+    reduced_size_da = extract_at_interval(reduced_size_da, interval)
+    return reduced_size_da
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
@@ -62,11 +71,10 @@ if __name__ == '__main__':
         print(file)
         orig_da = xr.open_dataset(file)['mses'].load().sel(model='high_hier')
 
-        results = []
-        for square_size, interval in product(square_sizes, intervals):
-            smaller_da = extract_right_upper_square(orig_da, 2*square_size, 5*square_size)
-            smaller_da = extract_at_interval(smaller_da, interval)
-            results.append(proc.calc_angle(smaller_da))
+        results = [
+            proc.calc_angle(reduce_size(orig_da, square_size, interval))
+            for square_size, interval in product(square_sizes, intervals)
+        ]
 
         all_data = np.array(results).reshape(shape).T
         ds_data = {
