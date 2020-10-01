@@ -27,10 +27,16 @@ plot_path.mkdir(exist_ok=True, parents=True)
 
 
 def extract_right_upper_square(da: xr.DataArray, num_high, num_low) -> xr.DataArray:
+    """Reduce size of of an Error Grid by selecting a rectangle of data
+    from the top-right
+    """
     return da.sel(n_high=slice(-num_high, None), n_low=slice(-num_low, None))
 
 
 def extract_at_interval(da: xr.DataArray, interval) -> xr.DataArray:
+    """Reduce size of an Error Grid by selecting data at a fixed interval along
+    both the number of high- and low-fidelity samples.
+    """
     return da.sel(
         n_high=slice(None, None, interval),
         n_low=slice(None, None, interval)
@@ -48,7 +54,7 @@ if __name__ == '__main__':
     square_sizes = range(1, 21)
     intervals = range(1, 11)
 
-    coords = {'intervals': list(intervals), 'square_sizes': list(square_sizes)}#, 'intervals': list(intervals)}
+    coords = {'intervals': list(intervals), 'square_sizes': list(square_sizes)}
     dims = tuple(coords.keys())
     shape = (*[len(coord) for coord in reversed(coords.values())], -1)
 
