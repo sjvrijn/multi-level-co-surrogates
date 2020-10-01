@@ -85,7 +85,7 @@ def calculate_gradients_of_reduced(filename: Path, reduction_options: dict) -> x
     orig_da = xr.open_dataset(filename)['mses'].load().sel(model='high_hier')
     results = [
         proc.calc_angle(reduce_size(orig_da, *options))
-        for options in product(reduction_options.values())
+        for options in product(*reduction_options.values())
     ]
 
     shape = (*[len(coord) for coord in reversed(reduction_options.values())], -1)
@@ -111,8 +111,6 @@ if __name__ == '__main__':
 
     for file in filter(lambda x: '.nc' in x.name, kriging_path.iterdir()):
         ds = get_reduced_gradient_summary(file, reductions, regenerate=args.regen_gradients)
-
-        print(ds['deg'].values)
 
         for interval in ds.coords['intervals'].values:
             x = ds.coords['rect_sizes'].values
