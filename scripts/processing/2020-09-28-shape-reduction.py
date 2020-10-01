@@ -27,7 +27,7 @@ plot_path = here('plots/2020-09-28-shape-reduction/', warn=False)
 plot_path.mkdir(exist_ok=True, parents=True)
 
 
-def extract_right_upper_square(da: xr.DataArray, num_high, num_low) -> xr.DataArray:
+def extract_right_upper_rectangle(da: xr.DataArray, num_high, num_low) -> xr.DataArray:
     """Reduce size of of an Error Grid by selecting a rectangle of data
     from the top-right
     """
@@ -48,12 +48,17 @@ def extract_right_upper_triangle(da: xr.DataArray, num_high, num_low) -> xr.Data
     raise NotImplementedError
 
 
-def reduce_size(da: xr.DataArray, square_size, interval) -> xr.DataArray:
+def reduce_size(da: xr.DataArray, rect_size, interval) -> xr.DataArray:
     """Collection function to perform all relevant size reductions based
     on the given arguments.
     """
-    reduced_size_da = extract_right_upper_square(da, 2 * square_size, 5 * square_size)
+    NHIGH_RECT_STEP = 2
+    NLOW_RECT_STEP = 5
+
+    rect_shape = (rect_size * NHIGH_RECT_STEP, rect_size * NLOW_RECT_STEP)
+    reduced_size_da = extract_right_upper_rectangle(da, *rect_shape)
     reduced_size_da = extract_at_interval(reduced_size_da, interval)
+
     return reduced_size_da
 
 
