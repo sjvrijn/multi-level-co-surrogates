@@ -106,10 +106,24 @@ if __name__ == '__main__':
 
     reductions = dict(
         intervals=range(1, 11),
-        square_sizes=range(1, 21),
+        rect_sizes=range(1, 21),
     )
 
     for file in filter(lambda x: '.nc' in x.name, kriging_path.iterdir()):
         ds = get_reduced_gradient_summary(file, reductions, regenerate=args.regen_gradients)
 
-        #TODO: do plotting
+        print(ds['deg'].values)
+
+        for interval in ds.coords['intervals'].values:
+            x = ds.coords['rect_sizes'].values
+            y = ds['deg'].sel(intervals=interval)
+            errors = np.stack([
+                y - ds['deg_low'].sel(intervals=interval),
+                ds['deg_high'].sel(intervals=interval) - y
+            ])
+            plt.errorbar(x=x, y=y, yerr=errors, label=interval, capsize=1)
+        plt.title(file.name)
+        plt.xlabel('rectangle size *(2, 5)')
+        plt.ylabel('gradient angle')
+        plt.legend(loc=0)
+        plt.savefig(plot_path / f'gradient-summary-{file.stem}.pdf')
