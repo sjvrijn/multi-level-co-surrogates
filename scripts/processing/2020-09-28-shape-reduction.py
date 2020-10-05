@@ -81,8 +81,8 @@ def get_reduced_gradient_summary(filename: Path, reduction_options: dict, *,
 
 
 def calculate_gradients_of_reduced(filename: Path, reduction_options: dict) -> xr.Dataset:
-    """Calculate the gradients after all specified reductions for a given
-    Error Grid.
+    """Calculate the gradients after all specified reductions for an Error Grid
+    stored at the given path.
     """
 
     orig_da = xr.open_dataset(filename)['mses'].load().sel(model='high_hier')
@@ -91,7 +91,7 @@ def calculate_gradients_of_reduced(filename: Path, reduction_options: dict) -> x
         for options in product(*reduction_options.values())
     ]
 
-    shape = (*[len(coord) for coord in reversed(reduction_options.values())], -1)
+    shape = (*reversed([len(coord) for coord in reduction_options.values()]), -1)
     all_data = np.array(results).reshape(shape).T
     dims = tuple(reduction_options.keys())
     ds_data = {
@@ -108,19 +108,20 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     reductions = dict(
+        rect_sizes=range(1, 26),
         intervals=range(1, 11),
-        rect_sizes=range(1, 21),
     )
 
     for file in filter(lambda x: '.nc' in x.name, kriging_path.iterdir()):
         ds = get_reduced_gradient_summary(file, reductions, regenerate=args.regen_gradients)
 
         for interval in ds.coords['intervals'].values:
+            sub_ds = ds.sel(intervals=interval)
             x = ds.coords['rect_sizes'].values
-            y = ds['deg'].sel(intervals=interval)
+            y = ds['deg']
             errors = np.stack([
-                y - ds['deg_low'].sel(intervals=interval),
-                ds['deg_high'].sel(intervals=interval) - y
+                ds['deg_low'] - y,
+                y - ds['deg_high']
             ])
             plt.errorbar(x=x, y=y, yerr=errors, label=interval, capsize=1)
         plt.title(file.name)
