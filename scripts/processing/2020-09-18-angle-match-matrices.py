@@ -89,7 +89,7 @@ def get_CI(row):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--regen-csv', action='store_true')
+    parser.add_argument('--force-regen', action='store_true')
     args = parser.parse_args()
 
     kriging_angles = proc.get_gradient_angles(kriging_path, force_regen=args.regen_csv)

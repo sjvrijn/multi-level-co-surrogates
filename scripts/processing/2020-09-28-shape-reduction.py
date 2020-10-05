@@ -103,7 +103,7 @@ def get_reduced_gradient_summary(filename: Path, reduction_options: dict, *,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--regen-gradients', action='store_true')
+    parser.add_argument('--force-regen', action='store_true')
     args = parser.parse_args()
 
     reductions = dict(

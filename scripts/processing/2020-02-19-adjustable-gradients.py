@@ -109,7 +109,7 @@ def scatter_per_function(corr_type, extended_correlations):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--regen-csv', action='store_true')
+    parser.add_argument('--force-regen', action='store_true')
     parser.add_argument('--no-plots', action='store_true')
 
     args = parser.parse_args()
