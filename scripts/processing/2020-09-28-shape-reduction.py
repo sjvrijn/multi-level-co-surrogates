@@ -23,8 +23,8 @@ import processing as proc
 kriging_path = here('files/2019-09-mse-nc/')
 output_path = here('files/2020-09-28-shape-reduction/', warn=False)
 output_path.mkdir(exist_ok=True, parents=True)
-plot_path = here('plots/2020-09-28-shape-reduction/', warn=False)
-plot_path.mkdir(exist_ok=True, parents=True)
+PLOT_PATH = here('plots/2020-09-28-shape-reduction/', warn=False)
+PLOT_PATH.mkdir(exist_ok=True, parents=True)
 
 
 def extract_right_upper_rectangle(da: xr.DataArray, num_high, num_low) -> xr.DataArray:
@@ -101,6 +101,25 @@ def get_reduced_gradient_summary(filename: Path, reduction_options: dict, *,
     return gradients
 
 
+def plot_gradients_of_reduced(gradient_summary, case_name):
+    fig, ax = plt.subplots(constrained_layout=True)
+    for interval in reversed(gradient_summary.coords['intervals'].values):
+        sub_ds = gradient_summary.sel(intervals=interval)
+        x = sub_ds.coords['rect_sizes'].values
+        y = sub_ds['deg']
+        errors = np.stack([
+            y - sub_ds['deg_low'],
+            sub_ds['deg_high'] - y,
+        ])
+        ax.errorbar(x=x, y=y, yerr=errors, label=f'interval {interval}', capsize=2)
+    ax.set_title(case_name)
+    ax.set_xlabel('rectangle size *(2, 5)')
+    ax.set_ylabel('gradient angle')
+    ax.set_ylim([0, 135])
+    ax.legend(loc=0)
+    fig.savefig(PLOT_PATH / f'gradient-summary-{case_name}.pdf')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--force-regen', action='store_true')
@@ -113,19 +132,4 @@ if __name__ == '__main__':
 
     for file in filter(lambda x: '.nc' in x.name, kriging_path.iterdir()):
         ds = get_reduced_gradient_summary(file, reductions, regenerate=args.regen_gradients)
-        fig, ax = plt.subplots(constrained_layout=True)
-        for interval in reversed(ds.coords['intervals'].values):
-            sub_ds = ds.sel(intervals=interval)
-            x = sub_ds.coords['rect_sizes'].values
-            y = sub_ds['deg']
-            errors = np.stack([
-                y - sub_ds['deg_low'],
-                sub_ds['deg_high'] - y,
-            ])
-            ax.errorbar(x=x, y=y, yerr=errors, label=f'interval {interval}', capsize=2)
-        ax.set_title(file.name)
-        ax.set_xlabel('rectangle size *(2, 5)')
-        ax.set_ylabel('gradient angle')
-        ax.set_ylim([0, 135])
-        ax.legend(loc=0)
-        fig.savefig(plot_path / f'gradient-summary-{file.stem}.pdf')
+        plot_gradients_of_reduced(ds, case_name=file.stem)
