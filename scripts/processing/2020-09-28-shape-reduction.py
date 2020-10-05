@@ -132,9 +132,9 @@ if __name__ == '__main__':
     )
 
     for file in filter(lambda x: '.nc' in x.name, kriging_path.iterdir()):
-        ds = get_reduced_gradient_summary(file, reductions, regenerate=args.regen_gradients)
+        ds = get_reduced_gradient_summary(file, reductions, regenerate=args.force_regen)
         plot_gradients_of_reduced(ds, case_name=file.stem)
 
     for file in filter(lambda x: '.nc' in x.name, adjustables_path.iterdir()):
-        ds = get_reduced_gradient_summary(file, reductions, regenerate=args.regen_gradients)
+        ds = get_reduced_gradient_summary(file, reductions, regenerate=args.force_regen)
         plot_gradients_of_reduced(ds, case_name=file.stem)

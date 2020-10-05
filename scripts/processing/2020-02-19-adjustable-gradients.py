@@ -115,8 +115,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     correlations = pd.read_csv(correlations_path)
-    adjustable_angles = proc.get_gradient_angles(adjustables_dir, force_regen=args.regen_csv)
-    regular_angles = proc.get_gradient_angles(regulars_dir, force_regen=args.regen_csv)
+    adjustable_angles = proc.get_gradient_angles(adjustables_dir, force_regen=args.force_regen)
+    regular_angles = proc.get_gradient_angles(regulars_dir, force_regen=args.force_regen)
 
     angles = regular_angles.append(adjustable_angles)
 

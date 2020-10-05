@@ -92,8 +92,8 @@ if __name__ == '__main__':
     parser.add_argument('--force-regen', action='store_true')
     args = parser.parse_args()
 
-    kriging_angles = proc.get_gradient_angles(kriging_path, force_regen=args.regen_csv)
-    non_kriging_angles = proc.get_gradient_angles(non_kriging_path, force_regen=args.regen_csv)
+    kriging_angles = proc.get_gradient_angles(kriging_path, force_regen=args.force_regen)
+    non_kriging_angles = proc.get_gradient_angles(non_kriging_path, force_regen=args.force_regen)
 
     plot_kriging_match_angles(kriging_angles, non_kriging_angles)
     plot_model_match_angles(kriging_angles, non_kriging_angles)
