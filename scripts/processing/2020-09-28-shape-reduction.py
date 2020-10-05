@@ -65,29 +65,13 @@ def reduce_size(da: xr.DataArray, rect_size, interval) -> xr.DataArray:
     return reduced_size_da
 
 
-def get_reduced_gradient_summary(filename: Path, reduction_options: dict, *,
-                                 regenerate: bool=False) -> xr.Dataset:
-    """Return gradients for reduced-size Error Grids of given file. Calculate
-    and store in .nc file if needed, loads from pre-calculated file otherwise.
-    """
-    summary_filename = output_path / f'gradient-summary-{filename.name}'
-    if regenerate or not summary_filename.exists():
-        gradients = calculate_gradients_of_reduced(filename, reduction_options)
-        gradients.to_netcdf(summary_filename)
-    else:
-        gradients = xr.load_dataset(summary_filename)
-
-    return gradients
-
-
-def calculate_gradients_of_reduced(filename: Path, reduction_options: dict) -> xr.Dataset:
+def calculate_gradients_of_reduced(da: xr.DataArray, reduction_options: dict) -> xr.Dataset:
     """Calculate the gradients after all specified reductions for an Error Grid
     stored at the given path.
     """
 
-    orig_da = xr.open_dataset(filename)['mses'].load().sel(model='high_hier')
     results = [
-        proc.calc_angle(reduce_size(orig_da, *options))
+        proc.calc_angle(reduce_size(da, *options))
         for options in product(*reduction_options.values())
     ]
 
@@ -100,6 +84,21 @@ def calculate_gradients_of_reduced(filename: Path, reduction_options: dict) -> x
     }
     return xr.Dataset(ds_data, coords=reduction_options)
 
+
+def get_reduced_gradient_summary(filename: Path, reduction_options: dict, *,
+                                 regenerate: bool=False) -> xr.Dataset:
+    """Return gradients for reduced-size Error Grids of given file. Calculate
+    and store in .nc file if needed, loads from pre-calculated file otherwise.
+    """
+    summary_filename = output_path / f'gradient-summary-{filename.name}'
+    if regenerate or not summary_filename.exists():
+        da = xr.open_dataset(filename)['mses'].load().sel(model='high_hier')
+        gradients = calculate_gradients_of_reduced(da, reduction_options)
+        gradients.to_netcdf(summary_filename)
+    else:
+        gradients = xr.load_dataset(summary_filename)
+
+    return gradients
 
 
 if __name__ == '__main__':
