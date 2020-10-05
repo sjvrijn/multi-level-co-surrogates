@@ -91,8 +91,8 @@ def calculate_gradients_of_reduced(filename: Path, reduction_options: dict) -> x
         for options in product(*reduction_options.values())
     ]
 
-    shape = (*reversed([len(coord) for coord in reduction_options.values()]), -1)
-    all_data = np.array(results).reshape(shape).T
+    shape = (-1, *[len(coord) for coord in reduction_options.values()])
+    all_data = np.array(results).T.reshape(shape)
     dims = tuple(reduction_options.keys())
     ds_data = {
         field: (dims, data)
@@ -114,19 +114,19 @@ if __name__ == '__main__':
 
     for file in filter(lambda x: '.nc' in x.name, kriging_path.iterdir()):
         ds = get_reduced_gradient_summary(file, reductions, regenerate=args.regen_gradients)
-
         fig, ax = plt.subplots(constrained_layout=True)
-        for interval in ds.coords['intervals'].values:
+        for interval in reversed(ds.coords['intervals'].values):
             sub_ds = ds.sel(intervals=interval)
             x = sub_ds.coords['rect_sizes'].values
             y = sub_ds['deg']
             errors = np.stack([
-                sub_ds['deg_low'] - y,
-                y - sub_ds['deg_high']
+                y - sub_ds['deg_low'],
+                sub_ds['deg_high'] - y,
             ])
-            ax.errorbar(x=x, y=y, yerr=errors, label=interval, capsize=1)
+            ax.errorbar(x=x, y=y, yerr=errors, label=f'interval {interval}', capsize=2)
         ax.set_title(file.name)
         ax.set_xlabel('rectangle size *(2, 5)')
         ax.set_ylabel('gradient angle')
+        ax.set_ylim([0, 135])
         ax.legend(loc=0)
         fig.savefig(plot_path / f'gradient-summary-{file.stem}.pdf')
