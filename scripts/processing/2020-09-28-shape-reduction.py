@@ -115,6 +115,7 @@ if __name__ == '__main__':
     for file in filter(lambda x: '.nc' in x.name, kriging_path.iterdir()):
         ds = get_reduced_gradient_summary(file, reductions, regenerate=args.regen_gradients)
 
+        fig, ax = plt.subplots(constrained_layout=True)
         for interval in ds.coords['intervals'].values:
             sub_ds = ds.sel(intervals=interval)
             x = ds.coords['rect_sizes'].values
@@ -123,9 +124,9 @@ if __name__ == '__main__':
                 ds['deg_low'] - y,
                 y - ds['deg_high']
             ])
-            plt.errorbar(x=x, y=y, yerr=errors, label=interval, capsize=1)
-        plt.title(file.name)
-        plt.xlabel('rectangle size *(2, 5)')
-        plt.ylabel('gradient angle')
-        plt.legend(loc=0)
-        plt.savefig(plot_path / f'gradient-summary-{file.stem}.pdf')
+            ax.errorbar(x=x, y=y, yerr=errors, label=interval, capsize=1)
+        ax.set_title(file.name)
+        ax.set_xlabel('rectangle size *(2, 5)')
+        ax.set_ylabel('gradient angle')
+        ax.legend(loc=0)
+        fig.savefig(plot_path / f'gradient-summary-{file.stem}.pdf')
