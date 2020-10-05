@@ -21,6 +21,7 @@ import processing as proc
 
 
 kriging_path = here('files/2019-09-mse-nc/')
+adjustables_path = here('files/2019-10-07-adjustables')
 output_path = here('files/2020-09-28-shape-reduction/', warn=False)
 output_path.mkdir(exist_ok=True, parents=True)
 PLOT_PATH = here('plots/2020-09-28-shape-reduction/', warn=False)
@@ -131,5 +132,9 @@ if __name__ == '__main__':
     )
 
     for file in filter(lambda x: '.nc' in x.name, kriging_path.iterdir()):
+        ds = get_reduced_gradient_summary(file, reductions, regenerate=args.regen_gradients)
+        plot_gradients_of_reduced(ds, case_name=file.stem)
+
+    for file in filter(lambda x: '.nc' in x.name, adjustables_path.iterdir()):
         ds = get_reduced_gradient_summary(file, reductions, regenerate=args.regen_gradients)
         plot_gradients_of_reduced(ds, case_name=file.stem)
