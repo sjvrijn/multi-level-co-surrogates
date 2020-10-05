@@ -118,11 +118,11 @@ if __name__ == '__main__':
         fig, ax = plt.subplots(constrained_layout=True)
         for interval in ds.coords['intervals'].values:
             sub_ds = ds.sel(intervals=interval)
-            x = ds.coords['rect_sizes'].values
-            y = ds['deg']
+            x = sub_ds.coords['rect_sizes'].values
+            y = sub_ds['deg']
             errors = np.stack([
-                ds['deg_low'] - y,
-                y - ds['deg_high']
+                sub_ds['deg_low'] - y,
+                y - sub_ds['deg_high']
             ])
             ax.errorbar(x=x, y=y, yerr=errors, label=interval, capsize=1)
         ax.set_title(file.name)
