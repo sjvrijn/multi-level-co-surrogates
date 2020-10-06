@@ -124,6 +124,7 @@ def plot_gradients_of_reduced(gradient_summary, case_name):
     ax.set_ylim([0, 135])
     ax.legend(loc=0)
     fig.savefig(PLOT_PATH / f'gradient-summary-{case_name}.pdf')
+    plt.close(fig)
 
 
 if __name__ == '__main__':
