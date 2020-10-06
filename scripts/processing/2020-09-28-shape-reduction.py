@@ -103,6 +103,9 @@ def get_reduced_gradient_summary(filename: Path, reduction_options: dict, *,
 
 
 def plot_gradients_of_reduced(gradient_summary, case_name):
+    line_at_90 = dict(y=90, alpha=.5, color='black')
+    grid_style = dict(alpha=.5, linestyle=':')
+
     fig, ax = plt.subplots(constrained_layout=True)
     for interval in reversed(gradient_summary.coords['intervals'].values):
         sub_ds = gradient_summary.sel(intervals=interval)
@@ -113,6 +116,8 @@ def plot_gradients_of_reduced(gradient_summary, case_name):
             sub_ds['deg_high'] - y,
         ])
         ax.errorbar(x=x, y=y, yerr=errors, label=f'interval {interval}', capsize=2)
+    ax.grid(**grid_style)
+    ax.axhline(**line_at_90)
     ax.set_title(case_name)
     ax.set_xlabel('rectangle size *(2, 5)')
     ax.set_ylabel('gradient angle')
