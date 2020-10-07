@@ -32,9 +32,9 @@ def extract_right_upper_rectangle(da: xr.DataArray, num_high, num_low) -> xr.Dat
     """Reduce size of of an Error Grid by selecting a rectangle of data
     from the top-right
     """
-    return da.sel(
-        n_high=da.n_high.values[slice(-num_high, None)],
-        n_low=da.n_low.values[slice(-num_low, None)],
+    return da.where(
+        da.n_high.isin(da.n_high[slice(-num_high, None)]) *
+        da.n_low.isin(da.n_low[slice(-num_low, None)])
     )
 
 
@@ -42,9 +42,9 @@ def extract_at_interval(da: xr.DataArray, interval) -> xr.DataArray:
     """Reduce size of an Error Grid by selecting data at a fixed interval along
     both the number of high- and low-fidelity samples.
     """
-    return da.sel(
-        n_high=da.n_high.values[slice(None, None, interval)],
-        n_low=da.n_low.values[slice(None, None, interval)],
+    return da.where(
+        da.n_high.isin(da.n_high[slice(None, None, interval)]) *
+        da.n_low.isin(da.n_low[slice(None, None, interval)])
     )
 
 
