@@ -8,11 +8,11 @@ minimum Error Grid data to compute?.
 """
 
 import argparse
+from collections import namedtuple
 from itertools import product
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import xarray as xr
 from pathlib import Path
 from pyprojroot import here
@@ -130,7 +130,29 @@ def plot_gradients_of_reduced(gradient_summary, case_name):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--force-regen', action='store_true')
+    parser.add_argument('--plot-examples')
     args = parser.parse_args()
+
+    if args.plot_examples:
+        path = Path(args.plot_examples)
+        da = xr.open_dataset(path)['mses'].load()
+        Reduction = namedtuple('Reduction', 'rect_size interval name')
+        example_reductions = [
+            Reduction(20, 1, 'Large Rectangle'),
+            Reduction(10, 1, 'Small Rectangle'),
+            Reduction(25, 2, 'High Interval'),
+            Reduction(25, 5, 'Low Interval'),
+            Reduction(20, 5, 'Large Rectangle, low Interval'),
+            Reduction(10, 2, 'Small Rectangle, High Interval'),
+        ]
+        for *reductions, name in example_reductions:
+            smaller_da = reduce_size(da, *reductions)
+
+            save_path = PLOT_PATH / f'example-smaller-{name.replace(" ", "-").replace(",", "").lower()}-{path.stem}.pdf'
+            smaller_da.sel(model='high_hier').median(dim='rep').plot()
+            plt.title(f'Example: {name} -- {path.stem}')
+            plt.savefig(save_path)
+            plt.close()
 
     all_reductions = dict(
         rect_sizes=range(1, 26),
