@@ -132,15 +132,15 @@ if __name__ == '__main__':
     parser.add_argument('--force-regen', action='store_true')
     args = parser.parse_args()
 
-    reductions = dict(
+    all_reductions = dict(
         rect_sizes=range(1, 26),
         intervals=range(1, 11),
     )
 
     for file in filter(lambda x: '.nc' in x.name, kriging_path.iterdir()):
-        ds = get_reduced_gradient_summary(file, reductions, regenerate=args.force_regen)
+        ds = get_reduced_gradient_summary(file, all_reductions, regenerate=args.force_regen)
         plot_gradients_of_reduced(ds, case_name=file.stem)
 
     for file in filter(lambda x: '.nc' in x.name, adjustables_path.iterdir()):
-        ds = get_reduced_gradient_summary(file, reductions, regenerate=args.force_regen)
+        ds = get_reduced_gradient_summary(file, all_reductions, regenerate=args.force_regen)
         plot_gradients_of_reduced(ds, case_name=file.stem)
