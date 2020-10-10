@@ -54,10 +54,10 @@ for c in cases:
     plot_name = f'{c.ndim}d-{c.name.replace(".","")}-high-low-samples-linear'
     title = f'{c.name} ({c.ndim}D)'
 
-    proc.plot_high_vs_low_num_samples(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
-                                      save_as=plot_dir / f'{plot_name}.{plot_extension}')
-    #proc.plot_high_vs_low_num_samples_diff(mses, title, max_diff=c.max_diff,
-    #                                       save_as=plot_dir / f'{plot_name}-diff.{plot_extension}')
+    proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
+                         save_as=plot_dir / f'{plot_name}.{plot_extension}')
+    # proc.plot_error_grid_diff(mses, title, max_diff=c.max_diff,
+    #                           save_as=plot_dir / f'{plot_name}-diff.{plot_extension}')
 
     #proc.plot_t_scores(mses, title=title,
     #                   save_as=plot_dir / f'{plot_name}-significance.{plot_extension}')

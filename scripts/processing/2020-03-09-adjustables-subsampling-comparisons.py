@@ -72,6 +72,6 @@ for case, surr_name, sub, seed_offset in product(cases, surr_names, sub_from, se
 
     plot_name = f'comparison-{surr_name}-{case.ndim}d-{case.name.replace(".","").replace(" ", "-")}-sub{sub.high}-{sub.low}-seed{seed_offset}-high-low-samples'
 
-    proc.plot_multiple_high_vs_low_num_samples(mses, titles, as_log, contours=8,
-                                               save_as=plot_dir / f'{plot_name}.pdf')
+    proc.plot_multiple_error_grids(mses, titles, as_log, contours=8,
+                                   save_as=plot_dir / f'{plot_name}.pdf')
 

@@ -70,11 +70,11 @@ for c in cases:
     if data_points:
         pprint(data_points)
 
-    proc.plot_high_vs_low_num_samples(mses, title, vmin=c.vmin, vmax=c.vmax,
-                                      points=data_points, contours=8, as_log=c.as_log,
-                                      save_as=plot_dir / f'{plot_name}.pdf')
-    #proc.plot_high_vs_low_num_samples_diff(mses, title, max_diff=c.max_diff,
-    #                                       save_as=plot_dir / f'{plot_name}-diff.pdf')
+    proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax,
+                         points=data_points, contours=8, as_log=c.as_log,
+                         save_as=plot_dir / f'{plot_name}.pdf')
+    # proc.plot_error_grid_diff(mses, title, max_diff=c.max_diff,
+    #                           save_as=plot_dir / f'{plot_name}-diff.pdf')
 
     #proc.plot_t_scores(mses, title=title,
     #                   save_as=plot_dir / f'{plot_name}-significance.pdf')
