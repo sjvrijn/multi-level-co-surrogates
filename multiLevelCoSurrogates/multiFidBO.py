@@ -8,170 +8,19 @@ surrogate model
 
 import numpy as np
 import pandas as pd
-import xarray as xr
 import bayes_opt as bo
 
 from functools import partial
 from collections import namedtuple
 from operator import itemgetter
 from scipy.optimize import minimize
-from scipy.spatial import distance
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.linear_model import LinearRegression
-from more_itertools import pairwise, stagger
+from more_itertools import stagger
 
 from .CandidateArchive import CandidateArchive
 from .Utils import create_random_sample_set, rescale, \
     low_lhs_sample, createsurfaces, plotsurfaces, gpplot, ScatterPoints, ValueRange
 from .Surrogates import HierarchicalSurrogate, Surrogate
-
-
-BiFidelityDoE = namedtuple("BiFidelityDoE", "high low")
-
-
-def bi_fidelity_doe(ndim, num_high, num_low):
-    """Create a Design of Experiments (DoE) for two fidelities in `ndim`
-    dimensions. The high-fidelity samples are guaranteed to be a subset
-    of the low-fidelity samples.
-
-    :returns high-fidelity samples, low-fidelity samples
-    """
-    high_x = low_lhs_sample(ndim, num_high)
-    low_x = low_lhs_sample(ndim, num_low)
-
-    dists = distance.cdist(high_x, low_x)
-
-    #TODO: this is the naive method, potentially speed up?
-    highs_to_match = set(range(num_high))
-    while highs_to_match:
-        min_dist = np.min(dists)
-        high_idx, low_idx = np.argwhere(dists == min_dist)[0]
-
-        low_x[low_idx] = high_x[high_idx]
-        # make sure just selected samples are not re-selectable
-        dists[high_idx,:] = np.inf
-        dists[:,low_idx] = np.inf
-        highs_to_match.remove(high_idx)
-    return BiFidelityDoE(high_x, low_x)
-
-
-def scale_to_function(func, xx, range_in=ValueRange(0, 1)):
-    range_out = (np.array(func.l_bound), np.array(func.u_bound))
-    return [rescale(x, range_in=range_in, range_out=range_out) for x in xx]
-
-
-def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
-    """Return lin-reg coefficients after training index -> value"""
-
-    series = da.to_series().dropna()
-    X = np.array(series.index.tolist())[:,:2]  # remove rep_idx (3rd column)
-    y = np.log10(series.values)
-    reg = LinearRegression().fit(X, y)
-
-    if not calc_SSE:
-        return reg
-
-    pred_y = reg.predict(X)
-    SSE = np.sum((pred_y - y)**2)
-    return reg, SSE
-
-
-def create_error_grid(archive, num_reps=50):
-
-
-
-    pass
-
-
-def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low):
-    if doe_n_high + cost_ratio*doe_n_low >= budget:
-        raise ValueError('Budget should not be exhausted after DoE')
-
-    #make mf-DoE
-    high_x, low_x = bi_fidelity_doe(func.ndim, doe_n_high, doe_n_low)
-    high_x, low_x = scale_to_function(func, [high_x, low_x])
-    high_y, low_y = func.high(high_x), \
-                    func.low(low_x)
-
-    #subtract mf-DoE from budget
-    budget -= doe_n_high
-    budget -= doe_n_low * cost_ratio
-
-    #create archive
-    archive = CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
-    archive.addcandidates(low_x, low_y, fidelity='low')
-    archive.addcandidates(high_x, high_y, fidelity='high')
-
-    #make mf-model using archive
-    mfbo = MultiFidelityBO(func, archive)
-
-    time_since_high_eval = 0
-    while budget > 0:
-        #select next fidelity to evaluate:
-        #sample error grid
-        EG = create_error_grid(archive, num_reps=50)
-        #fit lin-reg for beta_1, beta_2
-        reg = fit_lin_reg(EG)
-        beta_1, beta_2 = reg.coef_[:2]
-        #determine \tau based on beta_1, beta_2 and cost_ratio
-        tau = np.ceil(beta_2 / (beta_1*cost_ratio))  #todo confirm with notes
-        #compare \tau with current count t to select fidelity
-        fidelity = 'high' if time_since_high_eval > tau else fidelity = 'low'
-
-
-        #predict best place to evaluate:
-        if fidelity == 'high':
-            #best predicted low-fid only datapoint for high-fid (to maintain hierarchical model)
-            all_low = set(tuple(candidate) for candidate, fitness in archive.getcandidates(fidelity='low'))
-            all_high = set(tuple(candidate) for candidate, fitness in archive.getcandidates(fidelity='high'))
-
-            candidates = [np.array(cand).reshape(-1, 1) for cand in all_low - all_high]  # only consider candidates that are not yet evaluated in high-fidelity
-            candidate_predictions = [
-                (cand, mfbo.models['high_hier'].predict(cand))
-                for cand in candidates
-            ]
-            x = min(candidate_predictions, key=itemgetter(1))[0]
-        else:  #elif fidelity == 'low':
-            #simple optimization for low-fid
-            x = minimize(
-                lambda x: mfbo.models['high_hier'].predict(x.reshape(1, -1))[0],
-                x0=np.random.uniform(func.l_bound, func.u_bound).reshape(1, -1),
-                bounds=func.bounds,
-            )
-
-        #evaluate best place
-        archive.addcandidate(x, func[fidelity](x), fidelity=fidelity)
-
-        #update model
-        mfbo.retrain()
-    pass
-
-
-
-    # \Require{Budget $b$, Cost ratio $\costratio$, Initial DoE size $\nhigh, \nlow$}
-    # \State{$\mathcal{A} \leftarrow $ DoE($\nhigh, \nlow$)} \Comment{Archive of evaluated solutions}
-    # \State{$b \leftarrow b - (\nhigh + \nlow\costratio)$}
-    # \State{$t \leftarrow 0$} \Comment{time since last high-fidelity evaluation}
-    # \While{remaining budget $b > 0$}
-    #     \State{Create Error Grid by subsampling from $\mathcal{A}$}
-    #     \State{Measure angle $\theta$} \Comment{In practice, the ratio $\frac{\beta_1}{\beta_2}$ is enough}
-    #     \State{determine ideal ratio $1/\tau$} \Comment{No MF-utility if $\tau < 1$!}
-    #     \State{$M \leftarrow $ train multi-fidelity model on $\mathcal{A}$}
-    #     \State{Find next sample location $\Vec{x}$ using model $M$}
-    #     \If{$t < \tau$}
-    #         \State{Evaluate $\Vec{x}$ in \emph{low} fidelity, add to $\mathcal{A}$}
-    #         \State{$t \leftarrow t + 1$}
-    #         \State{$b \leftarrow b - \costratio$}
-    #     \Else
-    #         \State{Evaluate $\Vec{x}$ in \emph{high} fidelity, add to $\mathcal{A}$}
-    #         \State{$t \leftarrow 0$}
-    #         \State{$b \leftarrow b - 1$}
-    #     \EndIf
-    # \EndWhile
-    # \State{\Return{$\mathcal{A}$}} \Comment{or whatever result is desired from optimization}
-
-
-    pass
 
 
 class MultiFidelityBO:
@@ -313,7 +162,9 @@ class MultiFidelityBO:
 
 
     def retrain(self):
-        raise NotImplementedError
+        self.top_level_model.retrain()
+        for fid in self.fidelities:
+            self.direct_models[fid].retrain()
 
 
     def run(self, *, num_iters=100, repetition_idx=0):
