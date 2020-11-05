@@ -63,9 +63,9 @@ def full_extent(fig, ax, pad=0.0):
     return bbox.transformed(fig.dpi_scale_trans.inverted())
 
 
-def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
-                                 contours=0, as_log=False, save_as=None,
-                                 show=False, include_comparisons=False):
+def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
+                    contours=0, as_log=False, save_as=None,
+                    show=False, include_comparisons=False):
     """Plot a heatmap of the median MSE for each possible combination of high
     and low-fidelity samples. For comparison, the MSE for the high-only and
     low-only models are displayed as a bar to the left and bottom respectively.
@@ -160,9 +160,9 @@ def plot_high_vs_low_num_samples(data, title, vmin=.5, vmax=100, points=(),
     plt.close()
 
 
-def plot_multiple_high_vs_low_num_samples(datas, titles, as_log=True,
-                                          vmin=None, vmax=None, contours=0,
-                                          save_as=None, show=False):
+def plot_multiple_error_grids(datas, titles, as_log=True,
+                              vmin=None, vmax=None, contours=0,
+                              save_as=None, show=False):
     """Plot a heatmap of the median MSE for each possible combination of high
     and low-fidelity samples. For comparison, the MSE for the high-only and
     low-only models are displayed as a bar to the left and bottom respectively.
@@ -214,7 +214,7 @@ def plot_multiple_high_vs_low_num_samples(datas, titles, as_log=True,
     plt.close()
 
 
-def plot_high_vs_low_num_samples_diff(data, title, max_diff=None, save_as=None):
+def plot_error_grid_diff(data, title, max_diff=None, save_as=None):
 
     paired_diffs = data.sel(model='high') - data.sel(model='high_hier')
     to_plot = paired_diffs.median(dim='rep')
