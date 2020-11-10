@@ -254,7 +254,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
 
 if __name__ == '__main__':
     import mf2
-    from pickle import dump
+    from json import dump
     for func in [
         mf2.branin,
         mf2.currin,
@@ -270,5 +270,5 @@ if __name__ == '__main__':
 
         _, df, archive = simple_multifid_bo(func, 50, 0.2, 10, 25, num_reps=20)
         df.to_csv(f'{func.name}-tracking.csv')
-        with open(f'{func.name}-archive.pkl') as f:
+        with open(f'{func.name}-archive.json', 'w') as f:
             dump(archive.data, f)
