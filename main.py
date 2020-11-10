@@ -224,9 +224,9 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
                 for candidate in archive.getcandidates(fidelity='high').candidates
             }
 
-            candidates = [np.array(cand).reshape(-1, 1) for cand in all_low - all_high]  # only consider candidates that are not yet evaluated in high-fidelity
+            candidates = [np.array(cand).reshape(1, -1) for cand in all_low - all_high]  # only consider candidates that are not yet evaluated in high-fidelity
             candidate_predictions = [
-                (cand, mfbo.models['high'].predict(cand.reshape(1, -1))[0])
+                (cand, mfbo.models['high'].predict(cand.reshape(1, -1)))
                 for cand in candidates
             ]
 
@@ -236,7 +236,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
         else:  # elif fidelity == 'low':
             #simple optimization for low-fid
             x = minimize(
-                lambda x: mfbo.models['high'].predict(x.reshape(1, -1))[0],
+                lambda x: mfbo.models['high'].predict(x.reshape(1, -1)),
                 x0=np.random.uniform(func.l_bound, func.u_bound).reshape(1, -1),
                 bounds=func.bounds,
             ).x
