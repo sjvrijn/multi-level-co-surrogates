@@ -237,7 +237,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
             #simple optimization for low-fid
             x = minimize(
                 lambda x: mfbo.models['high'].predict(x.reshape(1, -1)),
-                x0=np.random.uniform(func.l_bound, func.u_bound).reshape(1, -1),
+                x0=np.random.uniform(func.l_bound, func.u_bound).reshape(-1, ),
                 bounds=func.bounds,
             ).x
             time_since_high_eval += 1
@@ -254,7 +254,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
 
 if __name__ == '__main__':
     import mf2
-    from json import dump
+    from pickle import dump
     for func in [
         mf2.branin,
         mf2.currin,
@@ -268,7 +268,14 @@ if __name__ == '__main__':
         mf2.park91b,
     ]:
 
-        _, df, archive = simple_multifid_bo(func, 50, 0.2, 10, 25, num_reps=20)
+        _, df, archive = simple_multifid_bo(
+            func=func,
+            budget=50,
+            cost_ratio=0.2,
+            doe_n_high=10,
+            doe_n_low=25,
+            num_reps=20
+        )
         df.to_csv(f'{func.name}-tracking.csv')
-        with open(f'{func.name}-archive.json', 'w') as f:
-            dump(archive.data, f)
+        with open(f'{func.name}-archive.pkl', 'wb') as f:
+            dump(str(archive.data), f)
