@@ -9,3 +9,4 @@ plots/
 *.npy
 *.npz
 .python-version
+*.log
