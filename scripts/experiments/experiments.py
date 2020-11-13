@@ -669,6 +669,76 @@ def standardize_fname_for_file(name):
     return name.replace(' ', '-')
 
 
+def create_subsampling_error_grid(
+        archive: mlcs.CandidateArchive,
+        num_reps: int=50,
+        interval: int=2,
+        func=None
+) -> xr.DataArray:
+    """Create an error grid through subsampling from the given archive
+
+    :param archive:  `mlcs.CandidateArchive` containing all available evaluated candidates
+    :param num_reps: Number of independent repetitions for each size
+    :param interval: Interval at which to fill the error grid
+    :param func:     Multi-fidelity function to re-evaluate known candidates  #TODO: remove argument
+    :return:         `xr.DataArray` ErrorGrid
+    """
+
+    if not func:
+        # TODO: implement that the original function is not re-evaluated
+        # but that values from `archive` are re-used.
+        raise NotImplementedError
+
+    highs = archive.getcandidates(fidelity='high').candidates
+    lows = archive.getcandidates(fidelity='low').candidates
+    DoE = BiFidelityDoE(highs, lows)
+
+    max_num_high = len(highs)
+    max_num_low = len(lows)
+
+    error_grid = np.full((max_num_high+1, max_num_low+1, num_reps+1, 3), np.nan)
+
+    instances = [
+        (h, l, r)
+        for h, l, r in product(range(2, max_num_high, interval),
+                               range(3, max_num_low, interval),
+                               range(num_reps))
+        if h < l
+    ]
+
+    for i, (num_high, num_low, rep) in enumerate(instances):
+
+        if i % 1_000 == 0:
+            print(f"{i}/{len(instances)}")
+
+        # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
+        (high_x, low_x), _ = split_bi_fidelity_doe(DoE, num_high, num_low)
+        high_y, low_y = func.high(high_x), \
+                        func.low(low_x)
+
+        # Create an archive from the MF-function and MF-DoE data
+        archive = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
+        archive.addcandidates(low_x, low_y, fidelity='low')
+        archive.addcandidates(high_x, high_y, fidelity='high')
+
+        # (Automatically) Create the hierarchical model
+        mfbo = mlcs.MultiFidelityBO(func, archive)
+
+        # Get the results we're interested in from the model for this instance
+        error_grid[num_high, num_low, rep] = mfbo.getMSE()
+
+    models = ['high_hier', 'high', 'low']
+    return xr.DataArray(
+        error_grid,
+        dims=['n_high', 'n_low', 'rep', 'model'],
+        coords={
+            'n_high': range(max_num_high+1),
+            'n_low': range(max_num_low+1),
+            'rep': range(num_reps+1),
+            'model': models,
+        },
+    )
+
 
 def get_tmp_path(path):
     if not path.exists():
