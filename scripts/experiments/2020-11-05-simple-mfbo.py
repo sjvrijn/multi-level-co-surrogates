@@ -16,10 +16,16 @@ from collections import namedtuple
 from operator import itemgetter
 from scipy.optimize import minimize
 from sklearn.linear_model import LinearRegression
+from pyprojroot import here
 
-from experiments import bi_fidelity_doe, scale_to_function, split_bi_fidelity_doe, BiFidelityDoE, mlcs
+from experiments import bi_fidelity_doe, scale_to_function, split_bi_fidelity_doe, \
+    BiFidelityDoE, mlcs
 
 
+save_dir = here('files/2020-11-05-simple-mfbo/')
+save_dir.mkdir(parents=True, exist_ok=True)
+
+#TODO de-duplicate (already present in processing.py
 def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
     """Return lin-reg coefficients after training index -> value"""
 
@@ -36,13 +42,28 @@ def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
     return reg, SSE
 
 
-def create_error_grid(archive, num_reps=50, func=None):
+def create_subsampling_error_grid(
+        archive: mlcs.CandidateArchive,
+        num_reps: int=50,
+        interval: int=2,
+        func=None
+) -> xr.DataArray:
+    """Create an error grid through subsampling from the given archive
+
+    :param archive:  `mlcs.CandidateArchive` containing all available evaluated candidates
+    :param num_reps: Number of independent repetitions for each size
+    :param interval: Interval at which to fill the error grid
+    :param func:     Multi-fidelity function to re-evaluate known candidates  #TODO: remove argument
+    :return:         `xr.DataArray` ErrorGrid
+    """
 
     if not func:
+        # TODO: implement that the original function is not re-evaluated
+        # but that values from `archive` are re-used.
         raise NotImplementedError
 
-    highs = archive.getcandidates(fidelity='high')[0]
-    lows = archive.getcandidates(fidelity='low')[0]
+    highs = archive.getcandidates(fidelity='high').candidates
+    lows = archive.getcandidates(fidelity='low').candidates
     DoE = BiFidelityDoE(highs, lows)
 
     max_num_high = len(highs)
@@ -52,11 +73,12 @@ def create_error_grid(archive, num_reps=50, func=None):
 
     instances = [
         (h, l, r)
-        for h, l, r in product(range(2, max_num_high, 2),
-                               range(3, max_num_low, 2),
+        for h, l, r in product(range(2, max_num_high, interval),
+                               range(3, max_num_low, interval),
                                range(num_reps))
         if h < l
     ]
+
     for i, (num_high, num_low, rep) in enumerate(instances):
 
         if i % 1_000 == 0:
@@ -120,7 +142,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
     while budget > 0:
         #select next fidelity to evaluate:
         #sample error grid
-        EG = create_error_grid(archive, num_reps=num_reps, func=func)
+        EG = create_subsampling_error_grid(archive, num_reps=num_reps, func=func)
 
         #fit lin-reg for beta_1, beta_2
         reg = fit_lin_reg(EG)
@@ -150,7 +172,9 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
                 for candidate in archive.getcandidates(fidelity='high').candidates
             }
 
-            candidates = [np.array(cand).reshape(1, -1) for cand in all_low - all_high]  # only consider candidates that are not yet evaluated in high-fidelity
+            selected_candidates = all_low - all_high
+
+            candidates = [np.array(cand).reshape(1, -1) for cand in selected_candidates]  # only consider candidates that are not yet evaluated in high-fidelity
             candidate_predictions = [
                 (cand, mfbo.models['high'].predict(cand.reshape(1, -1)))
                 for cand in candidates
@@ -202,6 +226,6 @@ if __name__ == '__main__':
             doe_n_low=25,
             num_reps=20
         )
-        df.to_csv(f'{func.name}-tracking.csv')
-        with open(f'{func.name}-archive.pkl', 'wb') as f:
+        df.to_csv(save_dir / f'{func.name}-tracking.csv')
+        with open(save_dir / f'{func.name}-archive.pkl', 'wb') as f:
             dump(str(archive.data), f)
