@@ -34,13 +34,6 @@ def set_seed_by_instance(num_high, num_low, rep):
     np.random.seed(int(f'{num_high:03}{num_low:03}{rep:03}'))
 
 
-def low_lhs_sample(ndim, nlow):
-    if ndim == 1:
-        return np.linspace(0,1,nlow).reshape(-1,1)
-    elif ndim > 1:
-        return lhs(ndim, nlow)
-
-
 def bi_fidelity_doe(ndim, num_high, num_low):
     """Create a Design of Experiments (DoE) for two fidelities in `ndim`
     dimensions. The high-fidelity samples are guaranteed to be a subset
@@ -48,8 +41,8 @@ def bi_fidelity_doe(ndim, num_high, num_low):
 
     :returns high-fidelity samples, low-fidelity samples
     """
-    high_x = low_lhs_sample(ndim, num_high)
-    low_x = low_lhs_sample(ndim, num_low)
+    high_x = mlcs.low_lhs_sample(ndim, num_high)
+    low_x = mlcs.low_lhs_sample(ndim, num_low)
 
     dists = distance.cdist(high_x, low_x)
 
@@ -76,9 +69,9 @@ def split_bi_fidelity_doe(DoE, num_high, num_low):
     Raises a `ValueError` if invalid `num_high` or `num_low` are given."""
     high, low = DoE
     if not 1 < num_high < len(high):
-        raise ValueError(f"'num_high' must be in the range [2, len(DoE.high)], but is {num_high}")
+        raise ValueError(f"'num_high' must be in the range [2, len(DoE.high) (={len(DoE.high)})], but is {num_high}")
     elif num_low > len(low):
-        raise ValueError(f"'num_low' cannot be greater than len(DoE.low), but is {num_low}")
+        raise ValueError(f"'num_low' cannot be greater than len(DoE.low) (={len(DoE.low)}), but is {num_low}")
     elif num_low <= num_high:
         raise ValueError(f"'num_low' must be greater than 'num_high', but {num_low} <= {num_high}")
 
@@ -114,7 +107,7 @@ def get_test_sample(ndim, save_dir):
 
     n_test_samples = 500 * ndim
     np.random.seed(20160501)  # Setting seed for reproducibility
-    test_sample = low_lhs_sample(ndim, n_test_samples)
+    test_sample = mlcs.low_lhs_sample(ndim, n_test_samples)
     np.save(test_sample_save_name, test_sample)
     return test_sample
 
