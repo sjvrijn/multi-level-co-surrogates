@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from parse import parse
-from pyDOE import lhs
 from pyprojroot import here
 from scipy.spatial import distance
 from sklearn.metrics import mean_squared_error, r2_score
