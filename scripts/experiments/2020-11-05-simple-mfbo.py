@@ -78,13 +78,13 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
         beta_1, beta_2 = reg.coef_[:2]
 
         #determine \tau based on beta_1, beta_2 and cost_ratio
-        tau = np.ceil(beta_2 / (beta_1*cost_ratio))  #todo confirm with notes
+        tau = np.ceil(1 / (beta_1 / (beta_2 / cost_ratio)))
 
         if tau <= 1:
             warn('Low-fidelity not expected to add information, no need to use multi-fidelity')
 
-        #compare \tau with current count t to select fidelity
-        fidelity = 'high' if time_since_high_eval >= tau else 'low'
+        #compare \tau with current count t to select fidelity, must be >= 1
+        fidelity = 'high' if 1 <= tau <= time_since_high_eval else 'low'
 
         entries.append(Entry(budget, time_since_high_eval, tau, fidelity))
 
