@@ -46,7 +46,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
     if doe_n_high + cost_ratio*doe_n_low >= budget:
         raise ValueError('Budget should not be exhausted after DoE')
 
-    Entry = namedtuple('Entry', 'budget, time_since_high_eval, tau, fidelity')
+    Entry = namedtuple('Entry', 'budget time_since_high_eval tau fidelity candidate fitness')
     entries = []
 
     #make mf-DoE
@@ -86,8 +86,6 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
         #compare \tau with current count t to select fidelity, must be >= 1
         fidelity = 'high' if 1 <= tau <= time_since_high_eval else 'low'
 
-        entries.append(Entry(budget, time_since_high_eval, tau, fidelity))
-
         #predict best place to evaluate:
         if fidelity == 'high':
             #best predicted low-fid only datapoint for high-fid (to maintain hierarchical model)
@@ -123,7 +121,9 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
             budget -= cost_ratio
 
         #evaluate best place
-        archive.addcandidate(x, func[fidelity](x.reshape(1, -1)), fidelity=fidelity)
+        y = func[fidelity](x.reshape(1, -1))
+        archive.addcandidate(x, y, fidelity=fidelity)
+        entries.append(Entry(budget, time_since_high_eval, tau, fidelity, x, y))
 
         #update model
         mfbo.retrain()
