@@ -41,6 +41,8 @@ def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
 
 
 def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps=50):
+    np.random.seed(20160501)
+
     if doe_n_high + cost_ratio*doe_n_low >= budget:
         raise ValueError('Budget should not be exhausted after DoE')
 
