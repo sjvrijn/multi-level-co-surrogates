@@ -717,12 +717,12 @@ def create_subsampling_error_grid(
                         func.low(low_x)
 
         # Create an archive from the MF-function and MF-DoE data
-        archive = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
-        archive.addcandidates(low_x, low_y, fidelity='low')
-        archive.addcandidates(high_x, high_y, fidelity='high')
+        arch = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
+        arch.addcandidates(low_x, low_y, fidelity='low')
+        arch.addcandidates(high_x, high_y, fidelity='high')
 
         # (Automatically) Create the hierarchical model
-        mfbo = mlcs.MultiFidelityBO(func, archive)
+        mfbo = mlcs.MultiFidelityBO(func, arch)
 
         # Get the results we're interested in from the model for this instance
         error_grid[num_high, num_low, rep] = mfbo.getMSE()
