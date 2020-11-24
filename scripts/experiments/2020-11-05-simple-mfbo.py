@@ -117,6 +117,10 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
                 x0=np.random.uniform(func.l_bound, func.u_bound).reshape(-1, ),
                 bounds=func.bounds.T,
             ).x
+
+            if x in archive:
+                raise ValueError(f"already evaluated candidate {x}")
+
             time_since_high_eval += 1
             budget -= cost_ratio
 
