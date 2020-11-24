@@ -118,8 +118,13 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
                 bounds=func.bounds.T,
             ).x
 
-            if x in archive:
-                raise ValueError(f"already evaluated candidate {x}")
+            N_RAND_SAMPLES = 100
+            while x in archive:  # resample to ensure a new candidate is added to the archive
+                print(f'Existing candidate {x} ...')
+                random_candidates = scale_to_function(func, np.random.rand(N_RAND_SAMPLES, func.ndim))
+                fitnesses = mfbo.models['high'].predict(random_candidates)
+                x = random_candidates[np.argmin(fitnesses)]
+                print(f'... replaced by {x}')
 
             time_since_high_eval += 1
             budget -= cost_ratio
