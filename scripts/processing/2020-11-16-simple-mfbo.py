@@ -13,7 +13,7 @@ import mf2
 from pyprojroot import here
 
 data_path = here('files/2020-11-05-simple-mfbo/')
-plot_path = here('plots/2020-09-28-shape-reduction/', warn=False)
+plot_path = here('plots/2020-11-16-simple-mfbo/', warn=False)
 plot_path.mkdir(exist_ok=True, parents=True)
 
 # ## Plotting progress of $\tau$ over time
@@ -24,8 +24,8 @@ for func in mf2.bi_fidelity_functions:
         print(func.name)
         df = pd.read_csv(tracking_file, index_col=0)
         df['tau'].plot()
-        plt.savefig(f'{func.name}-tau.pdf', bbox_inches='tight')
-        plt.show()
+        plt.savefig(plot_path / f'{func.name}-tau.png', bbox_inches='tight')
+        #plt.show()
         plt.clf()
 
 # ## Plotting best high/low-fidelity evaluation over time
@@ -36,15 +36,21 @@ for func in mf2.bi_fidelity_functions:
     if tracking_file.exists():
         print(func.name)
         df = pd.read_csv(tracking_file, index_col=0)
+        #print(df.head())
+        #print(df.dtypes)
         for name, sub_df in df.groupby('fidelity'):
-            time = sub_df['budget'].values
-            fitnesses = sub_df['fitness'].values
+            time = sub_df['budget'].to_numpy().reshape(-1,)
+            #fitnesses = sub_df['fitness'].to_numpy().reshape(-1,)
+            fitnesses = [eval(x)[0] for x in sub_df['fitness']]
             min_fit = np.minimum.accumulate(fitnesses)
 
             plt.plot(time, fitnesses, label=f'{name}-fidelity over time')
             plt.plot(time, min_fit, label=f'best {name}-fidelity over time')
-            plt.legend(loc=0)
-            plt.show()
+        plt.legend(loc=0)
+        plt.xlim([35, 0])
+        plt.savefig(plot_path / f'{func.name}-evals.png', bbox_inches='tight')
+        #plt.show()
+        plt.clf()
 
 
 
