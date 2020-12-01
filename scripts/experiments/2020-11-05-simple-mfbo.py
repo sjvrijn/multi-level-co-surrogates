@@ -130,7 +130,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
             budget -= cost_ratio
 
         #evaluate best place
-        y = func[fidelity](x.reshape(1, -1))
+        y = func[fidelity](x.reshape(1, -1))[0]
         archive.addcandidate(x, y, fidelity=fidelity)
         entries.append(Entry(budget, time_since_high_eval, tau, fidelity, x, y))
 
