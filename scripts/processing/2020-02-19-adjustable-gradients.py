@@ -77,14 +77,21 @@ def create_plots(correlations, angles, plot_individuals=False):
         ax = plt.gca()
         ax.xaxis.set_minor_locator(MultipleLocator(0.1))
         ax.yaxis.set_minor_locator(MultipleLocator(10))
-        plt.xlim([-1, 1.05])
-        plt.ylim([0, 120])
         plt.grid(**grid_style, which='both')
 
-        plt.legend(loc='lower left')
+        # Close up of 0.8 < r < 1
+        plt.xlim([.8, 1.01])
+        plt.ylim([0, 100])
+        plt.savefig(plot_dir / f'comparison_{corr_type}_closeup.png')
+        plt.savefig(plot_dir / f'comparison_{corr_type}_closeup.pdf')
 
+        # Full image, with legend
+        plt.xlim([-1, 1.05])
+        plt.ylim([0, 120])
+        plt.legend(loc='lower left')
         plt.savefig(plot_dir / f'comparison_{corr_type}.png')
         plt.savefig(plot_dir / f'comparison_{corr_type}.pdf')
+
         plt.close()
 
 
