@@ -88,7 +88,7 @@ params = np.round(np.linspace(0, 1, 101), 3)
 Adj_Corr_result = namedtuple("Corr_result",
                              "fname ndim param pearson_r pearson_r2 spearman_r spearman_r2")
 
-name_parser = Parser('Adjustable {fname} {param:f}')
+name_parser = Parser('Adjustable{fname}{param:f}')
 results = []
 for func in mf2.adjustable.bi_fidelity_functions:
     for a in params:
@@ -99,7 +99,9 @@ for func in mf2.adjustable.bi_fidelity_functions:
         y_h, y_l = f.high(sample), f.low(sample)
         pear, spear = pearsonr(y_h, y_l)[0], spearmanr(y_h, y_l)[0]
 
-        name = standardize_name(name_parser.parse(func.name)['fname'])
+        name = name_parser.parse(func(0.5).name)['fname']
+        name = 'Hartmann3' if name == 'Hartmann' else name
+        name = standardize_name(name)
         results.append(
             Adj_Corr_result(name, f.ndim, a, pear, pear**2, spear, spear**2)
         )
@@ -128,8 +130,6 @@ labels = {
     'spearman_r2': 'Spearman $r^2$',
 }
 
-param_idx = {'branin': 1, 'paciorek': 2, 'hartmann3': 3, 'trid': 4}
-
 grouped_df = adjustables_correlations.groupby('fname')
 fig = plt.figure(figsize=figsize)  #, constrained_layout=True)
 gs = fig.add_gridspec(nrows=2, ncols=2, bottom=0.16, wspace=0.3, hspace=0.45, right=0.975, top=0.95, left=0.1)
@@ -151,7 +151,7 @@ for ax_i, (name, subdf) in zip(axes, grouped_df):
         ax.set_xlim([0,1])
         ax.set_ylim([-1,1])
         ax.set_ylabel('Correlation')
-        ax.set_xlabel(f'A{param_idx[name]}')
+        ax.set_xlabel('A')
         ax.set_title(name.title())
 
     single_ax.legend(loc=0)
