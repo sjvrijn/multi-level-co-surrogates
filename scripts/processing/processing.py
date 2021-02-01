@@ -405,7 +405,8 @@ def calc_angle(da: xr.DataArray):
     AngleSummary = namedtuple('AngleSummary', 'alpha beta theta deg deg_low deg_high')
     reg, SSE = fit_lin_reg(da, calc_SSE=True)
 
-    alpha, beta = reg.coef_
+    beta_high, beta_low = reg.coef_
+    ratio = beta_high / beta_low
     df = da.size - 3
 
     nhighs = da.coords['n_high'].values
@@ -418,15 +419,25 @@ def calc_angle(da: xr.DataArray):
 
     se_nhigh = s / var_nhigh
     se_nlow = s / var_nlow
+    se_ratio = np.sqrt((se_nhigh / beta_high)**2 + (se_nlow / beta_low)**2)
 
-    ci_alpha = ConfidenceInterval(alpha, se_nhigh, alpha-1.96*se_nhigh, alpha+1.96*se_nhigh)
-    ci_beta = ConfidenceInterval(beta, se_nlow, beta-1.96*se_nlow, beta+1.96*se_nlow)
+    ci_beta_high = ConfidenceInterval(beta_high, se_nhigh, beta_high-1.96*se_nhigh, beta_high+1.96*se_nhigh)
+    ci_beta_low = ConfidenceInterval(beta_low, se_nlow, beta_low-1.96*se_nlow, beta_low+1.96*se_nlow)
+    ci_beta_ratio = ConfidenceInterval(ratio, se_ratio, ratio-1.96*se_ratio, ratio+1.96*se_ratio)
 
-    theta = np.arctan2(alpha, beta) + np.pi
+    theta = np.arctan(ratio)
     mid_angle = np.rad2deg(theta)
-    angles = [ratio_to_angle(a, b) for a, b in product(ci_alpha[2:], ci_beta[2:])]
 
-    return AngleSummary(alpha, beta, theta, mid_angle, min(angles), max(angles))
+    min_angle = np.rad2deg(np.arctan(ci_beta_ratio.lower))
+    max_angle = np.rad2deg(np.arctan(ci_beta_ratio.upper))
+    if mid_angle < 0:
+        min_angle, mid_angle, max_angle = min_angle+180, mid_angle+180, max_angle+180
+    elif mid_angle > 180:
+        min_angle, mid_angle, max_angle = min_angle-180, mid_angle-180, max_angle-180
+
+    print(min_angle, mid_angle, max_angle)
+
+    return AngleSummary(beta_high, beta_low, theta, mid_angle, min_angle, max_angle)
 
 
 def get_gradient_angles(directory: Path, force_regen: bool=False):
@@ -441,6 +452,7 @@ def get_gradient_angles(directory: Path, force_regen: bool=False):
     gradients_filename = directory / 'gradients.csv'
     if force_regen or not gradients_filename.exists():
         df = calculate_gradient_angles(directory)
+        df['param'] = df['param'].astype('float64')
         df.to_csv(gradients_filename, index=False)
     else:
         df = pd.read_csv(gradients_filename)
