@@ -53,45 +53,59 @@ def create_plots(correlations, angles, plot_individuals=False):
         if plot_individuals:
             scatter_per_function(corr_type, extended_correlations)
 
-        plt.subplots(figsize=(7.0,5.2), constrained_layout=True)
+        fig, axes = plt.subplots(
+            ncols=2,
+            figsize=(7.0,5.2),
+            sharey=True,
+            gridspec_kw={'width_ratios': (3.5,2)},
+            constrained_layout=True,
+        )
+        fig.set_constrained_layout_pads(wspace=0, wpad=0.01)
 
-        adjustables = extended_correlations.loc['adjustable']
-        for func_name, sub_df in adjustables.groupby('fname'):
-            x, y = sub_df[f'{corr_type}_r'].values, sub_df['deg'].values
-            errors = np.stack([y - sub_df['deg_low'].values, sub_df['deg_high'].values - y])
-            plt.errorbar(x, y, yerr=errors, capsize=1, linestyle='-', linewidth=.5, marker='.', label=f'adjustable {func_name}')
+        def _plot_on_axis(ax, xlim, ylim=None, closeup=False):
+            """Simplifying repeated plotting of the same data on different axis with different options,
+            depending on whether or not it's the close-up.
+            """
+            adjustables = extended_correlations.loc['adjustable']
+            for func_name, sub_df in adjustables.groupby('fname'):
+                x, y = sub_df[f'{corr_type}_r'].values, sub_df['deg'].values
+                errors = np.stack([y - sub_df['deg_low'].values, sub_df['deg_high'].values - y])
+                ax.errorbar(x, y, yerr=errors, capsize=1, linestyle='-', linewidth=.5, marker='.', label=f'adjustable {func_name}')
 
-        regulars = extended_correlations.loc['regular']
-        for (func_name, sub_df), marker in zip(regulars.groupby('fname'), markers):
-            if func_name == 'forrester':
-                sub_df = sub_df.loc[1]
-            x, y = sub_df[f'{corr_type}_r'].values, sub_df['deg'].values
-            errors = np.stack([y - sub_df['deg_low'].values, sub_df['deg_high'].values - y])
-            plt.errorbar(x, y, yerr=errors, ls='', capsize=1, linewidth=.5, marker=marker, label=func_name)
+            regulars = extended_correlations.loc['regular']
+            for (func_name, sub_df), marker in zip(regulars.groupby('fname'), markers):
+                if func_name == 'forrester':
+                    sub_df = sub_df.loc[1]
+                x, y = sub_df[f'{corr_type}_r'].values, sub_df['deg'].values
+                errors = np.stack([y - sub_df['deg_low'].values, sub_df['deg_high'].values - y])
+                ax.errorbar(x, y, yerr=errors, ls='', capsize=1, linewidth=.5, marker=marker, label=func_name)
 
-        plt.axhline(**line_at_90)
-        plt.title("Comparing Adjustable Functions")
-        plt.xlabel(xlabel.format(corr_type=corr_type.title()))
-        plt.ylabel(ylabel)
-        plt.xticks(correlation_range)
-        ax = plt.gca()
-        ax.xaxis.set_minor_locator(MultipleLocator(0.1))
-        ax.yaxis.set_minor_locator(MultipleLocator(10))
-        plt.grid(**grid_style, which='both')
+            ax.axhline(**line_at_90)
+            ax.set_xlabel(xlabel.format(corr_type=corr_type.title()))
+            ax.set_xticks(correlation_range)
+            ax.grid(**grid_style, which='both')
+            ax.set_xlim(xlim)
 
-        # Close up of 0.8 < r < 1
-        plt.xlim([.8, 1.01])
-        plt.ylim([0, 100])
-        plt.savefig(plot_dir / f'comparison_{corr_type}_closeup.png')
-        plt.savefig(plot_dir / f'comparison_{corr_type}_closeup.pdf')
+            if closeup:
+                ax.xaxis.set_minor_locator(MultipleLocator(0.025))
+                ax.xaxis.set_major_locator(MultipleLocator(0.1))
+                ax.yaxis.set_tick_params(left=False, labelleft=False, which='both')
+            else:
+                ax.xaxis.set_minor_locator(MultipleLocator(0.2))
+                ax.yaxis.set_minor_locator(MultipleLocator(10))
+                ax.set_ylabel(ylabel)
+                ax.legend(loc='lower left')
+                ax.set_ylim(ylim)
 
+        fig.suptitle("Comparing Adjustable Functions")
+
+        # Close up of 0.85 < r < 1
+        _plot_on_axis(axes[1], xlim=[.85, 1.01], closeup=True)
         # Full image, with legend
-        plt.xlim([-1, 1.05])
-        plt.ylim([0, 120])
-        plt.legend(loc='lower left')
-        plt.savefig(plot_dir / f'comparison_{corr_type}.png')
-        plt.savefig(plot_dir / f'comparison_{corr_type}.pdf')
+        _plot_on_axis(axes[0], xlim=[-1, 1.05], ylim=[0, 120], closeup=False)
 
+        fig.savefig(plot_dir / f'comparison_{corr_type}.png')
+        fig.savefig(plot_dir / f'comparison_{corr_type}.pdf')
         plt.close()
 
 
