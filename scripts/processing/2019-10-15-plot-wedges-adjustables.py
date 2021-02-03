@@ -29,13 +29,13 @@ plot_extension = "pdf"
 Case = namedtuple('Case', 'name ndim vmin vmax max_diff')
 
 cases = [
-    Case(f"Adjustable-{name}-{a1}", ndim, vmin, vmax, None)
+    Case(f"Adjustable-{name}-{a1:<04}", ndim, vmin, vmax, None)
     for a1 in np.round(np.linspace(0.0, 1.0, 21), 2)
     for name, ndim, vmin, vmax in (
         ("Branin",     2,   10, 1e4),
         ("Paciorek",   2, 1e-2, 1e2),
         ("Hartmann3",  3, 5e-2, 5e0),
-        ("Trid",      10,  5e9, 5e7),
+        ("Trid",      10,  5e7, 5e9),
     )
 ]
 
@@ -53,9 +53,17 @@ for c in cases:
 
     plot_name = f'{c.ndim}d-{c.name.replace(".","")}-high-low-samples-linear'
     title = f'{c.name} ({c.ndim}D)'
-
-    proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
-                         save_as=plot_dir / f'{plot_name}.{plot_extension}')
+    try:
+        proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
+                             save_as=plot_dir / f'{plot_name}.{plot_extension}')
+        proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
+                             save_as=plot_dir / f'no-bar-{plot_name}.{plot_extension}', include_colorbar=False)
+        proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
+                             save_as=plot_dir / f'no-y-{plot_name}.{plot_extension}', label_y=False)
+        proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
+                             save_as=plot_dir / f'clean-{plot_name}.{plot_extension}', include_colorbar=False, label_y=False)
+    except ValueError:
+        print(f'ValueError encountered for {fname}, continueing...')
     # proc.plot_error_grid_diff(mses, title, max_diff=c.max_diff,
     #                           save_as=plot_dir / f'{plot_name}-diff.{plot_extension}')
 

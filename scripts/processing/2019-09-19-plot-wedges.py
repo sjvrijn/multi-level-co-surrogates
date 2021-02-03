@@ -25,6 +25,7 @@ data_dir = here("files") / experiment_name
 plot_dir = here("plots") / experiment_name
 plot_dir.mkdir(parents=True, exist_ok=True)
 
+plot_extension = "pdf"
 
 Case = namedtuple('Case', 'name ndim vmin vmax max_diff as_log')
 
@@ -73,6 +74,12 @@ for c in cases:
     proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax,
                          points=data_points, contours=8, as_log=c.as_log,
                          save_as=plot_dir / f'{plot_name}.pdf')
+    proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
+                         save_as=plot_dir / f'no-bar-{plot_name}.{plot_extension}', include_colorbar=False)
+    proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
+                         save_as=plot_dir / f'no-y-{plot_name}.{plot_extension}', label_y=False)
+    proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
+                         save_as=plot_dir / f'clean-{plot_name}.{plot_extension}', include_colorbar=False, label_y=False)
     # proc.plot_error_grid_diff(mses, title, max_diff=c.max_diff,
     #                           save_as=plot_dir / f'{plot_name}-diff.pdf')
 
