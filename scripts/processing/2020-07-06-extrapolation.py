@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from pyprojroot import here
+from parse import parse
 
 import processing as proc
 
@@ -70,20 +71,26 @@ def plot_extrapolation_suggestion(file_small, file_large):
         deg_large = angle_from_linreg(proc.fit_lin_reg(da))
         data_along_budget_line = da.median(dim='rep').sel(n_low=num_lows, n_high=num_highs).values
 
-    print(deg_large, deg_small)
+    if 'Adjustable' in file_large.stem:
+        kernel, ndim, fname, param = parse("{}-{:d}d-Adjustable-{}-{:f}", file_large.stem)
+        title = f"{ndim}d Adjustable {fname} (A={param})"
+    else:
+        kernel, ndim, fname = parse("{}-{:d}d-{}", file_large.stem)
+        title = f"{ndim}d {fname.replace('-', ' ')}"
 
     smallest_at_angle = angles[np.argmin(data_along_budget_line)]
     gradient_budget_intercept = calc_intercept(80, 30, 75, gradient, costratio)
 
     plt.figure(figsize=(4.8, 2.4), constrained_layout=True)
     plt.plot(angles, data_along_budget_line, marker='o', label='MSEs from DoE enumeration')
-    plt.ylabel('$MSE')
+    plt.ylabel('MSE')
     plt.xlabel('angle measured from (30, 75)')
+    plt.yscale('log')
     plt.axvline(deg_small, ls=':', label='Predicted best angle', color='C1')
     plt.legend(loc=0)
     plt.xlim([0,90])
-    plt.ylim(bottom=0)
-    plt.title(file_large.stem)
+    #plt.ylim(bottom=0)
+    plt.title(title)
     plt.savefig(plot_dir / f'{file_small.stem.replace(".", "")}.pdf', bbox_inches='tight')
     plt.close()
 
