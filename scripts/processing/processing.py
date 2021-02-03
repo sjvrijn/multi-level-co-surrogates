@@ -65,7 +65,8 @@ def full_extent(fig, ax, pad=0.0):
 
 def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
                     contours=0, as_log=False, save_as=None,
-                    show=False, include_comparisons=False):
+                    show=False, include_comparisons=False,
+                    include_colorbar=True, label_y=True):
     """Plot a heatmap of the median MSE for each possible combination of high
     and low-fidelity samples. For comparison, the MSE for the high-only and
     low-only models are displayed as a bar to the left and bottom respectively.
@@ -81,6 +82,8 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
     :param show: whether or not to call `plt.show()`. Default: False
     :param include_comparisons: whether or not to include single-fidelity model
                                 averages along axes. Default: False
+    :param include_colorbar: whether or not to include a colorbar. Default: True
+    :param label_y: whether or not to include axis label and ticks for y-axis. Default: True
     """
     if not (show or save_as):
         return  # no need to make the plot if not showing or saving it
@@ -120,9 +123,9 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
         axy = divider.append_axes("left", size=.2, pad=0.05, sharey=ax)
 
         ax.xaxis.set_tick_params(labelbottom=False)
-        ax.yaxis.set_tick_params(labelleft=False)
+        ax.yaxis.set_tick_params(left=False, labelleft=False, which='both')
         axy.xaxis.set_tick_params(labelbottom=False)
-        axx.yaxis.set_tick_params(labelleft=False)
+        axx.yaxis.set_tick_params(left=False, labelleft=False, which='both')
 
         img = axy.imshow(data.sel(model='high').mean(dim='n_low').values.reshape(-1,1),
                          extent=(-0.5, 0.5, np.min(data.n_high)-.5, np.max(data.n_high)-.5),
@@ -130,15 +133,21 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
         img = axx.imshow(data.sel(model='low').mean(dim='n_high').values.reshape(1,-1),
                          extent=(np.min(data.n_low)-.5, np.max(data.n_low)-.5, -0.5, 0.5),
                          **imshow_style)
-
-        axy.set_ylabel(LABEL_N_HIGH)
+        if label_y:
+            axy.set_ylabel(LABEL_N_HIGH)
+        else:
+            axy.yaxis.set_tick_params(left=False, labelleft=False, which='both')
         axx.set_xlabel(LABEL_N_LOW)
     else:
-        ax.set_ylabel(LABEL_N_HIGH)
+        if label_y:
+            ax.set_ylabel(LABEL_N_HIGH)
+        else:
+            ax.yaxis.set_tick_params(left=False, labelleft=False, which='both')
         ax.set_xlabel(LABEL_N_LOW)
 
-    cax = divider.append_axes("right", size=0.2, pad=0.05)
-    fig.colorbar(img, cax=cax)
+    if include_colorbar:
+        cax = divider.append_axes("right", size=0.2, pad=0.05)
+        fig.colorbar(img, cax=cax)
 
 
     if points:
@@ -157,7 +166,7 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
         plt.savefig(save_as, bbox_inches='tight')
     if show:
         plt.show()
-    plt.close()
+    plt.close('all')
 
 
 def plot_multiple_error_grids(datas, titles, as_log=True,
