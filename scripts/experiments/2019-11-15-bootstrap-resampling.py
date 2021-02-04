@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-2019-11-13-bootstrap-resampling.py: runner file for bootstrap resampling
+2019-11-15-bootstrap-resampling.py: runner file for bootstrap resampling
 experiments: is the mse-plot gradient also visible in mse-plots based on
 bootstrap-resampled DoE's?
 """
@@ -69,8 +69,8 @@ instances = [Instance(h, l, r)
 
 
 mfbo_options = {
-    'surrogate_name': 'ElasticNet',
-    # 'kernel': 'Matern',
+    # 'surrogate_name': 'ElasticNet',
+    'kernel': 'Matern',
     'scaling': 'off'}
 extra_attributes = {'mf2_version': mf2.__version__}
 
