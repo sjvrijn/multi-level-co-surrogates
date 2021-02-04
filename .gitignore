@@ -9,3 +9,6 @@ plots/
 *.npy
 *.npz
 .python-version
+*.pdf
+files/
+venv/
