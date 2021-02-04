@@ -24,6 +24,7 @@ from experiments import Instance, create_resampling_leftover_error_grid
 save_dir = here('files/2020-03-04-cv-adjustables-subsampling/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
+# Parameters selected to represent a roughly uniform spread of gradient angles
 function_cases = [
     *[mf2.adjustable.branin(a1)    for a1 in [0.00, 0.05, 0.25]],
     *[mf2.adjustable.paciorek(a2)  for a2 in [0.05, 0.10, 0.15, 0.20, 0.25]],
