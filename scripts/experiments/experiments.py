@@ -4,6 +4,8 @@ from datetime import datetime
 from collections import namedtuple
 from functools import partial
 from itertools import product
+from pathlib import Path
+from typing import Sequence, List, Dict, Tuple, Any, NamedTuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,6 +15,7 @@ from pyDOE import lhs
 from pyprojroot import here
 from scipy.spatial import distance
 from sklearn.metrics import mean_squared_error, r2_score
+from mf2 import MultiFidelityFunction
 
 module_path = str(here())
 if module_path not in sys.path:
@@ -29,19 +32,19 @@ blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
 Instance = namedtuple('Instance', 'n_high n_low rep')
 BiFidelityDoE = namedtuple("BiFidelityDoE", "high low")
 
-def set_seed_by_instance(num_high, num_low, rep):
+def set_seed_by_instance(num_high: int, num_low: int, rep: int) -> None:
     """Fix the numpy random seed based on an Instance"""
     np.random.seed(int(f'{num_high:03}{num_low:03}{rep:03}'))
 
 
-def low_lhs_sample(ndim, nlow):
+def low_lhs_sample(ndim: int, nlow: int) -> np.ndarray:
     if ndim == 1:
         return np.linspace(0,1,nlow).reshape(-1,1)
     elif ndim > 1:
         return lhs(ndim, nlow)
 
 
-def bi_fidelity_doe(ndim, num_high, num_low):
+def bi_fidelity_doe(ndim: int, num_high: int, num_low: int) -> BiFidelityDoE:
     """Create a Design of Experiments (DoE) for two fidelities in `ndim`
     dimensions. The high-fidelity samples are guaranteed to be a subset
     of the low-fidelity samples.
@@ -67,7 +70,7 @@ def bi_fidelity_doe(ndim, num_high, num_low):
     return BiFidelityDoE(high_x, low_x)
 
 
-def split_bi_fidelity_doe(DoE, num_high, num_low):
+def split_bi_fidelity_doe(DoE: BiFidelityDoE, num_high: int, num_low: int) -> Tuple[BiFidelityDoE, BiFidelityDoE]:
     """Given an existing bi-fidelity Design of Experiments (DoE) `high, low`,
     creates a subselection of given size `num_high, num_low` based on uniform
     selection. The subselection maintains the property that all high-fidelity
@@ -104,7 +107,7 @@ def split_bi_fidelity_doe(DoE, num_high, num_low):
     return selected, left_out
 
 
-def get_test_sample(ndim, save_dir):
+def get_test_sample(ndim: int, save_dir: Path) -> np.ndarray:
     """Get the test-sample for an `ndim`-dimensional function. If a sample has
     been previously generated and saved, load it from file. Else, generate it
     based on the fixed seed and store it for future use."""
@@ -119,12 +122,12 @@ def get_test_sample(ndim, save_dir):
     return test_sample
 
 
-def uniquify(sequence):
+def uniquify(sequence: Sequence) -> List:
     """Reduce a list to it's unique elements while preserving order"""
     return list(dict.fromkeys(sequence))
 
 
-def repr_surrogate_name(mfbo_options):
+def repr_surrogate_name(mfbo_options: Dict[str, Any]) -> str:
     """Create a representative name for the used surrogate according to
     `mfbo_options`. This is `surrogate_name` except when Kriging is used, then
     the kernel name is returned instead."""
@@ -134,11 +137,11 @@ def repr_surrogate_name(mfbo_options):
     return surr_name
 
 
-def indexify(sequence, index_source):
+def indexify(sequence: Sequence, index_source: Sequence) -> List:
     return [index_source.index(item) for item in sequence]
 
 
-def indexify_instances(instances):
+def indexify_instances(instances: Sequence[Instance]) -> List:
     """Return an 'indexified' version of the list of instances, i.e. each
     instance is replaced by a tuple of indices.
     These indices can then be used to write values into a size-correct numpy-
@@ -156,11 +159,12 @@ def indexify_instances(instances):
     return indices
 
 
-def extract_existing_instances(data):
+def extract_existing_instances(data: xr.DataArray) -> List:
     """Return a list of Instances that are non-NaN in the given xr.DataArray"""
-
-    instance_coords = [data.coords[coord].values.tolist()
-                       for coord in Instance._fields]
+    instance_coords = [
+        data.coords[coord].values.tolist()
+        for coord in Instance._fields
+    ]
 
     array_instances = np.array([
         Instance(*instance)
@@ -174,33 +178,35 @@ def extract_existing_instances(data):
     return array_instances[valid_indices].tolist()
 
 
-def filter_instances(instances, data):
+def filter_instances(instances: Sequence[Instance], data: xr.DataArray) -> List[Instance]:
     """Return `instances` with all instances removed that are already present in
     the file located at `output_path`"""
 
     existing_instances = extract_existing_instances(data)
     existing_instances = set(map(tuple, existing_instances))
 
-    return [instance
+    return [Instance(*instance)
             for instance in map(tuple, instances)
             if instance not in existing_instances]
 
 
-def scale_to_function(func, xx, range_in=mlcs.ValueRange(0, 1)):
+def scale_to_function(func: MultiFidelityFunction, xx: Sequence[Sequence], range_in=mlcs.ValueRange(0, 1)) -> List[Sequence]:
     range_out = (np.array(func.l_bound), np.array(func.u_bound))
     return [mlcs.rescale(x, range_in=range_in, range_out=range_out) for x in xx]
 
 
-def plot_model_and_samples(func, kernel, scaling_option, instance):
+def plot_model_and_samples(func: MultiFidelityFunction, kernel: str, scaling_option: str, instance: Instance) -> None:
     """Create a multi-fidelity model based on given instance and show a plot of
     the surfaces and sampled points.
     Can be used for 1D or 2D functions."""
+    if func.ndim not in [1, 2]:
+        raise ValueError(f"Dimensionality case.func.ndim={func.ndim} not supported by"
+                         f"plot_model_and_samples. Only 1D and 2D are supported")
+
     options = {'kernel': kernel, 'scaling': scaling_option}
 
     num_high, num_low, rep = instance
     set_seed_by_instance(num_high, num_low, rep)
-
-
 
     high_x, low_x = bi_fidelity_doe(func.ndim, num_high, num_low)
     high_x, low_x = scale_to_function(func, [high_x, low_x])
@@ -212,8 +218,6 @@ def plot_model_and_samples(func, kernel, scaling_option, instance):
     archive.addcandidates(high_x, high_y, fidelity='high')
 
     mfbo = mlcs.MultiFidelityBO(func, archive, **options)
-
-
 
     if func.ndim == 1:
         plot_x = np.linspace(func.l_bound, func.u_bound, 1001)
@@ -257,13 +261,10 @@ def plot_model_and_samples(func, kernel, scaling_option, instance):
                                   'Hierarchical model', 'Low-fidelity model'],
                           all_points=[points, points, points, points], shape=(2,2))
 
-    else:
-        raise ValueError(f"Dimensionality case.func.ndim={func.ndim} not supported by"
-                         f"plot_model_and_samples. Only 1D and 2D are supported")
 
 
-def create_model_error_grid(func, instances, mfbo_options, save_dir,
-                            extra_attributes=dict(), plot_1d=False):
+def create_model_error_grid(func: MultiFidelityFunction, instances: Sequence[Instance], mfbo_options: Dict[str, Any], save_dir: Path,
+                            extra_attributes=dict(), plot_1d: bool=False) -> None:
     """Create a grid of model errors for the given MFF-function case at the
     given list of instances.
     The results are saved in a NETCDF .nc file at the specified `save_dir`"""
@@ -381,8 +382,8 @@ def create_model_error_grid(func, instances, mfbo_options, save_dir,
           f"Time spent: {str(end - start)}")
 
 
-def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options,
-                                 save_dir, extra_attributes=dict()):
+def create_resampling_error_grid(func: MultiFidelityFunction, DoE_spec: Tuple[int, int], instances: Sequence[Instance], mfbo_options: Dict[str, Any],
+                                 save_dir: Path, extra_attributes=dict()):
     """Create a grid of model errors for the given MFF-function at the
     given list of instances, with all data for training the model being based
     on an initial given DoE specification.
@@ -492,8 +493,8 @@ def create_resampling_error_grid(func, DoE_spec, instances, mfbo_options,
           f"Time spent: {str(end - start)}")
 
 
-def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_options,
-                                          save_dir, seed_offset=0, extra_attributes=dict()):
+def create_resampling_leftover_error_grid(func: MultiFidelityFunction, DoE_spec: Tuple[int, int], instances: Sequence[Instance], mfbo_options: Dict[str, Any],
+                                          save_dir: Path, seed_offset=0, extra_attributes=dict()):
     """Create a grid of model errors for the given MFF-function at the
     given list of instances, with all data for training the model being based
     on an initial given DoE specification.
@@ -627,7 +628,7 @@ def create_resampling_leftover_error_grid(func, DoE_spec, instances, mfbo_option
           f"Time spent: {str(end - start)}")
 
 
-def results_to_dataset(results, instances, mfbo_options, attributes):
+def results_to_dataset(results: List[NamedTuple], instances: Sequence[Instance], mfbo_options: Dict[str, Any], attributes: Dict[str: Any]) -> xr.Dataset:
     """"Manually creating numpy arrays to store the data for eventual
     reading in as XArray DataArray/DataSet"""
 
@@ -670,7 +671,7 @@ def results_to_dataset(results, instances, mfbo_options, attributes):
     )
 
 
-def standardize_fname_for_file(name):
+def standardize_fname_for_file(name: str) -> str:
     if 'adjustable' in name:
         fname, param = parse('{} {:f}', name)
         name = f'{fname} {param:.2f}'
@@ -678,7 +679,7 @@ def standardize_fname_for_file(name):
 
 
 
-def get_tmp_path(path):
+def get_tmp_path(path: Path) -> Path:
     if not path.exists():
         return path
 
