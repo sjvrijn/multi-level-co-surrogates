@@ -37,7 +37,7 @@ ylabel = 'Angle of Gradient'
 correlation_range = np.linspace(-1, 1, 11)
 
 
-def create_plots(correlations, angles, plot_individuals=False):
+def create_plots(extended_correlations, plot_individuals=False):
     """plot the error-grid gradient against correlation for the various
     (adjustable) benchmark functions. Creates plots for both pearson and
     spearman correlation, and for various groups of functions as well as a
@@ -45,8 +45,6 @@ def create_plots(correlations, angles, plot_individuals=False):
     CI of linear regression fit parameters as error bars."""
 
     correlation_types = ['pearson', 'spearman']
-
-    extended_correlations = angles.merge(correlations).set_index(['category', 'ndim', 'fname', 'param'])
 
     markers = 'ov^<>+x*1234'
     for corr_type in correlation_types:
@@ -68,16 +66,14 @@ def create_plots(correlations, angles, plot_individuals=False):
             """
             adjustables = extended_correlations.loc['adjustable']
             for func_name, sub_df in adjustables.groupby('fname'):
-                x, y = sub_df[f'{corr_type}_r'].values, sub_df['deg'].values
-                errors = np.stack([y - sub_df['deg_low'].values, sub_df['deg_high'].values - y])
+                errors, x, y = get_values(sub_df)
                 ax.errorbar(x, y, yerr=errors, capsize=1, linestyle='-', linewidth=.5, marker='.', label=f'adjustable {func_name}')
 
             regulars = extended_correlations.loc['regular']
             for (func_name, sub_df), marker in zip(regulars.groupby('fname'), markers):
                 if func_name == 'forrester':
                     sub_df = sub_df.loc[1]
-                x, y = sub_df[f'{corr_type}_r'].values, sub_df['deg'].values
-                errors = np.stack([y - sub_df['deg_low'].values, sub_df['deg_high'].values - y])
+                errors, x, y = get_values(sub_df)
                 ax.errorbar(x, y, yerr=errors, ls='', capsize=1, linewidth=.5, marker=marker, label=func_name)
 
             ax.axhline(**line_at_90)
@@ -96,6 +92,15 @@ def create_plots(correlations, angles, plot_individuals=False):
                 ax.set_ylabel(ylabel)
                 ax.legend(loc='lower left')
                 ax.set_ylim(ylim)
+
+        def get_values(sub_df):
+            x = sub_df[f'{corr_type}_r'].values
+            y = sub_df['deg'].values
+            errors = np.stack([
+                y - sub_df['deg_low'].values,
+                sub_df['deg_high'].values - y
+            ])
+            return errors, x, y
 
         fig.suptitle("Comparing Adjustable Functions")
 
@@ -117,7 +122,7 @@ def scatter_per_function(corr_type, extended_correlations):
             plt.errorbar(x, y, yerr=errors, ls='', capsize=1)
             plt.axhline(**line_at_90)
             plt.title(func_name)
-            plt.xlabel(xlabel)
+            plt.xlabel(xlabel.format(corr_type=corr_type.title()))
             plt.ylabel(ylabel)
             plt.xticks(correlation_range)
             plt.grid(**grid_style)
@@ -141,5 +146,7 @@ if __name__ == '__main__':
 
     angles = regular_angles.append(adjustable_angles)
 
+    extended_correlations = angles.merge(correlations).set_index(['category', 'ndim', 'fname', 'param'])
+
     if not args.no_plots:
-        create_plots(correlations, angles)
+        create_plots(extended_correlations)
