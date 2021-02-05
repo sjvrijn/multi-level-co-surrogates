@@ -38,6 +38,7 @@ def set_seed_by_instance(num_high: int, num_low: int, rep: int) -> None:
 
 
 def low_lhs_sample(ndim: int, nlow: int) -> np.ndarray:
+    """Create a 'low-fidelity' (i.e. unadjusted) DoE"""
     if ndim == 1:
         return np.linspace(0,1,nlow).reshape(-1,1)
     elif ndim > 1:
@@ -138,6 +139,7 @@ def repr_surrogate_name(mfbo_options: Dict[str, Any]) -> str:
 
 
 def indexify(sequence: Sequence, index_source: Sequence) -> List:
+    """For the given `sequence`, get the index of each item in the `index_source`"""
     return [index_source.index(item) for item in sequence]
 
 
@@ -191,14 +193,19 @@ def filter_instances(instances: Sequence[Instance], data: xr.DataArray) -> List[
 
 
 def scale_to_function(func: MultiFidelityFunction, xx: Sequence[Sequence], range_in=mlcs.ValueRange(0, 1)) -> List[Sequence]:
+    """Scale the input data `xx` from `range_in` to the bounds of the given function.
+    :param range_in: defined range from which input values were drawn. Default: (0,1)
+    """
     range_out = (np.array(func.l_bound), np.array(func.u_bound))
     return [mlcs.rescale(x, range_in=range_in, range_out=range_out) for x in xx]
 
 
-def plot_model_and_samples(func: MultiFidelityFunction, kernel: str, scaling_option: str, instance: Instance) -> None:
+def plot_model_and_samples(func: MultiFidelityFunction, kernel: str,
+                           scaling_option: str, instance: Instance) -> None:
     """Create a multi-fidelity model based on given instance and show a plot of
     the surfaces and sampled points.
     Can be used for 1D or 2D functions."""
+
     if func.ndim not in [1, 2]:
         raise ValueError(f"Dimensionality case.func.ndim={func.ndim} not supported by"
                          f"plot_model_and_samples. Only 1D and 2D are supported")
@@ -262,8 +269,8 @@ def plot_model_and_samples(func: MultiFidelityFunction, kernel: str, scaling_opt
                           all_points=[points, points, points, points], shape=(2,2))
 
 
-
-def create_model_error_grid(func: MultiFidelityFunction, instances: Sequence[Instance], mfbo_options: Dict[str, Any], save_dir: Path,
+def create_model_error_grid(func: MultiFidelityFunction, instances: Sequence[Instance],
+                            mfbo_options: Dict[str, Any], save_dir: Path,
                             extra_attributes=dict(), plot_1d: bool=False) -> None:
     """Create a grid of model errors for the given MFF-function case at the
     given list of instances.
@@ -628,7 +635,8 @@ def create_resampling_leftover_error_grid(func: MultiFidelityFunction, DoE_spec:
           f"Time spent: {str(end - start)}")
 
 
-def results_to_dataset(results: List[NamedTuple], instances: Sequence[Instance], mfbo_options: Dict[str, Any], attributes: Dict[str: Any]) -> xr.Dataset:
+def results_to_dataset(results: List[NamedTuple], instances: Sequence[Instance],
+                       mfbo_options: Dict[str, Any], attributes: Dict[str: Any]) -> xr.Dataset:
     """"Manually creating numpy arrays to store the data for eventual
     reading in as XArray DataArray/DataSet"""
 
@@ -672,6 +680,7 @@ def results_to_dataset(results: List[NamedTuple], instances: Sequence[Instance],
 
 
 def standardize_fname_for_file(name: str) -> str:
+    """Enforce standardized formatting for filenames"""
     if 'adjustable' in name:
         fname, param = parse('{} {:f}', name)
         name = f'{fname} {param:.2f}'
@@ -680,6 +689,7 @@ def standardize_fname_for_file(name: str) -> str:
 
 
 def get_tmp_path(path: Path) -> Path:
+    """Return a non-existant path based on the given one"""
     if not path.exists():
         return path
 
