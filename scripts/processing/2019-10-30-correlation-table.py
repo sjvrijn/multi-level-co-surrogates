@@ -27,8 +27,10 @@ import multiLevelCoSurrogates as mlcs
 
 np.set_printoptions(linewidth=200, edgeitems=5)
 
-save_dir = here() / "tables/2020-03-04-correlations/"
+save_dir = here() / "files/2019-10-30-correlations/"
 save_dir.mkdir(parents=True, exist_ok=True)
+table_dir = here() / "tables/2020-03-04-correlations/"
+table_dir.mkdir(parents=True, exist_ok=True)
 plot_dir = here() / "plots/2019-10-correlation-exploration/"
 plot_dir.mkdir(parents=True, exist_ok=True)
 
@@ -58,7 +60,7 @@ for i, f in enumerate(mf2.bi_fidelity_functions):
 
 bi_fid_correlations = pd.DataFrame.from_records(results, columns=Corr_result._fields)
 bi_fid_correlations = bi_fid_correlations.sort_values(by=['ndim', 'fname'])
-bi_fid_correlations.to_latex(save_dir / 'correlations-table.tex',
+bi_fid_correlations.to_latex(table_dir / 'correlations-table.tex',
                              float_format="{:0.3f}".format, index=False)
 
 
@@ -75,7 +77,7 @@ for ndim, sample in test_sample.items():
 
 forrester_correlations = pd.DataFrame.from_records(results,
                                                    columns=Corr_result._fields)
-forrester_correlations.to_latex(save_dir / 'forrester-correlations-table.tex',
+forrester_correlations.to_latex(table_dir / 'forrester-correlations-table.tex',
                                 float_format="{:0.3f}".format, index=False)
 
 
@@ -107,8 +109,8 @@ for func in mf2.adjustable.bi_fidelity_functions:
         )
 
 adjustables_correlations = pd.DataFrame.from_records(results, columns=Adj_Corr_result._fields)
-adjustables_correlations.to_csv(here('files') / 'adjustables_correlations.csv', index=False)
-adjustables_correlations.to_latex(save_dir / 'adjustables-correlations.tex',
+adjustables_correlations.to_csv(save_dir / 'adjustables_correlations.csv', index=False)
+adjustables_correlations.to_latex(table_dir / 'adjustables-correlations.tex',
                                   float_format="{:0.3f}".format, index=False)
 
 
@@ -116,7 +118,7 @@ all_correlations = pd.concat([regular_correlations, adjustables_correlations],
                              keys=['regular', 'adjustable'],
                              names=['category'],
                              sort=False,).reset_index('category')
-all_correlations.to_csv(here('files') / 'correlations.csv', index=False)
+all_correlations.to_csv(save_dir / 'correlations.csv', index=False)
 
 
 styles = plt.rcParams['axes.prop_cycle'][:4] + cycler(linestyle=['-', '--', ':', '-.'])

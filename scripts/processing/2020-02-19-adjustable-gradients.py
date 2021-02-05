@@ -27,8 +27,8 @@ adjustables_dir = here("files/2019-10-07-adjustables/")
 plot_dir = here('plots/2020-02-19-adjustable-gradients/', warn=False)
 plot_dir.mkdir(exist_ok=True, parents=True)
 
-correlations_path = here('files/correlations.csv')
-extended_correlations_path = here('files/extended_correlations.csv', warn=False)
+correlations_path = here('files/2019-10-30-correlations/correlations.csv')
+extended_correlations_path = here('files/2019-10-30-correlations/extended_correlations.csv', warn=False)
 
 line_at_90 = dict(y=90, alpha=.5, color='black')
 grid_style = dict(alpha=.5, linestyle=':')
