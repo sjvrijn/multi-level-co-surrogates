@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-2019-09-19-plot-wedges.py: Plot the wedge-shaped MSE-grids
+2019-09-19-plot-error-grids.py: Plot the wedge-shaped MSE-grids
 for all available (standard) cases, with DoE's as used in
 literature plotted.
 """
@@ -64,7 +64,7 @@ for c in cases:
         continue
 
     plot_name = f'{c.ndim}d-{c.name}-high-low-samples-linear'
-    title = f'{c.name} ({c.ndim}D)'
+    title = f'{c.ndim}D {c.name}'
 
     data_points = [d for d in data
                    if d.function == c.name and int(d.D) == c.ndim]
@@ -74,15 +74,15 @@ for c in cases:
     proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax,
                          points=data_points, contours=8, as_log=c.as_log,
                          save_as=plot_dir / f'{plot_name}.pdf')
-    proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
-                         save_as=plot_dir / f'no-bar-{plot_name}.{plot_extension}', include_colorbar=False)
+    #proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
+    #                     save_as=plot_dir / f'no-bar-{plot_name}.{plot_extension}', include_colorbar=False)
     proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
                          save_as=plot_dir / f'no-y-{plot_name}.{plot_extension}', label_y=False)
-    proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
-                         save_as=plot_dir / f'clean-{plot_name}.{plot_extension}', include_colorbar=False, label_y=False)
-    # proc.plot_error_grid_diff(mses, title, max_diff=c.max_diff,
-    #                           save_as=plot_dir / f'{plot_name}-diff.pdf')
+    #proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
+    #                     save_as=plot_dir / f'clean-{plot_name}.{plot_extension}', include_colorbar=False, label_y=False)
 
+    #proc.plot_error_grid_diff(mses, title, max_diff=c.max_diff,
+    #                          save_as=plot_dir / f'{plot_name}-diff.pdf')
     #proc.plot_t_scores(mses, title=title,
     #                   save_as=plot_dir / f'{plot_name}-significance.pdf')
     #proc.plot_extracts(mses, title,
