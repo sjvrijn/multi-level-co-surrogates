@@ -3,7 +3,8 @@
 
 """
 2019-10-30-correlation-table.py: writes tables of the correlations for multi-
-fidelity functions to small latex files.
+fidelity functions to small latex files and creates plot of correlation vs
+tuning parameter.
 """
 
 __author__ = 'Sander van Rijn'
