@@ -10,6 +10,7 @@ from enum import IntEnum
 from itertools import product
 from collections import namedtuple
 from pathlib import Path
+from textwrap import fill
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -92,7 +93,7 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
     if not (show or save_as):
         return  # no need to make the plot if not showing or saving it
 
-    figsize = (9,3.5) if include_comparisons else (7,3.5)
+    figsize = (7.7,3) if include_comparisons else (4,2)
 
     fig, ax = plt.subplots(figsize=figsize)
 
@@ -111,7 +112,7 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
     extent = get_extent(data)
     imshow_style = {'cmap': 'viridis_r', 'norm': norm, 'origin': 'lower'}
 
-    plt.title(f'{"log10 " if as_log else ""}Median MSE for $z_h$ - {title}')
+    plt.title(fill(f'{"log10 " if as_log else ""}Median MSE for $z_h$ - {title}', width=32))
 
     da_hh = data.sel(model='high_hier')
 
