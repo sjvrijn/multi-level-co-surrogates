@@ -49,8 +49,6 @@ for c in cases:
     with xr.open_dataset(fname) as ds:
         mses = ds['mses'].load()
 
-    print(fname)
-
     plot_name = f'{c.ndim}d-{c.name.replace(".","")}-high-low-samples-linear'
     title = f'{c.ndim}D {c.name}'
     try:
