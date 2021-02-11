@@ -53,7 +53,7 @@ def create_plots(extended_correlations, plot_individuals=False):
 
         fig, axes = plt.subplots(
             ncols=2,
-            figsize=(7.0,5.2),
+            figsize=(6.0,4.4),
             sharey=True,
             gridspec_kw={'width_ratios': (3.5,2)},
             constrained_layout=True,
@@ -65,9 +65,9 @@ def create_plots(extended_correlations, plot_individuals=False):
             depending on whether or not it's the close-up.
             """
             adjustables = extended_correlations.loc['adjustable']
-            for func_name, sub_df in adjustables.groupby('fname'):
+            for (func_name, sub_df), linestyle in zip(adjustables.groupby('fname'), ['-', '--', ':', '-.']):
                 errors, x, y = get_values(sub_df)
-                ax.errorbar(x, y, yerr=errors, capsize=1, linestyle='-', linewidth=.5, marker='.', label=f'adjustable {func_name}')
+                ax.errorbar(x, y, yerr=errors, capsize=1, linestyle=linestyle, linewidth=1, marker='.', label=f'adjustable {func_name}')
 
             regulars = extended_correlations.loc['regular']
             for (func_name, sub_df), marker in zip(regulars.groupby('fname'), markers):
@@ -107,7 +107,7 @@ def create_plots(extended_correlations, plot_individuals=False):
         # Close up of 0.85 < r < 1
         _plot_on_axis(axes[1], xlim=[.85, 1.01], closeup=True)
         # Full image, with legend
-        _plot_on_axis(axes[0], xlim=[-1, 1.05], ylim=[0, 120], closeup=False)
+        _plot_on_axis(axes[0], xlim=[-1, 1.05], ylim=[0, 110], closeup=False)
 
         fig.savefig(plot_dir / f'comparison_{corr_type}.png')
         fig.savefig(plot_dir / f'comparison_{corr_type}.pdf')
