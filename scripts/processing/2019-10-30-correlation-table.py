@@ -14,6 +14,7 @@ from collections import namedtuple
 
 from cycler import cycler
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 import numpy as np
 import pandas as pd
 from parse import Parser
@@ -90,7 +91,7 @@ params = np.round(np.linspace(0, 1, 101), 3)
 Adj_Corr_result = namedtuple("Corr_result",
                              "fname ndim param pearson_r pearson_r2 spearman_r spearman_r2")
 
-name_parser = Parser('Adjustable{fname}{param:f}')
+name_parser = Parser('Adjustable {fname} {param:f}')
 results = []
 for func in mf2.adjustable.bi_fidelity_functions:
     for a in params:
@@ -123,8 +124,8 @@ all_correlations.to_csv(save_dir / 'correlations.csv', index=False)
 
 styles = plt.rcParams['axes.prop_cycle'][:4] + cycler(linestyle=['-', '--', ':', '-.'])
 plt.rc('axes', prop_cycle=styles)
-figsize=(7.2, 5.6)
-single_figsize = (3.6, 2.7)
+figsize=(6.5, 5)
+single_figsize = (3.25, 2.5)
 labels = {
     'pearson_r': 'Pearson $r$',
     'pearson_r2': 'Pearson $r^2$',
@@ -133,8 +134,8 @@ labels = {
 }
 
 grouped_df = adjustables_correlations.groupby('fname')
-fig = plt.figure(figsize=figsize)  #, constrained_layout=True)
-gs = fig.add_gridspec(nrows=2, ncols=2, bottom=0.16, wspace=0.3, hspace=0.45, right=0.975, top=0.95, left=0.1)
+fig = plt.figure(figsize=figsize)
+gs = fig.add_gridspec(nrows=2, ncols=2, bottom=0.15, wspace=0.10, hspace=0.15, right=0.975, top=0.95, left=0.1)
 axes = [
     fig.add_subplot(gs[0,0]),
     fig.add_subplot(gs[1,0]),
@@ -142,25 +143,29 @@ axes = [
     fig.add_subplot(gs[1,1]),
 ]
 
-for ax_i, (name, subdf) in zip(axes, grouped_df):
-    single_fig, single_ax = plt.subplots(figsize=single_figsize, constrained_layout=True)
 
-    for ax in [single_ax, ax_i]:
-        for col in ['pearson_r', 'pearson_r2']:  #, 'spearman_r', 'spearman_r2']:
-            ax.plot(subdf['param'], subdf[col], label=labels[col])
+for i, (ax, (name, subdf)) in enumerate(zip(axes, grouped_df)):
+    for col in ['pearson_r', 'pearson_r2']:  #, 'spearman_r', 'spearman_r2']:
+        ax.plot(subdf['param'], subdf[col], label=labels[col])
 
-        ax.axhline(y=0, color='black', alpha=.5)
-        ax.set_xlim([0,1])
-        ax.set_ylim([-1,1])
+    ax.axhline(y=0, color='black', alpha=.5)
+    ax.set_xlim([0,1])
+    ax.set_ylim([-1,1])
+    ax.grid(alpha=.5, linestyle=':', which='both')
+    if i < 2:
         ax.set_ylabel('Correlation')
-        ax.set_xlabel('A')
-        ax.set_title(name.title())
+        ax.yaxis.set_major_locator(MultipleLocator(.5))
+    else:
+        ax.yaxis.set_tick_params(left=False, labelleft=False, which='both')
 
-    single_ax.legend(loc=0)
-    single_fig.savefig(plot_dir / f'{name}_correlation.pdf')
+    if i % 2 == 1:
+        ax.set_xlabel('A')
+        ax.xaxis.set_major_locator(MultipleLocator(.2))
+    else:
+        ax.xaxis.set_tick_params(left=False, labelleft=False, which='both')
+    ax.set_title(name.title())
 
 handles, labels = axes[0].get_legend_handles_labels()
 fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, 0.0), ncol=len(handles))
-#fig.tight_layout()
 fig.savefig(plot_dir / 'combined_correlations.pdf')
 
