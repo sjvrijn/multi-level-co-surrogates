@@ -38,7 +38,10 @@ LABEL_N_HIGH = "$n_h$"
 LABEL_N_LOW = "$n_l$"
 
 
-def get_extent(data):
+def get_extent(data: xr.DataArray):
+    """Calculate an 'extent' for an Error Grid such that axis ticks are
+    centered in the 'pixels'
+    """
     return [
         np.min(data.n_low) - 0.5,
         np.max(data.n_low) - 0.5,
@@ -51,7 +54,8 @@ def full_extent(fig, ax, pad=0.0):
     """Get the full extent of an axes, including axes labels, tick labels, and
     titles.
     Source:
-    https://stackoverflow.com/questions/4325733/save-a-subplot-in-matplotlib"""
+    https://stackoverflow.com/questions/4325733/save-a-subplot-in-matplotlib
+    """
     # For text objects, we need to draw the figure first, otherwise the extents
     # are undefined.
     ax.figure.canvas.draw()
@@ -224,6 +228,8 @@ def plot_multiple_error_grids(datas, titles, as_log=True,
 
 
 def plot_error_grid_diff(data, title, max_diff=None, save_as=None):
+    """Plot the difference between the high and hierarchical model
+    """
 
     paired_diffs = data.sel(model='high') - data.sel(model='high_hier')
     to_plot = paired_diffs.median(dim='rep')
@@ -237,6 +243,8 @@ def plot_error_grid_diff(data, title, max_diff=None, save_as=None):
 
 def plot_inter_method_diff(data_A, data_B, name, model='high_hier',
                            max_diff=None, save_as=None):
+    """Plot the difference between two Error Grids based on the same model
+    """
 
     paired_diffs = data_A.sel(model=model) - data_B.sel(model=model)
     to_plot = paired_diffs.median(dim='rep')
@@ -250,6 +258,8 @@ def plot_inter_method_diff(data_A, data_B, name, model='high_hier',
 
 
 def plot_high_v_low_diff(to_plot, long_title, norm, save_as=None, show=False):
+    """Plot a difference of Error Grids: using the pink-yellow-green colormap
+    """
     if not (save_as or show):
         return  # no need to make the plot if not showing or saving it
     fig, ax = plt.subplots(figsize=(9, 3.5))
@@ -269,8 +279,11 @@ def plot_high_v_low_diff(to_plot, long_title, norm, save_as=None, show=False):
 
 
 def plot_t_scores(data: xr.DataArray, title: str, t_range: float=5, num_colors: int=10, save_as: str=None, show: bool=False):
+    """Plot t-test scores of the difference between high and hierarchical model
+    """
     if not (save_as or show):
         return  # no need to make the plot if not showing or saving it
+
     paired_differences = data.sel(model='high') - data.sel(model='high_hier')
     mean_paired_diff = paired_differences.mean(dim='rep')
     std_paired_diff = paired_differences.std(dim='rep', ddof=1)
@@ -296,6 +309,9 @@ def plot_t_scores(data: xr.DataArray, title: str, t_range: float=5, num_colors: 
 
 def plot_extracts(data: xr.DataArray, title: str, save_as: str=None, show: bool=False, *,
                   normalize: bool=False, max_x: int=None):
+    """Plot extracts from an Error Grid, i.e. the MSE versus number of low-fidelity
+    samples given a fixed number of high-fidelity samples
+    """
 
     if not (save_as or show):
         return  # no need to make the plot if not showing or saving it
@@ -341,6 +357,8 @@ def plot_extracts(data: xr.DataArray, title: str, save_as: str=None, show: bool=
 
 
 def plot_multi_file_extracts(data_arrays, title: str, save_as: str=None, show: bool=False):
+    """Plot Error Grid extracts drawn from multiple files
+    """
     if not (save_as or show) or not data_arrays:
         return
 
@@ -402,15 +420,10 @@ class ConfidenceInterval(namedtuple('ConfidenceInterval', 'mean se lower upper')
                f'H0{" not" if 0 in self else ""} rejected'
 
 
-def ratio_to_angle(x1: float, x2: float):
-    theta = np.arctan2(x1, x2) + np.pi
-    deg = np.rad2deg(theta)
-    if deg > 180:
-        deg -= 360  # Example: instead of 350, we want -10
-    return deg
-
-
 def calc_angle(da: xr.DataArray):
+    """Calculate the global gradient angle of an Error Grid based
+    on the slope of beta_1 / beta_2 from a linear regression fit.
+    """
     AngleSummary = namedtuple('AngleSummary', 'alpha beta theta deg deg_low deg_high')
     reg, SSE = fit_lin_reg(da, calc_SSE=True)
 
@@ -443,8 +456,6 @@ def calc_angle(da: xr.DataArray):
         min_angle, mid_angle, max_angle = min_angle+180, mid_angle+180, max_angle+180
     elif mid_angle > 180:
         min_angle, mid_angle, max_angle = min_angle-180, mid_angle-180, max_angle-180
-
-    print(min_angle, mid_angle, max_angle)
 
     return AngleSummary(beta_high, beta_low, theta, mid_angle, min_angle, max_angle)
 
@@ -509,6 +520,7 @@ class Comparison(IntEnum):
 
 
 def determine_match(CI1, CI2):
+    """Determine the kind of overlap between two ConfidenceIntervals"""
     # is the midpoint of one CI within the bounds of the other CI?
     covered_1 = CI1.mean in CI2
     covered_2 = CI2.mean in CI1
