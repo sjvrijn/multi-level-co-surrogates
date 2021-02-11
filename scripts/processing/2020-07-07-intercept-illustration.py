@@ -28,10 +28,11 @@ def do_plot():
     X = np.arange(nhigh+1).reshape((-1, 1))*gradient + np.arange(nlow+1).reshape((1, -1))
     X = np.ma.masked_equal(np.triu(X), 0)
 
+    plt.figure(figsize=(5.2, 3.9))
     plt.grid(alpha=.6, ls=':')
     plt.imshow(X, origin='lower')
     plt.plot(np.arange(len(B2)), B2, label='extended budget $b_0 + b$')
-    plt.plot(G, label='calculated gradient')
+    plt.plot(G, label='calculated gradient', linestyle='--')
     plt.plot(intercept_low, intercept_high, 'bx', label='intercept')
     plt.ylabel('$n_h$')
     plt.xlabel('$n_l$')
