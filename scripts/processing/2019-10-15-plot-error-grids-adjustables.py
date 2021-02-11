@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-2019-10-15-plot-wedges-adjustables.py: Plot the wedge-shaped
+2019-10-15-plot-error-grids-adjustables.py: Plot the wedge-shaped
 MSE-grids for various parametrizations of the Adjustable
 Paciorek, Hartmann3 and Trid functions.
 """

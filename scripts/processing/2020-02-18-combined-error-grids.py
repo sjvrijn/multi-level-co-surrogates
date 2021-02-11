@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-2020-02-18-combined-wedges.py: A processing script file to create both the
+2020-02-18-combined-error-grids.py: A processing script file to create both the
 regular wedge plots and those for the subsampling results at the same time.
 By combining the renders, they are guaranteed to use the same colorscale.
 """
@@ -18,7 +18,7 @@ import processing as proc
 source_regular = "2019-09-mse-nc"
 source_subsample = "2019-11-15-subsampling"
 
-output_name = '2020-02-18-combined-wedges/'
+output_name = '2020-02-18-combined-error-grids/'
 
 regular_dir = here("files") / source_regular
 subsample_dir = here("files") / source_subsample
