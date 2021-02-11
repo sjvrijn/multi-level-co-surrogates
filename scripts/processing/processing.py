@@ -38,6 +38,9 @@ single_point_styles = [{'marker': m} for m in 'osHDPX*v^><']
 LABEL_N_HIGH = "$n_h$"
 LABEL_N_LOW = "$n_l$"
 
+wide_figsize = (5.2, 2)
+reg_figsize = (4, 2)
+
 
 def get_extent(data: xr.DataArray):
     """Calculate an 'extent' for an Error Grid such that axis ticks are
@@ -93,7 +96,7 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
     if not (show or save_as):
         return  # no need to make the plot if not showing or saving it
 
-    figsize = (7.7,3) if include_comparisons else (4,2)
+    figsize = wide_figsize if include_comparisons else reg_figsize
 
     fig, ax = plt.subplots(figsize=figsize)
 
@@ -195,7 +198,7 @@ def plot_multiple_error_grids(datas, titles, as_log=True,
         return  # no need to make the plot if not showing or saving it
 
     ncols = len(datas)
-    figsize = (6.5*ncols, 3.25)
+    figsize = (4*ncols, 2)
     fig, axes = plt.subplots(ncols=ncols, figsize=figsize)
 
     for ax, data, title in zip(axes, datas, titles):
@@ -216,7 +219,7 @@ def plot_multiple_error_grids(datas, titles, as_log=True,
             ax.contour(data, levels=contours, antialiased=False, extent=extent,
                        colors='black', alpha=.2, linewidths=1)
 
-        ax.set_title(f'{title}')
+        ax.set_title(fill(f'{title}', width=32))
         ax.set_ylabel(LABEL_N_HIGH)
         ax.set_xlabel(LABEL_N_LOW)
 
@@ -263,7 +266,7 @@ def plot_high_v_low_diff(to_plot, long_title, norm, save_as=None, show=False):
     """
     if not (save_as or show):
         return  # no need to make the plot if not showing or saving it
-    fig, ax = plt.subplots(figsize=(9, 3.5))
+    fig, ax = plt.subplots(figsize=wide_figsize)
 
     img = ax.imshow(to_plot, cmap='PiYG', norm=norm,
                     origin='lower', extent=get_extent(to_plot))
