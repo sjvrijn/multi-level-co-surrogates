@@ -46,9 +46,16 @@ sub_from = [
 seed_offsets = range(0, 5)
 as_log = True
 
+def format_case_name(name):
+    parts = name.split(' ')
+    parts[-1] = f'{float(parts[-1]):0.2f}'
+    return '-'.join(parts)
+
+
 for case, surr_name, sub, seed_offset in product(cases, surr_names, sub_from, seed_offsets):
-    subsample_fname = subsample_dir / f'{surr_name}-{case.ndim}d-{case.name.replace(" ", "-")}-sub{sub.high}-{sub.low}-seed{seed_offset}.nc'
-    regular_fname = regular_dir / f'Matern-{case.ndim}d-{case.name.replace(" ", "-")}.nc'
+    case_name = format_case_name(case.name)
+    subsample_fname = subsample_dir / f'{surr_name}-{case.ndim}d-{case_name}-sub{sub.high}-{sub.low}-seed{seed_offset}.nc'
+    regular_fname = regular_dir / f'Matern-{case.ndim}d-{case_name}.nc'
 
     if not subsample_fname.exists():
         print(f"{subsample_fname.name} not found, skipping...")
@@ -57,7 +64,7 @@ for case, surr_name, sub, seed_offset in product(cases, surr_names, sub_from, se
         print(f"{regular_fname.name} not found, skipping...")
         continue
 
-    with xr.open_dataset(regular_dir / f'Matern-{case.ndim}d-{case.name.replace(" ", "-")}.nc') as ds:
+    with xr.open_dataset(regular_dir / f'Matern-{case.ndim}d-{case_name}.nc') as ds:
         regular_mses = ds['mses'].load()
     with xr.open_dataset(subsample_fname) as ds:
         subsample_mses = ds['mses'].load()
@@ -66,11 +73,11 @@ for case, surr_name, sub, seed_offset in product(cases, surr_names, sub_from, se
     mses = [regular_mses, subsample_mses, cv_mses]
     titles = [
         f'{case.name} ({case.ndim}D)',
-        f'Subsampling {surr_name} {case.name} ({case.ndim}D) from ({sub.high}, {sub.low}, seed+{seed_offset})',
+        f'Subsampling from {sub.high}, {sub.low}',
         f'Cross-validation of subsampling',
     ]
 
-    plot_name = f'comparison-{surr_name}-{case.ndim}d-{case.name.replace(".","").replace(" ", "-")}-sub{sub.high}-{sub.low}-seed{seed_offset}-high-low-samples'
+    plot_name = f'comparison-{surr_name}-{case.ndim}d-{case_name.replace(".","")}-sub{sub.high}-{sub.low}-seed{seed_offset}-high-low-samples'
 
     proc.plot_multiple_error_grids(mses, titles, as_log, contours=8,
                                    save_as=plot_dir / f'{plot_name}.pdf')
