@@ -269,9 +269,15 @@ def plot_model_and_samples(func: MultiFidelityFunction, kernel: str,
                           all_points=[points, points, points, points], shape=(2,2))
 
 
-def create_model_error_grid(func: MultiFidelityFunction, instances: Sequence[Instance],
-                            mfbo_options: Dict[str, Any], save_dir: Path,
-                            extra_attributes=dict(), plot_1d: bool=False) -> None:
+def create_model_error_grid(
+        func: MultiFidelityFunction,
+        instances: Sequence[Instance],
+        mfbo_options: Dict[str, Any],
+        save_dir: Path,
+        extra_attributes=dict(),
+        plot_1d: bool=False,
+        record_values: bool=False
+) -> None:
     """Create a grid of model errors for the given MFF-function case at the
     given list of instances.
     The results are saved in a NETCDF .nc file at the specified `save_dir`"""
@@ -332,11 +338,14 @@ def create_model_error_grid(func: MultiFidelityFunction, instances: Sequence[Ins
         # Get the results we're interested in from the model for this instance
         mses = mfbo.getMSE()
         r2s = mfbo.getR2()
-        values = [model.predict(mfbo.test_sample).flatten()
-                  for model in [mfbo.models['high'],
-                                mfbo.direct_models['high'],
-                                mfbo.models['low']]
-                  ]
+        if record_values:
+            values = [model.predict(mfbo.test_sample).flatten()
+                      for model in [mfbo.models['high'],
+                                    mfbo.direct_models['high'],
+                                    mfbo.models['low']]
+                      ]
+        else:
+            values = None
 
         if plot_1d:
             X = np.linspace(0, 1, 1001).reshape((-1, 1))
@@ -365,7 +374,8 @@ def create_model_error_grid(func: MultiFidelityFunction, instances: Sequence[Ins
                       )
 
     ## Iteration finished, arranging data into xr.Dataset
-    output = results_to_dataset(results, instances, mfbo_options, attributes)
+    output = results_to_dataset(results, instances, mfbo_options, attributes,
+                                record_values=record_values)
 
 
     # Merge with prior existing data
@@ -389,8 +399,15 @@ def create_model_error_grid(func: MultiFidelityFunction, instances: Sequence[Ins
           f"Time spent: {str(end - start)}")
 
 
-def create_resampling_error_grid(func: MultiFidelityFunction, DoE_spec: Tuple[int, int], instances: Sequence[Instance], mfbo_options: Dict[str, Any],
-                                 save_dir: Path, extra_attributes=dict()):
+def create_resampling_error_grid(
+        func: MultiFidelityFunction,
+        DoE_spec: Tuple[int, int],
+        instances: Sequence[Instance],
+        mfbo_options: Dict[str, Any],
+        save_dir: Path,
+        extra_attributes=dict(),
+        record_values: bool=False
+) -> None:
     """Create a grid of model errors for the given MFF-function at the
     given list of instances, with all data for training the model being based
     on an initial given DoE specification.
@@ -454,11 +471,14 @@ def create_resampling_error_grid(func: MultiFidelityFunction, DoE_spec: Tuple[in
         # Get the results we're interested in from the model for this instance
         mses = mfbo.getMSE()
         r2s = mfbo.getR2()
-        values = [model.predict(mfbo.test_sample).flatten()
-                  for model in [mfbo.models['high'],
-                                mfbo.direct_models['high'],
-                                mfbo.models['low']]
-                  ]
+        if record_values:
+            values = [model.predict(mfbo.test_sample).flatten()
+                      for model in [mfbo.models['high'],
+                                    mfbo.direct_models['high'],
+                                    mfbo.models['low']]
+                      ]
+        else:
+            values = None
 
         # Store the results
         results.append(Results(mses, r2s, values))
@@ -479,7 +499,8 @@ def create_resampling_error_grid(func: MultiFidelityFunction, DoE_spec: Tuple[in
                       )
 
     ## Iteration finished, arranging data into xr.Dataset
-    output = results_to_dataset(results, instances, mfbo_options, attributes)
+    output = results_to_dataset(results, instances, mfbo_options, attributes,
+                                record_values=record_values)
 
 
     # Merge with prior existing data
@@ -500,8 +521,16 @@ def create_resampling_error_grid(func: MultiFidelityFunction, DoE_spec: Tuple[in
           f"Time spent: {str(end - start)}")
 
 
-def create_resampling_leftover_error_grid(func: MultiFidelityFunction, DoE_spec: Tuple[int, int], instances: Sequence[Instance], mfbo_options: Dict[str, Any],
-                                          save_dir: Path, seed_offset=0, extra_attributes=dict()):
+def create_resampling_leftover_error_grid(
+        func: MultiFidelityFunction,
+        DoE_spec: Tuple[int, int],
+        instances: Sequence[Instance],
+        mfbo_options: Dict[str, Any],
+        save_dir: Path,
+        seed_offset=0,
+        extra_attributes=dict(),
+        record_values: bool=False
+) -> None:
     """Create a grid of model errors for the given MFF-function at the
     given list of instances, with all data for training the model being based
     on an initial given DoE specification.
@@ -578,10 +607,13 @@ def create_resampling_leftover_error_grid(func: MultiFidelityFunction, DoE_spec:
 
         mses = mfbo.getMSE()
         r2s = mfbo.getR2()
-        values = [
-            model.predict(mfbo.test_sample).flatten()
-            for model in models
-        ]
+        if record_values:
+            values = [
+                model.predict(mfbo.test_sample).flatten()
+                for model in models
+            ]
+        else:
+            values = None
 
         # Get the results we're interested in from the model for this instance
         cv_mses = mfbo.MSECollection(*[
@@ -613,7 +645,8 @@ def create_resampling_leftover_error_grid(func: MultiFidelityFunction, DoE_spec:
                       )
 
     ## Iteration finished, arranging data into an xr.Dataset
-    output = results_to_dataset(results, instances, mfbo_options, attributes)
+    output = results_to_dataset(results, instances, mfbo_options, attributes,
+                                record_values=record_values)
 
 
     # Merge with prior existing data
@@ -636,8 +669,9 @@ def create_resampling_leftover_error_grid(func: MultiFidelityFunction, DoE_spec:
 
 
 def results_to_dataset(results: List[NamedTuple], instances: Sequence[Instance],
-                       mfbo_options: Dict[str, Any], attributes: Dict[str, Any]) -> xr.Dataset:
-    """"Manually creating numpy arrays to store the data for eventual
+                       mfbo_options: Dict[str, Any], attributes: Dict[str, Any],
+                       record_values=False) -> xr.Dataset:
+    """Manually creating numpy arrays to store the data for eventual
     reading in as XArray DataArray/DataSet"""
 
     # Hardcoded model names
@@ -665,7 +699,7 @@ def results_to_dataset(results: List[NamedTuple], instances: Sequence[Instance],
             arrays[name][index] = values
 
     all_dims = ['n_high', 'n_low', 'rep', 'model', 'idx']
-    return xr.Dataset(
+    dataset = xr.Dataset(
         data_vars={
             name: (all_dims[:values.ndim], values, attributes)
             for name, values in arrays.items()},
@@ -677,6 +711,11 @@ def results_to_dataset(results: List[NamedTuple], instances: Sequence[Instance],
             'idx': range(n_test_samples),
         }
     )
+
+    if not record_values:
+        dataset = dataset.drop_vars(['values', 'idx'])
+
+    return dataset
 
 
 def standardize_fname_for_file(name: str) -> str:
