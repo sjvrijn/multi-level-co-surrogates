@@ -45,7 +45,7 @@ if len(sys.argv) > 1:
     case_idx = int(sys.argv[1])
     function_cases = function_cases[case_idx:case_idx+1]
 
-if len(sys.argv) > 2
+if len(sys.argv) > 2:
     scale = float(sys.argv[2])
 
 if len(sys.argv) > 3:

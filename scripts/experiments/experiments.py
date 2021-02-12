@@ -636,7 +636,7 @@ def create_resampling_leftover_error_grid(func: MultiFidelityFunction, DoE_spec:
 
 
 def results_to_dataset(results: List[NamedTuple], instances: Sequence[Instance],
-                       mfbo_options: Dict[str, Any], attributes: Dict[str: Any]) -> xr.Dataset:
+                       mfbo_options: Dict[str, Any], attributes: Dict[str, Any]) -> xr.Dataset:
     """"Manually creating numpy arrays to store the data for eventual
     reading in as XArray DataArray/DataSet"""
 
