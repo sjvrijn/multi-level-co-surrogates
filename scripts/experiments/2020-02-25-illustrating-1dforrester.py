@@ -39,10 +39,6 @@ instances = [Instance(h, l, 1)
 full_cases = list(product(cases, kernels, scaling_options))
 extra_attributes = {'mf2_version': mf2.__version__}
 
-if len(sys.argv) > 1:
-    case_idx = int(sys.argv[1])
-    full_cases = full_cases[case_idx:case_idx+1]
-
 
 for case, kernel, scale in full_cases:
     mfbo_options = {'kernel': kernel, 'scaling': scale}

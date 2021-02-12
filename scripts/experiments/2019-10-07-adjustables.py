@@ -4,7 +4,7 @@
 2019-10-07-adjustables.py: Experiment runner file for generating data for
 many combinations of numbers of high- vs. low-fidelity samples, specifically
 for the adjustable benchmark functions.
-Adjustable parameter is expected as commandline argument.
+A specific adjustable parameter can be given as commandline argument.
 """
 
 __author__ = 'Sander van Rijn'
@@ -29,10 +29,15 @@ funcs = [
     mf2.adjustable.trid,
 ]
 
+if len(sys.argv) > 1:
+    params = [float(x) for x in sys.argv[1:]]
+else:
+    params = np.round(np.linspace(0, 1.0, 21), 2)
+
 cases = [
-    f(float(x))
+    f(param)
     for f in funcs
-    for x in sys.argv[1:]
+    for param in params
 ]
 
 kernels = ['Matern']

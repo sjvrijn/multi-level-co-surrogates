@@ -4,6 +4,8 @@
 2019-11-12-different-surrogates.py: Experiment runner file for generating data for
 many combinations of numbers of high- vs. low-fidelity samples using different
 surrogate models as backend instead of only using Kriging with Matern Kernel
+
+Takes a single optional argument: the index of the case to run
 """
 
 __author__ = 'Sander van Rijn'

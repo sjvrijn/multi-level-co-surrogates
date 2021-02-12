@@ -5,6 +5,10 @@
 experiments: is the mse-plot gradient also visible in mse-plots based on
 bootstrap-resampled DoE's? Additionally calculates MSE and R^2 based on
 cross-validation principle by using only the left-out data
+
+Takes two optional arguments:
+ - the index of the case to run (0-14)
+ - the 'scale' [0-1] of how much to sample
 """
 
 __author__ = 'Sander van Rijn'
@@ -52,6 +56,8 @@ if len(sys.argv) > 1:
         print(f'case {case_idx} not available')
         sys.exit(0)
     function_cases = function_cases[case_idx:case_idx+1]
+
+if len(sys.argv) > 2:
     scale = float(sys.argv[2])
 else:
     scale = 1

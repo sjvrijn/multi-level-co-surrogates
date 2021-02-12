@@ -6,6 +6,11 @@ experiments: is the mse-plot gradient also visible in mse-plots based on
 bootstrap-resampled DoE's? Uses adjustable correlation functions to sample a
 spread of possible angle values. Additionally calculates MSE and R^2 based on
 cross-validation principle by using only the left-out data
+
+Takes three optional arguments:
+ - the index of the case to run (0-14)
+ - the 'scale' [0-1] of how much to sample
+ - the seed offset
 """
 
 __author__ = 'Sander van Rijn'
@@ -36,12 +41,14 @@ function_cases = [
 scale = 1
 seed_offset = range(5)
 
-if len(sys.argv) >= 3:
+if len(sys.argv) > 1:
     case_idx = int(sys.argv[1])
     function_cases = function_cases[case_idx:case_idx+1]
+
+if len(sys.argv) > 2
     scale = float(sys.argv[2])
 
-if len(sys.argv) == 4:
+if len(sys.argv) > 3:
     seed_offset = [int(sys.argv[3])]
 
 
