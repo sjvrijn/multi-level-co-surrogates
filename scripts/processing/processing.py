@@ -12,6 +12,7 @@ from collections import namedtuple
 from pathlib import Path
 from textwrap import fill
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -27,6 +28,7 @@ from sklearn.linear_model import LinearRegression
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
+mpl.rcParams['savefig.dpi'] = 300
 
 # defining some point styles
 red_dot = {'marker': '.', 'color': 'red'}
@@ -40,6 +42,8 @@ LABEL_N_LOW = "$n_l$"
 
 wide_figsize = (5.2, 2)
 reg_figsize = (4, 2)
+
+extensions = ['pdf', 'png']
 
 
 def get_extent(data: xr.DataArray):
@@ -171,7 +175,8 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
 
     plt.tight_layout()
     if save_as:
-        plt.savefig(save_as, bbox_inches='tight')
+        for ext in extensions:
+            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close('all')
@@ -225,7 +230,8 @@ def plot_multiple_error_grids(datas, titles, as_log=True,
 
     plt.tight_layout()
     if save_as:
-        plt.savefig(save_as, bbox_inches='tight')
+        for ext in extensions:
+            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -276,7 +282,8 @@ def plot_high_v_low_diff(to_plot, long_title, norm, save_as=None, show=False):
     plt.title(long_title)
     plt.tight_layout()
     if save_as:
-        plt.savefig(save_as, bbox_inches='tight')
+        for ext in extensions:
+            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -305,7 +312,8 @@ def plot_t_scores(data: xr.DataArray, title: str, t_range: float=5, num_colors: 
 
     plt.tight_layout()
     if save_as:
-        plt.savefig(save_as, bbox_inches='tight')
+        for ext in extensions:
+            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -354,7 +362,8 @@ def plot_extracts(data: xr.DataArray, title: str, save_as: str=None, show: bool=
     plt.legend(loc=0)
     plt.tight_layout()
     if save_as:
-        plt.savefig(save_as, bbox_inches='tight')
+        for ext in extensions:
+            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -390,7 +399,8 @@ def plot_multi_file_extracts(data_arrays, title: str, save_as: str=None, show: b
     plt.tight_layout()
 
     if save_as:
-        plt.savefig(save_as, bbox_inches='tight')
+        for ext in extensions:
+            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()

@@ -109,8 +109,8 @@ def create_plots(extended_correlations, plot_individuals=False):
         # Full image, with legend
         _plot_on_axis(axes[0], xlim=[-1, 1.05], ylim=[0, 110], closeup=False)
 
-        fig.savefig(plot_dir / f'comparison_{corr_type}.png')
-        fig.savefig(plot_dir / f'comparison_{corr_type}.pdf')
+        for ext in proc.extensions:
+            fig.savefig(plot_dir / f'comparison_{corr_type}.{ext}', dpi=300)
         plt.close()
 
 
@@ -127,8 +127,8 @@ def scatter_per_function(corr_type, extended_correlations):
             plt.xticks(correlation_range)
             plt.grid(**grid_style)
             plt.tight_layout()
-            plt.savefig(plot_dir / f'{category}-{func_name}-{corr_type}.png')
-            plt.savefig(plot_dir / f'{category}-{func_name}-{corr_type}.pdf')
+            for ext in proc.extensions:
+                plt.savefig(plot_dir / f'{category}-{func_name}-{corr_type}.{ext}', dpi=300)
             plt.close()
 
 

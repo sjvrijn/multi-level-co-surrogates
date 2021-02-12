@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pyprojroot import here
 
+import processing as proc
+
 
 plot_dir = here('plots/', warn=False)
 plot_dir.mkdir(exist_ok=True, parents=True)
@@ -41,8 +43,9 @@ def do_plot():
     plt.xticks([])
     plt.yticks([])
     plt.legend(loc=2)
-    plt.savefig(plot_dir / 'budget-extension-intercept.png', bbox_inches='tight')
-    plt.savefig(plot_dir / 'budget-extension-intercept.pdf', bbox_inches='tight')
+    for ext in proc.extensions:
+        plt.savefig(plot_dir / f'budget-extension-intercept.{ext}',
+                    dpi=300, bbox_inches='tight')
 
 
 if __name__ == '__main__':

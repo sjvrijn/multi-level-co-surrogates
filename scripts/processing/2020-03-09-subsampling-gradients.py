@@ -35,8 +35,6 @@ correlations_file = here('files/extended_correlations.csv', warn=False)
 gradients_file = here('files/gradient_comparison.csv', warn=False)
 fname_parser = Parser('{}-{ndim:d}d-Adjustable{fname:w}{param:f}-sub50-125-seed{seed_offset:d}.nc')
 
-save_extensions = ['pdf', 'png']
-
 
 def calculate_gradient_comparisons():
     correlations = pd.read_csv(correlations_file)
@@ -81,14 +79,6 @@ diag_line = {'linestyle': '--', 'color': 'black', 'alpha':.3, 'linewidth':.5}
 width, height = 7, 3.5
 
 
-for comparison in ['sub_deg', 'cv_deg']:
-    print(f'comparison: orig_deg vs {comparison}')
-    X = gradients['orig_deg'].values.reshape(-1, 1)
-    y = gradients[comparison].values.reshape(-1, 1)
-    reg = LinearRegression()
-    reg = reg.fit(X, y, )
-
-
 fig, axes = plt.subplots(ncols=2, figsize=(width, height), constrained_layout=True)
 for (name, sub_df), marker in zip(gradients.groupby('name'), 'ov^x'):
     axes[0].scatter(sub_df['orig_deg'], sub_df['sub_deg'], label=name, **scatter_style, marker=marker)
@@ -110,9 +100,9 @@ for idx, ax in enumerate(axes):
     ax.xaxis.set_major_locator(MultipleLocator(10))
     ax.yaxis.set_major_locator(MultipleLocator(10))
 
-for extension in save_extensions:
-    fig.savefig(plot_dir / f'scatter_compare.{extension}')
-    fig.savefig(plot_dir / f'scatter_compare-sub0.{extension}',
+for ext in proc.extensions:
+    fig.savefig(plot_dir / f'scatter_compare.{ext}', dpi=300)
+    fig.savefig(plot_dir / f'scatter_compare-sub0.{ext}', dpi=300,
                 bbox_inches=Bbox([[0,0],[width/2,height]]))
-    fig.savefig(plot_dir / f'scatter_compare-sub1.{extension}',
+    fig.savefig(plot_dir / f'scatter_compare-sub1.{ext}', dpi=300,
                 bbox_inches=Bbox([[width/2,0],[width,height]]))

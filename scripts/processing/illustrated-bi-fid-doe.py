@@ -6,6 +6,7 @@ from pyDOE import lhs
 from scipy.spatial import distance
 from pyprojroot import here
 
+import processing as proc
 
 BiFidelityDoE = namedtuple("BiFidelityDoE", "high low")
 
@@ -20,7 +21,6 @@ def low_lhs_sample(ndim, nlow):
 def illustrated_bi_fidelity_doe(
     ndim, num_high, num_low, *,
     intermediate=True,
-    as_pdf=True,
     save_dir=None,
     show=False,
 ):
@@ -33,8 +33,6 @@ def illustrated_bi_fidelity_doe(
 
     if not (show or save_dir):
         return # No output needed, why do any work?
-
-    extension = 'pdf' if as_pdf else 'png'
 
     high_x = low_lhs_sample(ndim, num_high)
     low_x = low_lhs_sample(ndim, num_low)
@@ -105,7 +103,8 @@ def illustrated_bi_fidelity_doe(
             plt.ylabel('$x_2$')
             plt.title(f'step {num_high-len(highs_to_match)}/{num_high}')
             if save_dir:
-                plt.savefig(save_dir / f'illustrated-bi-fid-doe-{num_high-len(highs_to_match)}.{extension}')
+                for ext in proc.extensions:
+                    plt.savefig(save_dir / f'illustrated-bi-fid-doe-{num_high-len(highs_to_match)}.{ext}', dpi=300)
             if show:
                 plt.show()
             plt.close()
@@ -126,7 +125,8 @@ def illustrated_bi_fidelity_doe(
 
     if not intermediate:
         if save_dir:
-            plt.savefig(save_dir / f'illustrated-bi-fid-doe-start.{extension}')
+            for ext in proc.extensions:
+                plt.savefig(save_dir / f'illustrated-bi-fid-doe-start.{ext}', dpi=300)
         if show:
             plt.show()
         plt.close()
@@ -150,14 +150,15 @@ def illustrated_bi_fidelity_doe(
 
     if not intermediate:
         plot_title = 'end'
-        save_title = f'illustrated-bi-fid-doe-end.{extension}'
+        save_title = f'illustrated-bi-fid-doe-end'
     else:
         plot_title = f'step {num_high-len(highs_to_match)}/{num_high}'
-        save_title = f'illustrated-bi-fid-doe-{ndim}d-{num_high}-{num_low}-{num_high-len(highs_to_match)}.{extension}'
+        save_title = f'illustrated-bi-fid-doe-{ndim}d-{num_high}-{num_low}-{num_high-len(highs_to_match)}'
 
     plt.title(plot_title)
     if save_dir:
-        plt.savefig(save_dir / save_title)
+        for ext in proc.extensions:
+            plt.savefig(f'{save_dir / save_title}.{ext}', dpi=300)
     if show:
         plt.show()
 

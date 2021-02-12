@@ -24,7 +24,7 @@ output_name = '2020-03-09-adjustables-subsampling-comparisons'
 
 regular_dir = here("files") / source_regular
 subsample_dir = here("files") / source_subsample
-plot_dir = here("plots") / output_name
+plot_dir = here("plots", warn=False) / output_name
 plot_dir.mkdir(parents=True, exist_ok=True)
 
 Subsample = namedtuple('Subsample', 'high low')
@@ -80,5 +80,5 @@ for case, surr_name, sub, seed_offset in product(cases, surr_names, sub_from, se
     plot_name = f'comparison-{surr_name}-{case.ndim}d-{case_name.replace(".","")}-sub{sub.high}-{sub.low}-seed{seed_offset}-high-low-samples'
 
     proc.plot_multiple_error_grids(mses, titles, as_log, contours=8,
-                                   save_as=plot_dir / f'{plot_name}.pdf')
+                                   save_as=plot_dir / f'{plot_name}')
 

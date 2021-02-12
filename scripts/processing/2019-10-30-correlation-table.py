@@ -16,15 +16,17 @@ from collections import namedtuple
 from cycler import cycler
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
+import mf2
 import numpy as np
 import pandas as pd
 from parse import Parser
 from pyprojroot import here
 from scipy.stats import pearsonr, spearmanr
 
+import processing as proc
+
 sys.path.append(str(here()))
 
-import mf2
 import multiLevelCoSurrogates as mlcs
 
 np.set_printoptions(linewidth=200, edgeitems=5)
@@ -168,5 +170,6 @@ for i, (ax, (name, subdf)) in enumerate(zip(axes, grouped_df)):
 
 handles, labels = axes[0].get_legend_handles_labels()
 fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, 0.0), ncol=len(handles))
-fig.savefig(plot_dir / 'combined_correlations.pdf')
+for ext in proc.extensions:
+    fig.savefig(plot_dir / f'combined_correlations.{ext}', dpi=300)
 

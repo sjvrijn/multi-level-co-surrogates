@@ -21,10 +21,8 @@ import processing as proc
 experiment_name = "2019-10-07-adjustables"
 
 data_dir = here("files") / experiment_name
-plot_dir = here("plots") / experiment_name
+plot_dir = here("plots", warn=False) / experiment_name
 plot_dir.mkdir(parents=True, exist_ok=True)
-
-plot_extension = "pdf"
 
 Case = namedtuple('Case', 'name ndim vmin vmax max_diff')
 
@@ -53,22 +51,22 @@ for c in cases:
     title = f'{c.ndim}D {c.name}'
     try:
         proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
-                             save_as=plot_dir / f'{plot_name}.{plot_extension}')
+                             save_as=plot_dir / f'{plot_name}')
         proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
-                             save_as=plot_dir / f'no-bar-{plot_name}.{plot_extension}', include_colorbar=False)
+                             save_as=plot_dir / f'no-bar-{plot_name}', include_colorbar=False)
         proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
-                             save_as=plot_dir / f'no-y-{plot_name}.{plot_extension}', label_y=False)
+                             save_as=plot_dir / f'no-y-{plot_name}', label_y=False)
         proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
-                             save_as=plot_dir / f'clean-{plot_name}.{plot_extension}', include_colorbar=False, label_y=False)
+                             save_as=plot_dir / f'clean-{plot_name}', include_colorbar=False, label_y=False)
     except ValueError:
         print(f'ValueError encountered for {fname}, continueing...')
 
     #proc.plot_error_grid_diff(mses, title, max_diff=c.max_diff,
-    #                          save_as=plot_dir / f'{plot_name}-diff.{plot_extension}')
+    #                          save_as=plot_dir / f'{plot_name}-diff')
 
     #proc.plot_t_scores(mses, title=title,
-    #                   save_as=plot_dir / f'{plot_name}-significance.{plot_extension}')
+    #                   save_as=plot_dir / f'{plot_name}-significance')
     #proc.plot_extracts(mses, title,
-    #                   save_as=plot_dir / f'{plot_name}-extracts.{plot_extension}')
+    #                   save_as=plot_dir / f'{plot_name}-extracts')
     #proc.plot_extracts(mses, title, normalize=True,
-    #                   save_as=plot_dir / f'{plot_name}-normalized-extracts.{plot_extension}')
+    #                   save_as=plot_dir / f'{plot_name}-normalized-extracts')

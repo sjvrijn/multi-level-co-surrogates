@@ -45,15 +45,14 @@ def calc_intercept(b, h0, l0, gradient, costratio):
 
 
 # Currently Hardcoded:
-# small_h, small_l = 30, 75
-# large_h, large_l = 50, 125
+small_h, small_l = 30, 75
+large_h, large_l = 50, 125
 costratio = 0.4
-# new_budget = large_h + costratio * small_l  # or small_h + costratio * large_l
 
 
-num_lows = xr.DataArray(np.arange(75, 126), dims=["idx"])
-num_highs = xr.DataArray(np.floor(np.linspace(50, 30, len(num_lows))), dims=["idx"])
-angles = atan_deg(num_highs-30, num_lows-75)
+num_lows = xr.DataArray(np.arange(small_l, large_l+1), dims=["idx"])
+num_highs = xr.DataArray(np.floor(np.linspace(large_h, small_h, len(num_lows))), dims=["idx"])
+angles = atan_deg(num_highs-small_h, num_lows-small_l)
 
 
 def plot_extrapolation_suggestion(file_small, file_large):
@@ -79,7 +78,7 @@ def plot_extrapolation_suggestion(file_small, file_large):
         title = f"{ndim}d {fname.replace('-', ' ')}"
 
     smallest_at_angle = angles[np.argmin(data_along_budget_line)]
-    gradient_budget_intercept = calc_intercept(80, 30, 75, gradient, costratio)
+    gradient_budget_intercept = calc_intercept(80, small_h, small_l, gradient, costratio)
 
     plt.figure(figsize=(4.8, 2.4), constrained_layout=True)
     plt.plot(angles, data_along_budget_line, marker='o', label='MSEs from DoE enumeration')
@@ -89,13 +88,10 @@ def plot_extrapolation_suggestion(file_small, file_large):
     plt.axvline(deg_small, ls=':', label='Predicted best angle', color='C1')
     plt.legend(loc=0)
     plt.xlim([0,90])
-    #plt.ylim(bottom=0)
     plt.title(title)
-    plt.savefig(plot_dir / f'{file_small.stem.replace(".", "")}.pdf', bbox_inches='tight')
+    for ext in proc.extensions:
+        plt.savefig(plot_dir / f'{file_small.stem.replace(".", "")}.{ext}', dpi=300, bbox_inches='tight')
     plt.close()
-
-
-
 
 
 for file_small in filter(lambda f: 'sub30-75' in str(f), subsampling_dir.iterdir()):

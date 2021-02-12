@@ -123,7 +123,8 @@ def plot_gradients_of_reduced(gradient_summary, case_name):
     ax.set_ylabel('gradient angle')
     ax.set_ylim([0, 135])
     ax.legend(loc=0)
-    fig.savefig(PLOT_PATH / f'gradient-summary-{case_name}.pdf')
+    for ext in proc.extensions:
+        fig.savefig(PLOT_PATH / f'gradient-summary-{case_name}.{ext}', dpi=300)
     plt.close(fig)
 
 
@@ -148,10 +149,11 @@ if __name__ == '__main__':
         for *reductions, name in example_reductions:
             smaller_da = reduce_size(da, *reductions)
 
-            save_path = PLOT_PATH / f'example-smaller-{name.replace(" ", "-").replace(",", "").lower()}-{path.stem}.pdf'
+            save_path = PLOT_PATH / f'example-smaller-{name.replace(" ", "-").replace(",", "").lower()}-{path.stem}'
             smaller_da.sel(model='high_hier').median(dim='rep').plot()
             plt.title(f'Example: {name} -- {path.stem}')
-            plt.savefig(save_path)
+            for ext in proc.extensions:
+                plt.savefig(f'{save_path}.{ext}', dpi=300)
             plt.close()
 
     all_reductions = dict(

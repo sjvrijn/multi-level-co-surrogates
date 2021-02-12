@@ -24,10 +24,8 @@ experiments = [
 for experiment_name in experiments:
 
     data_dir = here("files") / experiment_name
-    plot_dir = here("plots") / "2019-10-multi-extracts"
+    plot_dir = here("plots", warn=False) / "2019-10-multi-extracts"
     plot_dir.mkdir(parents=True, exist_ok=True)
-
-    plot_extension = "pdf"
 
     Case = namedtuple('Case', 'name ndim vmin vmax max_diff')
     CaseSet = namedtuple('CaseSet', 'generic_name ndim cases')
@@ -60,4 +58,4 @@ for experiment_name in experiments:
         title = f'{case_set.generic_name} ({case_set.ndim}D)'
 
         proc.plot_multi_file_extracts(data_arrays, title=title,
-                                      save_as=plot_dir / f'{plot_name}-multi-extracts.{plot_extension}')
+                                      save_as=plot_dir / f'{plot_name}-multi-extracts')
