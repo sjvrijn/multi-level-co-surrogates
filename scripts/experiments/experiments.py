@@ -294,7 +294,6 @@ def create_model_error_grid(
     fname = standardize_fname_for_file(func.name)
     output_path = save_dir / f"{surr_name}-{func.ndim}d-{fname}.nc"
 
-
     # Don't redo any prior data that already exists
     if output_path.exists():
         print(f"existing file '{output_path.name}' found, loading instances...")
@@ -302,12 +301,11 @@ def create_model_error_grid(
         with xr.open_dataset(output_path) as ds:
             with ds['mses'].load() as da:
                 instances = filter_instances(instances, da.sel(model='high_hier'))
+                print(f"{len(instances)} out of {num_orig_instances} instances left to do")
 
-        print(f"{len(instances)} out of {num_orig_instances} instances left to do")
-        # Return early if there is nothing left to do
-        if not instances:
-            return
-
+    # Return early if there is nothing left to do
+    if not instances:
+        return
 
     # Setup some (final) options for the hierarchical model
     mfbo_options['test_sample'] = get_test_sample(func.ndim, save_dir)
@@ -430,12 +428,12 @@ def create_resampling_error_grid(
         with xr.open_dataset(output_path) as ds:
             with ds['mses'].load() as da:
                 instances = filter_instances(instances, da.sel(model='high_hier'))
+                print(f"{len(instances)} out of {num_orig_instances} instances left to do")
 
     # Return early if there is nothing left to do
     if not instances:
         print('Nothing to do...')
         return
-
 
     # Setup some (final) options for the hierarchical model
     mfbo_options['test_sample'] = get_test_sample(func.ndim, save_dir)
@@ -553,12 +551,12 @@ def create_resampling_leftover_error_grid(
         with xr.open_mfdataset(f"{output_path}*") as ds:
             da = ds['mses'].load()
             instances = filter_instances(instances, da.sel(model='high_hier'))
+            print(f"{len(instances)} out of {num_orig_instances} instances left to do")
 
     # Return early if there is nothing left to do
     if not instances:
         print('Nothing to do...')
         return
-
 
     # Setup some (final) options for the hierarchical model
     mfbo_options['test_sample'] = get_test_sample(func.ndim, save_dir)
@@ -720,7 +718,7 @@ def results_to_dataset(results: List[NamedTuple], instances: Sequence[Instance],
 
 def standardize_fname_for_file(name: str) -> str:
     """Enforce standardized formatting for filenames"""
-    if 'adjustable' in name:
+    if 'adjustable' in name.lower():
         fname, param = parse('{} {:f}', name)
         name = f'{fname} {param:.2f}'
     return name.replace(' ', '-')
