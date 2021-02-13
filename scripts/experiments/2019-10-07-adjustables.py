@@ -13,6 +13,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 import sys
 from itertools import product
 
+import numpy as np
 from pyprojroot import here
 
 import mf2
