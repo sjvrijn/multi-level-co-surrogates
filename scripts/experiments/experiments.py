@@ -6,6 +6,7 @@ from functools import partial
 from itertools import product
 from pathlib import Path
 from typing import Sequence, List, Dict, Tuple, Any, NamedTuple
+from warnings import warn
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -375,22 +376,7 @@ def create_model_error_grid(
     output = results_to_dataset(results, instances, mfbo_options, attributes,
                                 record_values=record_values)
 
-
-    # Merge with prior existing data
-    # NOTE: even if `output` is empty, attributes will be overwitten/updated
-    if output_path.exists():
-        # write output to tmp_path first
-        output.to_netcdf(get_tmp_path(output_path))
-        # with xr.open_mfdataset([output_path, tmp_path],
-        #                        chunks={'rep': 5, 'n_high': 10},
-        #                        concat_dim=None) as output:
-        #     output.to_netcdf(output_path)
-    else:
-        # Store results
-        output.to_netcdf(output_path)
-
-    # Store results
-    output.to_netcdf(output_path)
+    store_output(output, output_path)
 
     end = datetime.now()
     print(f"Ended case {func} at {end}\n"
@@ -503,18 +489,7 @@ def create_resampling_error_grid(
                                 record_values=record_values)
 
 
-    # Merge with prior existing data
-    # NOTE: even if `output` is empty, attributes will be overwitten/updated
-    if output_path.exists():
-        # write output to tmp_path first
-        output.to_netcdf(get_tmp_path(output_path))
-        # with xr.open_mfdataset([output_path, tmp_path],
-        #                        chunks={'rep': 5, 'n_high': 10},
-        #                        concat_dim=None) as output:
-        #     output.to_netcdf(output_path)
-    else:
-        # Store results
-        output.to_netcdf(output_path)
+    store_output(output, output_path)
 
     end = datetime.now()
     print(f"Ended case {func} at {end}\n"
@@ -650,24 +625,32 @@ def create_resampling_leftover_error_grid(
     output = results_to_dataset(results, instances, mfbo_options, attributes,
                                 record_values=record_values)
 
-
-    # Merge with prior existing data
-    # NOTE: even if `output` is empty, attributes will be overwitten/updated
-    if output_path.exists():
-        # write output to tmp_path first
-
-        output.to_netcdf(get_tmp_path(output_path))
-        # with xr.open_mfdataset([output_path, tmp_path],
-        #                        chunks={'rep': 5, 'n_high': 10},
-        #                        concat_dim=None) as output:
-        #     output.to_netcdf(output_path)
-    else:
-        # Store results
-        output.to_netcdf(output_path)
+    store_output(output, output_path)
 
     end = datetime.now()
     print(f"Ended case {func} at {end}\n"
           f"Time spent: {str(end - start)}")
+
+
+def store_output(output, output_path):
+    """Store output in netcdf .nc file. If previous file(s) exist, store
+    in temporary file first, then combine and store combined if memory allows.
+    If not, leaves temporary files and prints a warning.
+
+    Note that attributes will be overwritten/updated
+    """
+    if output_path.exists():
+        output.to_netcdf(get_tmp_path(output_path))
+        try:
+            with xr.open_mfdataset(f'{output_path}*') as output:
+                output = output.load()
+        except MemoryError:
+            warn('MemoryError encountered while merging new output with previous files. '
+                 'Temporary files will remain and can be merged later')
+            return
+
+    output.to_netcdf(output_path)
+
 
 
 def results_to_dataset(results: List[NamedTuple], instances: Sequence[Instance],
