@@ -298,7 +298,7 @@ def create_model_error_grid(
     if output_path.exists():
         print(f"existing file '{output_path.name}' found, loading instances...")
         num_orig_instances = len(instances)
-        with xr.open_dataset(output_path) as ds:
+        with xr.open_mfdataset(f'{output_path}*') as ds:
             with ds['mses'].load() as da:
                 instances = filter_instances(instances, da.sel(model='high_hier'))
                 print(f"{len(instances)} out of {num_orig_instances} instances left to do")
@@ -425,7 +425,9 @@ def create_resampling_error_grid(
 
     # Don't redo any prior data that already exists
     if output_path.exists():
-        with xr.open_dataset(output_path) as ds:
+        print(f"existing file '{output_path.name}' found, loading instances...")
+        num_orig_instances = len(instances)
+        with xr.open_mfdataset(f'{output_path}*') as ds:
             with ds['mses'].load() as da:
                 instances = filter_instances(instances, da.sel(model='high_hier'))
                 print(f"{len(instances)} out of {num_orig_instances} instances left to do")
@@ -548,6 +550,8 @@ def create_resampling_leftover_error_grid(
 
     # Don't redo any prior data that already exists
     if output_path.exists():
+        print(f"existing file '{output_path.name}' found, loading instances...")
+        num_orig_instances = len(instances)
         with xr.open_mfdataset(f"{output_path}*") as ds:
             da = ds['mses'].load()
             instances = filter_instances(instances, da.sel(model='high_hier'))
