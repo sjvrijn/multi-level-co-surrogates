@@ -632,7 +632,7 @@ def create_resampling_leftover_error_grid(
           f"Time spent: {str(end - start)}")
 
 
-def store_output(output, output_path):
+def store_output(output: xr.Dataset, output_path: Path):
     """Store output in netcdf .nc file. If previous file(s) exist, store
     in temporary file first, then combine and store combined if memory allows.
     If not, leaves temporary files and prints a warning.
@@ -651,6 +651,9 @@ def store_output(output, output_path):
 
     output.to_netcdf(output_path)
 
+    ## remove temporary files
+    for file in output_path.parent.glob(f'{output_path.name}TMP*'):
+        file.unlink()
 
 
 def results_to_dataset(results: List[NamedTuple], instances: Sequence[Instance],
