@@ -1,5 +1,5 @@
 -r requirements.txt
 
-hypothesis~=5.16.3
-pytest~=5.4.3
-pytest-cov
+hypothesis~=5.30.0
+pytest~=6.0.1
+pytest-cov~=2.10.1
