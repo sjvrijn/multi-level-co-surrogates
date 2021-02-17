@@ -127,7 +127,7 @@ all_correlations.to_csv(save_dir / 'correlations.csv', index=False)
 
 styles = plt.rcParams['axes.prop_cycle'][:4] + cycler(linestyle=['-', '--', ':', '-.'])
 plt.rc('axes', prop_cycle=styles)
-figsize=(6.5, 5)
+figsize=(6.5, 3.3)
 single_figsize = (3.25, 2.5)
 labels = {
     'pearson_r': 'Pearson $r$',
@@ -138,7 +138,7 @@ labels = {
 
 grouped_df = adjustables_correlations.groupby('fname')
 fig = plt.figure(figsize=figsize)
-gs = fig.add_gridspec(nrows=2, ncols=2, bottom=0.15, wspace=0.10, hspace=0.15, right=0.975, top=0.95, left=0.1)
+gs = fig.add_gridspec(nrows=2, ncols=2, bottom=0.18, wspace=0.10, hspace=0.23, right=0.975, top=0.94, left=0.1)
 axes = [
     fig.add_subplot(gs[0,0]),
     fig.add_subplot(gs[1,0]),
@@ -169,7 +169,7 @@ for i, (ax, (name, subdf)) in enumerate(zip(axes, grouped_df)):
     ax.set_title(name.title())
 
 handles, labels = axes[0].get_legend_handles_labels()
-fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, 0.0), ncol=len(handles))
+fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.538, 0.0), ncol=len(handles))
 for ext in proc.extensions:
     fig.savefig(plot_dir / f'combined_correlations.{ext}', dpi=300)
 
