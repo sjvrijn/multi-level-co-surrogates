@@ -7,7 +7,8 @@ import processing as proc
 
 print(f'Running script: {__file__}')
 
-plot_dir = here('plots/', warn=False)
+
+plot_dir = here('plots/2020-07-07-intercept-illustration/', warn=False)
 plot_dir.mkdir(exist_ok=True, parents=True)
 
 
