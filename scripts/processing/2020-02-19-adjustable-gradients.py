@@ -92,7 +92,7 @@ def create_plots(extended_correlations, plot_individuals=False):
                 ax.xaxis.set_minor_locator(MultipleLocator(0.2))
                 ax.yaxis.set_minor_locator(MultipleLocator(10))
                 ax.set_ylabel(ylabel)
-                ax.legend(loc='lower left')
+                ax.legend(loc='lower left', fontsize='small')
                 ax.set_ylim(ylim)
 
         def get_values(sub_df):
