@@ -56,10 +56,7 @@ def drop_values_from_file(file: Path, new_directory: Path=None):
     given file and store in the given folder `new_directory`.
     """
     with xr.open_dataset(file) as full_ds:
-        try:
-            smaller_ds = full_ds.drop_vars(['values', 'idx'])
-        except ValueError:
-            return
+        smaller_ds = full_ds.drop_vars(['values', 'idx'], errors='ignore')
             
     if new_directory:
         file = new_directory / file.name
