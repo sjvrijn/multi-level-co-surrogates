@@ -1,4 +1,4 @@
-#!python3
+#!/usr/bin/env python3
 
 from argparse import ArgumentParser
 from pathlib import Path
@@ -24,6 +24,9 @@ def save_reduced_files(directory: Path, new_directory: Path=None, recursive: boo
     the 'values' variable and 'idx' dimension from the '.nc' files, and saving
     them in the given `new_directory`
     """
+    if new_directory:
+        new_directory.mkdir(exist_ok=True, parents=True)
+
     if recursive:
         for subdir in filter_directories(directory.iterdir()):
             if new_directory:
@@ -82,11 +85,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     directory = Path(args.directory)
-    if args.new_dir:
-        new_dir = Path(args.new_dir)
-        new_dir.mkdir(exist_ok=True, parents=True)
-    else:
-        new_dir = None
+    new_dir = Path(args.new_dir) if args.new_dir else None
 
     if args.operation == 'merge':
         merge_files_in_dir(directory, recursive=args.recursive)
