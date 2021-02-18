@@ -148,7 +148,9 @@ if __name__ == '__main__':
 
     angles = regular_angles.append(adjustable_angles)
 
-    extended_correlations = angles.merge(correlations).set_index(['category', 'ndim', 'fname', 'param'])
+    extended_correlations = angles.merge(correlations)
+    extended_correlations.to_csv(extended_correlations_path, index=False)
+    extended_correlations = extended_correlations.set_index(['category', 'ndim', 'fname', 'param'])
 
     if not args.no_plots:
         create_plots(extended_correlations)
