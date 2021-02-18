@@ -74,11 +74,11 @@ for c in cases:
     proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax,
                          points=data_points, contours=8, as_log=c.as_log,
                          save_as=plot_dir / plot_name)
-    #proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
+    #proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=c.as_log,
     #                     save_as=plot_dir / f'no-bar-{plot_name}', include_colorbar=False)
-    proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
+    proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=c.as_log,
                          save_as=plot_dir / f'no-y-{plot_name}', label_y=False)
-    #proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
+    #proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=c.as_log,
     #                     save_as=plot_dir / f'clean-{plot_name}', include_colorbar=False, label_y=False)
 
     #proc.plot_error_grid_diff(mses, title, max_diff=c.max_diff,
