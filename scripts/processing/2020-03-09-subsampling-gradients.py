@@ -33,7 +33,7 @@ subsampling_dir = here('files/2020-03-04-cv-adjustables-subsampling')
 plot_dir = here('plots/2020-03-09-subsampling-gradients/', warn=False)
 plot_dir.mkdir(exist_ok=True, parents=True)
 
-correlations_file = here('files/extended_correlations.csv', warn=False)
+correlations_file = here('files/2019-10-30-correlations/extended_correlations.csv')
 gradients_file = here('files/gradient_comparison.csv', warn=False)
 fname_parser = Parser('{}-{ndim:d}d-Adjustable-{fname:w}-{param:f}-sub50-125-seed{seed_offset:d}.nc')
 
