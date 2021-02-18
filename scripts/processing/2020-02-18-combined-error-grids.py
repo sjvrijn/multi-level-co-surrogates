@@ -42,8 +42,8 @@ cases = [
     Case('Currin',             2, True),
     Case('Himmelblau',         2, True),
     Case('Six-Hump-Camelback', 2, True),
-    Case('Park-91A',           4, True),
-    Case('Park-91B',           4, True),
+    Case('Park91A',            4, True),
+    Case('Park91B',            4, True),
     Case('Hartmann6',          6, True),
     Case('Borehole',           8, True),
 ]

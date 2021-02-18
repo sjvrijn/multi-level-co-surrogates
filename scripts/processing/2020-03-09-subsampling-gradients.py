@@ -35,7 +35,7 @@ plot_dir.mkdir(exist_ok=True, parents=True)
 
 correlations_file = here('files/extended_correlations.csv', warn=False)
 gradients_file = here('files/gradient_comparison.csv', warn=False)
-fname_parser = Parser('{}-{ndim:d}d-Adjustable{fname:w}{param:f}-sub50-125-seed{seed_offset:d}.nc')
+fname_parser = Parser('{}-{ndim:d}d-Adjustable-{fname:w}-{param:f}-sub50-125-seed{seed_offset:d}.nc')
 
 
 def calculate_gradient_comparisons():

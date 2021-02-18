@@ -42,8 +42,8 @@ cases = [
     Case('Currin',           2,   .01,      10,   50),
     Case('Himmelblau',       2,  None,    None, 1000),
     Case('Six-Hump-Camelback', 2,  None,    None,  100),
-    Case('Park-91A',          4,  1e-3,     1e2,    1),
-    Case('Park-91B',          4,  None,    None,    1),
+    Case('Park91A',          4,  1e-3,     1e2,    1),
+    Case('Park91B',          4,  None,    None,    1),
     Case('Hartmann6',        6,  1e-2,    1e-1, None),
     Case('Borehole',         8,    10,    3000,  1e4),
 ]
