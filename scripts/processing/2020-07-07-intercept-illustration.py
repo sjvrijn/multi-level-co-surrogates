@@ -5,6 +5,7 @@ from pyprojroot import here
 
 import processing as proc
 
+print(f'Running script: {__file__}')
 
 plot_dir = here('plots/', warn=False)
 plot_dir.mkdir(exist_ok=True, parents=True)

@@ -17,6 +17,7 @@ from pyprojroot import here
 
 import processing as proc
 
+print(f'Running script: {__file__}')
 
 data_dir = here("files")
 

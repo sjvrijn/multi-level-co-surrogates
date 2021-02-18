@@ -19,6 +19,8 @@ from pyprojroot import here
 
 import processing as proc
 
+print(f'Running script: {__file__}')
+
 experiment_name = "2019-09-mse-nc"
 
 data_dir = here("files") / experiment_name

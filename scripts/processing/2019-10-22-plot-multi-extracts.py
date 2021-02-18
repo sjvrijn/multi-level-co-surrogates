@@ -17,6 +17,8 @@ from pyprojroot import here
 
 import processing as proc
 
+print(f'Running script: {__file__}')
+
 experiments = [
     "2019-10-07-adjustables"
 ]

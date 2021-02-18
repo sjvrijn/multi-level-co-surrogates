@@ -23,6 +23,8 @@ from sklearn.linear_model import LinearRegression
 
 import processing as proc
 
+print(f'Running script: {__file__}')
+
 
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'

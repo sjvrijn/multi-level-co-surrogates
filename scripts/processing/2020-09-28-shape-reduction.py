@@ -19,6 +19,8 @@ from pyprojroot import here
 
 import processing as proc
 
+print(f'Running script: {__file__}')
+
 
 kriging_path = here('files/2019-09-mse-nc/')
 adjustables_path = here('files/2019-10-07-adjustables')

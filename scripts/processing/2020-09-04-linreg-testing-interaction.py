@@ -12,6 +12,8 @@ from parse import Parser
 from pyprojroot import here
 from sklearn.linear_model import LinearRegression
 
+print(f'Running script: {__file__}')
+
 
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'

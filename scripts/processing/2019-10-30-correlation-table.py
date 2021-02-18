@@ -31,6 +31,8 @@ import multiLevelCoSurrogates as mlcs
 
 np.set_printoptions(linewidth=200, edgeitems=5)
 
+print(f'Running script: {__file__}')
+
 save_dir = here() / "files/2019-10-30-correlations/"
 save_dir.mkdir(parents=True, exist_ok=True)
 table_dir = here() / "tables/2020-03-04-correlations/"

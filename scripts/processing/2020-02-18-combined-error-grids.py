@@ -15,6 +15,8 @@ from pyprojroot import here
 
 import processing as proc
 
+print(f'Running script: {__file__}')
+
 source_regular = "2019-09-mse-nc"
 source_subsample = "2019-11-15-subsampling"
 

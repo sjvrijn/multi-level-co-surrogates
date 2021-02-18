@@ -17,6 +17,8 @@ import mf2
 
 import processing as proc
 
+print(f'Running script: {__file__}')
+
 source_regular = "2019-10-07-adjustables"
 source_subsample = "2020-03-04-cv-adjustables-subsampling"
 

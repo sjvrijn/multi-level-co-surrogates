@@ -18,6 +18,8 @@ from pyprojroot import here
 
 import processing as proc
 
+print(f'Running script: {__file__}')
+
 experiment_name = "2019-10-07-adjustables"
 
 data_dir = here("files") / experiment_name
