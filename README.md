@@ -88,7 +88,7 @@ cd scripts/experiments
 It is advised to adjust the scripts to only generate the exact data needed, or to first download the
 data files available on [Zenodo] (see Related Work).
 
-Alternatively you can run the scripts individually based on your needs.
+Alternatively you can run the scripts individually based on your needs, for example:
 
 ```bash
 cd scripts/experiments
