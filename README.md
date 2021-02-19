@@ -159,6 +159,22 @@ If this code has been useful in your research, please cite it:
 }
 ```
 
+Or if you used an archived version and/or need a DOI, please cite the Zenodo archive instead:
+
+```bibtex
+@software{sander_2021_4552822,
+    author       = {Sander},
+    title        = {sjvrijn/multi-level-co-surrogates: v1},
+    month        = feb,
+    year         = 2021,
+    publisher    = {Zenodo},
+    version      = {v1},
+    doi          = {10.5281/zenodo.4552822},
+    url          = {https://doi.org/10.5281/zenodo.4552822}
+}
+```
+
+
 ## Acknowledgements
 
 This work is part of the research program DAMIOSO with project number 628.006.002, which is partly
