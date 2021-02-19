@@ -69,23 +69,23 @@ python3 2020-07-07-intercept-illustration.py
 
 ## Usage
 
-The simplest way to use this code is to use the `runall.sh` bash scripts in the scripts folders,
-e.g.:
+To run all experiments or all processing scripts, you can use the `runall.sh` bash scripts in the
+scripts folders. **Note that most processing scripts depend on data being present, and that the
+experiment scripts may take weeks to complete.**
 
 ```bash
 cd scripts/experiments
 ./runall.sh
 ```
-**NOTE: re-running all experiments will take a very long time. It is advised to adjust the scripts
-to only generate the exact data needed, or to first download the data files available on Zenodo
-(see Related Work).**
 
+It is advised to adjust the scripts to only generate the exact data needed, or to first download the
+data files available on [Zenodo] (see Related Work).
 
-Alternatively you can run the scripts individually based on your need.
+Alternatively you can run the scripts individually based on your needs.
 
 ```bash
-cd scripts/processing
-python3 2020-07-29-illustrated-bi-fid-doe.py
+cd scripts/experiments
+python3 2019-09-01-error-grids.py 1  # only run case index '1', will take ~1 day
 ```
 
 For details on what each script does, please read the docstring at the top of each file. Any
@@ -109,7 +109,10 @@ or scripts elsewhere in this repository. Their main purpose is to serve as a his
 
 ### scripts
 
-Experiment and post-processing scripts. Details on each script can be found in the file's docstring.
+Experiment and post-processing scripts. The scripts in `experiments` create the data files and will
+store them in the `files/` folder, while the scripts in `processing` use the data files from
+`files/` and store the results in `plots/`. Both folders will be created automatically if they
+do not yet exist. Details on each script can be found in the file's docstring.
 
 
 ### tests
