@@ -31,16 +31,16 @@ cd mlcs
   installed packages, create and activate a clean environment. To use the Python  built-in `venv`
   command, use the following commands:
 
-Create the environment:
+Create the environment
 
 ```bash
 python3 -m venv mlcs_env
 ```
 
-Activate it:
+And then activate it according to your operating system
 
 ```bash
-# Linux/Unix
+# Linux/Unix bash
 source mlcs_env/bin/activate
 
 # Windows cmd.exe
@@ -51,10 +51,19 @@ mlcs_env\Scripts\Activate.ps1
 ```
 
 * Finally install the requirements. If you wish to run the included tests, replace
-  `requirements.txt` with the extended `requirements-dev.txt`
+  `requirements.txt` with the extended `requirements-dev.txt` in the following command:
 
 ```bash
 python3 -m pip install -r requirements.txt
+```
+
+To test whether installation has been succesful, you can run one of the standalone illustration
+scripts, which should generate the figure
+`mlcs/plots/2020-07-07-intercept-illustration/budget-extension-intercept.png`:
+
+```bash
+cd scripts/processing
+python3 2020-07-07-intercept-illustration.py
 ```
 
 
