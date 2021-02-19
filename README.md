@@ -57,6 +57,13 @@ mlcs_env\Scripts\Activate.ps1
 python3 -m pip install -r requirements.txt
 ```
 
+* Additionally, you may install `bottleneck` to speed up some computations, but this package can
+  cause issues on Windows systems (see [this issue][bottleneck-issue])
+
+```bash
+python3 -m pip install bottleneck
+```
+
 To test whether installation has been succesful, you can run one of the standalone illustration
 scripts, which should generate the figure
 `mlcs/plots/2020-07-07-intercept-illustration/budget-extension-intercept.png`:
@@ -154,6 +161,7 @@ financed by the Netherlands Organisation for Scientific Research (NWO).
 
 
 
+[bottleneck-issue]: https://github.com/pydata/bottleneck/issues/281
 [mf2]:              https://github.com/sjvrijn/mf2
 [mailto-svrijn]:    mailto:s.j.van.rijn@liacs.leidenuniv.nl
 [new-issue]:        https://github.com/sjvrijn/multi-level-co-surrogates/issues/new
