@@ -119,7 +119,7 @@ repository or send an [email](mailto-svrijn).
 ## Related Work
 
 - [mf2]: collection of benchmark functions used in this package
-- Data files archive on Zenodo: To be added.
+- Data files archive on [Zenodo]. (DOI reserved)
 
 
 ## Citation
@@ -145,5 +145,5 @@ financed by the Netherlands Organisation for Scientific Research (NWO).
 [mf2]:              https://github.com/sjvrijn/mf2
 [mailto-svrijn]:    mailto:s.j.van.rijn@liacs.leidenuniv.nl
 [new-issue]:        https://github.com/sjvrijn/multi-level-co-surrogates/issues/new
-
+[Zenodo]:           https://doi.org/10.5281/zenodo.4551287
 
