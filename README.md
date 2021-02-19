@@ -1,5 +1,7 @@
 # Multi-Level Co-Surrogates
 
+[![build status][build-badge]][actions-page]
+
 ## Introduction
 
 In simulation-based optimization, multiple (distinct) accuracy or fidelity levels are commonly
@@ -161,7 +163,9 @@ financed by the Netherlands Organisation for Scientific Research (NWO).
 
 
 
+[actions-page]:     https://github.com/sjvrijn/multi-level-co-surrogates/actions
 [bottleneck-issue]: https://github.com/pydata/bottleneck/issues/281
+[build-badge]:	    https://github.com/sjvrijn/multi-level-co-surrogates/workflows/build/badge.svg
 [mf2]:              https://github.com/sjvrijn/mf2
 [mailto-svrijn]:    mailto:s.j.van.rijn@liacs.leidenuniv.nl
 [new-issue]:        https://github.com/sjvrijn/multi-level-co-surrogates/issues/new
