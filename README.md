@@ -142,7 +142,7 @@ repository or send an [email](mailto-svrijn).
 ## Related Work
 
 - [mf2]: collection of benchmark functions used in this package
-- Data files archive on [Zenodo]. (DOI reserved)
+- Data files archive on [Zenodo] [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4551287.svg)](https://doi.org/10.5281/zenodo.4551287)
 
 
 ## Citation
