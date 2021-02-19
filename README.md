@@ -2,6 +2,7 @@
 
 [![build status][build-badge]][actions-page]
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![DOI](https://zenodo.org/badge/256506176.svg)](https://zenodo.org/badge/latestdoi/256506176)
 
 
 ## Introduction
