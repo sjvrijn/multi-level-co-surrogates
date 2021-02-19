@@ -27,11 +27,19 @@ git clone https://github.com/sjvrijn/multi-level-co-surrogates.git mlcs
 cd mlcs
 ```
 
-* Second, create and activate a clean environment of your choice, e.g. using the Python built-in `venv`
+* Second, to make sure everything works as intended and nothing conflicts with any previously
+  installed packages, create and activate a clean environment. To use the Python  built-in `venv`
+  command, use the following commands:
+
+Create the environment:
 
 ```bash
 python3 -m venv mlcs_env
+```
 
+Activate it:
+
+```bash
 # Linux/Unix
 source mlcs_env/bin/activate
 
