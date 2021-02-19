@@ -1,6 +1,8 @@
 # Multi-Level Co-Surrogates
 
 [![build status][build-badge]][actions-page]
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+
 
 ## Introduction
 
