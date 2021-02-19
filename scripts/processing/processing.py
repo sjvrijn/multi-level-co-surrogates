@@ -78,7 +78,7 @@ def full_extent(fig, ax, pad=0.0):
 def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
                     contours=0, as_log=False, save_as=None,
                     show=False, include_comparisons=False,
-                    include_colorbar=True, label_y=True):
+                    include_colorbar=True, label_y=True, title_width=None):
     """Plot a heatmap of the median MSE for each possible combination of high
     and low-fidelity samples. For comparison, the MSE for the high-only and
     low-only models are displayed as a bar to the left and bottom respectively.
@@ -119,7 +119,10 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
     extent = get_extent(data)
     imshow_style = {'cmap': 'viridis_r', 'norm': norm, 'origin': 'lower'}
 
-    plt.title(fill(f'{"log10 " if as_log else ""}Median MSE for $z_h$ - {title}', width=32))
+    plot_title = f'{"log10 " if as_log else ""}Median MSE for $z_h$ - {title}'
+    if title_width:
+        plot_title = fill(plot_title, width=title_width)
+    plt.title(plot_title)
 
     da_hh = data.sel(model='high_hier')
 

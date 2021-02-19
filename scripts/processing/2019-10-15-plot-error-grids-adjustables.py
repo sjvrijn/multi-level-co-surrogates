@@ -52,13 +52,13 @@ for c in cases:
     plot_name = f'{c.ndim}d-{c.name.replace(".","")}-high-low-samples-linear'
     title = f'{c.ndim}D {c.name}'
     try:
-        proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
+        proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True, title_width=32,
                              save_as=plot_dir / f'{plot_name}')
-        proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
+        proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True, title_width=32,
                              save_as=plot_dir / f'no-bar-{plot_name}', include_colorbar=False)
-        proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
+        proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True, title_width=32,
                              save_as=plot_dir / f'no-y-{plot_name}', label_y=False)
-        proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True,
+        proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=True, title_width=32,
                              save_as=plot_dir / f'clean-{plot_name}', include_colorbar=False, label_y=False)
     except ValueError:
         print(f'ValueError encountered for {fname}, continueing...')
