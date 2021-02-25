@@ -17,6 +17,7 @@ from pyprojroot import here
 
 import processing as proc
 
+print(f'Running script: {__file__}')
 
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
@@ -26,15 +27,18 @@ save_dir = here() / "tables/2019-11-27-gradients/"
 save_dir.mkdir(parents=True, exist_ok=True)
 
 
-Record = namedtuple('Record', 'experiment file high low rep')
+Record = namedtuple('Record', 'experiment file high low')
 
 records = []
 for directory in [d for d in data_dir.iterdir() if d.is_dir()]:
     print(directory.name)
 
     for file in [f for f in directory.iterdir() if f.suffix == '.nc']:
-        with xr.open_dataset(file) as ds:
-            da = ds['mses'].sel(model='high_hier')
+        try:
+            with xr.open_dataset(file) as ds:
+                da = ds['mses'].sel(model='high_hier')
+        except KeyError:
+            continue
 
         with da.load() as da:
             reg = proc.fit_lin_reg(da)

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-2020-02-18-combined-wedges.py: A processing script file to create both the
+2020-02-18-combined-error-grids.py: A processing script file to create both the
 regular wedge plots and those for the subsampling results at the same time.
 By combining the renders, they are guaranteed to use the same colorscale.
 """
@@ -15,14 +15,16 @@ from pyprojroot import here
 
 import processing as proc
 
+print(f'Running script: {__file__}')
+
 source_regular = "2019-09-mse-nc"
 source_subsample = "2019-11-15-subsampling"
 
-output_name = '2020-02-18-combined-wedges/'
+output_name = '2020-02-18-combined-error-grids/'
 
 regular_dir = here("files") / source_regular
 subsample_dir = here("files") / source_subsample
-plot_dir = here("plots") / output_name
+plot_dir = here("plots", warn=False) / output_name
 plot_dir.mkdir(parents=True, exist_ok=True)
 
 Case = namedtuple('Case', 'name ndim as_log')
@@ -40,8 +42,8 @@ cases = [
     Case('Currin',             2, True),
     Case('Himmelblau',         2, True),
     Case('Six-Hump-Camelback', 2, True),
-    Case('Park-91A',           4, True),
-    Case('Park-91B',           4, True),
+    Case('Park91A',            4, True),
+    Case('Park91B',            4, True),
     Case('Hartmann6',          6, True),
     Case('Borehole',           8, True),
 ]
@@ -81,5 +83,5 @@ for case, surr_name, sub in product(cases, surr_names, sub_from):
     plot_name = f'comparison-{surr_name}-{case.ndim}d-{case.name}-sub{sub.high}-{sub.low}-high-low-samples-linear'
 
     proc.plot_multiple_error_grids(mses, titles, case.as_log, contours=8,
-                                   save_as=plot_dir / f'{plot_name}.pdf')
+                                   save_as=plot_dir / f'{plot_name}')
 

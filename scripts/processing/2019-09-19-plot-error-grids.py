@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-2019-09-19-plot-wedges.py: Plot the wedge-shaped MSE-grids
+2019-09-19-plot-error-grids.py: Plot the wedge-shaped MSE-grids
 for all available (standard) cases, with DoE's as used in
 literature plotted.
 """
@@ -19,12 +19,13 @@ from pyprojroot import here
 
 import processing as proc
 
+print(f'Running script: {__file__}')
+
 experiment_name = "2019-09-mse-nc"
 
 data_dir = here("files") / experiment_name
-plot_dir = here("plots") / experiment_name
+plot_dir = here("plots", warn=False) / experiment_name
 plot_dir.mkdir(parents=True, exist_ok=True)
-
 
 Case = namedtuple('Case', 'name ndim vmin vmax max_diff as_log')
 
@@ -40,8 +41,8 @@ cases = [
     Case('Currin',             2,   1e-2  ,   1e1  ,   50,  True),
     Case('Himmelblau',         2,    1e2  ,   1e4  , 1000,  True),
     Case('Six-Hump-Camelback', 2,  10**0.5,   1e3  ,  100,  True),
-    Case('Park-91A',           4,   1e-3  ,   1e1  ,    1,  True),
-    Case('Park-91B',           4,   1e-4  ,   1e0  ,    1,  True),
+    Case('Park91A',            4,   1e-3  ,   1e1  ,    1,  True),
+    Case('Park91B',            4,   1e-4  ,   1e0  ,    1,  True),
     Case('Hartmann6',          6,   1e-2  ,  1e-1  , None, False),
     Case('Borehole',           8,    1e1  ,   1e4  ,  1e4,  True),
 ]
@@ -63,7 +64,7 @@ for c in cases:
         continue
 
     plot_name = f'{c.ndim}d-{c.name}-high-low-samples-linear'
-    title = f'{c.name} ({c.ndim}D)'
+    title = f'{c.ndim}D {c.name}'
 
     data_points = [d for d in data
                    if d.function == c.name and int(d.D) == c.ndim]
@@ -72,13 +73,19 @@ for c in cases:
 
     proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax,
                          points=data_points, contours=8, as_log=c.as_log,
-                         save_as=plot_dir / f'{plot_name}.pdf')
-    # proc.plot_error_grid_diff(mses, title, max_diff=c.max_diff,
-    #                           save_as=plot_dir / f'{plot_name}-diff.pdf')
+                         save_as=plot_dir / plot_name)
+    #proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=c.as_log,
+    #                     save_as=plot_dir / f'no-bar-{plot_name}', include_colorbar=False)
+    proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=c.as_log,
+                         save_as=plot_dir / f'no-y-{plot_name}', label_y=False)
+    #proc.plot_error_grid(mses, title, vmin=c.vmin, vmax=c.vmax, contours=8, as_log=c.as_log,
+    #                     save_as=plot_dir / f'clean-{plot_name}', include_colorbar=False, label_y=False)
 
+    #proc.plot_error_grid_diff(mses, title, max_diff=c.max_diff,
+    #                          save_as=plot_dir / f'{plot_name}-diff')
     #proc.plot_t_scores(mses, title=title,
-    #                   save_as=plot_dir / f'{plot_name}-significance.pdf')
+    #                   save_as=plot_dir / f'{plot_name}-significance')
     #proc.plot_extracts(mses, title,
-    #                   save_as=plot_dir / f'{plot_name}-extracts.pdf', show=True)
+    #                   save_as=plot_dir / f'{plot_name}-extracts', show=True)
     #proc.plot_extracts(mses, title, normalize=True,
-    #                   save_as=plot_dir / f'{plot_name}-normalized-extracts.pdf', show=True)
+    #                   save_as=plot_dir / f'{plot_name}-normalized-extracts', show=True)

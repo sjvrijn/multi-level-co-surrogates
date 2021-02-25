@@ -12,6 +12,8 @@ potential rerun.
 from collections import namedtuple
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
+from matplotlib.transforms import Bbox
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -21,6 +23,8 @@ from sklearn.linear_model import LinearRegression
 
 import processing as proc
 
+print(f'Running script: {__file__}')
+
 
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
@@ -29,11 +33,9 @@ subsampling_dir = here('files/2020-03-04-cv-adjustables-subsampling')
 plot_dir = here('plots/2020-03-09-subsampling-gradients/', warn=False)
 plot_dir.mkdir(exist_ok=True, parents=True)
 
-correlations_file = here('files/extended_correlations.csv', warn=False)
+correlations_file = here('files/2019-10-30-correlations/extended_correlations.csv')
 gradients_file = here('files/gradient_comparison.csv', warn=False)
-fname_parser = Parser('{}-{ndim:d}d-Adjustable{fname:w}{param:f}-sub50-125-seed{seed_offset:d}.nc')
-
-save_extensions = ['pdf', 'png']
+fname_parser = Parser('{}-{ndim:d}d-Adjustable-{fname:w}-{param:f}-sub50-125-seed{seed_offset:d}.nc')
 
 
 def calculate_gradient_comparisons():
@@ -76,29 +78,19 @@ else:
 grid_style = dict(b=True, alpha=.5, linestyle=':')
 scatter_style = {'s': 12}
 diag_line = {'linestyle': '--', 'color': 'black', 'alpha':.3, 'linewidth':.5}
-width, height = 9, 4.5
-
-
-for comparison in ['sub_deg', 'cv_deg']:
-    print(f'comparison: orig_deg vs {comparison}')
-    X = gradients['orig_deg'].values.reshape(-1, 1)
-    y = gradients[comparison].values.reshape(-1, 1)
-    reg = LinearRegression()
-    reg = reg.fit(X, y, )
-    print(reg.coef_, reg.intercept_)
-    print(reg.score(X, y))
+width, height = 7, 3.5
 
 
 fig, axes = plt.subplots(ncols=2, figsize=(width, height), constrained_layout=True)
-for name, sub_df in gradients.groupby('name'):
-    axes[0].scatter(sub_df['orig_deg'], sub_df['sub_deg'], label=name, **scatter_style)
-    axes[1].scatter(sub_df['orig_deg'], sub_df['cv_deg'], label=name, **scatter_style)
+for (name, sub_df), marker in zip(gradients.groupby('name'), 'ov^x'):
+    axes[0].scatter(sub_df['orig_deg'], sub_df['sub_deg'], label=name, **scatter_style, marker=marker)
+    axes[1].scatter(sub_df['orig_deg'], sub_df['cv_deg'], label=name, **scatter_style, marker=marker)
 
-axes[0].set_title('Enumeration angle vs subsampled angle')
+axes[0].set_title('Enumeration angle vs\n subsampled angle')
 axes[0].set_ylabel('angle (subsampling)')
 axes[0].legend(loc=0)
 
-axes[1].set_title('Enumeration angle vs cross-validated angle')
+axes[1].set_title('Enumeration angle vs\n cross-validated angle')
 axes[1].set_ylabel('angle (cross-validated subsampling)')
 
 for idx, ax in enumerate(axes):
@@ -107,10 +99,12 @@ for idx, ax in enumerate(axes):
     ax.plot(np.arange(100), **diag_line)
     ax.set_xlim([0,90])
     ax.set_ylim([0,90])
+    ax.xaxis.set_major_locator(MultipleLocator(10))
+    ax.yaxis.set_major_locator(MultipleLocator(10))
 
-for extension in save_extensions:
-    fig.savefig(plot_dir / f'scatter_compare.{extension}')
-    fig.savefig(plot_dir / f'scatter_compare-sub0.{extension}',
-                bbox_inches=proc.full_extent(fig, axes[0]))
-    fig.savefig(plot_dir / f'scatter_compare-sub1.{extension}',
-                bbox_inches=proc.full_extent(fig, axes[1]))
+for ext in proc.extensions:
+    fig.savefig(plot_dir / f'scatter_compare.{ext}', dpi=300)
+    fig.savefig(plot_dir / f'scatter_compare-sub0.{ext}', dpi=300,
+                bbox_inches=Bbox([[0,0],[width/2,height]]))
+    fig.savefig(plot_dir / f'scatter_compare-sub1.{ext}', dpi=300,
+                bbox_inches=Bbox([[width/2,0],[width,height]]))

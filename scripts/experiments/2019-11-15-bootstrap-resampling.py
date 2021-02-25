@@ -1,10 +1,13 @@
-#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
 """
-2019-11-13-bootstrap-resampling.py: runner file for bootstrap resampling
+2019-11-15-bootstrap-resampling.py: runner file for bootstrap resampling
 experiments: is the mse-plot gradient also visible in mse-plots based on
 bootstrap-resampled DoE's?
+
+Takes two optional arguments:
+ - the index of the case to run (0-14)
+ - the 'scale' [0-1] of how much to sample
 """
 
 __author__ = 'Sander van Rijn'
@@ -49,6 +52,8 @@ function_cases = [
 if len(sys.argv) > 1:
     case_idx = int(sys.argv[1])
     function_cases = function_cases[case_idx:case_idx+1]
+
+if len(sys.argv) > 2:
     scale = float(sys.argv[2])
 else:
     scale = 1
@@ -70,9 +75,9 @@ instances = [Instance(h, l, r)
 
 
 mfbo_options = {
-    'surrogate_name': 'ElasticNet',
-    # 'kernel': 'Matern',
-    'scaling': 'off'}
+    'kernel': 'Matern',
+    'scaling': 'off'
+}
 extra_attributes = {'mf2_version': mf2.__version__}
 
 

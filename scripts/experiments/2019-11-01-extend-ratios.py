@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
 """
@@ -6,6 +5,8 @@
 accuracy on multi-fidelity functions for combinations of high/low numbers
 of samples to allow for plotting results along equal ratios for different
 numbers of high-fidelity samples.
+
+Takes a single optional argument: the index of the case to run (0-14)
 """
 
 __author__ = 'Sander van Rijn'

@@ -18,6 +18,8 @@ from pyprojroot import here
 
 import processing as proc
 
+print(f'Running script: {__file__}')
+
 
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
@@ -52,7 +54,8 @@ def plot_kriging_match_angles(df_kriging, df_non_kriging):
     plt.ylabel('functions')
     plt.yticks(range(num_functions), labels=all_models.groupby(['ndim', 'fname']).groups.keys())
     plt.tight_layout()
-    plt.savefig(plot_dir / 'kriging_match_angles.pdf')
+    for ext in proc.extensions:
+        plt.savefig(plot_dir / f'kriging_match_angles.{ext}', dpi=300)
 
 
 def plot_model_match_angles(df_kriging, df_non_kriging):
@@ -80,7 +83,8 @@ def plot_model_match_angles(df_kriging, df_non_kriging):
         plt.xticks(range(num_models), labels=surrogates, rotation='vertical')
         plt.yticks(range(num_models), labels=surrogates)
         plt.tight_layout()
-        plt.savefig(plot_dir / f'model-match-angle-{ndim}D-{func_name}.pdf')
+        for ext in proc.extensions:
+            plt.savefig(plot_dir / f'model-match-angle-{ndim}D-{func_name}.{ext}', dpi=300)
 
 
 def get_CI(row):

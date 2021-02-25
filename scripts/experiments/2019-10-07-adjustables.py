@@ -1,11 +1,10 @@
-#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
 """
 2019-10-07-adjustables.py: Experiment runner file for generating data for
 many combinations of numbers of high- vs. low-fidelity samples, specifically
-for the adjustable version of the Branin function.
-Adjusting values A1 are expected as commandline arguments.
+for the adjustable benchmark functions.
+A specific adjustable parameter can be given as commandline argument.
 """
 
 __author__ = 'Sander van Rijn'
@@ -14,6 +13,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 import sys
 from itertools import product
 
+import numpy as np
 from pyprojroot import here
 
 import mf2
@@ -30,10 +30,15 @@ funcs = [
     mf2.adjustable.trid,
 ]
 
+if len(sys.argv) > 1:
+    params = [float(x) for x in sys.argv[1:]]
+else:
+    params = np.round(np.linspace(0, 1.0, 21), 2)
+
 cases = [
-    f(float(x))
+    f(param)
     for f in funcs
-    for x in sys.argv[1:]
+    for param in params
 ]
 
 kernels = ['Matern']
@@ -58,9 +63,9 @@ instances = [Instance(h, l, r)
 extra_attributes = {'mf2_version': mf2.__version__}
 
 for case, kernel, scale in product(cases, kernels, scaling_options):
-    if 'Paciorek' in case.name and case.name[-3:] == '0.0':
-        # In this case the functions are equal, leading to badly defined diff models
-        continue
+    if 'paciorek' in case.name.lower() and float(case.name[-3:]) == 0.0:
+        continue  # In this case the functions are equal, leading to badly defined diff models
+
     mfbo_options = {'kernel': kernel, 'scaling': scale}
     create_model_error_grid(case, instances, mfbo_options, save_dir=save_dir,
                             extra_attributes=extra_attributes)

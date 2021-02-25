@@ -10,7 +10,9 @@ from enum import IntEnum
 from itertools import product
 from collections import namedtuple
 from pathlib import Path
+from textwrap import fill
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -26,6 +28,7 @@ from sklearn.linear_model import LinearRegression
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
+mpl.rcParams['savefig.dpi'] = 300
 
 # defining some point styles
 red_dot = {'marker': '.', 'color': 'red'}
@@ -37,8 +40,16 @@ single_point_styles = [{'marker': m} for m in 'osHDPX*v^><']
 LABEL_N_HIGH = "$n_h$"
 LABEL_N_LOW = "$n_l$"
 
+wide_figsize = (5.2, 2)
+reg_figsize = (4, 2)
 
-def get_extent(data):
+extensions = ['pdf', 'png']
+
+
+def get_extent(data: xr.DataArray):
+    """Calculate an 'extent' for an Error Grid such that axis ticks are
+    centered in the 'pixels'
+    """
     return [
         np.min(data.n_low) - 0.5,
         np.max(data.n_low) - 0.5,
@@ -51,7 +62,8 @@ def full_extent(fig, ax, pad=0.0):
     """Get the full extent of an axes, including axes labels, tick labels, and
     titles.
     Source:
-    https://stackoverflow.com/questions/4325733/save-a-subplot-in-matplotlib"""
+    https://stackoverflow.com/questions/4325733/save-a-subplot-in-matplotlib
+    """
     # For text objects, we need to draw the figure first, otherwise the extents
     # are undefined.
     ax.figure.canvas.draw()
@@ -65,7 +77,8 @@ def full_extent(fig, ax, pad=0.0):
 
 def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
                     contours=0, as_log=False, save_as=None,
-                    show=False, include_comparisons=False):
+                    show=False, include_comparisons=False,
+                    include_colorbar=True, label_y=True, title_width=None):
     """Plot a heatmap of the median MSE for each possible combination of high
     and low-fidelity samples. For comparison, the MSE for the high-only and
     low-only models are displayed as a bar to the left and bottom respectively.
@@ -81,11 +94,13 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
     :param show: whether or not to call `plt.show()`. Default: False
     :param include_comparisons: whether or not to include single-fidelity model
                                 averages along axes. Default: False
+    :param include_colorbar: whether or not to include a colorbar. Default: True
+    :param label_y: whether or not to include axis label and ticks for y-axis. Default: True
     """
     if not (show or save_as):
         return  # no need to make the plot if not showing or saving it
 
-    figsize = (9,3.5) if include_comparisons else (7,3.5)
+    figsize = wide_figsize if include_comparisons else reg_figsize
 
     fig, ax = plt.subplots(figsize=figsize)
 
@@ -104,7 +119,10 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
     extent = get_extent(data)
     imshow_style = {'cmap': 'viridis_r', 'norm': norm, 'origin': 'lower'}
 
-    plt.title(f'{"log10 " if as_log else ""}Median MSE for $z_h$ - {title}')
+    plot_title = f'{"log10 " if as_log else ""}Median MSE for $z_h$ - {title}'
+    if title_width:
+        plot_title = fill(plot_title, width=title_width)
+    plt.title(plot_title)
 
     da_hh = data.sel(model='high_hier')
 
@@ -120,9 +138,9 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
         axy = divider.append_axes("left", size=.2, pad=0.05, sharey=ax)
 
         ax.xaxis.set_tick_params(labelbottom=False)
-        ax.yaxis.set_tick_params(labelleft=False)
+        ax.yaxis.set_tick_params(left=False, labelleft=False, which='both')
         axy.xaxis.set_tick_params(labelbottom=False)
-        axx.yaxis.set_tick_params(labelleft=False)
+        axx.yaxis.set_tick_params(left=False, labelleft=False, which='both')
 
         img = axy.imshow(data.sel(model='high').mean(dim='n_low').values.reshape(-1,1),
                          extent=(-0.5, 0.5, np.min(data.n_high)-.5, np.max(data.n_high)-.5),
@@ -130,15 +148,21 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
         img = axx.imshow(data.sel(model='low').mean(dim='n_high').values.reshape(1,-1),
                          extent=(np.min(data.n_low)-.5, np.max(data.n_low)-.5, -0.5, 0.5),
                          **imshow_style)
-
-        axy.set_ylabel(LABEL_N_HIGH)
+        if label_y:
+            axy.set_ylabel(LABEL_N_HIGH)
+        else:
+            axy.yaxis.set_tick_params(left=False, labelleft=False, which='both')
         axx.set_xlabel(LABEL_N_LOW)
     else:
-        ax.set_ylabel(LABEL_N_HIGH)
+        if label_y:
+            ax.set_ylabel(LABEL_N_HIGH)
+        else:
+            ax.yaxis.set_tick_params(left=False, labelleft=False, which='both')
         ax.set_xlabel(LABEL_N_LOW)
 
-    cax = divider.append_axes("right", size=0.2, pad=0.05)
-    fig.colorbar(img, cax=cax)
+    if include_colorbar:
+        cax = divider.append_axes("right", size=0.2, pad=0.05)
+        fig.colorbar(img, cax=cax)
 
 
     if points:
@@ -154,10 +178,11 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
 
     plt.tight_layout()
     if save_as:
-        plt.savefig(save_as, bbox_inches='tight')
+        for ext in extensions:
+            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
     if show:
         plt.show()
-    plt.close()
+    plt.close('all')
 
 
 def plot_multiple_error_grids(datas, titles, as_log=True,
@@ -181,7 +206,7 @@ def plot_multiple_error_grids(datas, titles, as_log=True,
         return  # no need to make the plot if not showing or saving it
 
     ncols = len(datas)
-    figsize = (6.5*ncols, 3.25)
+    figsize = (4*ncols, 2)
     fig, axes = plt.subplots(ncols=ncols, figsize=figsize)
 
     for ax, data, title in zip(axes, datas, titles):
@@ -202,19 +227,22 @@ def plot_multiple_error_grids(datas, titles, as_log=True,
             ax.contour(data, levels=contours, antialiased=False, extent=extent,
                        colors='black', alpha=.2, linewidths=1)
 
-        ax.set_title(f'{title}')
+        ax.set_title(fill(f'{title}', width=32))
         ax.set_ylabel(LABEL_N_HIGH)
         ax.set_xlabel(LABEL_N_LOW)
 
     plt.tight_layout()
     if save_as:
-        plt.savefig(save_as, bbox_inches='tight')
+        for ext in extensions:
+            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
 
 
 def plot_error_grid_diff(data, title, max_diff=None, save_as=None):
+    """Plot the difference between the high and hierarchical model
+    """
 
     paired_diffs = data.sel(model='high') - data.sel(model='high_hier')
     to_plot = paired_diffs.median(dim='rep')
@@ -228,6 +256,8 @@ def plot_error_grid_diff(data, title, max_diff=None, save_as=None):
 
 def plot_inter_method_diff(data_A, data_B, name, model='high_hier',
                            max_diff=None, save_as=None):
+    """Plot the difference between two Error Grids based on the same model
+    """
 
     paired_diffs = data_A.sel(model=model) - data_B.sel(model=model)
     to_plot = paired_diffs.median(dim='rep')
@@ -241,9 +271,11 @@ def plot_inter_method_diff(data_A, data_B, name, model='high_hier',
 
 
 def plot_high_v_low_diff(to_plot, long_title, norm, save_as=None, show=False):
+    """Plot a difference of Error Grids: using the pink-yellow-green colormap
+    """
     if not (save_as or show):
         return  # no need to make the plot if not showing or saving it
-    fig, ax = plt.subplots(figsize=(9, 3.5))
+    fig, ax = plt.subplots(figsize=wide_figsize)
 
     img = ax.imshow(to_plot, cmap='PiYG', norm=norm,
                     origin='lower', extent=get_extent(to_plot))
@@ -253,15 +285,19 @@ def plot_high_v_low_diff(to_plot, long_title, norm, save_as=None, show=False):
     plt.title(long_title)
     plt.tight_layout()
     if save_as:
-        plt.savefig(save_as, bbox_inches='tight')
+        for ext in extensions:
+            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
 
 
 def plot_t_scores(data: xr.DataArray, title: str, t_range: float=5, num_colors: int=10, save_as: str=None, show: bool=False):
+    """Plot t-test scores of the difference between high and hierarchical model
+    """
     if not (save_as or show):
         return  # no need to make the plot if not showing or saving it
+
     paired_differences = data.sel(model='high') - data.sel(model='high_hier')
     mean_paired_diff = paired_differences.mean(dim='rep')
     std_paired_diff = paired_differences.std(dim='rep', ddof=1)
@@ -279,7 +315,8 @@ def plot_t_scores(data: xr.DataArray, title: str, t_range: float=5, num_colors: 
 
     plt.tight_layout()
     if save_as:
-        plt.savefig(save_as, bbox_inches='tight')
+        for ext in extensions:
+            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -287,6 +324,9 @@ def plot_t_scores(data: xr.DataArray, title: str, t_range: float=5, num_colors: 
 
 def plot_extracts(data: xr.DataArray, title: str, save_as: str=None, show: bool=False, *,
                   normalize: bool=False, max_x: int=None):
+    """Plot extracts from an Error Grid, i.e. the MSE versus number of low-fidelity
+    samples given a fixed number of high-fidelity samples
+    """
 
     if not (save_as or show):
         return  # no need to make the plot if not showing or saving it
@@ -325,13 +365,16 @@ def plot_extracts(data: xr.DataArray, title: str, save_as: str=None, show: bool=
     plt.legend(loc=0)
     plt.tight_layout()
     if save_as:
-        plt.savefig(save_as, bbox_inches='tight')
+        for ext in extensions:
+            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
 
 
 def plot_multi_file_extracts(data_arrays, title: str, save_as: str=None, show: bool=False):
+    """Plot Error Grid extracts drawn from multiple files
+    """
     if not (save_as or show) or not data_arrays:
         return
 
@@ -359,7 +402,8 @@ def plot_multi_file_extracts(data_arrays, title: str, save_as: str=None, show: b
     plt.tight_layout()
 
     if save_as:
-        plt.savefig(save_as, bbox_inches='tight')
+        for ext in extensions:
+            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -393,19 +437,15 @@ class ConfidenceInterval(namedtuple('ConfidenceInterval', 'mean se lower upper')
                f'H0{" not" if 0 in self else ""} rejected'
 
 
-def ratio_to_angle(x1: float, x2: float):
-    theta = np.arctan2(x1, x2) + np.pi
-    deg = np.rad2deg(theta)
-    if deg > 180:
-        deg -= 360  # Example: instead of 350, we want -10
-    return deg
-
-
 def calc_angle(da: xr.DataArray):
+    """Calculate the global gradient angle of an Error Grid based
+    on the slope of beta_1 / beta_2 from a linear regression fit.
+    """
     AngleSummary = namedtuple('AngleSummary', 'alpha beta theta deg deg_low deg_high')
     reg, SSE = fit_lin_reg(da, calc_SSE=True)
 
-    alpha, beta = reg.coef_
+    beta_high, beta_low = reg.coef_
+    ratio = beta_high / beta_low
     df = da.size - 3
 
     nhighs = da.coords['n_high'].values
@@ -418,15 +458,23 @@ def calc_angle(da: xr.DataArray):
 
     se_nhigh = s / var_nhigh
     se_nlow = s / var_nlow
+    se_ratio = np.sqrt((se_nhigh / beta_high)**2 + (se_nlow / beta_low)**2)
 
-    ci_alpha = ConfidenceInterval(alpha, se_nhigh, alpha-1.96*se_nhigh, alpha+1.96*se_nhigh)
-    ci_beta = ConfidenceInterval(beta, se_nlow, beta-1.96*se_nlow, beta+1.96*se_nlow)
+    ci_beta_high = ConfidenceInterval(beta_high, se_nhigh, beta_high-1.96*se_nhigh, beta_high+1.96*se_nhigh)
+    ci_beta_low = ConfidenceInterval(beta_low, se_nlow, beta_low-1.96*se_nlow, beta_low+1.96*se_nlow)
+    ci_beta_ratio = ConfidenceInterval(ratio, se_ratio, ratio-1.96*se_ratio, ratio+1.96*se_ratio)
 
-    theta = np.arctan2(alpha, beta) + np.pi
+    theta = np.arctan(ratio)
     mid_angle = np.rad2deg(theta)
-    angles = [ratio_to_angle(a, b) for a, b in product(ci_alpha[2:], ci_beta[2:])]
 
-    return AngleSummary(alpha, beta, theta, mid_angle, min(angles), max(angles))
+    min_angle = np.rad2deg(np.arctan(ci_beta_ratio.lower))
+    max_angle = np.rad2deg(np.arctan(ci_beta_ratio.upper))
+    if mid_angle < 0:
+        min_angle, mid_angle, max_angle = min_angle+180, mid_angle+180, max_angle+180
+    elif mid_angle > 180:
+        min_angle, mid_angle, max_angle = min_angle-180, mid_angle-180, max_angle-180
+
+    return AngleSummary(beta_high, beta_low, theta, mid_angle, min_angle, max_angle)
 
 
 def get_gradient_angles(directory: Path, force_regen: bool=False):
@@ -441,6 +489,7 @@ def get_gradient_angles(directory: Path, force_regen: bool=False):
     gradients_filename = directory / 'gradients.csv'
     if force_regen or not gradients_filename.exists():
         df = calculate_gradient_angles(directory)
+        df['param'] = df['param'].astype('float64')
         df.to_csv(gradients_filename, index=False)
     else:
         df = pd.read_csv(gradients_filename)
@@ -488,6 +537,7 @@ class Comparison(IntEnum):
 
 
 def determine_match(CI1, CI2):
+    """Determine the kind of overlap between two ConfidenceIntervals"""
     # is the midpoint of one CI within the bounds of the other CI?
     covered_1 = CI1.mean in CI2
     covered_2 = CI2.mean in CI1

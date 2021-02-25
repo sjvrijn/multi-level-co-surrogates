@@ -17,13 +17,14 @@ from pyprojroot import here
 
 import processing as proc
 
+print(f'Running script: {__file__}')
 
 data_dir = here("files")
 
 base_data = data_dir / "2019-09-mse-nc"
 extended_data = data_dir / "2019-11-01-extend-ratios"
 
-plot_dir = here("plots") / "2019-11-05-extended-extracts"
+plot_dir = here("plots", warn=False) / "2019-11-05-extended-extracts"
 plot_dir.mkdir(parents=True, exist_ok=True)
 
 
@@ -41,8 +42,8 @@ cases = [
     Case('Currin',           2,   .01,      10,   50),
     Case('Himmelblau',       2,  None,    None, 1000),
     Case('Six-Hump-Camelback', 2,  None,    None,  100),
-    Case('Park-91A',          4,  None,    None,    1),
-    Case('Park-91B',          4,  None,    None,    1),
+    Case('Park91A',          4,  None,    None,    1),
+    Case('Park91B',          4,  None,    None,    1),
     Case('Hartmann6',        6,  None,    None, None),
     Case('Borehole',         8,    10,    3000,  1e4),
 ]
@@ -70,6 +71,6 @@ for c in cases:
     title = f'{c.name} ({c.ndim}D) - Extended'
 
     proc.plot_extracts(mses, title,
-                       save_as=plot_dir / f'{plot_name}-extended-extracts.pdf', show=True)
+                       save_as=plot_dir / f'{plot_name}-extended-extracts', show=True)
     proc.plot_extracts(mses, title, normalize=True, max_x=20,
-                       save_as=plot_dir / f'{plot_name}-extended-normalized-extracts.pdf', show=True)
+                       save_as=plot_dir / f'{plot_name}-extended-normalized-extracts', show=True)

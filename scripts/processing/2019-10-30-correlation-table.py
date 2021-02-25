@@ -3,7 +3,8 @@
 
 """
 2019-10-30-correlation-table.py: writes tables of the correlations for multi-
-fidelity functions to small latex files.
+fidelity functions to small latex files and creates plot of correlation vs
+tuning parameter.
 """
 
 __author__ = 'Sander van Rijn'
@@ -14,21 +15,28 @@ from collections import namedtuple
 
 from cycler import cycler
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
+import mf2
 import numpy as np
 import pandas as pd
 from parse import Parser
 from pyprojroot import here
 from scipy.stats import pearsonr, spearmanr
 
+import processing as proc
+
 sys.path.append(str(here()))
 
-import mf2
 import multiLevelCoSurrogates as mlcs
 
 np.set_printoptions(linewidth=200, edgeitems=5)
 
-save_dir = here() / "tables/2020-03-04-correlations/"
+print(f'Running script: {__file__}')
+
+save_dir = here() / "files/2019-10-30-correlations/"
 save_dir.mkdir(parents=True, exist_ok=True)
+table_dir = here() / "tables/2020-03-04-correlations/"
+table_dir.mkdir(parents=True, exist_ok=True)
 plot_dir = here() / "plots/2019-10-correlation-exploration/"
 plot_dir.mkdir(parents=True, exist_ok=True)
 
@@ -58,7 +66,7 @@ for i, f in enumerate(mf2.bi_fidelity_functions):
 
 bi_fid_correlations = pd.DataFrame.from_records(results, columns=Corr_result._fields)
 bi_fid_correlations = bi_fid_correlations.sort_values(by=['ndim', 'fname'])
-bi_fid_correlations.to_latex(save_dir / 'correlations-table.tex',
+bi_fid_correlations.to_latex(table_dir / 'correlations-table.tex',
                              float_format="{:0.3f}".format, index=False)
 
 
@@ -75,7 +83,7 @@ for ndim, sample in test_sample.items():
 
 forrester_correlations = pd.DataFrame.from_records(results,
                                                    columns=Corr_result._fields)
-forrester_correlations.to_latex(save_dir / 'forrester-correlations-table.tex',
+forrester_correlations.to_latex(table_dir / 'forrester-correlations-table.tex',
                                 float_format="{:0.3f}".format, index=False)
 
 
@@ -99,14 +107,16 @@ for func in mf2.adjustable.bi_fidelity_functions:
         y_h, y_l = f.high(sample), f.low(sample)
         pear, spear = pearsonr(y_h, y_l)[0], spearmanr(y_h, y_l)[0]
 
-        name = standardize_name(name_parser.parse(func.name)['fname'])
+        name = name_parser.parse(func(0.5).name)['fname']
+        name = 'Hartmann3' if name == 'Hartmann' else name
+        name = standardize_name(name)
         results.append(
             Adj_Corr_result(name, f.ndim, a, pear, pear**2, spear, spear**2)
         )
 
 adjustables_correlations = pd.DataFrame.from_records(results, columns=Adj_Corr_result._fields)
-adjustables_correlations.to_csv(here('files') / 'adjustables_correlations.csv', index=False)
-adjustables_correlations.to_latex(save_dir / 'adjustables-correlations.tex',
+adjustables_correlations.to_csv(save_dir / 'adjustables_correlations.csv', index=False)
+adjustables_correlations.to_latex(table_dir / 'adjustables-correlations.tex',
                                   float_format="{:0.3f}".format, index=False)
 
 
@@ -114,13 +124,13 @@ all_correlations = pd.concat([regular_correlations, adjustables_correlations],
                              keys=['regular', 'adjustable'],
                              names=['category'],
                              sort=False,).reset_index('category')
-all_correlations.to_csv(here('files') / 'correlations.csv', index=False)
+all_correlations.to_csv(save_dir / 'correlations.csv', index=False)
 
 
 styles = plt.rcParams['axes.prop_cycle'][:4] + cycler(linestyle=['-', '--', ':', '-.'])
 plt.rc('axes', prop_cycle=styles)
-figsize=(7.2, 5.6)
-single_figsize = (3.6, 2.7)
+figsize=(6.5, 3.3)
+single_figsize = (3.25, 2.5)
 labels = {
     'pearson_r': 'Pearson $r$',
     'pearson_r2': 'Pearson $r^2$',
@@ -128,11 +138,9 @@ labels = {
     'spearman_r2': 'Spearman $r^2$',
 }
 
-param_idx = {'branin': 1, 'paciorek': 2, 'hartmann3': 3, 'trid': 4}
-
 grouped_df = adjustables_correlations.groupby('fname')
-fig = plt.figure(figsize=figsize)  #, constrained_layout=True)
-gs = fig.add_gridspec(nrows=2, ncols=2, bottom=0.16, wspace=0.3, hspace=0.45, right=0.975, top=0.95, left=0.1)
+fig = plt.figure(figsize=figsize)
+gs = fig.add_gridspec(nrows=2, ncols=2, bottom=0.18, wspace=0.10, hspace=0.23, right=0.975, top=0.94, left=0.1)
 axes = [
     fig.add_subplot(gs[0,0]),
     fig.add_subplot(gs[1,0]),
@@ -140,25 +148,30 @@ axes = [
     fig.add_subplot(gs[1,1]),
 ]
 
-for ax_i, (name, subdf) in zip(axes, grouped_df):
-    single_fig, single_ax = plt.subplots(figsize=single_figsize, constrained_layout=True)
 
-    for ax in [single_ax, ax_i]:
-        for col in ['pearson_r', 'pearson_r2']:  #, 'spearman_r', 'spearman_r2']:
-            ax.plot(subdf['param'], subdf[col], label=labels[col])
+for i, (ax, (name, subdf)) in enumerate(zip(axes, grouped_df)):
+    for col in ['pearson_r', 'pearson_r2']:  #, 'spearman_r', 'spearman_r2']:
+        ax.plot(subdf['param'], subdf[col], label=labels[col])
 
-        ax.axhline(y=0, color='black', alpha=.5)
-        ax.set_xlim([0,1])
-        ax.set_ylim([-1,1])
+    ax.axhline(y=0, color='black', alpha=.5)
+    ax.set_xlim([0,1])
+    ax.set_ylim([-1,1])
+    ax.grid(alpha=.5, linestyle=':', which='both')
+    if i < 2:
         ax.set_ylabel('Correlation')
-        ax.set_xlabel(f'A{param_idx[name]}')
-        ax.set_title(name.title())
+        ax.yaxis.set_major_locator(MultipleLocator(.5))
+    else:
+        ax.yaxis.set_tick_params(left=False, labelleft=False, which='both')
 
-    single_ax.legend(loc=0)
-    single_fig.savefig(plot_dir / f'{name}_correlation.pdf')
+    if i % 2 == 1:
+        ax.set_xlabel('A')
+        ax.xaxis.set_major_locator(MultipleLocator(.2))
+    else:
+        ax.xaxis.set_tick_params(left=False, labelleft=False, which='both')
+    ax.set_title(name.title())
 
 handles, labels = axes[0].get_legend_handles_labels()
-fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, 0.0), ncol=len(handles))
-#fig.tight_layout()
-fig.savefig(plot_dir / 'combined_correlations.pdf')
+fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.538, 0.0), ncol=len(handles))
+for ext in proc.extensions:
+    fig.savefig(plot_dir / f'combined_correlations.{ext}', dpi=300)
 
