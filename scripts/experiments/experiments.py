@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from parse import parse
-from pyDOE import lhs
 from pyprojroot import here
 from scipy.spatial import distance
 from sklearn.metrics import mean_squared_error, r2_score
@@ -38,14 +37,6 @@ def set_seed_by_instance(num_high: int, num_low: int, rep: int) -> None:
     np.random.seed(int(f'{num_high:03}{num_low:03}{rep:03}'))
 
 
-def low_lhs_sample(ndim: int, nlow: int) -> np.ndarray:
-    """Create a 'low-fidelity' (i.e. unadjusted) DoE"""
-    if ndim == 1:
-        return np.linspace(0,1,nlow).reshape(-1,1)
-    elif ndim > 1:
-        return lhs(ndim, nlow)
-
-
 def bi_fidelity_doe(ndim: int, num_high: int, num_low: int) -> BiFidelityDoE:
     """Create a Design of Experiments (DoE) for two fidelities in `ndim`
     dimensions. The high-fidelity samples are guaranteed to be a subset
@@ -53,8 +44,8 @@ def bi_fidelity_doe(ndim: int, num_high: int, num_low: int) -> BiFidelityDoE:
 
     :returns high-fidelity samples, low-fidelity samples
     """
-    high_x = low_lhs_sample(ndim, num_high)
-    low_x = low_lhs_sample(ndim, num_low)
+    high_x = mlcs.low_lhs_sample(ndim, num_high)
+    low_x = mlcs.low_lhs_sample(ndim, num_low)
 
     dists = distance.cdist(high_x, low_x)
 
@@ -81,9 +72,9 @@ def split_bi_fidelity_doe(DoE: BiFidelityDoE, num_high: int, num_low: int) -> Tu
     Raises a `ValueError` if invalid `num_high` or `num_low` are given."""
     high, low = DoE
     if not 1 < num_high < len(high):
-        raise ValueError(f"'num_high' must be in the range [2, len(DoE.high)], but is {num_high}")
+        raise ValueError(f"'num_high' must be in the range [2, len(DoE.high) (={len(DoE.high)})], but is {num_high}")
     elif num_low > len(low):
-        raise ValueError(f"'num_low' cannot be greater than len(DoE.low), but is {num_low}")
+        raise ValueError(f"'num_low' cannot be greater than len(DoE.low) (={len(DoE.low)}), but is {num_low}")
     elif num_low <= num_high:
         raise ValueError(f"'num_low' must be greater than 'num_high', but {num_low} <= {num_high}")
 
@@ -119,7 +110,7 @@ def get_test_sample(ndim: int, save_dir: Path) -> np.ndarray:
 
     n_test_samples = 500 * ndim
     np.random.seed(20160501)  # Setting seed for reproducibility
-    test_sample = low_lhs_sample(ndim, n_test_samples)
+    test_sample = mlcs.low_lhs_sample(ndim, n_test_samples)
     np.save(test_sample_save_name, test_sample)
     return test_sample
 
@@ -133,10 +124,9 @@ def repr_surrogate_name(mfbo_options: Dict[str, Any]) -> str:
     """Create a representative name for the used surrogate according to
     `mfbo_options`. This is `surrogate_name` except when Kriging is used, then
     the kernel name is returned instead."""
-    surr_name = mfbo_options.get('kernel') \
+    return mfbo_options.get('kernel') \
         if mfbo_options.get('surrogate_name', 'Kriging') == 'Kriging' \
         else mfbo_options['surrogate_name']
-    return surr_name
 
 
 def indexify(sequence: Sequence, index_source: Sequence) -> List:
@@ -158,8 +148,7 @@ def indexify_instances(instances: Sequence[Instance]) -> List:
     n_low_indices = indexify(all_n_low, n_lows)
     reps_indices = indexify(all_reps, reps)
 
-    indices = list(zip(n_high_indices, n_low_indices, reps_indices))
-    return indices
+    return list(zip(n_high_indices, n_low_indices, reps_indices))
 
 
 def extract_existing_instances(data: xr.DataArray) -> List:
@@ -713,6 +702,76 @@ def standardize_fname_for_file(name: str) -> str:
         name = f'{fname} {param:.2f}'
     return name.replace(' ', '-')
 
+
+def create_subsampling_error_grid(
+        archive: mlcs.CandidateArchive,
+        num_reps: int=50,
+        interval: int=2,
+        func=None
+) -> xr.DataArray:
+    """Create an error grid through subsampling from the given archive
+
+    :param archive:  `mlcs.CandidateArchive` containing all available evaluated candidates
+    :param num_reps: Number of independent repetitions for each size
+    :param interval: Interval at which to fill the error grid
+    :param func:     Multi-fidelity function to re-evaluate known candidates  #TODO: remove argument
+    :return:         `xr.DataArray` ErrorGrid
+    """
+
+    if not func:
+        # TODO: implement that the original function is not re-evaluated
+        # but that values from `archive` are re-used.
+        raise NotImplementedError
+
+    highs = archive.getcandidates(fidelity='high').candidates
+    lows = archive.getcandidates(fidelity='low').candidates
+    DoE = BiFidelityDoE(highs, lows)
+
+    max_num_high = len(highs)
+    max_num_low = len(lows)
+
+    error_grid = np.full((max_num_high+1, max_num_low+1, num_reps+1, 3), np.nan)
+
+    instances = [
+        (h, l, r)
+        for h, l, r in product(range(2, max_num_high, interval),
+                               range(3, max_num_low, interval),
+                               range(num_reps))
+        if h < l
+    ]
+
+    for i, (num_high, num_low, rep) in enumerate(instances):
+
+        if i % 1_000 == 0:
+            print(f"{i}/{len(instances)}")
+
+        # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
+        (high_x, low_x), _ = split_bi_fidelity_doe(DoE, num_high, num_low)
+        high_y, low_y = func.high(high_x), \
+                        func.low(low_x)
+
+        # Create an archive from the MF-function and MF-DoE data
+        arch = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
+        arch.addcandidates(low_x, low_y, fidelity='low')
+        arch.addcandidates(high_x, high_y, fidelity='high')
+
+        # (Automatically) Create the hierarchical model
+        mfbo = mlcs.MultiFidelityBO(func, arch)
+
+        # Get the results we're interested in from the model for this instance
+        error_grid[num_high, num_low, rep] = mfbo.getMSE()
+
+    models = ['high_hier', 'high', 'low']
+    return xr.DataArray(
+        error_grid,
+        dims=['n_high', 'n_low', 'rep', 'model'],
+        coords={
+            'n_high': range(max_num_high+1),
+            'n_low': range(max_num_low+1),
+            'rep': range(num_reps+1),
+            'model': models,
+        },
+    )
 
 
 def get_tmp_path(path: Path) -> Path:

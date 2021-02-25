@@ -62,6 +62,10 @@ class CandidateArchive:
         return cls(ndim=ndim, fidelities=fidelities)
 
 
+    def __contains__(self, val):
+        return tuple(val) in self.data
+
+
     def __len__(self):
         return len(self.data)
 
