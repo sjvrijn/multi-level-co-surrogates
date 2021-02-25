@@ -36,11 +36,7 @@ class MultiFidelityBO:
         self.show_plot = show_plot
         self.save_plot = save_plot
         self.func = multi_fid_func
-        if archive:
-            self.ndim = archive.ndim
-        else:
-            self.ndim = self.func.ndim
-
+        self.ndim = archive.ndim if archive else self.func.ndim
         if len(self.func.u_bound) == self.ndim:
             self.bounds = self.func.bounds
         elif len(self.func.u_bound) == 1:

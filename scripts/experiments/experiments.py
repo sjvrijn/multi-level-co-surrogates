@@ -124,10 +124,9 @@ def repr_surrogate_name(mfbo_options: Dict[str, Any]) -> str:
     """Create a representative name for the used surrogate according to
     `mfbo_options`. This is `surrogate_name` except when Kriging is used, then
     the kernel name is returned instead."""
-    surr_name = mfbo_options.get('kernel') \
+    return mfbo_options.get('kernel') \
         if mfbo_options.get('surrogate_name', 'Kriging') == 'Kriging' \
         else mfbo_options['surrogate_name']
-    return surr_name
 
 
 def indexify(sequence: Sequence, index_source: Sequence) -> List:
@@ -149,8 +148,7 @@ def indexify_instances(instances: Sequence[Instance]) -> List:
     n_low_indices = indexify(all_n_low, n_lows)
     reps_indices = indexify(all_reps, reps)
 
-    indices = list(zip(n_high_indices, n_low_indices, reps_indices))
-    return indices
+    return list(zip(n_high_indices, n_low_indices, reps_indices))
 
 
 def extract_existing_instances(data: xr.DataArray) -> List:
