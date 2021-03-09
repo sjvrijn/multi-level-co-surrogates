@@ -90,9 +90,6 @@ def save_DOE(doe, filename):
 
 
 def save_bi_fid_DOE(doe, base_filename):
-    if not base_filename.suffix:
-        base_filename = base_filename.with_suffix('.csv')
-
     directory, filename = base_filename.parent, base_filename.name
     directory.mkdir(exist_ok=True, parents=True)
 
@@ -118,6 +115,10 @@ def generate_DOE(
     return scaled_doe
 
 
+def add_number(path: Path, n: int) -> Path:
+    return path.parent / (path.stem + f'_{n}' + path.suffix)
+
+
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('-n', '--ndim', default=4, type=int)
@@ -127,14 +128,28 @@ if __name__ == '__main__':
     parser.add_argument('--max', default=0.25, type=float)
     parser.add_argument('-o', '--output', default=None, type=str)
     parser.add_argument('-s', '--seed', default=0, type=int)
+    parser.add_argument('-r', '--repeats', default=None, type=int)
     args = parser.parse_args()
 
     if args.min is None:
         args.min = -float(args.max)
+
     if args.output is None:
         args.output = f'{args.ndim}D_DoE.csv'
+    args.output = Path(args.output)
+    if not args.output.suffix:
+        args.output = args.output.with_suffix('.csv')
 
     range_out = ValueRange(args.min, args.max)
 
-    doe = generate_DOE(args.ndim, args.nhigh, args.nlow, range_out=range_out, seed_offset=args.seed)
-    save_bi_fid_DOE(doe, Path(args.output))
+    if args.repeats is None:
+        doe = generate_DOE(args.ndim, args.nhigh, args.nlow,
+                           range_out=range_out, seed_offset=args.seed)
+        save_bi_fid_DOE(doe, args.output)
+
+    else:
+        for rep in range(args.repeats):
+            doe = generate_DOE(args.ndim, args.nhigh, args.nlow,
+                               range_out=range_out, seed_offset=args.seed + rep)
+
+            save_bi_fid_DOE(doe, add_number(args.output, rep))
