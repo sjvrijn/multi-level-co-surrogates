@@ -121,14 +121,22 @@ def add_number(path: Path, n: int) -> Path:
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('-n', '--ndim', default=4, type=int)
-    parser.add_argument('--nhigh', default=50, type=int)
-    parser.add_argument('--nlow', default=125, type=int)
-    parser.add_argument('--min', default=None, type=float)
-    parser.add_argument('--max', default=0.25, type=float)
-    parser.add_argument('-o', '--output', default=None, type=str)
-    parser.add_argument('-s', '--seed', default=0, type=int)
-    parser.add_argument('-r', '--repeats', default=None, type=int)
+    parser.add_argument('-n', '--ndim', default=4, type=int,
+                        help='Desired dimensionality of the LHS DoE (default: 4)')
+    parser.add_argument('--nhigh', default=50, type=int,
+                        help='Number of high-fidelity samples (default: 50)')
+    parser.add_argument('--nlow', default=125, type=int,
+                        help='Number of low-fidelity samples (default: 125)')
+    parser.add_argument('--max', default=0.25, type=float,
+                        help='Maximum value of the parameters (default: 0.25)')
+    parser.add_argument('--min', default=None, type=float,
+                        help='Minimum value of the parameters (default: -max)')
+    parser.add_argument('-o', '--output', default=None, type=str,
+                        help='Output location (default: ./{ndim}D_DoE.csv)')
+    parser.add_argument('-s', '--seed', default=0, type=int,
+                        help='Random seed offset (default: 0)')
+    parser.add_argument('-r', '--repeats', default=None, type=int,
+                        help='Number of DoEs with the same settings to create (default: 1)')
     args = parser.parse_args()
 
     if args.min is None:
