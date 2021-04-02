@@ -104,7 +104,7 @@ def generate_DOE(
     range_out=ValueRange(-1, 1),
     seed_offset=0,
 ):
-    
+
     np.random.seed(BASE_SEED + seed_offset)
     raw_doe = bi_fidelity_doe(ndim, num_high, num_low)
     scaled_doe = BiFidelityDoE(
