@@ -69,7 +69,8 @@ def split_bi_fidelity_doe(DoE: BiFidelityDoE, num_high: int, num_low: int) -> Tu
     selection. The subselection maintains the property that all high-fidelity
     samples are a subset of the low-fidelity samples.
 
-    Raises a `ValueError` if invalid `num_high` or `num_low` are given."""
+    Raises a `ValueError` if invalid `num_high` or `num_low` are given.
+    """
     high, low = DoE
     if not 1 < num_high < len(high):
         raise ValueError(f"'num_high' must be in the range [2, len(DoE.high) (={len(DoE.high)})], but is {num_high}")
@@ -171,8 +172,7 @@ def extract_existing_instances(data: xr.DataArray) -> List:
 
 
 def filter_instances(instances: Sequence[Instance], data: xr.DataArray) -> List[Instance]:
-    """Return `instances` with all instances removed that are already present in
-    the file located at `output_path`"""
+    """Return `instances` with all instances removed that are already present `data`"""
 
     existing_instances = extract_existing_instances(data)
     existing_instances = set(map(tuple, existing_instances))
@@ -182,7 +182,9 @@ def filter_instances(instances: Sequence[Instance], data: xr.DataArray) -> List[
             if instance not in existing_instances]
 
 
-def scale_to_function(func: MultiFidelityFunction, xx: Sequence[Sequence], range_in=mlcs.ValueRange(0, 1)) -> List[Sequence]:
+def scale_to_function(func: MultiFidelityFunction,
+                      xx: Sequence[Sequence],
+                      range_in=mlcs.ValueRange(0, 1)) -> List[Sequence]:
     """Scale the input data `xx` from `range_in` to the bounds of the given function.
     :param range_in: defined range from which input values were drawn. Default: (0,1)
     """
