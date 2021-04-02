@@ -13,3 +13,4 @@ plots/
 *.pdf
 files/
 venv/
+.hypothesis/
