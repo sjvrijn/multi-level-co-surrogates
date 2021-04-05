@@ -76,6 +76,29 @@ class InstanceSpec:
         )
 
 
+    def __len__(self):
+        """Number of valid instances defined by this InstanceSpec
+
+        I.e. len(InstanceSpec.instances), but without calling and exhausting that generator
+        """
+        high_vals_lower_than_low_vals = self.max_high < self.max_low and self.min_high < self.min_low
+        steps_are_1 = self.step_high == self.step_low == 1
+
+        try:
+            assert high_vals_lower_than_low_vals and steps_are_1
+        except AssertionError:
+            raise NotImplementedError("Easy len() not implemented for more complicated cases, "
+                                      "use len(list(InstanceSpec.instances())) instead.")
+
+        num_high = self.max_high - self.min_high + 1
+        num_low = self.max_low - self.min_low + 1
+        triangle_side_length = self.max_high - self.min_low + 1
+        triangle_size = triangle_side_length * (triangle_side_length+1) // 2
+
+        return num_high*num_low - triangle_size
+
+
+
 class ProtoEG:
 
     def __init__(self, archive: CandidateArchive):
