@@ -49,13 +49,31 @@ class InstanceSpec:
         if step_low:
             self.step_low = step_low
 
-        self.instances = [
+
+    @property
+    def instances(self):
+        """Generator for all valid Instances h,l,r"""
+        yield from (
             Instance(h, l, r)
-            for h, l, r in product(range(min_high, max_high + 1, step_high),
-                                   range(min_low, max_low + 1, step_low),
-                                   range(num_reps))
+            for (h, l), r in product(
+                self.pixels,
+                range(self.num_reps),
+            )
             if h < l
-        ]
+        )
+
+
+    @property
+    def pixels(self):
+        """Generator for all valid 'pixels' h,l (i.e. Instance() without r)"""
+        yield from (
+            (h, l)
+            for h, l, r in product(
+                range(self.min_high, self.max_high + 1, self.step_high),
+                range(self.min_low, self.max_low + 1, self.step_low),
+            )
+            if h < l
+        )
 
 
 class ProtoEG:
@@ -71,14 +89,12 @@ class ProtoEG:
     def add_new_sample(self, X, y: float, fidelity: str):
         """Add a new sample of given fidelity and update Error Grid accordingly"""
 
-        #Add (X, y) to archive
-        #
-        #
-        #for pixel in error grid:
-        #
-        #    fraction = 1 - calculate_resample_fraction(h, l, fidelity)
-        #
-        #    num_models_to_resample = fraction * num_reps
+        self.archive.addcandidate(X, y, fidelity)
+
+        for h, l in instance_spec.pixels:
+            fraction = 1 - calculate_reuse_fraction(h, l, fidelity)
+            num_models_to_resample = fraction * instance_spec.num_reps
+
         #    uniform at random select num_models_to_resample from num_reps
         #
         #    for each model_to_resample:
