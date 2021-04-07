@@ -3,16 +3,17 @@ from dataclasses import dataclass
 from itertools import product
 from warnings import warn
 
+from multiLevelCoSurrogates import CandidateArchive
 
 Instance = namedtuple('Instance', 'n_high n_low rep')
 
 
 @dataclass
 class InstanceSpec:
-    min_high:  int = 2
-    min_low:   int = 3
     max_high:  int
     max_low:   int
+    min_high:  int = 2
+    min_low:   int = 3
     step_high: int = None
     step_low:  int = None
     num_reps:  int = 50
@@ -115,7 +116,7 @@ class ProtoEG:
         self.archive.addcandidate(X, y, fidelity)
 
         for h, l in instance_spec.pixels:
-            fraction = 1 - calculate_reuse_fraction(h, l, fidelity)
+            fraction = 1 - self.calculate_reuse_fraction(h, l, fidelity)
             num_models_to_resample = fraction * instance_spec.num_reps
 
         #    uniform at random select num_models_to_resample from num_reps
