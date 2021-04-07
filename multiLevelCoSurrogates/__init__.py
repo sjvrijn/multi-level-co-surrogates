@@ -12,6 +12,8 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 from .CandidateArchive import *
 from .Surrogates import *
 from .Utils import *
+from instance import Instance, InstanceSpec
+
 
 from .bifidbo import *
 from .multiFidBO import *
