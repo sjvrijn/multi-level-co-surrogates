@@ -22,7 +22,7 @@ CandidateSet = namedtuple('CandidateSet', ['candidates', 'fitnesses'])
 
 class CandidateArchive:
 
-    def __init__(self, ndim, fidelities=None):
+    def __init__(self, ndim: int, fidelities=None):
         """An archive of candidate: fitnesses pairs, for one or multiple fidelities"""
         self.ndim = ndim
 
@@ -36,7 +36,7 @@ class CandidateArchive:
 
 
     @classmethod
-    def from_multi_fidelity_function(cls, multi_fid_func, ndim=None):
+    def from_multi_fidelity_function(cls, multi_fid_func, ndim: int=None):
         """Create a CandidateArchive based on a multi-fidelity function. This
         creates an archive with 'columns' for every fidelity of the function
         *plus* a difference-column for each consequtive pair of fidelities.
@@ -70,13 +70,13 @@ class CandidateArchive:
         return len(self.data)
 
 
-    def addcandidates(self, candidates, fitnesses, fidelity=None, *, verbose=False):
+    def addcandidates(self, candidates, fitnesses, fidelity: str=None, *, verbose: bool=False):
         """Add multiple candidates to the archive"""
         for cand, fit in zip(candidates, fitnesses):
             self.addcandidate(cand, fit, fidelity=fidelity, verbose=verbose)
 
 
-    def addcandidate(self, candidate, fitness, fidelity=None, *, verbose=False):
+    def addcandidate(self, candidate, fitness, fidelity: str=None, *, verbose: bool=False):
         """Add a candidate to the archive. Will overwrite fitness value if candidate is already present"""
 
         if len(self.fidelities) == 1 and fidelity is not None and verbose:
@@ -101,7 +101,7 @@ class CandidateArchive:
                 self._updatecandidate(candidate, fit, fid, verbose=verbose)
 
 
-    def _addnewcandidate(self, candidate, fitness, fidelity=None, *, verbose=False):
+    def _addnewcandidate(self, candidate, fitness, fidelity: str=None, *, verbose: bool=False):
         if len(self.fidelities) == 1:
             fit_values = [fitness]
         else:
@@ -113,7 +113,7 @@ class CandidateArchive:
         self.data[tuple(candidate)] = fit_values
 
 
-    def _updatecandidate(self, candidate, fitness, fidelity=None, *, verbose=False):
+    def _updatecandidate(self, candidate, fitness, fidelity: str=None, *, verbose: bool=False):
         fit_values = self.data[tuple(candidate)]
 
         if fidelity is None:
@@ -128,7 +128,7 @@ class CandidateArchive:
         self._updateminmax(fidelity, fitness)
 
 
-    def getcandidates(self, num_recent_candidates=None, fidelity=None):
+    def getcandidates(self, num_recent_candidates: int=None, fidelity: str=None):
         """Retrieve candidates and fitnesses from the archive.
 
         :param num_recent_candidates:   (optional) Only return the last `n` candidates added to the archive
@@ -178,7 +178,7 @@ class CandidateArchive:
         )
 
 
-    def _updateminmax(self, fidelity, value):
+    def _updateminmax(self, fidelity: str, value):
         if value > self.max[fidelity]:
             self.max[fidelity] = value
         elif value < self.min[fidelity]:
