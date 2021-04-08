@@ -13,10 +13,12 @@ class ProtoEG:
         self.error_grid = None  # xr.DataArray
 
 
-    def add_new_sample(self, X, y: float, fidelity: str):
+    def update_errorgrid_with_sample(self, X, y: float, fidelity: str):
         """Add a new sample of given fidelity and update Error Grid accordingly"""
 
         self.archive.addcandidate(X, y, fidelity)
+
+        instance_spec = InstanceSpec.from_archive(self.archive)
 
         for h, l in instance_spec.pixels:
             fraction = 1 - self.calculate_reuse_fraction(h, l, fidelity)

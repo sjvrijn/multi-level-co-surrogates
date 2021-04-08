@@ -96,3 +96,19 @@ class InstanceSpec:
         triangle_size = triangle_side_length * (triangle_side_length+1) // 2
 
         return num_high*num_low - triangle_size
+
+
+    @classmethod
+    def from_archive(cls, archive, **kwargs):
+        """Create an InstanceSpec from a CandidateArchive
+
+        This assumes the archive was created based on a MultiFidelityFunction
+        with fidelities 'high' and 'low', and that all candidates in the archive
+        are available for use.
+        All other parameters are simply passed through.
+        """
+
+        max_high = archive.count('high')
+        max_low = archive.count('low')
+
+        return cls(max_high=max_high, max_low=max_low, **kwargs)
