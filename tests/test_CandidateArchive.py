@@ -83,22 +83,30 @@ def test_1fid_happy_path():
 
 
 def test_2fid_happy_path():
-    archive = CandidateArchive(ndim=3, fidelities=['AAA', 'BBB'])
-    candidates = np.random.randn(30).reshape((10, 3))
-    fitnesses = np.random.randn(10).reshape((10, 1))
+    ndim = 3
+    archive = CandidateArchive(ndim=ndim, fidelities=['AAA', 'BBB'])
+
+    num_candidates = 10
+    candidates = np.random.randn(num_candidates*ndim).reshape((num_candidates, ndim))
+    fitnesses = np.random.randn(num_candidates).reshape((num_candidates, 1))
     with pytest.raises(ValueError):
         archive.addcandidates(candidates, fitnesses)
 
     archive.addcandidates(candidates.tolist(), fitnesses, fidelity='AAA')
+    assert archive.count('AAA') == num_candidates
+    assert archive.count('BBB') == 0
 
     cand, fit = archive.getcandidates(fidelity='AAA')
     np.testing.assert_array_almost_equal(candidates, cand)
     np.testing.assert_array_almost_equal(fitnesses, fit)
 
-    new_fitnesses = np.random.randn(5).reshape((5, 1))
-    indices = np.random.choice(np.arange(10), 5, replace=False)
+    num_fitnesses_BBB = 5
+    new_fitnesses = np.random.randn(num_fitnesses_BBB).reshape((num_fitnesses_BBB, 1))
+    indices = np.random.choice(np.arange(10), num_fitnesses_BBB, replace=False)
 
     archive.addcandidates(candidates[indices].tolist(), new_fitnesses, fidelity='BBB')
+    assert archive.count('AAA') == num_candidates
+    assert archive.count('BBB') == num_fitnesses_BBB
 
     cand, fit = archive.getcandidates(fidelity='BBB')
     # comparing sorted because order does not matter...

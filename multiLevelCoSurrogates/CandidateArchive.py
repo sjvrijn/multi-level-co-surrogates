@@ -165,6 +165,19 @@ class CandidateArchive:
         return CandidateSet(candidates, fitnesses)
 
 
+    def count(self, fidelity: str='fitness'):
+        """Count the number of samples archived for the given fidelity"""
+        if not fidelity:
+            return len(self.data)
+
+        idx = self.fidelities.index(fidelity)
+        return sum(
+            1
+            for fitnesses in self.data.values()
+            if not np.isnan(fitnesses[idx])
+        )
+
+
     def _updateminmax(self, fidelity, value):
         if value > self.max[fidelity]:
             self.max[fidelity] = value
