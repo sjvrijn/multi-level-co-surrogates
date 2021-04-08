@@ -1,14 +1,19 @@
 from collections import defaultdict
 
+from numpy.random import default_rng, Generator
+
 from multiLevelCoSurrogates import CandidateArchive, Instance, InstanceSpec
 
 
 class ProtoEG:
 
-    def __init__(self, archive: CandidateArchive):
+    def __init__(self, archive: CandidateArchive, rng: Generator, num_reps: int=50):
         """Container for everything needed to create (advanced) Error Grids"""
 
         self.archive = archive
+        self.rng = rng if rng else default_rng()
+        self.num_reps = num_reps
+
         self.models = defaultdict(list)  # models[(n_high, n_low)] = [model_1, ..., model_nreps]
         self.error_grid = None  # xr.DataArray
 
@@ -18,15 +23,14 @@ class ProtoEG:
 
         self.archive.addcandidate(X, y, fidelity)
 
-        instance_spec = InstanceSpec.from_archive(self.archive)
+        instance_spec = InstanceSpec.from_archive(self.archive, num_reps=self.num_reps)
 
         for h, l in instance_spec.pixels:
             fraction = 1 - self.calculate_reuse_fraction(h, l, fidelity)
             num_models_to_resample = fraction * instance_spec.num_reps
+            indices_to_resample = self.rng.choice(self.num_reps, size=num_models_to_resample, replace=False)
 
-        #    uniform at random select num_models_to_resample from num_reps
-        #
-        #    for each model_to_resample:
+            for idx in indices_to_resample:
         #        create new subsample consisting of at least latest addition X
         #        create and store model
         #        calculate and store error
