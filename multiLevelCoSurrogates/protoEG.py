@@ -1,9 +1,12 @@
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
+import numpy as np
 from numpy.random import default_rng, Generator
 
-from multiLevelCoSurrogates import CandidateArchive, Instance, InstanceSpec
+from multiLevelCoSurrogates import CandidateArchive, InstanceSpec, MultiFidelityBO
 
+
+BiFidelityDoE = namedtuple("BiFidelityDoE", "high low")
 
 class ProtoEG:
 
@@ -38,7 +41,26 @@ class ProtoEG:
             indices_to_resample = self.rng.choice(self.num_reps, size=num_models_to_resample, replace=False)
 
             for idx in indices_to_resample:
-        #        create new subsample consisting of at least latest addition X
+                set_seed_by_instance(h, l, idx)
+                if fidelity == 'high':
+                    selected, left_out = split_bi_fidelity_doe(BiFidelityDoE(high_X, low_X), h-1, l)
+                    selected = BiFidelityDoE(np.concatenate([selected.high, X]), selected.low)
+                elif fidelity == 'low':
+                    selected, left_out = split_bi_fidelity_doe(BiFidelityDoE(high_X, low_X), h, l-1)
+                    selected = BiFidelityDoE(selected.high, np.concatenate([selected.low, X]))
+
+                # Create an archive from the MF-function and MF-DoE data
+                archive = CandidateArchive(ndim=self.archive.ndim, fidelities=self.archive.fidelities)
+                archive.addcandidates(selected.low, low_y, fidelity='low')
+                archive.addcandidates(selected.high, high_y, fidelity='high')
+
+                # (Automatically) Create the hierarchical model
+                mfbo = MultiFidelityBO(func, archive, **mfbo_options)
+
+                # Get the results we're interested in from the model for this instance
+                mses = mfbo.getMSE()
+                r2s = mfbo.getR2()
+
         #        create and store model
         #        calculate and store error
         #
@@ -116,9 +138,47 @@ class ProtoEG:
 
 
 
+def set_seed_by_instance(num_high: int, num_low: int, rep: int) -> None:
+    """Fix the numpy random seed based on an Instance"""
+    np.random.seed(int(f'{num_high:03}{num_low:03}{rep:03}'))
 
 
+def split_bi_fidelity_doe(DoE: BiFidelityDoE, num_high: int, num_low: int) -> Tuple[BiFidelityDoE, BiFidelityDoE]:
+    """Given an existing bi-fidelity Design of Experiments (DoE) `high, low`,
+    creates a subselection of given size `num_high, num_low` based on uniform
+    selection. The subselection maintains the property that all high-fidelity
+    samples are a subset of the low-fidelity samples.
 
+    Raises a `ValueError` if invalid `num_high` or `num_low` are given.
+    """
+    high, low = DoE
+    if not 1 < num_high < len(high):
+        raise ValueError(f"'num_high' must be in the range [2, len(DoE.high) (={len(DoE.high)})], but is {num_high}")
+    elif num_low > len(low):
+        raise ValueError(f"'num_low' cannot be greater than len(DoE.low) (={len(DoE.low)}), but is {num_low}")
+    elif num_low <= num_high:
+        raise ValueError(f"'num_low' must be greater than 'num_high', but {num_low} <= {num_high}")
+
+    indices = np.random.permutation(len(high))
+    sub_high, leave_out_high = high[indices[:num_high]], high[indices[num_high:]]
+
+    if num_low == len(low):
+        sub_low = low
+        leave_out_low = []
+    else:
+        # remove all sub_high from low
+        filtered_low = np.array([x for x in low if x not in sub_high])
+        # randomly select (num_low - num_high) remaining
+        indices = np.random.permutation(len(filtered_low))
+        num_low_left = num_low - num_high
+        extra_low, leave_out_low = filtered_low[indices[:num_low_left]], \
+                                   filtered_low[indices[num_low_left:]]
+        # concatenate sub_high with selected sub_low
+        sub_low = np.concatenate([sub_high, extra_low], axis=0)
+
+    selected = BiFidelityDoE(sub_high, sub_low)
+    left_out = BiFidelityDoE(leave_out_high, leave_out_low)
+    return selected, left_out
 
 
 
