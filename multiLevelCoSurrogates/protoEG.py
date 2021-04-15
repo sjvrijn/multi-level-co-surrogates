@@ -21,9 +21,16 @@ class ProtoEG:
     def update_errorgrid_with_sample(self, X, y: float, fidelity: str):
         """Add a new sample of given fidelity and update Error Grid accordingly"""
 
-        self.archive.addcandidate(X, y, fidelity)
-
         instance_spec = InstanceSpec.from_archive(self.archive, num_reps=self.num_reps)
+        if fidelity == 'high':
+            instance_spec.max_high += 1
+        elif fidelity == 'low':
+            instance_spec.max_low += 1
+        else:
+            raise ValueError(f'invalid argument fidelity=`{fidelity}`')
+
+        high_X, high_y = self.archive.getcandidates(fidelity='high')
+        low_X, low_y = self.archive.getcandidates(fidelity='low')
 
         for h, l in instance_spec.pixels:
             fraction = 1 - self.calculate_reuse_fraction(h, l, fidelity)
@@ -43,6 +50,9 @@ class ProtoEG:
         #            recalculate error with new test-set
         #
         #return updated errorgrid (?)
+
+        self.archive.addcandidate(X, y, fidelity)
+
         raise NotImplementedError()
 
 
