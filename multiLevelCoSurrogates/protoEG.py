@@ -54,13 +54,6 @@ class ProtoEG:
                 archive.addcandidates(selected.low, low_y, fidelity='low')
                 archive.addcandidates(selected.high, high_y, fidelity='high')
 
-                # (Automatically) Create the hierarchical model
-                mfbo = MultiFidelityBO(func, archive, **mfbo_options)
-
-                # Get the results we're interested in from the model for this instance
-                mses = mfbo.getMSE()
-                r2s = mfbo.getR2()
-
         #        create and store model
         #        calculate and store error
         #
