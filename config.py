@@ -8,14 +8,15 @@ config.py: Simple python file to store variable settings that are re-used in mul
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
+from pyprojroot import here
 
 from mf2 import *
-from local import base_dir
 
+base_dir = here()
 
 # Filename related settings
-plot_dir = base_dir + 'plots/'
-data_dir = base_dir + 'data/'
+plot_dir = base_dir / 'plots/'
+data_dir = base_dir / 'data/'
 folder_name = '{ndim}D/{func}/{use}-{surr}/'
 suffix   = 's{size}-r{rep}-g{gen}-'
 plot_ext = 'png'  # Choose from: ['png', 'pdf']
@@ -28,7 +29,7 @@ fit_funcs = {
     'branin': branin,
     'booth': booth,
     'himmelblau': himmelblau,
-    'himmelblau_seb': himmelblau_seb,
+    # 'himmelblau_seb': himmelblau_seb,
     'sixHumpCamelBack': six_hump_camelback,
     # 'curretal88exp': curretal88exp,
     'park91a': park91a,
