@@ -15,7 +15,7 @@ from sklearn.svm import SVR
 from sklearn.linear_model import ElasticNet as EN
 from scipy.interpolate import Rbf
 
-from .Utils import ValueRange, determinerange, rescale
+from multiLevelCoSurrogates.Utils import ValueRange, determinerange, rescale
 
 
 class Surrogate:

@@ -20,7 +20,7 @@ from more_itertools import stagger
 from .CandidateArchive import CandidateArchive
 from .Utils import create_random_sample_set, rescale, \
     low_lhs_sample, createsurfaces, plotsurfaces, gpplot, ScatterPoints, ValueRange
-from .Surrogates import HierarchicalSurrogate, Surrogate
+from .surrogates import HierarchicalSurrogate, Surrogate
 
 
 class MultiFidelityBO:

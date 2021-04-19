@@ -10,7 +10,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 
 from .CandidateArchive import *
-from .Surrogates import *
+from .surrogates import *
 from .Utils import *
 from instance import Instance, InstanceSpec
 
