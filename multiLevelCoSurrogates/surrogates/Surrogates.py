@@ -112,19 +112,19 @@ class Surrogate:
 
 
     @classmethod
-    def fromname(cls, name, candidate_archive, num_points=None, fidelity=None, normalized=True, **kwargs):
-        if name == 'RBF':
+    def fromname(cls, surrogate_name, candidate_archive, num_points=None, fidelity=None, normalized=True, **kwargs):
+        if surrogate_name == 'RBF':
             return RBF(candidate_archive, num_points, fidelity, normalized=normalized)
-        elif name == 'Kriging':
+        elif surrogate_name == 'Kriging':
             return Kriging(candidate_archive, num_points, fidelity, normalized=normalized, **kwargs)
-        elif name == 'RandomForest':
+        elif surrogate_name == 'RandomForest':
             return RandomForest(candidate_archive, num_points, fidelity, normalized=normalized)
-        elif name == 'SVM':
+        elif surrogate_name == 'SVM':
             return SVM(candidate_archive, num_points, fidelity, normalized=normalized)
-        elif name == 'ElasticNet':
+        elif surrogate_name == 'ElasticNet':
             return ElasticNet(candidate_archive, num_points, fidelity, normalized=normalized)
         else:
-            raise ValueError(f"Unknown surrogate name '{name}'.")
+            raise ValueError(f"Unknown surrogate name '{surrogate_name}'.")
 
 
 class HierarchicalSurrogate:
