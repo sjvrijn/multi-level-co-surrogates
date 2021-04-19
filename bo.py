@@ -16,11 +16,13 @@ import pandas as pd
 from pyDOE import lhs
 from sklearn.metrics import mean_squared_error
 from more_itertools import flatten
+from pyprojroot import here
 
 from config import fit_funcs
-from local import base_dir
 
 import multiLevelCoSurrogates as mlcs
+
+base_dir = here()
 
 
 def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
@@ -86,8 +88,8 @@ def plotmorestuff(surfaces, bifidbo, *, count=None, save_as=None, **plot_opts):
     ]
 
     if save_as:
-        savename_2d = f'{base_dir}{save_as}_2d_{count}.png'
-        savename_3d = f'{base_dir}{save_as}_3d_{count}.png'
+        savename_2d = base_dir / f'{save_as}_2d_{count}.png'
+        savename_3d = base_dir / f'{save_as}_3d_{count}.png'
     else:
         savename_2d = savename_3d = None
 
@@ -316,5 +318,5 @@ if __name__ == "__main__":
         records.append(infill_experiment(fidelity=fid, which_model=model, **run_opts, **plot_opts))
 
     df = pd.DataFrame(flatten(records))
-    df.to_csv(base_dir+f"_records.csv", index_label='index')
+    df.to_csv(base_dir / f"_records.csv", index_label='index')
     # df.to_csv(base_dir+f"{name}{param if param is not None else ''}_diff_records.csv", index_label='index')
