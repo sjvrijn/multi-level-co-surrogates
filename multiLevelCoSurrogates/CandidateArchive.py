@@ -128,11 +128,11 @@ class CandidateArchive:
         self._updateminmax(fidelity, fitness)
 
 
-    def getcandidates(self, num_recent_candidates: int=None, fidelity: str=None):
+    def getcandidates(self, fidelity: str=None, num_recent_candidates: int=None):
         """Retrieve candidates and fitnesses from the archive.
 
-        :param num_recent_candidates:   (optional) Only return the last `n` candidates added to the archive
         :param fidelity:                (optional) Only return candidate and fitness information for the specified fidelities
+        :param num_recent_candidates:   (optional) Only return the last `n` candidates added to the archive
         :return:                        Candidates, Fitnesses (tuple of numpy arrays)
         """
 

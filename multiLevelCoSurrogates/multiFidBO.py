@@ -12,8 +12,6 @@ import bayes_opt as bo
 
 from functools import partial
 from collections import namedtuple
-from operator import itemgetter
-from scipy.optimize import minimize
 from sklearn.metrics import mean_squared_error, r2_score
 from more_itertools import stagger
 
