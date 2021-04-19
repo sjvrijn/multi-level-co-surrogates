@@ -1,9 +1,12 @@
 from collections import defaultdict, namedtuple
+from typing import Tuple
 
 import numpy as np
 from numpy.random import default_rng, Generator
+import pandas as pd
+import xarray as xr
 
-from multiLevelCoSurrogates import CandidateArchive, InstanceSpec, MultiFidelityBO
+from multiLevelCoSurrogates import CandidateArchive, InstanceSpec, MultiFidelityModel
 
 
 BiFidelityDoE = namedtuple("BiFidelityDoE", "high low")
@@ -19,6 +22,34 @@ class ProtoEG:
 
         self.models = defaultdict(list)  # models[(n_high, n_low)] = [model_1, ..., model_nreps]
         self.error_grid = None  # xr.DataArray
+
+
+    def subsample_errorgrid(self):
+        """Create an error grid by subsampling from the known archive"""
+        instance_spec = InstanceSpec.from_archive(self.archive, num_reps=self.num_reps)
+
+        doe = archive_to_doe(self.archive)
+
+        error_records = []
+        for h, l, rep in instance_spec.instances:
+
+            set_seed_by_instance(h, l, r)
+            train, test = split_bi_fidelity_doe(doe, h, l)
+
+            train_archive = CandidateArchive(self.archive.ndim, self.archive.fidelities)
+            train_archive.addcandidates(..., ..., 'high')
+            train_archive.addcandidates(..., ..., 'low')
+
+            model = MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive)
+            self.models[(h,l)].append(model)
+
+            # store test
+
+            errors = ...
+            error_records.append(errors)
+
+        tmp_df = pd.DataFrame.from_records(error_records)
+        self.error_grid = xr.Dataset.from_dataframe(tmp_df)
 
 
     def update_errorgrid_with_sample(self, X, y: float, fidelity: str):
