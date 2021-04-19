@@ -21,7 +21,7 @@ class MultiFidelityModel:
          stacked hierarchical surrogate models with a regular surrogate model
          down at the bottom of the stack.
 
-        :param fidelities:      List of fidelity names, from highest to lowest
+        :param fidelities:      List of fidelity names, from highest to lowest, excluding differences
         :param archive:         Archive containing all samples to train the models on
         :param normalized:
         :param surrogate_name:
