@@ -10,6 +10,9 @@ import numpy as np
 import scipy as sp
 
 
+
+BiFidelityDoE = namedtuple("BiFidelityDoE", "high low")
+
 # ------------------------------------------------------------------------------
 
 ScatterPoints = namedtuple('ScatterPoints', ['x_y', 'z', 'style'])

@@ -16,6 +16,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 import numpy as np
 from warnings import warn
 
+from multiLevelCoSurrogates.Utils import BiFidelityDoE
 
 CandidateSet = namedtuple('CandidateSet', ['candidates', 'fitnesses'])
 
@@ -163,6 +164,14 @@ class CandidateArchive:
             fitnesses = fitnesses[-num_recent_candidates:]
 
         return CandidateSet(candidates, fitnesses)
+
+
+    def as_doe(self):
+        """Present the stored candidates as a bi-fidelity DoE"""
+        return BiFidelityDoE(
+            self.getcandidates(fidelity='high').candidates,
+            self.getcandidates(fidelity='low').candidates,
+        )
 
 
     def count(self, fidelity: str='fitness'):
