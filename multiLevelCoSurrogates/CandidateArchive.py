@@ -6,7 +6,7 @@ CandidateArchive.py: Class to store candidate solutions in an optimization proce
                      (multi-fidelity) fitness values
 """
 from collections import namedtuple
-from typing import Dict
+from typing import Dict, Iterable, Union
 
 from more_itertools import pairwise
 
@@ -110,6 +110,24 @@ class CandidateArchive:
             else:
                 self._updatecandidate(candidate, fit, fid, verbose=verbose)
 
+
+    def getfitnesses(self, candidates: Iterable, fidelity: Union[str, Iterable[str]]=None) -> Iterable:
+        """Return the relevant fitness values for the given candidates"""
+
+        fitnesses = np.array([
+            self.data[tuple(candidate)]
+            for candidate in candidates
+        ])
+
+        if isinstance(fidelity, str):
+            return fitnesses[:,self.fidelities.index(fidelity)]
+        elif fidelity:
+            return np.hstack([
+                fitnesses[:, self.fidelities.index(fid)].reshape(-1, 1)
+                for fid in fidelity
+            ])
+
+        return fitnesses
 
     def _addnewcandidate(self, candidate, fitness, fidelity: str=None, *, verbose: bool=False):
         if len(self.fidelities) == 1:
