@@ -3,8 +3,20 @@ from dataclasses import dataclass
 from itertools import product
 from warnings import warn
 
+import numpy as np
 
-Instance = namedtuple('Instance', 'n_high n_low rep')
+
+class Instance(namedtuple('Instance', 'n_high n_low rep'))
+
+    def use_as_seed(self):
+        """Fix the numpy random seed based on this Instance"""
+        np.random.seed(int(f'{self.n_high:03}{self.n_low:03}{self.rep:03}'))
+
+
+
+def set_seed_by_instance(n_high: int, n_low: int, rep: int) -> None:
+    """Fix the numpy random seed based on an Instance"""
+    np.random.seed(int(f'{n_high:03}{n_low:03}{rep:03}'))
 
 
 @dataclass
