@@ -7,13 +7,11 @@ import pandas as pd
 import xarray as xr
 
 import multiLevelCoSurrogates as mlcs
-from multiLevelCoSurrogates import CandidateArchive, InstanceSpec, MultiFidelityModel
-from multiLevelCoSurrogates.Utils import BiFidelityDoE
 
 
 class ProtoEG:
 
-    def __init__(self, archive: CandidateArchive, rng: Generator, num_reps: int=50):
+    def __init__(self, archive: mlcs.CandidateArchive, rng: Generator, num_reps: int=50):
         """Container for everything needed to create (advanced) Error Grids"""
 
         self.archive = archive
@@ -26,21 +24,21 @@ class ProtoEG:
 
     def subsample_errorgrid(self):
         """Create an error grid by subsampling from the known archive"""
-        instance_spec = InstanceSpec.from_archive(self.archive, num_reps=self.num_reps)
+        instance_spec = mlcs.InstanceSpec.from_archive(self.archive, num_reps=self.num_reps)
 
         doe = self.archive.as_doe()
 
         error_records = []
         for h, l, rep in instance_spec.instances:
 
-            set_seed_by_instance(h, l, r)
+            mlcs.set_seed_by_instance(h, l, rep)
             train, test = split_bi_fidelity_doe(doe, h, l)
 
-            train_archive = CandidateArchive(self.archive.ndim, self.archive.fidelities)
+            train_archive = mlcs.CandidateArchive(self.archive.ndim, self.archive.fidelities)
             train_archive.addcandidates(..., ..., 'high')
             train_archive.addcandidates(..., ..., 'low')
 
-            model = MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive)
+            model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive)
             self.models[(h,l)].append(model)
 
             # store test
@@ -55,7 +53,7 @@ class ProtoEG:
     def update_errorgrid_with_sample(self, X, y: float, fidelity: str):
         """Add a new sample of given fidelity and update Error Grid accordingly"""
 
-        instance_spec = InstanceSpec.from_archive(self.archive, num_reps=self.num_reps)
+        instance_spec = mlcs.InstanceSpec.from_archive(self.archive, num_reps=self.num_reps)
         if fidelity == 'high':
             instance_spec.max_high += 1
         elif fidelity == 'low':
@@ -74,14 +72,14 @@ class ProtoEG:
             for idx in indices_to_resample:
                 mlcs.set_seed_by_instance(h, l, idx)
                 if fidelity == 'high':
-                    selected, left_out = split_bi_fidelity_doe(BiFidelityDoE(high_X, low_X), h-1, l)
-                    selected = BiFidelityDoE(np.concatenate([selected.high, X]), selected.low)
+                    selected, left_out = split_bi_fidelity_doe(mlcs.BiFidelityDoE(high_X, low_X), h-1, l)
+                    selected = mlcs.BiFidelityDoE(np.concatenate([selected.high, X]), selected.low)
                 elif fidelity == 'low':
-                    selected, left_out = split_bi_fidelity_doe(BiFidelityDoE(high_X, low_X), h, l-1)
-                    selected = BiFidelityDoE(selected.high, np.concatenate([selected.low, X]))
+                    selected, left_out = split_bi_fidelity_doe(mlcs.BiFidelityDoE(high_X, low_X), h, l-1)
+                    selected = mlcs.BiFidelityDoE(selected.high, np.concatenate([selected.low, X]))
 
                 # Create an archive from the MF-function and MF-DoE data
-                archive = CandidateArchive(ndim=self.archive.ndim, fidelities=self.archive.fidelities)
+                archive = mlcs.CandidateArchive(ndim=self.archive.ndim, fidelities=self.archive.fidelities)
                 archive.addcandidates(selected.low, low_y, fidelity='low')
                 archive.addcandidates(selected.high, high_y, fidelity='high')
 
@@ -162,7 +160,7 @@ class ProtoEG:
 
 
 
-def split_bi_fidelity_doe(DoE: BiFidelityDoE, num_high: int, num_low: int) -> Tuple[BiFidelityDoE, BiFidelityDoE]:
+def split_bi_fidelity_doe(DoE: mlcs.BiFidelityDoE, num_high: int, num_low: int) -> Tuple[mlcs.BiFidelityDoE, mlcs.BiFidelityDoE]:
     """Given an existing bi-fidelity Design of Experiments (DoE) `high, low`,
     creates a subselection of given size `num_high, num_low` based on uniform
     selection. The subselection maintains the property that all high-fidelity
@@ -195,8 +193,8 @@ def split_bi_fidelity_doe(DoE: BiFidelityDoE, num_high: int, num_low: int) -> Tu
         # concatenate sub_high with selected sub_low
         sub_low = np.concatenate([sub_high, extra_low], axis=0)
 
-    selected = BiFidelityDoE(sub_high, sub_low)
-    left_out = BiFidelityDoE(leave_out_high, leave_out_low)
+    selected = mlcs.BiFidelityDoE(sub_high, sub_low)
+    left_out = mlcs.BiFidelityDoE(leave_out_high, leave_out_low)
     return selected, left_out
 
 
