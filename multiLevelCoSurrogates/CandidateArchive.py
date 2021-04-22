@@ -6,6 +6,7 @@ CandidateArchive.py: Class to store candidate solutions in an optimization proce
                      (multi-fidelity) fitness values
 """
 from collections import namedtuple
+from typing import Dict
 
 from more_itertools import pairwise
 
@@ -69,6 +70,14 @@ class CandidateArchive:
 
     def __len__(self):
         return len(self.data)
+
+
+    def __index__(self, val) -> Dict[str: float]:
+        return {
+            fid: fitness
+            for fid, fitness
+            in zip(self.fidelities, self.data[tuple(val)])
+        }
 
 
     def addcandidates(self, candidates, fitnesses, fidelity: str=None, *, verbose: bool=False):
