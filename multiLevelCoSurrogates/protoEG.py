@@ -6,10 +6,10 @@ from numpy.random import default_rng, Generator
 import pandas as pd
 import xarray as xr
 
+import multiLevelCoSurrogates as mlcs
 from multiLevelCoSurrogates import CandidateArchive, InstanceSpec, MultiFidelityModel
+from multiLevelCoSurrogates.Utils import BiFidelityDoE
 
-
-BiFidelityDoE = namedtuple("BiFidelityDoE", "high low")
 
 class ProtoEG:
 
@@ -28,7 +28,7 @@ class ProtoEG:
         """Create an error grid by subsampling from the known archive"""
         instance_spec = InstanceSpec.from_archive(self.archive, num_reps=self.num_reps)
 
-        doe = archive_to_doe(self.archive)
+        doe = self.archive.as_doe()
 
         error_records = []
         for h, l, rep in instance_spec.instances:
@@ -72,7 +72,7 @@ class ProtoEG:
             indices_to_resample = self.rng.choice(self.num_reps, size=num_models_to_resample, replace=False)
 
             for idx in indices_to_resample:
-                set_seed_by_instance(h, l, idx)
+                mlcs.set_seed_by_instance(h, l, idx)
                 if fidelity == 'high':
                     selected, left_out = split_bi_fidelity_doe(BiFidelityDoE(high_X, low_X), h-1, l)
                     selected = BiFidelityDoE(np.concatenate([selected.high, X]), selected.low)
@@ -160,11 +160,6 @@ class ProtoEG:
 
         raise ValueError(f'Invalid fidelity `{fidelity}` given, expected `high` or `low`.')
 
-
-
-def set_seed_by_instance(num_high: int, num_low: int, rep: int) -> None:
-    """Fix the numpy random seed based on an Instance"""
-    np.random.seed(int(f'{num_high:03}{num_low:03}{rep:03}'))
 
 
 def split_bi_fidelity_doe(DoE: BiFidelityDoE, num_high: int, num_low: int) -> Tuple[BiFidelityDoE, BiFidelityDoE]:
