@@ -4,6 +4,7 @@ from typing import Tuple
 import numpy as np
 from numpy.random import default_rng, Generator
 import pandas as pd
+from sklearn.metrics import mean_squared_error
 import xarray as xr
 
 import multiLevelCoSurrogates as mlcs
@@ -19,6 +20,7 @@ class ProtoEG:
         self.num_reps = num_reps
 
         self.models = defaultdict(list)  # models[(n_high, n_low)] = [model_1, ..., model_nreps]
+        self.training_sets = defaultdict(list)  # models[(n_high, n_low)] = [test_1, ..., test_nreps]
         self.error_grid = None  # xr.DataArray
 
 
@@ -34,16 +36,18 @@ class ProtoEG:
             mlcs.set_seed_by_instance(h, l, rep)
             train, test = split_bi_fidelity_doe(doe, h, l)
 
+            test_x = test.high
+            self.training_sets[(h,l)].append(test_x)
+            test_y = self.archive.getfitnesses(test_x, fidelity='high')
+
             train_archive = mlcs.CandidateArchive(self.archive.ndim, self.archive.fidelities)
-            train_archive.addcandidates(..., ..., 'high')
-            train_archive.addcandidates(..., ..., 'low')
+            train_archive.addcandidates(train.high, self.archive.getfitnesses(train.high, fidelity='high'), 'high')
+            train_archive.addcandidates(train.low, self.archive.getfitnesses(train.low, fidelity='low'), 'low')
 
             model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive)
             self.models[(h,l)].append(model)
 
-            # store test
-
-            errors = ...
+            errors = mean_squared_error(test_y, model.top_level_model.predict(test_x))
             error_records.append(errors)
 
         tmp_df = pd.DataFrame.from_records(error_records)
