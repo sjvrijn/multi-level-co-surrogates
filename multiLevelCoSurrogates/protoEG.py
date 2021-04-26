@@ -67,8 +67,7 @@ class ProtoEG:
         else:
             raise ValueError(f'invalid argument fidelity=`{fidelity}`')
 
-        high_X, high_y = self.archive.getcandidates(fidelity='high')
-        low_X, low_y = self.archive.getcandidates(fidelity='low')
+        full_DoE = self.archive.as_doe()
 
         for h, l in instance_spec.pixels:
             fraction = 1 - self.calculate_reuse_fraction(h, l, fidelity)
@@ -78,16 +77,16 @@ class ProtoEG:
             for idx in indices_to_resample:
                 mlcs.set_seed_by_instance(h, l, idx)
                 if fidelity == 'high':
-                    selected, left_out = split_bi_fidelity_doe(mlcs.BiFidelityDoE(high_X, low_X), h-1, l)
-                    selected = mlcs.BiFidelityDoE(np.concatenate([selected.high, X]), selected.low)
-                elif fidelity == 'low':
-                    selected, left_out = split_bi_fidelity_doe(mlcs.BiFidelityDoE(high_X, low_X), h, l-1)
-                    selected = mlcs.BiFidelityDoE(selected.high, np.concatenate([selected.low, X]))
+                    train, test = split_bi_fidelity_doe(full_DoE, h-1, l)
+                    train = mlcs.BiFidelityDoE(np.concatenate([train.high, X]), train.low)
+                else:  # elif fidelity == 'low':
+                    train, test = split_bi_fidelity_doe(full_DoE, h, l-1)
+                    train = mlcs.BiFidelityDoE(train.high, np.concatenate([train.low, X]))
 
                 # Create an archive from the MF-function and MF-DoE data
                 archive = mlcs.CandidateArchive(ndim=self.archive.ndim, fidelities=self.archive.fidelities)
-                archive.addcandidates(selected.low, low_y, fidelity='low')
-                archive.addcandidates(selected.high, high_y, fidelity='high')
+                archive.addcandidates(train.low, self.archive.getfitnesses(train.low, fidelity='low'), fidelity='low')
+                archive.addcandidates(train.high, self.archive.getfitnesses(train.high, fidelity='high'), fidelity='high')
 
         #        create and store model
         #        calculate and store error
