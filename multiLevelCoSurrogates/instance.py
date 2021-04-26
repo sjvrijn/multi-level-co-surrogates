@@ -6,7 +6,7 @@ from warnings import warn
 import numpy as np
 
 
-class Instance(namedtuple('Instance', 'n_high n_low rep'))
+class Instance(namedtuple('Instance', 'n_high n_low rep')):
 
     def use_as_seed(self):
         """Fix the numpy random seed based on this Instance"""
