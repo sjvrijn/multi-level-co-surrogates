@@ -72,7 +72,7 @@ class CandidateArchive:
         return len(self.data)
 
 
-    def __index__(self, val) -> Dict[str: float]:
+    def __index__(self, val) -> dict[str: float]:
         return {
             fid: fitness
             for fid, fitness
