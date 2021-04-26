@@ -17,3 +17,4 @@ from .instance import *
 
 from .bifidbo import *
 from .multiFidBO import *
+from .protoEG import *

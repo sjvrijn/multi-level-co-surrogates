@@ -12,7 +12,7 @@ import multiLevelCoSurrogates as mlcs
 
 class ProtoEG:
 
-    def __init__(self, archive: mlcs.CandidateArchive, rng: Generator, num_reps: int=50):
+    def __init__(self, archive: mlcs.CandidateArchive, rng: Generator=None, num_reps: int=50):
         """Container for everything needed to create (advanced) Error Grids"""
 
         self.archive = archive
@@ -20,8 +20,8 @@ class ProtoEG:
         self.num_reps = num_reps
 
         self.models = defaultdict(list)  # models[(n_high, n_low)] = [model_1, ..., model_nreps]
-        self.training_sets = defaultdict(list)  # models[(n_high, n_low)] = [test_1, ..., test_nreps]
-        self.error_grid = None  # xr.DataArray
+        self.test_sets = defaultdict(list)  # models[(n_high, n_low)] = [test_1, ..., test_nreps]
+        self.error_grid = None  # xr.Dataset
 
 
     def subsample_errorgrid(self):
