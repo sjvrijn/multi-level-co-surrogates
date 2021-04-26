@@ -27,7 +27,7 @@ class ProtoEG:
     def subsample_errorgrid(self):
         """Create an error grid by subsampling from the known archive"""
         instance_spec = mlcs.InstanceSpec.from_archive(self.archive, num_reps=self.num_reps)
-
+        instance_spec.max_high -= 1
         doe = self.archive.as_doe()
 
         error_records = []
@@ -37,20 +37,22 @@ class ProtoEG:
             train, test = split_bi_fidelity_doe(doe, h, l)
 
             test_x = test.high
-            self.training_sets[(h,l)].append(test_x)
+            self.test_sets[(h, l)].append(test_x)
             test_y = self.archive.getfitnesses(test_x, fidelity='high')
 
             train_archive = mlcs.CandidateArchive(self.archive.ndim, self.archive.fidelities)
             train_archive.addcandidates(train.high, self.archive.getfitnesses(train.high, fidelity='high'), 'high')
             train_archive.addcandidates(train.low, self.archive.getfitnesses(train.low, fidelity='low'), 'low')
 
-            model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive)
+            model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive, kernel='Matern', scaling='off')
             self.models[(h,l)].append(model)
 
-            errors = mean_squared_error(test_y, model.top_level_model.predict(test_x))
-            error_records.append(errors)
+            mse = mean_squared_error(test_y, model.top_level_model.predict(test_x))
+            error_records.append([h, l, rep, 'high_hier', mse])
 
-        tmp_df = pd.DataFrame.from_records(error_records)
+        columns = ['n_high', 'n_low', 'rep', 'model', 'mses']
+
+        tmp_df = pd.DataFrame.from_records(error_records, columns=columns, index=columns[:4])
         self.error_grid = xr.Dataset.from_dataframe(tmp_df)
 
 
