@@ -38,7 +38,6 @@ class ProtoEG:
 
             test_x = test.high
             self.test_sets[(h, l)].append(test_x)
-            test_y = self.archive.getfitnesses(test_x, fidelity='high')
 
             train_archive = mlcs.CandidateArchive(self.archive.ndim, self.archive.fidelities)
             train_archive.addcandidates(train.high, self.archive.getfitnesses(train.high, fidelity='high'), 'high')
@@ -47,6 +46,7 @@ class ProtoEG:
             model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive, kernel='Matern', scaling='off')
             self.models[(h,l)].append(model)
 
+            test_y = self.archive.getfitnesses(test_x, fidelity='high')
             mse = mean_squared_error(test_y, model.top_level_model.predict(test_x))
             error_records.append([h, l, rep, 'high_hier', mse])
 
@@ -77,32 +77,50 @@ class ProtoEG:
             for idx in indices_to_resample:
                 self.rng = mlcs.set_seed_by_instance(h, l, idx, return_rng=True)
                 if fidelity == 'high':
-                    train, test = split_bi_fidelity_doe(full_DoE, h-1, l)
+                    train, test = split_bi_fidelity_doe(full_DoE, h-1, l, rng=self.rng)
                     train = mlcs.BiFidelityDoE(np.concatenate([train.high, X]), train.low)
+                    test_high = test.high
                 else:  # elif fidelity == 'low':
-                    train, test = split_bi_fidelity_doe(full_DoE, h, l-1)
+                    train, test = split_bi_fidelity_doe(full_DoE, h, l-1, rng=self.rng)
                     train = mlcs.BiFidelityDoE(train.high, np.concatenate([train.low, X]))
+                    test_high = np.concatenate([test.high, X])
+
+                self.test_sets[(h,l)][idx] = test_high
 
                 # Create an archive from the MF-function and MF-DoE data
-                archive = mlcs.CandidateArchive(ndim=self.archive.ndim, fidelities=self.archive.fidelities)
-                archive.addcandidates(train.low, self.archive.getfitnesses(train.low, fidelity='low'), fidelity='low')
-                archive.addcandidates(train.high, self.archive.getfitnesses(train.high, fidelity='high'), fidelity='high')
+                train_archive = mlcs.CandidateArchive(ndim=self.archive.ndim, fidelities=self.archive.fidelities)
+                train_archive.addcandidates(train.low, self.archive.getfitnesses(train.low, fidelity='low'), fidelity='low')
+                train_archive.addcandidates(train.high, self.archive.getfitnesses(train.high, fidelity='high'), fidelity='high')
 
-        #        create and store model
-        #        calculate and store error
-        #
-        #    if fidelity == 'low':
-        #        # Error values of remaining models remains unchanged
-        #    elif fidelity == 'high':
-        #        for each model_not_resampled:
-        #            add (X, y) to test-set for that model
-        #            recalculate error with new test-set
-        #
+                # create and store model
+                model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive,
+                                                kernel='Matern', scaling='off')
+                self.models[(h, l)][idx] = model
+
+                # calculate and store error of model at this `idx`
+                test_y = self.archive.getfitnesses(test_high, fidelity='high')
+                mse = mean_squared_error(test_y, model.top_level_model.predict(test_high))
+                self.error_grid['mses'].loc[h, l, idx, 'high_hier'] = mse
+
+            if fidelity == 'high':
+                indices_to_update_errors = set(range(self.num_reps)) - indices_to_resample
+                for idx in indices_to_update_errors:
+                    #     add (X, y) to test-set for that model
+                    test_high = self.test_sets[(h, l)][idx]
+                    test_high = np.concatenate([test_high, X])
+                    self.test_sets[(h, l)][idx] = test_high
+
+                    #     recalculate error with new test-set
+                    test_y = self.archive.getfitnesses(test_high, fidelity='high')
+                    model = self.models[(h,l)][idx]
+                    mse = mean_squared_error(test_y, model.top_level_model.predict(test_high))
+                    self.error_grid['mses'].loc[h, l, idx, 'high_hier'] = mse
+
+            # elif fidelity == 'low':
+                # Error values of remaining models remains unchanged
         #return updated errorgrid (?)
 
         self.archive.addcandidate(X, y, fidelity)
-
-        raise NotImplementedError()
 
 
     def calculate_reuse_fraction(self, num_high: int, num_low: int, fidelity: str,
