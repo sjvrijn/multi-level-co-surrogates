@@ -1,6 +1,7 @@
 from collections import namedtuple
 from dataclasses import dataclass
 from itertools import product
+from typing import Union
 from warnings import warn
 
 import numpy as np
@@ -8,15 +9,23 @@ import numpy as np
 
 class Instance(namedtuple('Instance', 'n_high n_low rep')):
 
-    def use_as_seed(self):
+    def use_as_seed(self, return_rng=False) -> Union[np.random.Generator, None]:
         """Fix the numpy random seed based on this Instance"""
-        np.random.seed(int(f'{self.n_high:03}{self.n_low:03}{self.rep:03}'))
+        seed_val = int(f'{self.n_high:03}{self.n_low:03}{self.rep:03}')
+        if return_rng:
+            return np.random.default_rng(seed_val)
+
+        np.random.seed(seed_val)
 
 
 
-def set_seed_by_instance(n_high: int, n_low: int, rep: int) -> None:
+def set_seed_by_instance(n_high: int, n_low: int, rep: int, return_rng=False) -> Union[np.random.Generator, None]:
     """Fix the numpy random seed based on an Instance"""
-    np.random.seed(int(f'{n_high:03}{n_low:03}{rep:03}'))
+    seed_val = int(f'{n_high:03}{n_low:03}{rep:03}')
+    if return_rng:
+        return np.random.default_rng(seed_val)
+
+    np.random.seed(seed_val)
 
 
 @dataclass
