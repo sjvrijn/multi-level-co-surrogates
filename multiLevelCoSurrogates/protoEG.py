@@ -175,13 +175,15 @@ class ProtoEG:
         max_low = len(self.archive.getcandidates(fidelity='low')) if not max_low else max_low
 
         if fidelity == 'high':
-            return (max_high-num_high+1) / (max_high+1)
+            fraction = (max_high-num_high+1) / (max_high+1)
+        elif fidelity == 'low':
+            fraction = (max_low-num_low+1) / (max_low-num_high+1)
+        else:
+            raise ValueError(f'Invalid fidelity `{fidelity}` given, expected `high` or `low`.')
 
-        if fidelity == 'low':
-            return (max_low-num_low+1) / (max_low-num_high+1)
-
-        raise ValueError(f'Invalid fidelity `{fidelity}` given, expected `high` or `low`.')
-
+        if not (0 <= fraction <= 1):
+            raise ValueError('Invalid fraction calculated, please check inputs')
+        return fraction
 
 
 def split_bi_fidelity_doe(DoE: mlcs.BiFidelityDoE, num_high: int, num_low: int,
