@@ -4,6 +4,12 @@ import pandas as pd
 from sklearn.metrics import mean_squared_error
 import xarray as xr
 
+from pyprojroot import here
+import sys
+module_path = str(here('scripts/experiments'))
+if module_path not in sys.path:
+    sys.path.append(module_path)
+
 import experiments as exp
 import multiLevelCoSurrogates as mlcs
 
@@ -73,7 +79,7 @@ def test_experiment():
     )
 
 
-def test_protoEG():
+def test_protoEG_subsample_errorgrid_create():
 
     func = mf2.currin
     num_reps = 1
@@ -90,3 +96,44 @@ def test_protoEG():
         [0.003953943893931256],
         eg1['mses'].sel(model='high_hier').values.flatten()[0],
     )
+
+
+
+def test_protoEG_subsample_errorgrid_update_low():
+
+    func = mf2.currin
+    num_reps = 1
+    DoE_high, DoE_low = prepare_DoE(func)
+    archive = mlcs.CandidateArchive.from_multi_fidelity_function(func)
+    archive.addcandidates(DoE_high, func.high(DoE_high), fidelity='high')
+    archive.addcandidates(DoE_low, func.low(DoE_low), fidelity='low')
+    proto_eg = get_subsampled_protoEG(archive, num_reps)
+
+    np.random.seed(0)
+    new_sample = np.random.rand(1,func.ndim)
+    proto_eg.update_errorgrid_with_sample(new_sample, func.low(new_sample), fidelity='low')
+    print(proto_eg.error_grid)
+    assert len(archive) == len(DoE_low) + 1
+
+
+def test_protoEG_subsample_errorgrid_update_high():
+
+    func = mf2.currin
+    num_reps = 1
+    DoE_high, DoE_low = prepare_DoE(func)
+
+    archive = mlcs.CandidateArchive.from_multi_fidelity_function(func)
+    archive.addcandidates(DoE_high, func.high(DoE_high), fidelity='high')
+    archive.addcandidates(DoE_low, func.low(DoE_low), fidelity='low')
+    old_len = len(archive)
+
+    proto_eg = get_subsampled_protoEG(archive, num_reps)
+
+    np.random.seed(0)
+    non_high = set(tuple(c) for c in DoE_low) - set(tuple(c) for c in DoE_high)
+    print(non_high)
+    new_sample = np.array(next(iter(non_high))).reshape(1, -1) # just take 1 element
+    print(new_sample)
+    proto_eg.update_errorgrid_with_sample(new_sample, func.high(new_sample), fidelity='high')
+    print(proto_eg.error_grid)
+    assert len(archive.getcandidates(fidelity='high')) == len(DoE_high) + 1
