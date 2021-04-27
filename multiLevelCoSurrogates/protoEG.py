@@ -67,7 +67,11 @@ class ProtoEG:
         else:
             raise ValueError(f'invalid argument fidelity=`{fidelity}`')
 
+        # 'full_DoE' should *not* include new sample yet, ...
         full_DoE = self.archive.as_doe()
+        # ... but it should be available in self.archive for fitness retrieval
+        self.archive.addcandidate(X.flatten(), y, fidelity)
+        X = X.reshape(1, -1)
 
         for h, l in instance_spec.pixels:
             fraction = 1 - self.calculate_reuse_fraction(h, l, fidelity)
@@ -77,21 +81,18 @@ class ProtoEG:
 
             for idx in indices_to_resample:
                 self.rng = mlcs.set_seed_by_instance(h, l, idx)#, return_rng=True)
-                if fidelity == 'high':
-                    train, test = split_bi_fidelity_doe(full_DoE, h-1, l, rng=self.rng)
-                    train = mlcs.BiFidelityDoE(np.concatenate([train.high, X]), train.low)
-                    test_high = test.high
-                else:  # elif fidelity == 'low':
-                    train, test = split_bi_fidelity_doe(full_DoE, h, l-1, rng=self.rng)
-                    train = mlcs.BiFidelityDoE(train.high, np.concatenate([train.low, X]))
-                    test_high = np.concatenate([test.high, X])
+                train, test = split_bi_fidelity_doe(full_DoE, h, l, must_include=X, fidelity=fidelity)
+                test_high = test.high
 
                 self.test_sets[(h,l)][idx] = test_high
 
                 # Create an archive from the MF-function and MF-DoE data
+                train_low_y = self.archive.getfitnesses(train.low, fidelity='low')
+                train_high_y = self.archive.getfitnesses(train.high, fidelity='high')
+
                 train_archive = mlcs.CandidateArchive(ndim=self.archive.ndim, fidelities=self.archive.fidelities)
-                train_archive.addcandidates(train.low, self.archive.getfitnesses(train.low, fidelity='low'), fidelity='low')
-                train_archive.addcandidates(train.high, self.archive.getfitnesses(train.high, fidelity='high'), fidelity='high')
+                train_archive.addcandidates(train.low, train_low_y, fidelity='low')
+                train_archive.addcandidates(train.high, train_high_y, fidelity='high')
 
                 # create and store model
                 model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive,
@@ -120,8 +121,6 @@ class ProtoEG:
             # elif fidelity == 'low':
                 # Error values of remaining models remains unchanged
         #return updated errorgrid (?)
-
-        self.archive.addcandidate(X, y, fidelity)
 
 
     def calculate_reuse_fraction(self, num_high: int, num_low: int, fidelity: str,
