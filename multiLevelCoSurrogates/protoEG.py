@@ -185,6 +185,7 @@ class ProtoEG:
 
 
 def split_bi_fidelity_doe(DoE: mlcs.BiFidelityDoE, num_high: int, num_low: int,
+                          must_include=None, fidelity: str='high',
                           rng: Generator=None) -> Tuple[mlcs.BiFidelityDoE, mlcs.BiFidelityDoE]:
     """Given an existing bi-fidelity Design of Experiments (DoE) `high, low`,
     creates a subselection of given size `num_high, num_low` based on uniform
@@ -192,6 +193,13 @@ def split_bi_fidelity_doe(DoE: mlcs.BiFidelityDoE, num_high: int, num_low: int,
     samples are a subset of the low-fidelity samples.
 
     Raises a `ValueError` if invalid `num_high` or `num_low` are given.
+    :param DoE:          Original bi-fidelity DoE to split
+    :param num_high:     Number of candidates to select for high-fidelity
+    :param num_low:      Number of candidates to select for low-fidelity
+    :param must_include: Candidate(s) to explicitly include in 'selected'.
+                         Must be an array of shape (num_candidates, ndim).
+    :param fidelity:     Which fidelity the 'must_include' candidates should be added as
+                         Ignored if nothing given for 'must_include'
     """
     high, low = DoE
     if not 1 < num_high < len(high):
@@ -201,12 +209,20 @@ def split_bi_fidelity_doe(DoE: mlcs.BiFidelityDoE, num_high: int, num_low: int,
     elif num_low <= num_high:
         raise ValueError(f"'num_low' must be greater than 'num_high', but {num_low} <= {num_high}")
 
+    must_include_high = must_include and fidelity == 'high'
+    must_include_low = must_include and fidelity == 'low'
+
     rng = rng if rng else np.random  # TODO: replace np.random with np.random.default_rng() (eventually)
 
+    num_high_to_select = num_high - len(must_include) if must_include_high else num_high
     indices = rng.permutation(len(high))
-    sub_high, leave_out_high = high[indices[:num_high]], high[indices[num_high:]]
+    sub_high, leave_out_high = high[indices[:num_high_to_select]], high[indices[num_high_to_select:]]
+    if must_include_high:
+        sub_high = np.concatenate([sub_high, must_include])
 
-    if num_low == len(low):
+    num_low_to_select = num_low - len(must_include) if must_include_low else num_low
+
+    if num_low_to_select == len(low):
         sub_low = low
         leave_out_low = []
     else:
@@ -214,11 +230,13 @@ def split_bi_fidelity_doe(DoE: mlcs.BiFidelityDoE, num_high: int, num_low: int,
         filtered_low = np.array([x for x in low if x not in sub_high])
         # randomly select (num_low - num_high) remaining
         indices = rng.permutation(len(filtered_low))
-        num_low_left = num_low - num_high
+        num_low_left = num_low_to_select - num_high
         extra_low, leave_out_low = filtered_low[indices[:num_low_left]], \
                                    filtered_low[indices[num_low_left:]]
         # concatenate sub_high with selected sub_low
         sub_low = np.concatenate([sub_high, extra_low], axis=0)
+        if must_include_low:
+            sub_low = np.concatenate([sub_low, must_include])
 
     selected = mlcs.BiFidelityDoE(sub_high, sub_low)
     left_out = mlcs.BiFidelityDoE(leave_out_high, leave_out_low)
