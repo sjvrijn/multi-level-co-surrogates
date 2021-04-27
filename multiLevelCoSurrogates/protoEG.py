@@ -71,11 +71,12 @@ class ProtoEG:
 
         for h, l in instance_spec.pixels:
             fraction = 1 - self.calculate_reuse_fraction(h, l, fidelity)
-            num_models_to_resample = fraction * instance_spec.num_reps
-            indices_to_resample = self.rng.choice(self.num_reps, size=num_models_to_resample, replace=False)
+            num_models_to_resample = int(fraction * instance_spec.num_reps)
+            #indices_to_resample = self.rng.choice(self.num_reps, size=num_models_to_resample, replace=False)
+            indices_to_resample = np.random.choice(self.num_reps, size=num_models_to_resample, replace=False)
 
             for idx in indices_to_resample:
-                self.rng = mlcs.set_seed_by_instance(h, l, idx, return_rng=True)
+                self.rng = mlcs.set_seed_by_instance(h, l, idx)#, return_rng=True)
                 if fidelity == 'high':
                     train, test = split_bi_fidelity_doe(full_DoE, h-1, l, rng=self.rng)
                     train = mlcs.BiFidelityDoE(np.concatenate([train.high, X]), train.low)
