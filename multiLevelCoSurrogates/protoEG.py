@@ -209,8 +209,8 @@ def split_bi_fidelity_doe(DoE: mlcs.BiFidelityDoE, num_high: int, num_low: int,
     elif num_low <= num_high:
         raise ValueError(f"'num_low' must be greater than 'num_high', but {num_low} <= {num_high}")
 
-    must_include_high = must_include and fidelity == 'high'
-    must_include_low = must_include and fidelity == 'low'
+    must_include_high = must_include is not None and fidelity == 'high'
+    must_include_low = must_include is not None and fidelity == 'low'
 
     rng = rng if rng else np.random  # TODO: replace np.random with np.random.default_rng() (eventually)
 
