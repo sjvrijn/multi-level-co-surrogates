@@ -53,6 +53,7 @@ def test_instance_spec_steps_warning():
     with warns(UserWarning):
         InstanceSpec(1, 2, step=1, step_low=1, step_high=1)
 
+
 def test_instance_spec_length_errors():
     # steps != 1
     with raises(NotImplementedError):

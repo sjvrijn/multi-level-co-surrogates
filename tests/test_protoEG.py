@@ -1,6 +1,10 @@
+from hypothesis import given
+from hypothesis.strategies import composite, integers
 import mf2
 import numpy as np
 import pandas as pd
+from pytest import approx
+from scipy.special import binom
 from sklearn.metrics import mean_squared_error
 import xarray as xr
 
@@ -61,6 +65,52 @@ def get_subsampled_protoEG(archive, num_reps):
     eg = mlcs.ProtoEG(archive, num_reps=num_reps)
     eg.subsample_errorgrid()
     return eg
+
+
+@composite
+def valid_subsample_spec(draw):
+    max_high = draw(integers(min_value=2, max_value=1_000))
+    max_low = draw(integers(min_value=max_high, max_value=10_000))
+    num_high = draw(integers(min_value=1, max_value=max_high-1))
+    num_low = draw(integers(min_value=num_high, max_value=max_low))
+
+    return num_high, num_low, max_high, max_low
+
+
+@given(valid_subsample_spec())
+def test_calc_reuse_fraction_high(spec):
+    num_high, num_low, max_high, max_low = spec
+    peg = mlcs.ProtoEG(archive=mlcs.CandidateArchive(ndim=0))
+
+    part1 = binom(max_high, num_high)
+    part2 = binom(max_high + 1, num_high)
+
+    if not (np.isfinite(part1) and np.isfinite(part2)):
+        return  # invalid input that cannot be tested
+
+    true_fraction = part1 / part2
+    fraction = peg.calculate_reuse_fraction(num_high, num_low, fidelity='high',
+                                            max_high=max_high, max_low=max_low)
+
+    assert fraction == approx(true_fraction)
+
+
+@given(valid_subsample_spec())
+def test_calc_reuse_fraction_low(spec):
+    num_high, num_low, max_high, max_low = spec
+    peg = mlcs.ProtoEG(archive=mlcs.CandidateArchive(ndim=0))
+
+    part1 = binom(max_low - num_high, num_low - num_high)
+    part2 = binom(max_low+1 - num_high, num_low - num_high)
+
+    if not (np.isfinite(part1) and np.isfinite(part2)):
+        return  # invalid input that cannot be tested
+
+    true_fraction = part1 / part2
+    fraction = peg.calculate_reuse_fraction(num_high, num_low, fidelity='low',
+                                            max_high=max_high, max_low=max_low)
+
+    assert fraction == approx(true_fraction)
 
 
 def test_experiment():
