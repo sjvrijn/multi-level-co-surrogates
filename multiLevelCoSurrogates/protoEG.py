@@ -4,6 +4,7 @@ from typing import Tuple
 import numpy as np
 from numpy.random import default_rng, Generator
 import pandas as pd
+from scipy.special import binom
 from sklearn.metrics import mean_squared_error
 import xarray as xr
 
@@ -170,8 +171,8 @@ class ProtoEG:
         :returns: fraction [0, 1] of samples that can be reused
         """
 
-        max_high = len(self.archive.getcandidates(fidelity='high')) if not max_high else max_high
-        max_low = len(self.archive.getcandidates(fidelity='low')) if not max_low else max_low
+        max_high = self.archive.count('high') if not max_high else max_high
+        max_low = self.archive.count('low') if not max_low else max_low
 
         if fidelity == 'high':
             fraction = (max_high-num_high+1) / (max_high+1)
