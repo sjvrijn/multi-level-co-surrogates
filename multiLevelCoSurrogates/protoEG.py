@@ -13,11 +13,10 @@ import multiLevelCoSurrogates as mlcs
 
 class ProtoEG:
 
-    def __init__(self, archive: mlcs.CandidateArchive, rng: Generator=None, num_reps: int=50):
+    def __init__(self, archive: mlcs.CandidateArchive, num_reps: int=50):
         """Container for everything needed to create (advanced) Error Grids"""
 
         self.archive = archive
-        self.rng = rng  # if rng else default_rng()
         self.num_reps = num_reps
 
         self.models = defaultdict(list)  # models[(n_high, n_low)] = [model_1, ..., model_nreps]
@@ -34,8 +33,8 @@ class ProtoEG:
         error_records = []
         for h, l, rep in instance_spec.instances:
 
-            self.rng = mlcs.set_seed_by_instance(h, l, rep, return_rng=self.rng)
-            train, test = split_bi_fidelity_doe(doe, h, l, rng=self.rng)
+            mlcs.set_seed_by_instance(h, l, rep)
+            train, test = split_bi_fidelity_doe(doe, h, l)
 
             test_x = test.high
             self.test_sets[(h, l)].append(test_x)
@@ -77,11 +76,10 @@ class ProtoEG:
         for h, l in instance_spec.pixels:
             fraction = 1 - self.calculate_reuse_fraction(h, l, fidelity)
             num_models_to_resample = int(fraction * instance_spec.num_reps)
-            #indices_to_resample = self.rng.choice(self.num_reps, size=num_models_to_resample, replace=False)
             indices_to_resample = np.random.choice(self.num_reps, size=num_models_to_resample, replace=False)
 
             for idx in indices_to_resample:
-                self.rng = mlcs.set_seed_by_instance(h, l, idx)#, return_rng=True)
+                mlcs.set_seed_by_instance(h, l, idx)
                 train, test = split_bi_fidelity_doe(full_DoE, h, l, must_include=X, fidelity=fidelity)
                 test_high = test.high
 
@@ -187,8 +185,7 @@ class ProtoEG:
 
 
 def split_bi_fidelity_doe(DoE: mlcs.BiFidelityDoE, num_high: int, num_low: int,
-                          must_include=None, fidelity: str='high',
-                          rng: Generator=None) -> Tuple[mlcs.BiFidelityDoE, mlcs.BiFidelityDoE]:
+                          must_include=None, fidelity: str='high') -> Tuple[mlcs.BiFidelityDoE, mlcs.BiFidelityDoE]:
     """Given an existing bi-fidelity Design of Experiments (DoE) `high, low`,
     creates a subselection of given size `num_high, num_low` based on uniform
     selection. The subselection maintains the property that all high-fidelity
@@ -214,10 +211,8 @@ def split_bi_fidelity_doe(DoE: mlcs.BiFidelityDoE, num_high: int, num_low: int,
     must_include_high = must_include is not None and fidelity == 'high'
     must_include_low = must_include is not None and fidelity == 'low'
 
-    rng = rng if rng else np.random  # TODO: replace np.random with np.random.default_rng() (eventually)
-
     num_high_to_select = num_high - len(must_include) if must_include_high else num_high
-    indices = rng.permutation(len(high))
+    indices = np.random.permutation(len(high))
     sub_high, leave_out_high = high[indices[:num_high_to_select]], high[indices[num_high_to_select:]]
     if must_include_high:
         sub_high = np.concatenate([sub_high, must_include])
@@ -231,7 +226,7 @@ def split_bi_fidelity_doe(DoE: mlcs.BiFidelityDoE, num_high: int, num_low: int,
         # remove all sub_high from low
         filtered_low = np.array([x for x in low if x not in sub_high])
         # randomly select (num_low - num_high) remaining
-        indices = rng.permutation(len(filtered_low))
+        indices = np.random.permutation(len(filtered_low))
         num_low_left = num_low_to_select - num_high
         extra_low, leave_out_low = filtered_low[indices[:num_low_left]], \
                                    filtered_low[indices[num_low_left:]]
@@ -243,25 +238,3 @@ def split_bi_fidelity_doe(DoE: mlcs.BiFidelityDoE, num_high: int, num_low: int,
     selected = mlcs.BiFidelityDoE(sub_high, sub_low)
     left_out = mlcs.BiFidelityDoE(leave_out_high, leave_out_low)
     return selected, left_out
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
