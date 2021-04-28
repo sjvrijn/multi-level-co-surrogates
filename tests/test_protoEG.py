@@ -136,4 +136,4 @@ def test_protoEG_subsample_errorgrid_update_high():
     print(new_sample)
     proto_eg.update_errorgrid_with_sample(new_sample, func.high(new_sample), fidelity='high')
     print(proto_eg.error_grid)
-    assert len(archive.getcandidates(fidelity='high')) == len(DoE_high) + 1
+    assert archive.count('high') == len(DoE_high) + 1
