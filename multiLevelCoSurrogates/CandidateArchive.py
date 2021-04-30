@@ -64,22 +64,6 @@ class CandidateArchive:
         return cls(ndim=ndim, fidelities=fidelities)
 
 
-    def __contains__(self, val):
-        return tuple(val) in self.data
-
-
-    def __len__(self):
-        return len(self.data)
-
-
-    def __index__(self, val) -> dict[str: float]:
-        return {
-            fid: fitness
-            for fid, fitness
-            in zip(self.fidelities, self.data[tuple(val)])
-        }
-
-
     def addcandidates(self, candidates, fitnesses, fidelity: str=None, *, verbose: bool=False):
         """Add multiple candidates to the archive"""
         for cand, fit in zip(candidates, fitnesses):
@@ -219,3 +203,19 @@ class CandidateArchive:
             self.max[fidelity] = value
         elif value < self.min[fidelity]:
             self.min[fidelity] = value
+
+
+    def __contains__(self, val):
+        return tuple(val) in self.data
+
+
+    def __len__(self):
+        return len(self.data)
+
+
+    def __index__(self, val) -> dict[str: float]:
+        return {
+            fid: fitness
+            for fid, fitness
+            in zip(self.fidelities, self.data[tuple(val)])
+        }
