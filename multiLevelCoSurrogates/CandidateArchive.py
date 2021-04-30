@@ -197,6 +197,37 @@ class CandidateArchive:
             if not np.isnan(fitnesses[idx])
         )
 
+    def items(self, fidelity: str=None):
+        """Retrieve candidates and fitnesses from the archive.
+
+        :param fidelity:                (optional) Only return candidate and fitness information for the specified fidelities
+        :return:                        Candidates, Fitnesses (tuple of numpy arrays)
+        """
+
+        if type(fidelity) in [tuple, list]:
+            pass
+        elif fidelity:
+            fidelity = [fidelity]
+        else:
+            fidelity = ['fitness']
+
+        indices = [self.fidelities.index(fid) for fid in fidelity]
+
+        candidates = []
+        fitnesses = []
+        for candidate, fits in self.data.items():
+            for idx in indices:
+                if np.isnan(fits[idx]):
+                    break
+            else:
+                candidates.append(list(candidate))
+                fitnesses.append([fits[idx] for idx in indices])
+
+        candidates = np.array(candidates)
+        fitnesses = np.array(fitnesses)
+
+        return zip(candidates, fitnesses)
+
 
     def _updateminmax(self, fidelity: str, value):
         if value > self.max[fidelity]:
