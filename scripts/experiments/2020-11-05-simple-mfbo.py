@@ -40,6 +40,83 @@ def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
     return reg, SSE
 
 
+def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps=50):
+    np.random.seed(20160501)
+    N_RAND_SAMPLES = 100
+
+    if doe_n_high + cost_ratio*doe_n_low >= budget:
+        raise ValueError('Budget should not be exhausted after DoE')
+
+    Entry = namedtuple('Entry', 'budget time_since_high_eval tau fidelity candidate fitness')
+    entries = []
+
+    #make mf-DoE
+    high_x, low_x = bi_fidelity_doe(func.ndim, doe_n_high, doe_n_low)
+    high_x, low_x = scale_to_function(func, [high_x, low_x])
+    high_y, low_y = func.high(high_x), \
+                    func.low(low_x)
+
+    #subtract mf-DoE from budget
+    budget -= (doe_n_high + doe_n_low*cost_ratio)
+
+    #create archive
+    archive = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
+    archive.addcandidates(low_x, low_y, fidelity='low')
+    archive.addcandidates(high_x, high_y, fidelity='high')
+
+    proto_eg = mlcs.ProtoEG(archive, num_reps=num_reps)
+    proto_eg.subsample_errorgrid()
+
+    mfm = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=archive,
+                                  kernel='Matern', scaling='off')
+
+    time_since_high_eval = 0
+    while budget > 0:
+        tau = calc_tau_from_EG(proto_eg.error_grid, cost_ratio)
+        # compare \tau with current count t to select fidelity, must be >= 1
+        fidelity = 'high' if 1 <= tau <= time_since_high_eval else 'low'
+
+        # predict best place to evaluate:
+        if fidelity == 'high':
+            #best predicted low-fid only datapoint for high-fid (to maintain hierarchical model)
+            candidates = select_high_fid_only_candidates(archive)
+            candidate_predictions = [
+                (cand, mfm.models['high'].predict(cand.reshape(1, -1)))
+                for cand in candidates
+            ]
+
+            x = min(candidate_predictions, key=itemgetter(1))[0].ravel()
+            time_since_high_eval = 0
+            budget -= 1
+        else:  # elif fidelity == 'low':
+            # simple optimization for low-fid
+            x = minimize(
+                lambda x: mfm.models['high'].predict(x.reshape(1, -1)),
+                x0=np.random.uniform(func.l_bound, func.u_bound).reshape(-1, ),
+                bounds=func.bounds.T,
+            ).x
+
+            while x in archive:  # resample to ensure a new candidate is added to the archive
+                print(f'Existing candidate {x} ...')
+                random_candidates = scale_to_function(func, np.random.rand(N_RAND_SAMPLES, func.ndim))
+                fitnesses = mfm.models['high'].predict(random_candidates)
+                x = random_candidates[np.argmin(fitnesses)]
+                print(f'... replaced by {x}')
+
+            time_since_high_eval += 1
+            budget -= cost_ratio
+
+        #evaluate best place
+        y = func[fidelity](x.reshape(1, -1))[0]
+        proto_eg.update_errorgrid_with_sample(x, y, fidelity=fidelity)
+        entries.append(Entry(budget, time_since_high_eval, tau, fidelity, x, y))
+
+        #update model
+        mfm.retrain()
+
+    return mfm, pd.DataFrame.from_records(entries, columns=Entry._fields), archive
+
+
 def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps=50):
     np.random.seed(20160501)
 
