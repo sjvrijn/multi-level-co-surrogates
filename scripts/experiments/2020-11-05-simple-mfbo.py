@@ -56,8 +56,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
                     func.low(low_x)
 
     #subtract mf-DoE from budget
-    budget -= doe_n_high
-    budget -= doe_n_low * cost_ratio
+    budget -= (doe_n_high + doe_n_low*cost_ratio)
 
     #create archive
     archive = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
@@ -72,16 +71,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
         #select next fidelity to evaluate:
         #sample error grid
         EG = create_subsampling_error_grid(archive, num_reps=num_reps, func=func)
-
-        #fit lin-reg for beta_1, beta_2
-        reg = fit_lin_reg(EG)
-        beta_1, beta_2 = reg.coef_[:2]
-
-        #determine \tau based on beta_1, beta_2 and cost_ratio
-        tau = np.ceil(1 / (beta_1 / (beta_2 / cost_ratio)))
-
-        if tau <= 1:
-            warn('Low-fidelity not expected to add information, no need to use multi-fidelity')
+        tau = calc_tau_from_EG(EG, cost_ratio)
 
         #compare \tau with current count t to select fidelity, must be >= 1
         fidelity = 'high' if 1 <= tau <= time_since_high_eval else 'low'
@@ -89,19 +79,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
         #predict best place to evaluate:
         if fidelity == 'high':
             #best predicted low-fid only datapoint for high-fid (to maintain hierarchical model)
-            all_low = {
-                tuple(candidate)
-                for candidate in archive.getcandidates(fidelity='low').candidates
-            }
-
-            all_high = {
-                tuple(candidate)
-                for candidate in archive.getcandidates(fidelity='high').candidates
-            }
-
-            selected_candidates = all_low - all_high
-
-            candidates = [np.array(cand).reshape(1, -1) for cand in selected_candidates]  # only consider candidates that are not yet evaluated in high-fidelity
+            candidates = select_high_fid_only_candidates(archive)
             candidate_predictions = [
                 (cand, mfbo.models['high'].predict(cand.reshape(1, -1)))
                 for cand in candidates
@@ -158,8 +136,7 @@ def fixed_ratio_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num
                     func.low(low_x)
 
     #subtract mf-DoE from budget
-    budget -= doe_n_high
-    budget -= doe_n_low * cost_ratio
+    budget -= (doe_n_high + doe_n_low*cost_ratio)
 
     #create archive
     archive = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
@@ -229,21 +206,44 @@ def fixed_ratio_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num
     return mfbo, pd.DataFrame.from_records(entries, columns=Entry._fields), archive
 
 
+def select_high_fid_only_candidates(archive):
+    all_low = {
+        tuple(candidate)
+        for candidate in archive.getcandidates(fidelity='low').candidates
+    }
+    all_high = {
+        tuple(candidate)
+        for candidate in archive.getcandidates(fidelity='high').candidates
+    }
+    selected_candidates = all_low - all_high
+    return [np.array(cand).reshape(1, -1) for cand in selected_candidates]
 
-if __name__ == '__main__':
+
+def calc_tau_from_EG(EG, cost_ratio):
+    # fit lin-reg for beta_1, beta_2
+    reg = fit_lin_reg(EG)
+    beta_1, beta_2 = reg.coef_[:2]
+    # determine \tau based on beta_1, beta_2 and cost_ratio
+    tau = np.ceil(1 / (beta_1 / (beta_2 / cost_ratio)))
+    if tau <= 1:
+        warn('Low-fidelity not expected to add information, no need to use multi-fidelity')
+    return tau
+
+
+def main():
     import mf2
     from pickle import dump
     for func in [
         mf2.branin,
-        mf2.currin,
-        mf2.himmelblau,
-        mf2.six_hump_camelback,
-        mf2.park91a,
-        mf2.hartmann6,
-        mf2.borehole,
-        mf2.bohachevsky,
-        mf2.booth,
-        mf2.park91b,
+        # mf2.currin,
+        # mf2.himmelblau,
+        # mf2.six_hump_camelback,
+        # mf2.park91a,
+        # mf2.hartmann6,
+        # mf2.borehole,
+        # mf2.bohachevsky,
+        # mf2.booth,
+        # mf2.park91b,
     ]:
 
         _, df, archive = simple_multifid_bo(
@@ -269,3 +269,7 @@ if __name__ == '__main__':
         df.to_csv(save_dir / f'{func.name}-tracking-fixed.csv')
         with open(save_dir / f'{func.name}-archive-fixed.pkl', 'wb') as f:
             dump(str(archive.data), f)
+
+
+if __name__ == '__main__':
+    main()
