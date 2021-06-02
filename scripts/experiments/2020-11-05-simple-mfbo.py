@@ -72,7 +72,7 @@ def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_re
 
     time_since_high_eval = 0
     while budget > 0:
-        tau = calc_tau_from_EG(proto_eg.error_grid, cost_ratio)
+        tau = calc_tau_from_EG(proto_eg.error_grid['mses'], cost_ratio)
         # compare \tau with current count t to select fidelity, must be >= 1
         fidelity = 'high' if 1 <= tau <= time_since_high_eval else 'low'
 
@@ -322,26 +322,38 @@ def main():
         # mf2.booth,
         # mf2.park91b,
     ]:
+        print(func.name)
 
-        _, df, archive = simple_multifid_bo(
-            func=func,
-            budget=50,
+        kwargs = dict(
+            budget=20,
             cost_ratio=0.2,
             doe_n_high=10,
             doe_n_low=25,
-            num_reps=20
+            num_reps=20,
+        )
+
+        print('    Proto-EG...')
+        _, df, archive = proto_EG_multifid_bo(
+            func=func,
+            **kwargs
+        )
+        df.to_csv(save_dir / f'{func.name}-tracking-peg.csv')
+        with open(save_dir / f'{func.name}-archive-peg.pkl', 'wb') as f:
+            dump(str(archive.data), f)
+
+        print('    Naive...')
+        _, df, archive = simple_multifid_bo(
+            func=func,
+            **kwargs
         )
         df.to_csv(save_dir / f'{func.name}-tracking.csv')
         with open(save_dir / f'{func.name}-archive.pkl', 'wb') as f:
             dump(str(archive.data), f)
 
+        print('    Fixed...')
         _, df, archive = fixed_ratio_multifid_bo(
             func=func,
-            budget=50,
-            cost_ratio=0.2,
-            doe_n_high=10,
-            doe_n_low=25,
-            num_reps=20
+            **kwargs
         )
         df.to_csv(save_dir / f'{func.name}-tracking-fixed.csv')
         with open(save_dir / f'{func.name}-archive-fixed.pkl', 'wb') as f:
