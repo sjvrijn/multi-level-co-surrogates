@@ -131,5 +131,5 @@ class InstanceSpec:
 
         max_high = archive.count('high')
         max_low = archive.count('low')
-
+        print(max_high, max_low)
         return cls(max_high=max_high, max_low=max_low, **kwargs)

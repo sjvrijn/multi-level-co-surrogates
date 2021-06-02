@@ -325,11 +325,11 @@ def main():
         print(func.name)
 
         kwargs = dict(
-            budget=20,
+            budget=10,
             cost_ratio=0.2,
-            doe_n_high=10,
-            doe_n_low=25,
-            num_reps=20,
+            doe_n_high=5,
+            doe_n_low=10,
+            num_reps=2,
         )
 
         print('    Proto-EG...')

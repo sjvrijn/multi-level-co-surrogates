@@ -6,6 +6,8 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import matplotlib.pyplot as plt
 import numpy as np
 
+from utils.scaling import rescale
+
 
 ScatterPoints = namedtuple('ScatterPoints', ['x_y', 'z', 'style'])
 

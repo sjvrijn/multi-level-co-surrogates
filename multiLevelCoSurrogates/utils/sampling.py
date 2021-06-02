@@ -4,7 +4,7 @@ from scipy.spatial import distance
 from typing import Tuple
 import numpy as np
 import scipy as sp
-
+from utils.scaling import ValueRange, rescale
 
 BiFidelityDoE = namedtuple("BiFidelityDoE", "high low")
 
@@ -78,6 +78,37 @@ def split_bi_fidelity_doe(DoE: BiFidelityDoE, num_high: int, num_low: int) -> Tu
     selected = BiFidelityDoE(sub_high, sub_low)
     left_out = BiFidelityDoE(leave_out_high, leave_out_low)
     return selected, left_out
+
+
+def split_with_include(DoE: BiFidelityDoE, num_high: int, num_low: int,
+                       must_include, fidelity: str='high') -> Tuple[BiFidelityDoE, BiFidelityDoE]:
+    """Given an existing bi-fidelity Design of Experiments (DoE) `high, low`,
+    creates a subselection of given size `num_high, num_low` based on uniform
+    selection. The subselection maintains the property that all high-fidelity
+    samples are a subset of the low-fidelity samples.
+
+    Raises a `ValueError` if invalid `num_high` or `num_low` are given.
+    :param DoE:          Original bi-fidelity DoE to split
+    :param num_high:     Number of candidates to select for high-fidelity
+    :param num_low:      Number of candidates to select for low-fidelity
+    :param must_include: Additional candidate(s) to explicitly include in `selected`.
+                         Must be an array of shape (num_candidates, ndim) of candidates
+                         not already present in `DoE`
+    :param fidelity:     Which fidelity the 'must_include' candidates should be added as
+    """
+    if fidelity not in ['high', 'low']:
+        raise ValueError(f"Invalid fidelity '{fidelity}', should be 'high' or 'low'")
+
+    num_low -= 1
+    if fidelity == 'high':
+        num_high -= 1
+
+    selected, other = split_bi_fidelity_doe(DoE, num_high, num_low)
+
+    low = np.concatenate([selected.low, must_include])
+    high = np.concatenate([selected.high, must_include]) if fidelity == 'high' else selected.high
+
+    return BiFidelityDoE(high, low), other
 
 
 def select_subsample(xdata, num):

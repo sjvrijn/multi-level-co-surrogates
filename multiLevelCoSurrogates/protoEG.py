@@ -117,10 +117,6 @@ class ProtoEG:
                     mse = mean_squared_error(test_y, model.top_level_model.predict(test_high))
                     self.error_grid['mses'].loc[h, l, idx, 'high_hier'] = mse
 
-            # elif fidelity == 'low':
-                # Error values of remaining models remains unchanged
-        #return updated errorgrid (?)
-
 
     def calculate_reuse_fraction(self, num_high: int, num_low: int, fidelity: str,
                                  *, max_high: int=None, max_low: int=None) -> float:
@@ -182,34 +178,3 @@ class ProtoEG:
         if not (0 <= fraction <= 1):
             raise ValueError('Invalid fraction calculated, please check inputs')
         return fraction
-
-
-def split_with_include(DoE: mlcs.BiFidelityDoE, num_high: int, num_low: int,
-                       must_include, fidelity: str='high') -> Tuple[mlcs.BiFidelityDoE, mlcs.BiFidelityDoE]:
-    """Given an existing bi-fidelity Design of Experiments (DoE) `high, low`,
-    creates a subselection of given size `num_high, num_low` based on uniform
-    selection. The subselection maintains the property that all high-fidelity
-    samples are a subset of the low-fidelity samples.
-
-    Raises a `ValueError` if invalid `num_high` or `num_low` are given.
-    :param DoE:          Original bi-fidelity DoE to split
-    :param num_high:     Number of candidates to select for high-fidelity
-    :param num_low:      Number of candidates to select for low-fidelity
-    :param must_include: Additional candidate(s) to explicitly include in `selected`.
-                         Must be an array of shape (num_candidates, ndim) of candidates
-                         not already present in `DoE`
-    :param fidelity:     Which fidelity the 'must_include' candidates should be added as
-    """
-    if fidelity not in ['high', 'low']:
-        raise ValueError(f"Invalid fidelity '{fidelity}', should be 'high' or 'low'")
-
-    num_low -= 1
-    if fidelity == 'high':
-        num_high -= 1
-
-    selected, other = mlcs.split_bi_fidelity_doe(DoE, num_high, num_low)
-
-    low = np.concatenate([selected.low, must_include])
-    high = np.concatenate([selected.high, must_include]) if fidelity == 'high' else selected.high
-
-    return mlcs.BiFidelityDoE(high, low), other
