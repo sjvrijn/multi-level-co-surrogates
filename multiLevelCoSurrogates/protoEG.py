@@ -80,7 +80,7 @@ class ProtoEG:
 
             for idx in indices_to_resample:
                 mlcs.set_seed_by_instance(h, l, idx)
-                train, test = split_with_include(full_DoE, h, l, must_include=X, fidelity=fidelity)
+                train, test = mlcs.split_with_include(full_DoE, h, l, must_include=X, fidelity=fidelity)
                 test_high = test.high
 
                 self.test_sets[(h,l)][idx] = test_high
