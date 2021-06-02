@@ -13,7 +13,6 @@ import numpy as np
 import xarray as xr
 from parse import parse
 from pyprojroot import here
-from scipy.spatial import distance
 from sklearn.metrics import mean_squared_error, r2_score
 from mf2 import MultiFidelityFunction
 
@@ -35,70 +34,6 @@ BiFidelityDoE = namedtuple("BiFidelityDoE", "high low")
 def set_seed_by_instance(num_high: int, num_low: int, rep: int) -> None:
     """Fix the numpy random seed based on an Instance"""
     np.random.seed(int(f'{num_high:03}{num_low:03}{rep:03}'))
-
-
-def bi_fidelity_doe(ndim: int, num_high: int, num_low: int) -> BiFidelityDoE:
-    """Create a Design of Experiments (DoE) for two fidelities in `ndim`
-    dimensions. The high-fidelity samples are guaranteed to be a subset
-    of the low-fidelity samples.
-
-    :returns high-fidelity samples, low-fidelity samples
-    """
-    high_x = mlcs.low_lhs_sample(ndim, num_high)
-    low_x = mlcs.low_lhs_sample(ndim, num_low)
-
-    dists = distance.cdist(high_x, low_x)
-
-    #TODO: this is the naive method, potentially speed up?
-    highs_to_match = set(range(num_high))
-    while highs_to_match:
-        min_dist = np.min(dists)
-        high_idx, low_idx = np.argwhere(dists == min_dist)[0]
-
-        low_x[low_idx] = high_x[high_idx]
-        # make sure just selected samples are not re-selectable
-        dists[high_idx,:] = np.inf
-        dists[:,low_idx] = np.inf
-        highs_to_match.remove(high_idx)
-    return BiFidelityDoE(high_x, low_x)
-
-
-def split_bi_fidelity_doe(DoE: BiFidelityDoE, num_high: int, num_low: int) -> Tuple[BiFidelityDoE, BiFidelityDoE]:
-    """Given an existing bi-fidelity Design of Experiments (DoE) `high, low`,
-    creates a subselection of given size `num_high, num_low` based on uniform
-    selection. The subselection maintains the property that all high-fidelity
-    samples are a subset of the low-fidelity samples.
-
-    Raises a `ValueError` if invalid `num_high` or `num_low` are given.
-    """
-    high, low = DoE
-    if not 1 < num_high < len(high):
-        raise ValueError(f"'num_high' must be in the range [2, len(DoE.high) (={len(DoE.high)})], but is {num_high}")
-    elif num_low > len(low):
-        raise ValueError(f"'num_low' cannot be greater than len(DoE.low) (={len(DoE.low)}), but is {num_low}")
-    elif num_low <= num_high:
-        raise ValueError(f"'num_low' must be greater than 'num_high', but {num_low} <= {num_high}")
-
-    indices = np.random.permutation(len(high))
-    sub_high, leave_out_high = high[indices[:num_high]], high[indices[num_high:]]
-
-    if num_low == len(low):
-        sub_low = low
-        leave_out_low = []
-    else:
-        # remove all sub_high from low
-        filtered_low = np.array([x for x in low if x not in sub_high])
-        # randomly select (num_low - num_high) remaining
-        indices = np.random.permutation(len(filtered_low))
-        num_low_left = num_low - num_high
-        extra_low, leave_out_low = filtered_low[indices[:num_low_left]], \
-                                   filtered_low[indices[num_low_left:]]
-        # concatenate sub_high with selected sub_low
-        sub_low = np.concatenate([sub_high, extra_low], axis=0)
-
-    selected = BiFidelityDoE(sub_high, sub_low)
-    left_out = BiFidelityDoE(leave_out_high, leave_out_low)
-    return selected, left_out
 
 
 def get_test_sample(ndim: int, save_dir: Path) -> np.ndarray:
@@ -207,7 +142,7 @@ def plot_model_and_samples(func: MultiFidelityFunction, kernel: str,
     num_high, num_low, rep = instance
     set_seed_by_instance(num_high, num_low, rep)
 
-    high_x, low_x = bi_fidelity_doe(func.ndim, num_high, num_low)
+    high_x, low_x = mlcs.bi_fidelity_doe(func.ndim, num_high, num_low)
     high_x, low_x = scale_to_function(func, [high_x, low_x])
     high_y, low_y = func.high(high_x), \
                     func.low(low_x)
@@ -312,7 +247,7 @@ def create_model_error_grid(
         set_seed_by_instance(num_high, num_low, rep)
 
         # Create Multi-Fidelity DoE in- and output according to instance specification
-        high_x, low_x = bi_fidelity_doe(func.ndim, num_high, num_low)
+        high_x, low_x = mlcs.bi_fidelity_doe(func.ndim, num_high, num_low)
         high_x, low_x = scale_to_function(func, [high_x, low_x])
         high_y, low_y = func.high(high_x), \
                         func.low(low_x)
@@ -420,7 +355,7 @@ def create_resampling_error_grid(
 
     # Create initial DoE
     np.random.seed(20160501)  # Setting seed for reproducibility
-    DoE = bi_fidelity_doe(func.ndim, doe_high, doe_low)
+    DoE = mlcs.bi_fidelity_doe(func.ndim, doe_high, doe_low)
     DoE = scale_to_function(func, DoE)
 
 
@@ -433,7 +368,7 @@ def create_resampling_error_grid(
         set_seed_by_instance(num_high, num_low, rep)
 
         # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
-        (high_x, low_x), _ = split_bi_fidelity_doe(DoE, num_high, num_low)
+        (high_x, low_x), _ = mlcs.split_bi_fidelity_doe(DoE, num_high, num_low)
         high_y, low_y = func.high(high_x), \
                         func.low(low_x)
 
@@ -534,7 +469,7 @@ def create_resampling_leftover_error_grid(
 
     # Create initial DoE
     np.random.seed(20160501 + seed_offset)  # Setting seed for reproducibility
-    DoE = bi_fidelity_doe(func.ndim, doe_high, doe_low)
+    DoE = mlcs.bi_fidelity_doe(func.ndim, doe_high, doe_low)
     DoE = scale_to_function(func, DoE)
 
 
@@ -547,7 +482,7 @@ def create_resampling_leftover_error_grid(
         set_seed_by_instance(num_high, num_low, rep)
 
         # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
-        selected, test = split_bi_fidelity_doe(DoE, num_high, num_low)
+        selected, test = mlcs.split_bi_fidelity_doe(DoE, num_high, num_low)
         high_y, low_y = func.high(selected.high), \
                         func.low(selected.low)
 
@@ -748,7 +683,7 @@ def create_subsampling_error_grid(
             print(f"{i}/{len(instances)}")
 
         # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
-        (high_x, low_x), _ = split_bi_fidelity_doe(DoE, num_high, num_low)
+        (high_x, low_x), _ = mlcs.split_bi_fidelity_doe(DoE, num_high, num_low)
         high_y, low_y = func.high(high_x), \
                         func.low(low_x)
 

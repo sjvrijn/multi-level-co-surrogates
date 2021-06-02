@@ -17,7 +17,7 @@ from scipy.optimize import minimize
 from sklearn.linear_model import LinearRegression
 from pyprojroot import here
 
-from experiments import bi_fidelity_doe, scale_to_function, create_subsampling_error_grid, mlcs
+from experiments import scale_to_function, create_subsampling_error_grid, mlcs
 
 
 save_dir = here('files/2020-11-05-simple-mfbo/')
@@ -51,7 +51,7 @@ def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_re
     entries = []
 
     #make mf-DoE
-    high_x, low_x = bi_fidelity_doe(func.ndim, doe_n_high, doe_n_low)
+    high_x, low_x = mlcs.bi_fidelity_doe(func.ndim, doe_n_high, doe_n_low)
     high_x, low_x = scale_to_function(func, [high_x, low_x])
     high_y, low_y = func.high(high_x), \
                     func.low(low_x)
@@ -127,7 +127,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
     entries = []
 
     #make mf-DoE
-    high_x, low_x = bi_fidelity_doe(func.ndim, doe_n_high, doe_n_low)
+    high_x, low_x = mlcs.bi_fidelity_doe(func.ndim, doe_n_high, doe_n_low)
     high_x, low_x = scale_to_function(func, [high_x, low_x])
     high_y, low_y = func.high(high_x), \
                     func.low(low_x)
@@ -207,7 +207,7 @@ def fixed_ratio_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num
     tau = 1 / cost_ratio
 
     #make mf-DoE
-    high_x, low_x = bi_fidelity_doe(func.ndim, doe_n_high, doe_n_low)
+    high_x, low_x = mlcs.bi_fidelity_doe(func.ndim, doe_n_high, doe_n_low)
     high_x, low_x = scale_to_function(func, [high_x, low_x])
     high_y, low_y = func.high(high_x), \
                     func.low(low_x)

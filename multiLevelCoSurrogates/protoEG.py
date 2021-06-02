@@ -34,7 +34,7 @@ class ProtoEG:
         for h, l, rep in instance_spec.instances:
 
             mlcs.set_seed_by_instance(h, l, rep)
-            train, test = split_bi_fidelity_doe(doe, h, l)
+            train, test = mlcs.split_bi_fidelity_doe(doe, h, l)
 
             test_x = test.high
             self.test_sets[(h, l)].append(test_x)

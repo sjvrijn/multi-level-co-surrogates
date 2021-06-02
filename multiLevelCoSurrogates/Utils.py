@@ -4,6 +4,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 from pathlib import Path
 from pyDOE import lhs
+from scipy.spatial import distance
+from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -45,6 +47,70 @@ def low_lhs_sample(ndim, nlow):
         return np.linspace(0,1,nlow).reshape(-1,1)
     elif ndim > 1:
         return lhs(ndim, nlow)
+
+
+def bi_fidelity_doe(ndim: int, num_high: int, num_low: int) -> BiFidelityDoE:
+    """Create a Design of Experiments (DoE) for two fidelities in `ndim`
+    dimensions. The high-fidelity samples are guaranteed to be a subset
+    of the low-fidelity samples.
+
+    :returns high-fidelity samples, low-fidelity samples
+    """
+    high_x = low_lhs_sample(ndim, num_high)
+    low_x = low_lhs_sample(ndim, num_low)
+
+    dists = distance.cdist(high_x, low_x)
+
+    #TODO: this is the naive method, potentially speed up?
+    highs_to_match = set(range(num_high))
+    while highs_to_match:
+        min_dist = np.min(dists)
+        high_idx, low_idx = np.argwhere(dists == min_dist)[0]
+
+        low_x[low_idx] = high_x[high_idx]
+        # make sure just selected samples are not re-selectable
+        dists[high_idx,:] = np.inf
+        dists[:,low_idx] = np.inf
+        highs_to_match.remove(high_idx)
+    return BiFidelityDoE(high_x, low_x)
+
+
+def split_bi_fidelity_doe(DoE: BiFidelityDoE, num_high: int, num_low: int) -> Tuple[BiFidelityDoE, BiFidelityDoE]:
+    """Given an existing bi-fidelity Design of Experiments (DoE) `high, low`,
+    creates a subselection of given size `num_high, num_low` based on uniform
+    selection. The subselection maintains the property that all high-fidelity
+    samples are a subset of the low-fidelity samples.
+
+    Raises a `ValueError` if invalid `num_high` or `num_low` are given.
+    """
+    high, low = DoE
+    if not 1 < num_high < len(high):
+        raise ValueError(f"'num_high' must be in the range [2, len(DoE.high) (={len(DoE.high)})], but is {num_high}")
+    elif num_low > len(low):
+        raise ValueError(f"'num_low' cannot be greater than len(DoE.low) (={len(DoE.low)}), but is {num_low}")
+    elif num_low <= num_high:
+        raise ValueError(f"'num_low' must be greater than 'num_high', but {num_low} <= {num_high}")
+
+    indices = np.random.permutation(len(high))
+    sub_high, leave_out_high = high[indices[:num_high]], high[indices[num_high:]]
+
+    if num_low == len(low):
+        sub_low = low
+        leave_out_low = []
+    else:
+        # remove all sub_high from low
+        filtered_low = np.array([x for x in low if x not in sub_high])
+        # randomly select (num_low - num_high) remaining
+        indices = np.random.permutation(len(filtered_low))
+        num_low_left = num_low - num_high
+        extra_low, leave_out_low = filtered_low[indices[:num_low_left]], \
+                                   filtered_low[indices[num_low_left:]]
+        # concatenate sub_high with selected sub_low
+        sub_low = np.concatenate([sub_high, extra_low], axis=0)
+
+    selected = BiFidelityDoE(sub_high, sub_low)
+    left_out = BiFidelityDoE(leave_out_high, leave_out_low)
+    return selected, left_out
 
 
 def select_subsample(xdata, num):

@@ -21,7 +21,7 @@ import multiLevelCoSurrogates as mlcs
 
 def prepare_DoE(func, nh=3, nl=4):
     np.random.seed(20160501)  # Setting seed for reproducibility
-    init_DoE = exp.bi_fidelity_doe(func.ndim, nh, nl)
+    init_DoE = mlcs.bi_fidelity_doe(func.ndim, nh, nl)
     DoE = exp.scale_to_function(func, init_DoE)
     return DoE
 
@@ -34,7 +34,7 @@ def get_experiment_subsampled_EG(func, DoE, instances):
         mlcs.set_seed_by_instance(num_high, num_low, rep)
 
         # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
-        train, test = exp.split_bi_fidelity_doe(DoE, num_high, num_low)
+        train, test = mlcs.split_bi_fidelity_doe(DoE, num_high, num_low)
         train_high_y, train_low_y = func.high(train.high), \
                                     func.low(train.low)
 
