@@ -96,7 +96,7 @@ class ProtoEG:
                 # create and store model
                 model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive,
                                                 kernel='Matern', scaling='off')
-                self.models[(h, l)][idx] = model
+                self.models[(h,l)][idx] = model
 
                 # calculate and store error of model at this `idx`
                 test_y = self.archive.getfitnesses(test_high, fidelity='high')
@@ -106,17 +106,20 @@ class ProtoEG:
             if fidelity == 'high':
                 indices_to_update_errors = set(range(self.num_reps)) - indices_to_resample
                 for idx in indices_to_update_errors:
-                    #     add (X, y) to test-set for that model
-                    test_high = self.test_sets[(h, l)][idx]
-                    test_high = np.concatenate([test_high, X])
-                    self.test_sets[(h, l)][idx] = test_high
+                    self.update_errors_of_existing_model(X, h, l, idx)
 
-                    #     recalculate error with new test-set
-                    test_y = self.archive.getfitnesses(test_high, fidelity='high')
-                    model = self.models[(h,l)][idx]
-                    mse = mean_squared_error(test_y, model.top_level_model.predict(test_high))
-                    self.error_grid['mses'].loc[h, l, idx, 'high_hier'] = mse
+    def update_errors_of_existing_model(self, X, h, l, idx):
+        """Add X to test set for models[(h,l)][idx] and recalculate MSE"""
+        # add (X, y) to test-set for that model
+        test_high = self.test_sets[(h, l)][idx]
+        test_high = np.concatenate([test_high, X])
+        self.test_sets[(h, l)][idx] = test_high
 
+        # recalculate error with new test-set
+        test_y = self.archive.getfitnesses(test_high, fidelity='high')
+        model = self.models[(h, l)][idx]
+        mse = mean_squared_error(test_y, model.top_level_model.predict(test_high))
+        self.error_grid['mses'].loc[h, l, idx, 'high_hier'] = mse
 
     def calculate_reuse_fraction(self, num_high: int, num_low: int, fidelity: str,
                                  *, max_high: int=None, max_low: int=None) -> float:
