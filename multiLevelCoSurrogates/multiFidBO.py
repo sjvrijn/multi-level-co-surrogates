@@ -16,7 +16,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from more_itertools import stagger
 
 from .CandidateArchive import CandidateArchive
-from .Utils import create_random_sample_set, rescale, \
+from .utils import create_random_sample_set, rescale, \
     low_lhs_sample, createsurfaces, plotsurfaces, gpplot, ScatterPoints, ValueRange
 from .surrogates import HierarchicalSurrogate, Surrogate
 

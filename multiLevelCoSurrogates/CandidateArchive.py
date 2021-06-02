@@ -17,7 +17,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 import numpy as np
 from warnings import warn
 
-from multiLevelCoSurrogates.Utils import BiFidelityDoE
+from multiLevelCoSurrogates.utils import BiFidelityDoE
 
 CandidateSet = namedtuple('CandidateSet', ['candidates', 'fitnesses'])
 
