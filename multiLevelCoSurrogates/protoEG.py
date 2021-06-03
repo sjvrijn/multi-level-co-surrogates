@@ -74,24 +74,22 @@ class ProtoEG:
         X = X.reshape(1, -1)
 
         for h, l in instance_spec.pixels:
-            fraction = 1 - self.calculate_reuse_fraction(h, l, fidelity)
-            num_models_to_resample = int(fraction * instance_spec.num_reps)
-            indices_to_resample = np.random.choice(self.num_reps, size=num_models_to_resample, replace=False)
+            if (h,l) in self.models:
+                indices_to_resample = self.get_resample_indices(fidelity, h, l)
+            else:
+                self.models[(h,l)] = [None] * self.num_reps
+                self.test_sets[(h,l)] = [None] * self.num_reps
+                indices_to_resample = range(self.num_reps)
 
             for idx in indices_to_resample:
                 mlcs.set_seed_by_instance(h, l, idx)
-                train, test = mlcs.split_with_include(full_DoE, h, l, must_include=X, fidelity=fidelity)
-                test_high = test.high
+                train_doe, test_doe = mlcs.split_with_include(full_DoE, h, l, must_include=X, fidelity=fidelity)
+                test_high = test_doe.high
 
                 self.test_sets[(h,l)][idx] = test_high
 
                 # Create an archive from the MF-function and MF-DoE data
-                train_low_y = self.archive.getfitnesses(train.low, fidelity='low')
-                train_high_y = self.archive.getfitnesses(train.high, fidelity='high')
-
-                train_archive = mlcs.CandidateArchive(ndim=self.archive.ndim, fidelities=self.archive.fidelities)
-                train_archive.addcandidates(train.low, train_low_y, fidelity='low')
-                train_archive.addcandidates(train.high, train_high_y, fidelity='high')
+                train_archive = self.create_train_archive(train_doe)
 
                 # create and store model
                 model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive,
@@ -108,6 +106,23 @@ class ProtoEG:
                 for idx in indices_to_update_errors:
                     self.update_errors_of_existing_model(X, h, l, idx)
 
+    def get_resample_indices(self, fidelity, h, l):
+        fraction = 1 - self.calculate_reuse_fraction(h, l, fidelity)
+        num_models_to_resample = int(fraction * self.num_reps)
+        indices_to_resample = np.random.choice(self.num_reps, size=num_models_to_resample,
+                                               replace=False)
+        return indices_to_resample
+
+    def create_train_archive(self, train):
+        train_low_y = self.archive.getfitnesses(train.low, fidelity='low')
+        train_high_y = self.archive.getfitnesses(train.high, fidelity='high')
+        train_archive = mlcs.CandidateArchive(ndim=self.archive.ndim,
+                                              fidelities=self.archive.fidelities)
+        train_archive.addcandidates(train.low, train_low_y, fidelity='low')
+        train_archive.addcandidates(train.high, train_high_y, fidelity='high')
+        return train_archive
+
+
     def update_errors_of_existing_model(self, X, h, l, idx):
         """Add X to test set for models[(h,l)][idx] and recalculate MSE"""
         # add (X, y) to test-set for that model
@@ -120,6 +135,7 @@ class ProtoEG:
         model = self.models[(h, l)][idx]
         mse = mean_squared_error(test_y, model.top_level_model.predict(test_high))
         self.error_grid['mses'].loc[h, l, idx, 'high_hier'] = mse
+
 
     def calculate_reuse_fraction(self, num_high: int, num_low: int, fidelity: str,
                                  *, max_high: int=None, max_low: int=None) -> float:
