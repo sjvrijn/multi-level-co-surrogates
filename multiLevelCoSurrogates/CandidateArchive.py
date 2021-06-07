@@ -6,7 +6,7 @@ CandidateArchive.py: Class to store candidate solutions in an optimization proce
                      (multi-fidelity) fitness values
 """
 from collections import namedtuple
-from typing import Dict, Iterable, Union
+from typing import Dict, Iterable, Tuple, Union
 
 from more_itertools import pairwise
 
@@ -62,6 +62,19 @@ class CandidateArchive:
         fidelities = tuple(multi_fid_func.fidelity_names) + diff_fidelities
 
         return cls(ndim=ndim, fidelities=fidelities)
+
+
+    @classmethod
+    def from_bi_fid_DoE(cls, high_x, low_x, high_y, low_y):
+        """Create a populated CandidateArchive from an existing bi-fidelity DoE
+        (high_x, low_x) with corresponding fitness values (high_y, low_y)
+        """
+        ndim = len(high_x[0])
+        fidelities = ['high', 'low', 'high-low']
+        archive = cls(ndim=ndim, fidelities=fidelities)
+        archive.addcandidates(low_x, low_y, fidelity='low')
+        archive.addcandidates(high_x, high_y, fidelity='high')
+        return archive
 
 
     def addcandidates(self, candidates, fitnesses, fidelity: str=None, *, verbose: bool=False):
