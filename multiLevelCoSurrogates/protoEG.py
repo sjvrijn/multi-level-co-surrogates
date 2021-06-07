@@ -75,12 +75,12 @@ class ProtoEG:
 
         for h, l in instance_spec.pixels:
             if (h,l) in self.models:
-                indices_to_resample = self.get_resample_indices(fidelity, h, l)
+                indices_to_resample = self._get_resample_indices(fidelity, h, l)
             else:
                 self.models[(h,l)] = [None] * self.num_reps
                 self.test_sets[(h,l)] = [None] * self.num_reps
                 indices_to_resample = range(self.num_reps)
-                self.extend_error_grid(fidelity=fidelity, coord=(h, l))
+                self._extend_error_grid(fidelity=fidelity, coord=(h, l))
 
             for idx in indices_to_resample:
                 mlcs.set_seed_by_instance(h, l, idx)
@@ -90,7 +90,7 @@ class ProtoEG:
                 self.test_sets[(h,l)][idx] = test_high
 
                 # Create an archive from the MF-function and MF-DoE data
-                train_archive = self.create_train_archive(train_doe)
+                train_archive = self._create_train_archive(train_doe)
 
                 # create and store model
                 model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive,
@@ -105,16 +105,18 @@ class ProtoEG:
             if fidelity == 'high':
                 indices_to_update_errors = set(range(self.num_reps)) - indices_to_resample
                 for idx in indices_to_update_errors:
-                    self.update_errors_of_existing_model(X, h, l, idx)
+                    self._update_errors_of_existing_model(X, h, l, idx)
 
-    def get_resample_indices(self, fidelity, h, l):
+
+    def _get_resample_indices(self, fidelity: str, h: int, l: int):
         fraction = 1 - self.calculate_reuse_fraction(h, l, fidelity)
         num_models_to_resample = int(fraction * self.num_reps)
         indices_to_resample = np.random.choice(self.num_reps, size=num_models_to_resample,
                                                replace=False)
         return indices_to_resample
 
-    def create_train_archive(self, train):
+
+    def _create_train_archive(self, train):
         train_low_y = self.archive.getfitnesses(train.low, fidelity='low')
         train_high_y = self.archive.getfitnesses(train.high, fidelity='high')
         train_archive = mlcs.CandidateArchive(ndim=self.archive.ndim,
@@ -124,7 +126,7 @@ class ProtoEG:
         return train_archive
 
 
-    def extend_error_grid(self, fidelity: str, coord: Tuple[int, int]):
+    def _extend_error_grid(self, fidelity: str, coord: Tuple[int, int]):
         """Extend the error grid with new coordinate values"""
         if fidelity not in ['high', 'low']:
             raise ValueError(f"invalid fidelity '{fidelity}', should be 'high' or 'low'")
@@ -141,7 +143,7 @@ class ProtoEG:
         self.error_grid = xr.merge([self.error_grid, tmp_ds])
 
 
-    def update_errors_of_existing_model(self, X, h, l, idx):
+    def _update_errors_of_existing_model(self, X, h: int, l: int, idx: int):
         """Add X to test set for models[(h,l)][idx] and recalculate MSE"""
         # add (X, y) to test-set for that model
         test_high = self.test_sets[(h, l)][idx]
