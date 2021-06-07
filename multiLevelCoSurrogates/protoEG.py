@@ -80,6 +80,7 @@ class ProtoEG:
                 self.models[(h,l)] = [None] * self.num_reps
                 self.test_sets[(h,l)] = [None] * self.num_reps
                 indices_to_resample = range(self.num_reps)
+                self.extend_error_grid(fidelity=fidelity, coord=(h, l))
 
             for idx in indices_to_resample:
                 mlcs.set_seed_by_instance(h, l, idx)
@@ -121,6 +122,23 @@ class ProtoEG:
         train_archive.addcandidates(train.low, train_low_y, fidelity='low')
         train_archive.addcandidates(train.high, train_high_y, fidelity='high')
         return train_archive
+
+
+    def extend_error_grid(self, fidelity: str, coord: Tuple[int, int]):
+        """Extend the error grid with new coordinate values"""
+        if fidelity not in ['high', 'low']:
+            raise ValueError(f"invalid fidelity '{fidelity}', should be 'high' or 'low'")
+
+        n_high, n_low = coord
+        if fidelity == 'high':
+            dim = 'n_high'
+            coord = n_high
+        else:  # if fidelity == 'low'
+            dim = 'n_low'
+            coord = n_low
+
+        tmp_ds = xr.Dataset(coords=self.error_grid.coords).assign_coords({dim: [coord]})
+        self.error_grid = xr.merge([self.error_grid, tmp_ds])
 
 
     def update_errors_of_existing_model(self, X, h, l, idx):
