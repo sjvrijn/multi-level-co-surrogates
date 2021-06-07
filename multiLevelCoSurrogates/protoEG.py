@@ -39,9 +39,7 @@ class ProtoEG:
             test_x = test.high
             self.test_sets[(h, l)].append(test_x)
 
-            train_archive = mlcs.CandidateArchive(self.archive.ndim, self.archive.fidelities)
-            train_archive.addcandidates(train.high, self.archive.getfitnesses(train.high, fidelity='high'), 'high')
-            train_archive.addcandidates(train.low, self.archive.getfitnesses(train.low, fidelity='low'), 'low')
+            train_archive = self._create_train_archive(train)
 
             model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive, kernel='Matern', scaling='off')
             self.models[(h,l)].append(model)
@@ -119,11 +117,7 @@ class ProtoEG:
     def _create_train_archive(self, train):
         train_low_y = self.archive.getfitnesses(train.low, fidelity='low')
         train_high_y = self.archive.getfitnesses(train.high, fidelity='high')
-        train_archive = mlcs.CandidateArchive(ndim=self.archive.ndim,
-                                              fidelities=self.archive.fidelities)
-        train_archive.addcandidates(train.low, train_low_y, fidelity='low')
-        train_archive.addcandidates(train.high, train_high_y, fidelity='high')
-        return train_archive
+        return mlcs.CandidateArchive.from_bi_fid_DoE(train.high, train.low, train_high_y, train_low_y)
 
 
     def _extend_error_grid(self, fidelity: str, coord: Tuple[int, int]):
