@@ -19,7 +19,7 @@ import multiLevelCoSurrogates as mlcs
 
 
 
-def prepare_DoE(func, nh=3, nl=4):
+def prepare_DoE(func, nh=3, nl=5):
     np.random.seed(20160501)  # Setting seed for reproducibility
     init_DoE = mlcs.bi_fidelity_doe(func.ndim, nh, nl)
     DoE = exp.scale_to_function(func, init_DoE)
@@ -168,7 +168,7 @@ def test_experiment():
     eg2 = get_experiment_subsampled_EG(func, DoE, instances=instances)
 
     np.testing.assert_allclose(
-        [0.003953943893931256],
+        [0.27112833049506163],
         eg2['mses'].sel(model='high_hier').values.flatten()[0],
     )
 
@@ -187,7 +187,7 @@ def test_protoEG_subsample_errorgrid_create():
     eg1 = proto_eg.error_grid
 
     np.testing.assert_allclose(
-        [0.003953943893931256],
+        [0.27112833049506163],
         eg1['mses'].sel(model='high_hier').values.flatten()[0],
     )
 
