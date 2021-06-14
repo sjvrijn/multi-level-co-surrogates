@@ -123,12 +123,16 @@ class InstanceSpec:
     def from_archive(cls, archive, **kwargs):
         """Create an InstanceSpec from a CandidateArchive
 
-        This assumes the archive was created based on a MultiFidelityFunction
-        with fidelities 'high' and 'low', and that all candidates in the archive
-        are available for use.
+        Assumes that:
+        - the archive was created based on a MultiFidelityFunction with
+          fidelities 'high' and 'low'
+        - all candidates in the archive are available for use.
+        - the InstanceSpec will be used for _sub_sampling, i.e.
+          h < archive.count('high') for all instances.
+
         All other parameters are simply passed through.
         """
 
-        max_high = archive.count('high')
+        max_high = archive.count('high') - 1
         max_low = archive.count('low')
         return cls(max_high=max_high, max_low=max_low, **kwargs)

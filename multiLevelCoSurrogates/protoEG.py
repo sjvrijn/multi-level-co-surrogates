@@ -20,14 +20,13 @@ class ProtoEG:
         self.num_reps = num_reps
 
         self.models = defaultdict(list)  # models[(n_high, n_low)] = [model_1, ..., model_nreps]
-        self.test_sets = defaultdict(list)  # models[(n_high, n_low)] = [test_1, ..., test_nreps]
+        self.test_sets = defaultdict(list)  # test_sets[(n_high, n_low)] = [test_1, ..., test_nreps]
         self.error_grid = None  # xr.Dataset
 
 
     def subsample_errorgrid(self):
         """Create an error grid by subsampling from the known archive"""
         instance_spec = mlcs.InstanceSpec.from_archive(self.archive, num_reps=self.num_reps)
-        instance_spec.max_high -= 1
         doe = self.archive.as_doe()
 
         error_records = []
