@@ -53,6 +53,17 @@ def remove_from_bi_fid_doe(X, DoE: BiFidelityDoE):
     return BiFidelityDoE(high, low)
 
 
+# Explicit warnings for three possible cases during split_bi_fidelity_doe
+class LowHighFidSamplesWarning(UserWarning):
+    """Warns while splitting DoE when selecting < 2 high-fidelity samples"""
+
+class NoHighFidTrainSamplesWarning(UserWarning):
+    """Warns while splitting DoE when no high-fidelity samples are left-over"""
+
+class NoSpareLowFidSamplesWarning(UserWarning):
+    """Warns while splitting DoE when only high-fidelity samples are selected for low-fidelity"""
+
+
 def split_bi_fidelity_doe(DoE: BiFidelityDoE, num_high: int, num_low: int) -> Tuple[BiFidelityDoE, BiFidelityDoE]:
     """Given an existing bi-fidelity Design of Experiments (DoE) `high, low`,
     creates a subselection of given size `num_high, num_low` based on uniform
@@ -73,11 +84,14 @@ def split_bi_fidelity_doe(DoE: BiFidelityDoE, num_high: int, num_low: int) -> Tu
 
     # Warnings
     if num_high < 2:
-        warn("Not enough high-fidelity samples selected to serve as a training set")
+        warn("Not enough high-fidelity samples selected to serve as a training set",
+             category=LowHighFidSamplesWarning)
     if num_high == len(high):
-        warn("All high-fidelity samples selected, none left over as test set")
+        warn("All high-fidelity samples selected, none left over as test set",
+             category=NoHighFidTrainSamplesWarning)
     if num_low == num_high:
-        warn("No additional low-fidelity samples to be selected")
+        warn("No additional low-fidelity samples to be selected",
+             category=NoSpareLowFidSamplesWarning)
 
     indices = np.random.permutation(len(high))
     sub_high, leave_out_high = high[indices[:num_high]], high[indices[num_high:]]

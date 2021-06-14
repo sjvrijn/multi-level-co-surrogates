@@ -34,17 +34,17 @@ def test_split_bifiddoe_warnings():
     DoE = mlcs.bi_fidelity_doe(2, 5, 10)
 
     # not enough high-fid
-    with warns(Warning):
+    with warns(mlcs.LowHighFidSamplesWarning):
         mlcs.split_bi_fidelity_doe(DoE, 0, 3)
-    with warns(Warning):
+    with warns(mlcs.LowHighFidSamplesWarning):
         mlcs.split_bi_fidelity_doe(DoE, 1, 3)
 
     # no high-fid samples in test-set
-    with warns(Warning):
+    with warns(mlcs.NoHighFidTrainSamplesWarning):
         mlcs.split_bi_fidelity_doe(DoE, 5, 7)
 
     # no non-high-fidelity low-fidelity samples in test set
-    with warns(Warning):
+    with warns(mlcs.NoSpareLowFidSamplesWarning):
         mlcs.split_bi_fidelity_doe(DoE, 3, 3)
 
 
