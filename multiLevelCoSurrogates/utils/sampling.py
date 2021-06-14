@@ -5,6 +5,7 @@ from typing import Tuple
 import numpy as np
 import scipy as sp
 from utils.scaling import ValueRange, rescale
+from warnings import warn
 
 BiFidelityDoE = namedtuple("BiFidelityDoE", "high low")
 
@@ -61,12 +62,22 @@ def split_bi_fidelity_doe(DoE: BiFidelityDoE, num_high: int, num_low: int) -> Tu
     Raises a `ValueError` if invalid `num_high` or `num_low` are given.
     """
     high, low = DoE
-    if not 1 < num_high < len(high):
-        raise ValueError(f"'num_high' must be in the range [2, len(DoE.high) (={len(DoE.high)})], but is {num_high}")
-    elif num_low > len(low):
+
+    # Errors
+    if not 0 <= num_high <= len(high):
+        raise ValueError(f"'num_high' must be in the range [0, len(DoE.high) (={len(DoE.high)})], but is {num_high}")
+    if num_low > len(low):
         raise ValueError(f"'num_low' cannot be greater than len(DoE.low) (={len(DoE.low)}), but is {num_low}")
-    elif num_low <= num_high:
-        raise ValueError(f"'num_low' must be greater than 'num_high', but {num_low} <= {num_high}")
+    if num_low < num_high:
+        raise ValueError(f"'num_low' must be at least 'num_high', but {num_low} < {num_high}")
+
+    # Warnings
+    if num_high < 2:
+        warn("Not enough high-fidelity samples selected to serve as a training set")
+    if num_high == len(high):
+        warn("All high-fidelity samples selected, none left over as test set")
+    if num_low == num_high:
+        warn("No additional low-fidelity samples to be selected")
 
     indices = np.random.permutation(len(high))
     sub_high, leave_out_high = high[indices[:num_high]], high[indices[num_high:]]
