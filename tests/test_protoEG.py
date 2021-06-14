@@ -95,7 +95,6 @@ def test_split_doe_with_include_high():
     assert X not in set(tuple(x) for x in other.high)
 
 
-
 def test_split_doe_with_include_low():
     doe = mlcs.bi_fidelity_doe(2, 10, 20)
     X = np.random.rand(1, 2)
@@ -112,6 +111,14 @@ def test_split_doe_with_include_low():
     assert X not in set(tuple(x) for x in selected.high)
     assert X not in set(tuple(x) for x in other.low)
     assert X not in set(tuple(x) for x in other.high)
+
+
+def test_remove_from_bifiddoe():
+    DoE = mlcs.bi_fidelity_doe(2, 5, 10)
+    X = DoE.high[3]
+    assert X in DoE.high and X in DoE.low
+    DoE = mlcs.remove_from_bi_fid_doe(X=X, DoE=DoE)
+    assert X not in DoE.high and X not in DoE.low
 
 
 @given(valid_subsample_spec())
@@ -183,7 +190,6 @@ def test_protoEG_subsample_errorgrid_create():
         [0.003953943893931256],
         eg1['mses'].sel(model='high_hier').values.flatten()[0],
     )
-
 
 
 def test_protoEG_subsample_errorgrid_update_low():
