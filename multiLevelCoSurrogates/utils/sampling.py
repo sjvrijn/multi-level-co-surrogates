@@ -5,7 +5,7 @@ from typing import Tuple
 import numpy as np
 import scipy as sp
 from utils.scaling import ValueRange, rescale
-from warnings import warn
+from warnings import warn, catch_warnings, simplefilter
 
 BiFidelityDoE = namedtuple("BiFidelityDoE", "high low")
 
@@ -138,7 +138,9 @@ def split_with_include(DoE: BiFidelityDoE, num_high: int, num_low: int,
     if fidelity == 'high':
         num_high -= 1
 
-    selected, other = split_bi_fidelity_doe(DoE, num_high, num_low)
+    with catch_warnings():
+        simplefilter("ignore", category=NoSpareLowFidSamplesWarning)
+        selected, other = split_bi_fidelity_doe(DoE, num_high, num_low)
 
     low = np.concatenate([selected.low, must_include])
     high = np.concatenate([selected.high, must_include]) if fidelity == 'high' else selected.high
