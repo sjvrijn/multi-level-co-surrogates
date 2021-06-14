@@ -42,9 +42,14 @@ def bi_fidelity_doe(ndim: int, num_high: int, num_low: int) -> BiFidelityDoE:
     return BiFidelityDoE(high_x, low_x)
 
 
-def remove_from_bi_fid_doe(x, DoE: BiFidelityDoE):
+def remove_from_bi_fid_doe(X, DoE: BiFidelityDoE):
     """Remove given x from both fidelities of the given DoE"""
-    return DoE
+    if len(np.array(X).shape) > 1:
+        raise NotImplementedError('remove_from_bi_fid_doe only implemented for 1D arrays.')
+    X = tuple(X)
+    high = np.array([x for x in DoE.high if tuple(x) != X])
+    low = np.array([x for x in DoE.low if tuple(x) != X])
+    return BiFidelityDoE(high, low)
 
 
 def split_bi_fidelity_doe(DoE: BiFidelityDoE, num_high: int, num_low: int) -> Tuple[BiFidelityDoE, BiFidelityDoE]:
