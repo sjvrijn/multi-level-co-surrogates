@@ -106,11 +106,15 @@ def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_re
 
         #evaluate best place
         y = func[fidelity](x.reshape(1, -1))[0]
-        proto_eg.update_errorgrid_with_sample(x, y, fidelity=fidelity)
-        entries.append(Entry(budget, time_since_high_eval, tau, fidelity, x, y))
+        archive.addcandidate(candidate=x.flatten(), fitness=y, fidelity=fidelity)
 
-        #update model
+        # update model & error grid
         mfm.retrain()
+        if budget > 0:  # prevent unnecessary computation
+            proto_eg.update_errorgrid_with_sample(x, fidelity=fidelity)
+
+        # logging
+        entries.append(Entry(budget, time_since_high_eval, tau, fidelity, x, y))
 
     return mfm, pd.DataFrame.from_records(entries, columns=Entry._fields), archive
 

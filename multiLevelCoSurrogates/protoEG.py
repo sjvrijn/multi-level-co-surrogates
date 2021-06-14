@@ -1,10 +1,8 @@
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from typing import Tuple
 
 import numpy as np
-from numpy.random import default_rng, Generator
 import pandas as pd
-from scipy.special import binom
 from sklearn.metrics import mean_squared_error
 import xarray as xr
 
@@ -53,21 +51,12 @@ class ProtoEG:
         self.error_grid = xr.Dataset.from_dataframe(tmp_df)
 
 
-    def update_errorgrid_with_sample(self, X, y: float, fidelity: str):
+    def update_errorgrid_with_sample(self, X, fidelity: str):
         """Add a new sample of given fidelity and update Error Grid accordingly"""
 
         instance_spec = mlcs.InstanceSpec.from_archive(self.archive, num_reps=self.num_reps)
-        if fidelity == 'high':
-            instance_spec.max_high += 1
-        elif fidelity == 'low':
-            instance_spec.max_low += 1
-        else:
-            raise ValueError(f'invalid argument fidelity=`{fidelity}`')
 
-        # 'full_DoE' should *not* include new sample yet, ...
         full_DoE = self.archive.as_doe()
-        # ... but it should be available in self.archive for fitness retrieval
-        self.archive.addcandidate(X.flatten(), y, fidelity)
         X = X.reshape(1, -1)
 
         for h, l in instance_spec.pixels:
