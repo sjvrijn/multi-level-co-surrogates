@@ -100,7 +100,7 @@ class ProtoEG:
                 self.error_grid['mses'].loc[h, l, idx, 'high_hier'] = mse
 
             if fidelity == 'high':
-                indices_to_update_errors = set(range(self.num_reps)) - indices_to_resample
+                indices_to_update_errors = set(range(self.num_reps)) - set(indices_to_resample)
                 for idx in indices_to_update_errors:
                     self._update_errors_of_existing_model(X, h, l, idx)
 

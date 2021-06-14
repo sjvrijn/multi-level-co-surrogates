@@ -217,8 +217,6 @@ def test_protoEG_subsample_errorgrid_update_high():
     archive = mlcs.CandidateArchive.from_multi_fidelity_function(func)
     archive.addcandidates(DoE_high, func.high(DoE_high), fidelity='high')
     archive.addcandidates(DoE_low, func.low(DoE_low), fidelity='low')
-    old_len = len(archive)
-
     proto_eg = get_subsampled_protoEG(archive, num_reps)
 
     np.random.seed(0)

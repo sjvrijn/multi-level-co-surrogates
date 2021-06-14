@@ -14,9 +14,9 @@ from hypothesis.strategies import lists, integers
 from multiLevelCoSurrogates import InstanceSpec
 
 
-def instance_spec_generator(n=1_000):
+def instance_spec_generator(max_val=1_000):
     return lists(
-        integers(min_value=2, max_value=n),
+        integers(min_value=2, max_value=max_val),
         min_size=4, max_size=4, unique=True
     )
 
@@ -30,7 +30,7 @@ def test_instance_spec_length(instance_spec_creation_values):
     assert len(spec) == len(list(spec.pixels))
 
 
-@given(instance_spec_generator(100), integers(min_value=1, max_value=100))
+@given(instance_spec_generator(max_val=100), integers(min_value=1, max_value=100))
 @settings(max_examples=50, deadline=500)
 def test_instance_spec_pixels_instance_relation(instance_spec_creation_values, n):
     a, b, c, d = sorted(instance_spec_creation_values)
