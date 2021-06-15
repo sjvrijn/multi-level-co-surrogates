@@ -204,6 +204,7 @@ def test_protoEG_subsample_errorgrid_update_low():
 
     np.random.seed(0)
     new_sample = np.random.rand(1,func.ndim)
+    archive.addcandidate(candidate=new_sample.flatten(), fitness=func.low(new_sample), fidelity='low')
 
     prev_coords = proto_eg.error_grid.coords
     proto_eg.update_errorgrid_with_sample(new_sample, fidelity='low')
@@ -224,6 +225,7 @@ def test_protoEG_subsample_errorgrid_update_high():
     np.random.seed(0)
     non_high = set(tuple(c) for c in DoE_low) - set(tuple(c) for c in DoE_high)
     new_sample = np.array(next(iter(non_high))).reshape(1, -1) # just take 1 element
+    archive.addcandidate(candidate=new_sample.flatten(), fitness=func.high(new_sample), fidelity='high')
 
     prev_coords = proto_eg.error_grid.coords
     proto_eg.update_errorgrid_with_sample(new_sample, fidelity='high')
