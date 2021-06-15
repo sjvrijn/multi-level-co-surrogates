@@ -4,7 +4,7 @@ from scipy.spatial import distance
 from typing import Tuple
 import numpy as np
 import scipy as sp
-from utils.scaling import ValueRange, rescale
+from .scaling import ValueRange, rescale
 from warnings import warn, catch_warnings, simplefilter
 
 BiFidelityDoE = namedtuple("BiFidelityDoE", "high low")
