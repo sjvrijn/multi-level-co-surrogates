@@ -14,6 +14,50 @@ if module_path not in sys.path:
 import multiLevelCoSurrogates as mlcs
 
 
+def test_split_doe_with_include_high():
+    doe = mlcs.bi_fidelity_doe(2, 10, 20)
+    X = np.random.rand(1, 2)
+    num_high, num_low = 5, 10
+    selected, other = mlcs.split_with_include(doe, num_high, num_low, X, 'high')
+
+    assert len(selected.low) == num_low
+    assert len(selected.high) == num_high
+    assert len(other.low) == len(doe.low) - num_low + 1
+    assert len(other.high) == len(doe.high) - num_high + 1
+
+    X = tuple(X[0])
+    assert X in set(tuple(x) for x in selected.low)
+    assert X in set(tuple(x) for x in selected.high)
+    assert X not in set(tuple(x) for x in other.low)
+    assert X not in set(tuple(x) for x in other.high)
+
+
+def test_split_doe_with_include_low():
+    doe = mlcs.bi_fidelity_doe(2, 10, 20)
+    X = np.random.rand(1, 2)
+    num_high, num_low = 5, 10
+    selected, other = mlcs.split_with_include(doe, num_high, num_low, X, 'low')
+
+    assert len(selected.low) == num_low
+    assert len(selected.high) == num_high
+    assert len(other.low) == len(doe.low) - num_low + 1
+    assert len(other.high) == len(doe.high) - num_high
+
+    X = tuple(X[0])
+    assert X in set(tuple(x) for x in selected.low)
+    assert X not in set(tuple(x) for x in selected.high)
+    assert X not in set(tuple(x) for x in other.low)
+    assert X not in set(tuple(x) for x in other.high)
+
+
+def test_remove_from_bifiddoe():
+    DoE = mlcs.bi_fidelity_doe(2, 5, 10)
+    X = DoE.high[3]
+    assert X in DoE.high and X in DoE.low
+    DoE = mlcs.remove_from_bi_fid_doe(X=X, DoE=DoE)
+    assert X not in DoE.high and X not in DoE.low
+
+
 def test_split_bifiddoe_errors():
     DoE = mlcs.bi_fidelity_doe(2, 5, 10)
     # invalid num_high
