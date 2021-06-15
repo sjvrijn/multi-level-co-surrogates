@@ -1,13 +1,12 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-"""
-Class file for a multi-fidelity Bayesian Optimizer with built-in hierarchical
-surrogate model
-"""
+"""Experiment file for comparing simple versions of multi-fidelity optimizers"""
 
-from warnings import warn
+from pickle import dump
+from warnings import warn, simplefilter
 
+import mf2
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -18,6 +17,20 @@ from sklearn.linear_model import LinearRegression
 from pyprojroot import here
 
 from experiments import scale_to_function, create_subsampling_error_grid, mlcs
+
+
+from functools import wraps
+from time import time
+
+def timing(f):
+    @wraps(f)
+    def wrap(*args, **kw):
+        start = time()
+        result = f(*args, **kw)
+        end = time()
+        print(f'func {f.__name__}: {end-start:2.4f} sec')
+        return result
+    return wrap
 
 
 save_dir = here('files/2020-11-05-simple-mfbo/')
@@ -40,6 +53,7 @@ def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
     return reg, SSE
 
 
+@timing
 def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps=50):
     np.random.seed(20160501)
     N_RAND_SAMPLES = 100
@@ -119,6 +133,7 @@ def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_re
     return mfm, pd.DataFrame.from_records(entries, columns=Entry._fields), archive
 
 
+@timing
 def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps=50):
     np.random.seed(20160501)
 
@@ -197,6 +212,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
     return mfbo, pd.DataFrame.from_records(entries, columns=Entry._fields), archive
 
 
+@timing
 def fixed_ratio_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps=50):
     np.random.seed(20160501)
 
@@ -298,6 +314,9 @@ def select_high_fid_only_candidates(archive):
     return [np.array(cand).reshape(1, -1) for cand in selected_candidates]
 
 
+class TauSmallerThanOneWarning(UserWarning):
+    """warns that fidelity-selection parameter 'tau' is smaller than one"""
+
 def calc_tau_from_EG(EG, cost_ratio):
     # fit lin-reg for beta_1, beta_2
     reg = fit_lin_reg(EG)
@@ -305,13 +324,16 @@ def calc_tau_from_EG(EG, cost_ratio):
     # determine \tau based on beta_1, beta_2 and cost_ratio
     tau = np.ceil(1 / (beta_1 / (beta_2 / cost_ratio)))
     if tau <= 1:
-        warn('Low-fidelity not expected to add information, no need to use multi-fidelity')
+        warn('Low-fidelity not expected to add information', category=TauSmallerThanOneWarning)
     return tau
 
 
 def main():
-    import mf2
-    from pickle import dump
+    import sklearn
+    simplefilter("ignore", category=FutureWarning)
+    simplefilter("ignore", category=sklearn.exceptions.ConvergenceWarning)
+    simplefilter("ignore", category=TauSmallerThanOneWarning)
+
     for func in [
         mf2.branin,
         # mf2.currin,
@@ -334,32 +356,20 @@ def main():
             num_reps=2,
         )
 
-        print('    Proto-EG...')
-        _, df, archive = proto_EG_multifid_bo(
-            func=func,
-            **kwargs
-        )
-        df.to_csv(save_dir / f'{func.name}-tracking-peg.csv')
-        with open(save_dir / f'{func.name}-archive-peg.pkl', 'wb') as f:
-            dump(str(archive.data), f)
+        do_run(func, 'fixed', fixed_ratio_multifid_bo, kwargs)
+        do_run(func, 'naive', simple_multifid_bo, kwargs)
+        do_run(func, 'proto-eg', proto_EG_multifid_bo, kwargs)
 
-        print('    Naive...')
-        _, df, archive = simple_multifid_bo(
-            func=func,
-            **kwargs
-        )
-        df.to_csv(save_dir / f'{func.name}-tracking.csv')
-        with open(save_dir / f'{func.name}-archive.pkl', 'wb') as f:
-            dump(str(archive.data), f)
 
-        print('    Fixed...')
-        _, df, archive = fixed_ratio_multifid_bo(
-            func=func,
-            **kwargs
-        )
-        df.to_csv(save_dir / f'{func.name}-tracking-fixed.csv')
-        with open(save_dir / f'{func.name}-archive-fixed.pkl', 'wb') as f:
-            dump(str(archive.data), f)
+def do_run(func, name, run_func, kwargs):
+    print(f'    {name}...')
+    _, df, archive = run_func(
+        func=func,
+        **kwargs
+    )
+    df.to_csv(save_dir / f'{func.name}-tracking-{name}.csv')
+    with open(save_dir / f'{func.name}-archive-{name}.pkl', 'wb') as f:
+        dump(str(archive.data), f)
 
 
 if __name__ == '__main__':
