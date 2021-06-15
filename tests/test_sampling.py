@@ -14,6 +14,7 @@ if module_path not in sys.path:
 import multiLevelCoSurrogates as mlcs
 
 
+# split_with_include
 def test_split_doe_with_include_high():
     doe = mlcs.bi_fidelity_doe(2, 10, 20)
     X = np.random.rand(1, 2)
@@ -50,6 +51,16 @@ def test_split_doe_with_include_low():
     assert X not in set(tuple(x) for x in other.high)
 
 
+def test_must_include_no_warning():
+    doe = mlcs.bi_fidelity_doe(2, 5, 10)
+    X = np.random.rand(1, 2)
+
+    with warns(None) as record:
+        mlcs.split_with_include(doe, 4, 5, must_include=X, fidelity='low')
+    assert len(record) == 0
+
+
+# remove_from_bi_fid_doe
 def test_remove_from_bifiddoe():
     DoE = mlcs.bi_fidelity_doe(2, 5, 10)
     X = DoE.high[3]
@@ -58,6 +69,7 @@ def test_remove_from_bifiddoe():
     assert X not in DoE.high and X not in DoE.low
 
 
+# split_bi_fidelity_doe
 def test_split_bifiddoe_errors():
     DoE = mlcs.bi_fidelity_doe(2, 5, 10)
     # invalid num_high
@@ -103,12 +115,3 @@ def test_split_bifiddoe():
     assert len(a.high) == a_high
     assert len(a.low) + len(b.low) == len(DoE.low)
     assert len(a.high) + len(b.high) == len(DoE.high)
-
-
-def test_must_include_no_warning():
-    doe = mlcs.bi_fidelity_doe(2, 5, 10)
-    X = np.random.rand(1, 2)
-
-    with warns(None) as record:
-        mlcs.split_with_include(doe, 4, 5, must_include=X, fidelity='low')
-    assert len(record) == 0
