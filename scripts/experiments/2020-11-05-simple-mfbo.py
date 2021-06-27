@@ -153,9 +153,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
     budget -= (doe_n_high + doe_n_low*cost_ratio)
 
     #create archive
-    archive = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
-    archive.addcandidates(low_x, low_y, fidelity='low')
-    archive.addcandidates(high_x, high_y, fidelity='high')
+    archive = mlcs.CandidateArchive.from_bi_fid_DoE(high_x, low_x, high_y, low_y)
 
     #make mf-model using archive
     mfbo = mlcs.MultiFidelityBO(func, archive)
