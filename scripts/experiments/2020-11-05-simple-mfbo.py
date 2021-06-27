@@ -85,6 +85,7 @@ def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_re
     time_since_high_eval = 0
     while budget > 0:
         tau = calc_tau_from_EG(proto_eg.error_grid['mses'], cost_ratio)
+
         # compare \tau with current count t to select fidelity, must be >= 1
         fidelity = 'high' if 1 <= tau <= time_since_high_eval else 'low'
 
@@ -109,11 +110,11 @@ def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_re
             ).x
 
             while x in archive:  # resample to ensure a new candidate is added to the archive
-                print(f'Existing candidate {x} ...')
+                # print(f'Existing candidate {x} ...')
                 random_candidates = scale_to_function(func, np.random.rand(N_RAND_SAMPLES, func.ndim))
                 fitnesses = mfm.models['high'].predict(random_candidates)
                 x = random_candidates[np.argmin(fitnesses)]
-                print(f'... replaced by {x}')
+                # print(f'... replaced by {x}')
 
             time_since_high_eval += 1
             budget -= cost_ratio
@@ -190,11 +191,11 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
 
             N_RAND_SAMPLES = 100
             while x in archive:  # resample to ensure a new candidate is added to the archive
-                print(f'Existing candidate {x} ...')
+                # print(f'Existing candidate {x} ...')
                 random_candidates = scale_to_function(func, np.random.rand(N_RAND_SAMPLES, func.ndim))
                 fitnesses = mfbo.models['high'].predict(random_candidates)
                 x = random_candidates[np.argmin(fitnesses)]
-                print(f'... replaced by {x}')
+                # print(f'... replaced by {x}')
 
             time_since_high_eval += 1
             budget -= cost_ratio
@@ -345,18 +346,19 @@ def main():
         # mf2.park91b,
     ]:
         print(func.name)
+        for budget in [8, 9, 10, 12, 14, 16, 18, 20, 25, 30]:
 
-        kwargs = dict(
-            budget=10,
-            cost_ratio=0.2,
-            doe_n_high=5,
-            doe_n_low=10,
-            num_reps=2,
-        )
+            kwargs = dict(
+                budget=budget,
+                cost_ratio=0.2,
+                doe_n_high=5,
+                doe_n_low=10,
+                num_reps=2,
+            )
 
-        do_run(func, 'fixed', fixed_ratio_multifid_bo, kwargs)
-        do_run(func, 'naive', simple_multifid_bo, kwargs)
-        do_run(func, 'proto-eg', proto_EG_multifid_bo, kwargs)
+            #do_run(func, 'fixed', fixed_ratio_multifid_bo, kwargs)
+            do_run(func, 'naive', simple_multifid_bo, kwargs)
+            do_run(func, 'proto-eg', proto_EG_multifid_bo, kwargs)
 
 
 def do_run(func, name, run_func, kwargs):
@@ -365,9 +367,9 @@ def do_run(func, name, run_func, kwargs):
         func=func,
         **kwargs
     )
-    df.to_csv(save_dir / f'{func.name}-tracking-{name}.csv')
-    with open(save_dir / f'{func.name}-archive-{name}.pkl', 'wb') as f:
-        dump(str(archive.data), f)
+    # df.to_csv(save_dir / f'{func.name}-tracking-{name}.csv')
+    # with open(save_dir / f'{func.name}-archive-{name}.pkl', 'wb') as f:
+    #     dump(str(archive.data), f)
 
 
 if __name__ == '__main__':
