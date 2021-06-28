@@ -61,6 +61,11 @@ def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_re
     if doe_n_high + cost_ratio*doe_n_low >= budget:
         raise ValueError('Budget should not be exhausted after DoE')
 
+    mfm_opts = dict(
+        kernel='Matern',
+        scaling='off',
+    )
+
     Entry = namedtuple('Entry', 'budget time_since_high_eval tau fidelity candidate fitness')
     entries = []
 
@@ -76,11 +81,10 @@ def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_re
     #create archive
     archive = mlcs.CandidateArchive.from_bi_fid_DoE(high_x, low_x, high_y, low_y)
 
-    proto_eg = mlcs.ProtoEG(archive, num_reps=num_reps)
+    proto_eg = mlcs.ProtoEG(archive, num_reps=num_reps, mfm_opts=mfm_opts)
     proto_eg.subsample_errorgrid()
 
-    mfm = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=archive,
-                                  kernel='Matern', scaling='off')
+    mfm = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=archive, **mfm_opts)
 
     time_since_high_eval = 0
     while budget > 0:
@@ -141,6 +145,10 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
     if doe_n_high + cost_ratio*doe_n_low >= budget:
         raise ValueError('Budget should not be exhausted after DoE')
 
+    mfbo_opts = dict(
+        kernel='Matern',
+    )
+
     Entry = namedtuple('Entry', 'budget time_since_high_eval tau fidelity candidate fitness')
     entries = []
 
@@ -157,13 +165,13 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
     archive = mlcs.CandidateArchive.from_bi_fid_DoE(high_x, low_x, high_y, low_y)
 
     #make mf-model using archive
-    mfbo = mlcs.MultiFidelityBO(func, archive)
+    mfbo = mlcs.MultiFidelityBO(func, archive, **mfbo_opts)
 
     time_since_high_eval = 0
     while budget > 0:
         #select next fidelity to evaluate:
         #sample error grid
-        EG = create_subsampling_error_grid(archive, num_reps=num_reps, func=func)
+        EG = create_subsampling_error_grid(archive, num_reps=num_reps, func=func, **mfbo_opts)
         tau = calc_tau_from_EG(EG, cost_ratio)
 
         #compare \tau with current count t to select fidelity, must be >= 1
@@ -280,11 +288,11 @@ def fixed_ratio_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num
 
             N_RAND_SAMPLES = 100
             while x in archive:  # resample to ensure a new candidate is added to the archive
-                print(f'Existing candidate {x} ...')
+                # print(f'Existing candidate {x} ...')
                 random_candidates = scale_to_function(func, np.random.rand(N_RAND_SAMPLES, func.ndim))
                 fitnesses = mfbo.models['high'].predict(random_candidates)
                 x = random_candidates[np.argmin(fitnesses)]
-                print(f'... replaced by {x}')
+                # print(f'... replaced by {x}')
 
             time_since_high_eval += 1
             budget -= cost_ratio

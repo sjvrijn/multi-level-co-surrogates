@@ -644,7 +644,9 @@ def create_subsampling_error_grid(
         archive: mlcs.CandidateArchive,
         num_reps: int=50,
         interval: int=2,
-        func=None
+        func=None,
+        verbose=False,
+        **mfbo_opts
 ) -> xr.DataArray:
     """Create an error grid through subsampling from the given archive
 
@@ -652,6 +654,7 @@ def create_subsampling_error_grid(
     :param num_reps: Number of independent repetitions for each size
     :param interval: Interval at which to fill the error grid
     :param func:     Multi-fidelity function to re-evaluate known candidates  #TODO: remove argument
+    :param verbose:  toggles progress print statements
     :return:         `xr.DataArray` ErrorGrid
     """
 
@@ -679,7 +682,7 @@ def create_subsampling_error_grid(
 
     for i, (num_high, num_low, rep) in enumerate(instances):
 
-        if i % 1_000 == 0:
+        if verbose and i % 1_000 == 0:
             print(f"{i}/{len(instances)}")
 
         # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
@@ -693,7 +696,7 @@ def create_subsampling_error_grid(
         arch.addcandidates(high_x, high_y, fidelity='high')
 
         # (Automatically) Create the hierarchical model
-        mfbo = mlcs.MultiFidelityBO(func, arch)
+        mfbo = mlcs.MultiFidelityBO(func, arch, **mfbo_opts)
 
         # Get the results we're interested in from the model for this instance
         error_grid[num_high, num_low, rep] = mfbo.getMSE()

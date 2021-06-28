@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Tuple
+from typing import Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -11,11 +11,12 @@ import multiLevelCoSurrogates as mlcs
 
 class ProtoEG:
 
-    def __init__(self, archive: mlcs.CandidateArchive, num_reps: int=50):
+    def __init__(self, archive: mlcs.CandidateArchive, num_reps: int=50, mfm_opts=None):
         """Container for everything needed to create (advanced) Error Grids"""
 
         self.archive = archive
         self.num_reps = num_reps
+        self.mfm_opts = mfm_opts if mfm_opts is not None else dict()
 
         self.models = defaultdict(list)  # models[(n_high, n_low)] = [model_1, ..., model_nreps]
         self.test_sets = defaultdict(list)  # test_sets[(n_high, n_low)] = [test_1, ..., test_nreps]
@@ -38,7 +39,7 @@ class ProtoEG:
 
             train_archive = self._create_train_archive(train)
 
-            model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive, kernel='Matern', scaling='off')
+            model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive, **self.mfm_opts)
             self.models[(h,l)].append(model)
 
             test_y = self.archive.getfitnesses(test_x, fidelity='high')
@@ -79,8 +80,7 @@ class ProtoEG:
                 train_archive = self._create_train_archive(train_doe)
 
                 # create and store model
-                model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive,
-                                                kernel='Matern', scaling='off')
+                model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive, **self.mfm_opts)
                 self.models[(h,l)][idx] = model
 
                 # calculate and store error of model at this `idx`
