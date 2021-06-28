@@ -22,6 +22,9 @@ class ProtoEG:
         self.test_sets = defaultdict(list)  # test_sets[(n_high, n_low)] = [test_1, ..., test_nreps]
         self.error_grid = None  # xr.Dataset
 
+        self.num_models_trained = 0
+        self.num_models_reused = 0
+
 
     def subsample_errorgrid(self):
         """Create an error grid by subsampling from the known archive"""
@@ -46,6 +49,7 @@ class ProtoEG:
             mse = mean_squared_error(test_y, model.top_level_model.predict(test_x))
             error_records.append([h, l, rep, 'high_hier', mse])
 
+        self.num_models_trained += len(error_records)
         columns = ['n_high', 'n_low', 'rep', 'model', 'mses']
 
         tmp_df = pd.DataFrame.from_records(error_records, columns=columns, index=columns[:4])
@@ -88,10 +92,20 @@ class ProtoEG:
                 mse = mean_squared_error(test_y, model.top_level_model.predict(test_high))
                 self.error_grid['mses'].loc[h, l, idx, 'high_hier'] = mse
 
+            self.num_models_trained += len(indices_to_resample)
+            self.num_models_reused += self.num_reps - len(indices_to_resample)
+
             if fidelity == 'high':
                 indices_to_update_errors = set(range(self.num_reps)) - set(indices_to_resample)
                 for idx in indices_to_update_errors:
                     self._update_errors_of_existing_model(X, h, l, idx)
+
+
+    @property
+    def reuse_fraction(self):
+        total = self.num_models_trained + self.num_models_reused
+        return self.num_models_reused / total
+
 
 
     def _get_resample_indices(self, fidelity: str, h: int, l: int):
