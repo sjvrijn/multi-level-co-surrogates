@@ -370,7 +370,7 @@ def main():
             for idx in range(num_iters):
                 #do_run(func, 'fixed', fixed_ratio_multifid_bo, kwargs)
                 do_run(func, f'naive-b{budget}-i{idx}', simple_multifid_bo, kwargs)
-                do_run(func, f'proto-egb{budget}-i{idx}', proto_EG_multifid_bo, kwargs)
+                do_run(func, f'proto-eg-b{budget}-i{idx}', proto_EG_multifid_bo, kwargs)
 
 
 def do_run(func, name, run_func, kwargs):
