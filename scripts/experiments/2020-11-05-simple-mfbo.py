@@ -53,10 +53,11 @@ def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
     return reg, SSE
 
 
-@timing
+# @timing
 def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps=50):
     #np.random.seed(20160501)
     N_RAND_SAMPLES = 100
+    start = time()
 
     if doe_n_high + cost_ratio*doe_n_low >= budget:
         raise ValueError('Budget should not be exhausted after DoE')
@@ -66,7 +67,7 @@ def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_re
         scaling='off',
     )
 
-    Entry = namedtuple('Entry', 'budget time_since_high_eval tau fidelity candidate fitness')
+    Entry = namedtuple('Entry', 'budget time_since_high_eval tau fidelity wall_time nhigh nlow reuse_fraction')
     entries = []
 
     #make mf-DoE
@@ -133,14 +134,15 @@ def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_re
             proto_eg.update_errorgrid_with_sample(x, fidelity=fidelity)
 
         # logging
-        entries.append(Entry(budget, time_since_high_eval, tau, fidelity, x, y))
+        entries.append(Entry(budget, time_since_high_eval, tau, fidelity, time()-start, archive.count('high'), archive.count('low'), proto_eg.reuse_fraction))
 
     return mfm, pd.DataFrame.from_records(entries, columns=Entry._fields), archive
 
 
-@timing
+# @timing
 def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps=50):
     #np.random.seed(20160501)
+    start = time()
 
     if doe_n_high + cost_ratio*doe_n_low >= budget:
         raise ValueError('Budget should not be exhausted after DoE')
@@ -149,7 +151,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
         kernel='Matern',
     )
 
-    Entry = namedtuple('Entry', 'budget time_since_high_eval tau fidelity candidate fitness')
+    Entry = namedtuple('Entry', 'budget time_since_high_eval tau fidelity wall_time nhigh nlow reuse_fraction')
     entries = []
 
     #make mf-DoE
@@ -211,7 +213,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
         #evaluate best place
         y = func[fidelity](x.reshape(1, -1))[0]
         archive.addcandidate(x, y, fidelity=fidelity)
-        entries.append(Entry(budget, time_since_high_eval, tau, fidelity, x, y))
+        entries.append(Entry(budget, time_since_high_eval, tau, fidelity, time()-start, archive.count('high'), archive.count('low'), 0))
 
         #update model
         mfbo.retrain()
@@ -340,6 +342,8 @@ def main():
     simplefilter("ignore", category=FutureWarning)
     simplefilter("ignore", category=sklearn.exceptions.ConvergenceWarning)
     simplefilter("ignore", category=TauSmallerThanOneWarning)
+    num_iters = 5
+    np.random.seed(20160501)
 
     for func in [
         mf2.branin,
@@ -354,7 +358,7 @@ def main():
         # mf2.park91b,
     ]:
         print(func.name)
-        for budget in [8, 9, 10, 12, 14, 16, 18, 20, 25, 30]:
+        for budget in [25]:  # 8, 9, 10, 12, 14, 16, 18, 20, 25, 30]:
 
             kwargs = dict(
                 budget=budget,
@@ -363,10 +367,10 @@ def main():
                 doe_n_low=10,
                 num_reps=2,
             )
-
-            #do_run(func, 'fixed', fixed_ratio_multifid_bo, kwargs)
-            do_run(func, 'naive', simple_multifid_bo, kwargs)
-            do_run(func, 'proto-eg', proto_EG_multifid_bo, kwargs)
+            for idx in range(num_iters):
+                #do_run(func, 'fixed', fixed_ratio_multifid_bo, kwargs)
+                do_run(func, f'naive-b{budget}-i{idx}', simple_multifid_bo, kwargs)
+                do_run(func, f'proto-egb{budget}-i{idx}', proto_EG_multifid_bo, kwargs)
 
 
 def do_run(func, name, run_func, kwargs):
@@ -375,9 +379,9 @@ def do_run(func, name, run_func, kwargs):
         func=func,
         **kwargs
     )
-    # df.to_csv(save_dir / f'{func.name}-tracking-{name}.csv')
-    # with open(save_dir / f'{func.name}-archive-{name}.pkl', 'wb') as f:
-    #     dump(str(archive.data), f)
+    df.to_csv(save_dir / f'{func.name}-tracking-{name}.csv')
+    with open(save_dir / f'{func.name}-archive-{name}.pkl', 'wb') as f:
+        dump(str(archive.data), f)
 
 
 if __name__ == '__main__':
