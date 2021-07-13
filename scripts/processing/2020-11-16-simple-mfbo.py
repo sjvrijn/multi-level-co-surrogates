@@ -28,48 +28,70 @@ def plot_tracking_for_file(tracking_file: Path):
     match = tracking_template.parse(tracking_file.name)
     if not match:
         return
-    print(match['budget'])
-    df = pd.read_csv(tracking_file, index_col=0)
 
     fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(8, 6), constrained_layout=True)
+    fig.suptitle(f"{match['method']} for {match['name']} with budget={match['budget']} (idx {match['idx']})")
+    plot_file_on_axes(axes, tracking_file)
+
+    fig.show()
+
+
+def plot_tracking_for_files(tracking_files):
+
+    match = tracking_template.parse(tracking_files[0].name)
+    if not match:
+        raise ValueError
+
+    fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(8, 6), constrained_layout=True)
+    fig.suptitle(f"{match['name']} with budget={match['budget']} (idx {match['idx']})")
+
+    for tracking_file in tracking_files:
+        match = tracking_template.parse(tracking_file.name)
+        plot_file_on_axes(axes, tracking_file, label=match['method'])
+
+    for ax in axes.flatten():
+        ax.legend(loc=0)
+    fig.show()
+
+
+def plot_file_on_axes(axes, file, label=''):
+
+    match = tracking_template.parse(file.name)
+    if not match:
+        return
+    df = pd.read_csv(file, index_col=0)
     budget_used = match['budget'] - df['budget'].values
 
-    fig.suptitle(f"{match['method']} for {match['name']} with budget={match['budget']} (idx {match['idx']})")
-
-    ax = axes[0,0]
+    ax = axes[0, 0]
     # EG size path
-    ax.plot(df['nlow'].values, df['nhigh'].values, marker='o')
+    ax.plot(df['nlow'].values, df['nhigh'].values, marker='o', label=label)
     ax.set_title('EG size \'path\'')
     ax.set_ylabel('high-fid samples')
     ax.set_xlabel('low-fid samples')
 
-    ax = axes[0,1]
+    ax = axes[0, 1]
     # tau / budget
-    ax.plot(budget_used, df['tau'].values)
+    ax.plot(budget_used, df['tau'].values, label=label)
     ax.set_title('Tau')
     ax.set_ylim(bottom=0)
     ax.set_ylabel('$\tau$')
     ax.set_xlabel('evaluation cost')
 
-    ax = axes[1,0]
+    ax = axes[1, 0]
     # wall-time / budget
-    ax.plot(budget_used, df['wall_time'].values)
+    ax.plot(budget_used, df['wall_time'].values, label=label)
     ax.set_title('wall-time')
     ax.set_ylim(bottom=0)
     ax.set_ylabel('time (s)')
     ax.set_xlabel('evaluation cost')
 
-    ax = axes[1,1]
+    ax = axes[1, 1]
     # reuse_fraction / budget
-    ax.plot(budget_used, df['reuse_fraction'].values)
+    ax.plot(budget_used, df['reuse_fraction'].values, label=label)
     ax.set_title('reuse_fraction')
     ax.set_ylim(bottom=0)
     ax.set_ylabel('model reuse fraction')
     ax.set_xlabel('evaluation cost')
-
-    fig.show()
-
-
 
 
 def plot_old_file_formats():
@@ -111,8 +133,12 @@ def plot_old_file_formats():
 
 
 def main():
-    for f in data_path.iterdir():
-        plot_tracking_for_file(f)
+    # for f in data_path.iterdir():
+    #     plot_tracking_for_file(f)
+    # for f in here('files/2021-07-06-manual-additions/').iterdir():
+    #     plot_tracking_for_file(f)
+    print(list(here('files/2021-07-06-manual-additions/').iterdir()))
+    plot_tracking_for_files(list(here('files/2021-07-06-manual-additions/').iterdir()))
 
 
 if __name__ == '__main__':
