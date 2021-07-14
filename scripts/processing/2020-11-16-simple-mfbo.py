@@ -31,38 +31,18 @@ def plot_tracking_for_file(tracking_file: Path):
 
     fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(8, 6), constrained_layout=True)
     fig.suptitle(f"{match['method']} for {match['name']} with budget={match['budget']} (idx {match['idx']})")
-    plot_file_on_axes(axes, tracking_file)
 
-    fig.show()
-
-
-def plot_tracking_for_files(tracking_files):
-
-    match = tracking_template.parse(tracking_files[0].name)
-    if not match:
-        raise ValueError
-
-    fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(8, 6), constrained_layout=True)
-    fig.suptitle(f"{match['name']} with budget={match['budget']} (idx {match['idx']})")
-
-    for tracking_file in tracking_files:
-        match = tracking_template.parse(tracking_file.name)
-        plot_file_on_axes(axes, tracking_file, label=match['method'])
-
-    for ax in axes.flatten():
-        ax.legend(loc=0)
-    fig.show()
-
-
-def plot_file_on_axes(axes, file, label=''):
-
-    match = tracking_template.parse(file.name)
-    if not match:
-        return
-    df = pd.read_csv(file, index_col=0)
+    df = pd.read_csv(tracking_file, index_col=0)
     budget_used = match['budget'] - df['budget'].values
 
-    ax = axes[0, 0]
+    plot_on_axes(axes, budget_used, df)
+
+    # fig.show()
+    fig.savefig(plot_path / tracking_file.with_suffix('.png').name)
+
+
+def plot_on_axes(axes, budget_used, df, label=''):
+    ax = axes[0,0]
     # EG size path
     ax.plot(df['nlow'].values, df['nhigh'].values, marker='o', label=label)
     ax.set_title('EG size \'path\'')
@@ -74,7 +54,7 @@ def plot_file_on_axes(axes, file, label=''):
     ax.plot(budget_used, df['tau'].values, label=label)
     ax.set_title('Tau')
     ax.set_ylim(bottom=0)
-    ax.set_ylabel('$\tau$')
+    ax.set_ylabel('$\\tau$')
     ax.set_xlabel('evaluation cost')
 
     ax = axes[1, 0]
@@ -89,9 +69,26 @@ def plot_file_on_axes(axes, file, label=''):
     # reuse_fraction / budget
     ax.plot(budget_used, df['reuse_fraction'].values, label=label)
     ax.set_title('reuse_fraction')
-    ax.set_ylim(bottom=0)
+    ax.set_ylim(bottom=0, top=1)
     ax.set_ylabel('model reuse fraction')
     ax.set_xlabel('evaluation cost')
+
+
+def plot_comparison(file_a: Path, file_b: Path):
+
+    fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(8, 6), constrained_layout=True)
+
+    for file in [file_a, file_b]:
+        match = tracking_template.parse(file.name)
+        df = pd.read_csv(file, index_col=0)
+        budget_used = match['budget'] - df['budget'].values
+        plot_on_axes(axes, budget_used, df, label=match['method'])
+
+    fig.suptitle(f"comparison for {match['name']} with budget={match['budget']} (idx {match['idx']})")
+    for ax in axes.flatten():
+        ax.legend(loc=0)
+    # fig.show()
+    fig.savefig(plot_path / file_a.with_suffix('.png').name.replace('naive', 'comparison'))
 
 
 def plot_old_file_formats():
@@ -135,10 +132,13 @@ def plot_old_file_formats():
 def main():
     # for f in data_path.iterdir():
     #     plot_tracking_for_file(f)
-    # for f in here('files/2021-07-06-manual-additions/').iterdir():
-    #     plot_tracking_for_file(f)
-    print(list(here('files/2021-07-06-manual-additions/').iterdir()))
-    plot_tracking_for_files(list(here('files/2021-07-06-manual-additions/').iterdir()))
+    new_data_dir = here('files/2021-07-06-manual-additions/')
+
+    for f in new_data_dir.iterdir():
+        # plot_tracking_for_file(f)
+        if f.suffix == '.csv' and 'naive' in f.name:
+            plot_comparison(f, new_data_dir / Path(f.name.replace('naive', 'proto-eg')))
+
 
 
 if __name__ == '__main__':
