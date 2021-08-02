@@ -1,10 +1,15 @@
 from collections import defaultdict
 from typing import Tuple, Union
+from textwrap import fill
 
 import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_squared_error
 import xarray as xr
+
+import matplotlib.pyplot as plt
+from matplotlib import colors
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import multiLevelCoSurrogates as mlcs
 
@@ -213,3 +218,86 @@ class ProtoEG:
         if not (0 <= fraction <= 1):
             raise ValueError('Invalid fraction calculated, please check inputs')
         return fraction
+
+
+    def plot_errorgrid(self, title, vmin=.5, vmax=100,
+                       contours=0, as_log=False, save_as=None, save_exts=('pdf', 'png'),
+                       include_colorbar=True, label_y=True, title_width=None):
+        """Plot a heatmap of the median MSE for each possible combination of high
+        and low-fidelity samples. For comparison, the MSE for the high-only and
+        low-only models are displayed as a bar to the left and bottom respectively.
+
+        :param title: title to use at top of the image
+        :param vmin: minimum value for color scale normalization
+        :param vmax: maximum value for color scale normalization
+        :param contours: number of contour lines to draw. Default: 0
+        :param as_log: display the log10 of the data or not (default False)
+        :param save_as: desired filename for saving the image. Not saved if `None`
+        :param include_colorbar: whether or not to include a colorbar. Default: True
+        :param label_y: whether or not to include axis label and ticks for y-axis. Default: True
+        """
+        if not save_as:
+            return  # no need to make the plot if not showing or saving it
+
+        data = self.error_grid['mses']
+        LABEL_N_HIGH = "$n_h$"
+        LABEL_N_LOW = "$n_l$"
+
+        fig, ax = plt.subplots(figsize=(4, 2))
+
+        ax.set_aspect(1.)
+        data = data.median(dim='rep')
+        vmin = np.min(data) if vmin is None else vmin
+        vmax = np.max(data) if vmax is None else vmax
+        if as_log:
+            data = np.log10(data)
+            vmin = np.log10(vmin)
+            vmax = np.log10(vmax)
+            norm = colors.Normalize(vmin=vmin, vmax=vmax, clip=True)
+        else:
+            norm = colors.LogNorm(vmin=vmin, vmax=vmax, clip=True)
+
+        extent = get_extent(data)
+        imshow_style = {'cmap': 'viridis_r', 'norm': norm, 'origin': 'lower'}
+
+        plot_title = f'{"log10 " if as_log else ""}Median MSE for $z_h$ - {title}'
+        if title_width:
+            plot_title = fill(plot_title, width=title_width)
+        plt.title(plot_title)
+
+        da_hh = data.sel(model='high_hier')
+
+        img = ax.imshow(da_hh, extent=extent, **imshow_style)
+        if contours:
+            ax.contour(da_hh, levels=contours, antialiased=False,
+                       extent=extent, colors='black', alpha=.2, linewidths=1)
+
+        divider = make_axes_locatable(ax)
+
+        if label_y:
+            ax.set_ylabel(LABEL_N_HIGH)
+        else:
+            ax.yaxis.set_tick_params(left=False, labelleft=False, which='both')
+        ax.set_xlabel(LABEL_N_LOW)
+
+        if include_colorbar:
+            cax = divider.append_axes("right", size=0.2, pad=0.05)
+            fig.colorbar(img, cax=cax)
+
+        plt.tight_layout()
+        if save_as:
+            for ext in save_exts:
+                plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
+        plt.close('all')
+
+
+def get_extent(data: xr.DataArray):
+    """Calculate an 'extent' for an Error Grid such that axis ticks are
+    centered in the 'pixels'
+    """
+    return [
+        np.min(data.n_low) - 0.5,
+        np.max(data.n_low) - 0.5,
+        np.min(data.n_high) - 0.5,
+        np.max(data.n_high) - 0.5,
+    ]
