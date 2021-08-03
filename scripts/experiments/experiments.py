@@ -5,10 +5,11 @@ from collections import namedtuple
 from functools import partial
 from itertools import product
 from pathlib import Path
-from typing import Sequence, List, Dict, Tuple, Any, NamedTuple
+from typing import Sequence, List, Dict, Tuple, Any, NamedTuple, Union
 from warnings import warn
 
 import matplotlib.pyplot as plt
+import mf2
 import numpy as np
 import xarray as xr
 from parse import parse
@@ -712,6 +713,30 @@ def create_subsampling_error_grid(
             'model': models,
         },
     )
+
+
+def plot_archive(
+        archive: mlcs.CandidateArchive,
+        func: mf2.MultiFidelityFunction,
+        title: str,
+        save_as: Union[str, Path]
+) -> None:
+    """Plot given archive using parameters of func
+
+    param archive: CandidateArchive to plot
+    param func:    MultiFidelityFunction to query for name and bounds
+    param title:   Title of the plot
+    param save_as: Filename to save as
+    """
+    if func.ndim != 2:
+        raise NotImplementedError("plotting for other than 2D not implemented")
+
+    fig, ax = plt.subplots()
+    ax.set_xlim([func.l_bound[0], func.u_bound[0]])
+    ax.set_ylim([func.l_bound[1], func.u_bound[1]])
+    for fid in archive.fidelities:
+        points = archive.getcandidates(fid)
+        ...
 
 
 def get_tmp_path(path: Path) -> Path:
