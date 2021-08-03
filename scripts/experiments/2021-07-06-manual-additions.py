@@ -117,6 +117,12 @@ def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, fideli
         mfm.retrain()
         if budget > 0:  # prevent unnecessary computation
             proto_eg.update_errorgrid_with_sample(x, fidelity=fidelity)
+            proto_eg.plot_errorgrid(
+                title=f'{func.ndim}D {func.name} with {budget:.1f} budget left',
+                as_log=True,
+                save_as=f'protoeg-opt-{func.name}-{budget/cost_ratio:.0f}',
+                save_exts=('png',),
+            )
 
         # logging
         entries.append(Entry(budget, iter_since_high_eval, tau, fidelity, time()-start, archive.count('high'), archive.count('low'), proto_eg.reuse_fraction))
@@ -234,6 +240,8 @@ def main():
     import sklearn
     simplefilter("ignore", category=FutureWarning)
     simplefilter("ignore", category=sklearn.exceptions.ConvergenceWarning)
+    simplefilter("ignore", category=TauSmallerThanOneWarning)
+    simplefilter("ignore", category=mlcs.LowHighFidSamplesWarning)
     num_iters = 1
     np.random.seed(20160501)
 
