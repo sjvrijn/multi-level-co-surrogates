@@ -220,7 +220,7 @@ class ProtoEG:
         return fraction
 
 
-    def plot_errorgrid(self, title, vmin=.5, vmax=100,
+    def plot_errorgrid(self, title, vmin=None, vmax=None,
                        contours=0, as_log=False, save_as=None, save_exts=('pdf', 'png'),
                        include_colorbar=True, label_y=True, title_width=None):
         """Plot a heatmap of the median MSE for each possible combination of high
