@@ -4,7 +4,6 @@
 """Experiment file for comparing simple versions of multi-fidelity optimizers"""
 
 from itertools import cycle
-from pickle import dump
 from warnings import warn, simplefilter
 
 import mf2
@@ -17,7 +16,7 @@ from sklearn.linear_model import LinearRegression
 from scipy.optimize import minimize
 from pyprojroot import here
 
-from experiments import scale_to_function, create_subsampling_error_grid, mlcs
+from experiments import scale_to_function, create_subsampling_error_grid, mlcs, plot_archive
 
 
 from time import time
@@ -117,12 +116,23 @@ def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, fideli
         mfm.retrain()
         if budget > 0:  # prevent unnecessary computation
             proto_eg.update_errorgrid_with_sample(x, fidelity=fidelity)
+            plot_title = f'{func.ndim}D {func.name} with {budget:.1f} budget left'
             proto_eg.plot_errorgrid(
-                title=f'{func.ndim}D {func.name} with {budget:.1f} budget left',
+                title=plot_title,
                 as_log=True,
-                save_as=f'protoeg-opt-{func.name}-{budget/cost_ratio:.0f}',
+                save_as=f'protoeg-EG-opt-{func.name}-{budget/cost_ratio:.0f}',
                 save_exts=('png',),
             )
+            try:
+                plot_archive(
+                    archive,
+                    func,
+                    title=plot_title,
+                    save_as=f'protoeg-archive-opt-{func.name}-{budget/cost_ratio:.0f}',
+                    save_exts=('png',),
+                )
+            except NotImplementedError:
+                pass
 
         # logging
         entries.append(Entry(budget, iter_since_high_eval, tau, fidelity, time()-start, archive.count('high'), archive.count('low'), proto_eg.reuse_fraction))
@@ -276,7 +286,7 @@ def main():
             )
             for idx in range(num_iters):
                 #do_run(func, 'fixed', fixed_ratio_multifid_bo, kwargs)
-                do_run(func, f'naive-b{budget}-i{idx}', simple_multifid_bo, kwargs)
+                #do_run(func, f'naive-b{budget}-i{idx}', simple_multifid_bo, kwargs)
                 do_run(func, f'proto-eg-b{budget}-i{idx}', proto_EG_multifid_bo, kwargs)
 
 
