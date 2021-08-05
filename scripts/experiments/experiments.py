@@ -719,7 +719,8 @@ def plot_archive(
         archive: mlcs.CandidateArchive,
         func: mf2.MultiFidelityFunction,
         title: str,
-        save_as: Union[str, Path]
+        save_as: Union[str, Path],
+        save_exts=('pdf', 'png'),
 ) -> None:
     """Plot given archive using parameters of func
 
@@ -732,11 +733,15 @@ def plot_archive(
         raise NotImplementedError("plotting for other than 2D not implemented")
 
     fig, ax = plt.subplots()
+    ax.set_title(title)
     ax.set_xlim([func.l_bound[0], func.u_bound[0]])
     ax.set_ylim([func.l_bound[1], func.u_bound[1]])
-    for fid in archive.fidelities:
-        points = archive.getcandidates(fid)
-        ...
+    for fid, style in zip(['high', 'low'], [red_dot, blue_circle]):
+        points = archive.getcandidates(fid).candidates
+        ax.scatter(*points.T, **style, label=f'{fid}-fidelity samples')
+    ax.legend(loc=0)
+    for save_ext in save_exts:
+        fig.savefig(f'{save_as}.{save_ext}')
 
 
 def get_tmp_path(path: Path) -> Path:
