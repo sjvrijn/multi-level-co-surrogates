@@ -22,8 +22,10 @@ from experiments import scale_to_function, create_subsampling_error_grid, mlcs, 
 from time import time
 
 
-save_dir = here('files/2021-07-06-manual-additions/')
+save_dir = here('files/2021-07-06-manual-additions/', warn=False)
 save_dir.mkdir(parents=True, exist_ok=True)
+plot_dir = here('plots/2021-07-06-manual-additions/', warn=False)
+plot_dir.mkdir(parents=True, exist_ok=True)
 
 #TODO de-duplicate (already present in processing.py
 def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
@@ -120,7 +122,7 @@ def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, fideli
             proto_eg.plot_errorgrid(
                 title=plot_title,
                 as_log=True,
-                save_as=f'protoeg-EG-opt-{func.name}-{budget/cost_ratio:.0f}',
+                save_as=plot_dir / f'protoeg-EG-opt-{func.name}-{budget/cost_ratio:.0f}',
                 save_exts=('png',),
             )
             try:
@@ -128,7 +130,7 @@ def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, fideli
                     archive,
                     func,
                     title=plot_title,
-                    save_as=f'protoeg-archive-opt-{func.name}-{budget/cost_ratio:.0f}',
+                    save_as=plot_dir / f'protoeg-archive-opt-{func.name}-{budget/cost_ratio:.0f}',
                     save_exts=('png',),
                 )
             except NotImplementedError:
