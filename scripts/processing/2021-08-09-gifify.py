@@ -34,6 +34,10 @@ for folder in folders_to_process:
 
         create writer and make GIF
     """
+    if not folder.exists():
+        print(f'folder {folder.name} does not exist, skipping...')
+        continue
+
     print(f"processing folder {folder.name}")
     pngs_in_folder = [fname for fname in folder.iterdir() if img_name_template.parse(fname.name)]
     spec_set = set(img_name_template.parse(fname.name)['name_spec'] for fname in pngs_in_folder)
