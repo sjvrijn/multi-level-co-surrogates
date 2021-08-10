@@ -222,7 +222,8 @@ class ProtoEG:
 
     def plot_errorgrid(self, title, vmin=None, vmax=None,
                        contours=0, as_log=False, save_as=None, save_exts=('pdf', 'png'),
-                       include_colorbar=True, label_y=True, title_width=None):
+                       include_colorbar=True, label_y=True, title_width=None,
+                       xlim=None, ylim=None):
         """Plot a heatmap of the median MSE for each possible combination of high
         and low-fidelity samples. For comparison, the MSE for the high-only and
         low-only models are displayed as a bar to the left and bottom respectively.
@@ -243,7 +244,7 @@ class ProtoEG:
         LABEL_N_HIGH = "$n_h$"
         LABEL_N_LOW = "$n_l$"
 
-        fig, ax = plt.subplots(figsize=(4, 2))
+        fig, ax = plt.subplots(figsize=(7.5, 4))
 
         ax.set_aspect(1.)
         data = data.median(dim='rep')
@@ -280,6 +281,11 @@ class ProtoEG:
             ax.yaxis.set_tick_params(left=False, labelleft=False, which='both')
         ax.set_xlabel(LABEL_N_LOW)
 
+        if xlim:
+            ax.set_xlim(xlim)
+        if ylim:
+            ax.set_ylim(ylim)
+
         if include_colorbar:
             cax = divider.append_axes("right", size=0.2, pad=0.05)
             fig.colorbar(img, cax=cax)
@@ -287,7 +293,7 @@ class ProtoEG:
         plt.tight_layout()
         if save_as:
             for ext in save_exts:
-                plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
+                plt.savefig(f'{save_as}.{ext}')
         plt.close('all')
 
 
