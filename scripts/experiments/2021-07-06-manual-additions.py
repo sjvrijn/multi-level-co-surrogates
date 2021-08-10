@@ -44,12 +44,12 @@ def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
     return reg, SSE
 
 
-def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, fidelity_order, mfm_opts, num_reps=50):
+def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, fidelity_order, mfm_opts, num_reps=50):
     np.random.seed(20160501)
     N_RAND_SAMPLES = 100
     fidelity_iter = iter(cycle(fidelity_order))
 
-    if doe_n_high + cost_ratio*doe_n_low >= budget:
+    if doe_n_high + cost_ratio*doe_n_low >= init_budget:
         raise ValueError('Budget should not be exhausted after DoE')
 
     Entry = namedtuple('Entry', 'budget iter_since_high_eval tau fidelity wall_time nhigh nlow reuse_fraction')
@@ -62,7 +62,7 @@ def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, fideli
                     func.low(low_x)
 
     #subtract mf-DoE from budget
-    budget -= (doe_n_high + doe_n_low*cost_ratio)
+    budget = init_budget - (doe_n_high + doe_n_low*cost_ratio)
 
     #create archive
     archive = mlcs.CandidateArchive.from_bi_fid_DoE(high_x, low_x, high_y, low_y)
@@ -124,6 +124,8 @@ def proto_EG_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, fideli
                 as_log=True,
                 save_as=plot_dir / f'protoeg-EG-opt-{func.name}-{budget/cost_ratio:.0f}',
                 save_exts=('png',),
+                xlim=(2.5, init_budget + .5),
+                ylim=(1.5, (init_budget // 2) + .5),
             )
             try:
                 plot_archive(
