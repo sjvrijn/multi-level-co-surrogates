@@ -3,6 +3,7 @@
 
 """Experiment file for comparing simple versions of multi-fidelity optimizers"""
 
+import argparse
 from itertools import cycle
 from warnings import warn, simplefilter
 
@@ -250,7 +251,7 @@ def select_high_fid_only_candidates(archive):
     return [np.array(cand).reshape(1, -1) for cand in selected_candidates]
 
 
-def main():
+def main(idx=None):
     import sklearn
     simplefilter("ignore", category=FutureWarning)
     simplefilter("ignore", category=sklearn.exceptions.ConvergenceWarning)
@@ -264,18 +265,23 @@ def main():
         scaling='off',
     )
 
-    for func in [
+    functions = [
         mf2.branin,
-        # mf2.currin,
-        # mf2.himmelblau,
-        # mf2.six_hump_camelback,
-        # mf2.park91a,
-        # mf2.hartmann6,
-        # mf2.borehole,
-        # mf2.bohachevsky,
-        # mf2.booth,
-        # mf2.park91b,
-    ]:
+        mf2.currin,
+        mf2.himmelblau,
+        mf2.six_hump_camelback,
+        mf2.park91a,
+        mf2.hartmann6,
+        mf2.borehole,
+        mf2.bohachevsky,
+        mf2.booth,
+        mf2.park91b,
+    ]
+
+    if idx:
+        functions = [functions[idx]]
+
+    for func in functions:
         print(func.name)
         for budget in [20]:  # 8, 9, 10, 12, 14, 16, 18, 20, 25, 30]:
 
@@ -306,4 +312,8 @@ def do_run(func, name, run_func, kwargs):
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('idx', type=int, nargs='?')
+    args = parser.parse_args()
+
+    main(args.idx)
