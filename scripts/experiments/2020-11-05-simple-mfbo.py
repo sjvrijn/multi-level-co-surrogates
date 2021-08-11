@@ -389,7 +389,7 @@ def main(idx=None):
         for budget in [25]:  # 8, 9, 10, 12, 14, 16, 18, 20, 25, 30]:
 
             kwargs = dict(
-                budget=budget,
+                init_budget=budget,
                 cost_ratio=0.2,
                 doe_n_high=5,
                 doe_n_low=10,
