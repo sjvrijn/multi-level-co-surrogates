@@ -52,9 +52,9 @@ def get_extent(data: xr.DataArray):
     """
     return [
         np.min(data.n_low) - 0.5,
-        np.max(data.n_low) - 0.5,
+        np.max(data.n_low) + 0.5,
         np.min(data.n_high) - 0.5,
-        np.max(data.n_high) - 0.5,
+        np.max(data.n_high) + 0.5,
     ]
 
 

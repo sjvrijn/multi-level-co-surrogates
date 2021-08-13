@@ -258,7 +258,6 @@ class ProtoEG:
         else:
             norm = colors.LogNorm(vmin=vmin, vmax=vmax, clip=True)
 
-        extent = get_extent(data)
         imshow_style = {'cmap': 'viridis_r', 'norm': norm, 'origin': 'lower'}
 
         plot_title = f'{"log10 " if as_log else ""}Median MSE for $z_h$ - {title}'
@@ -268,6 +267,7 @@ class ProtoEG:
 
         da_hh = data.sel(model='high_hier')
 
+        extent = get_extent(data)
         img = ax.imshow(da_hh, extent=extent, **imshow_style)
         if contours:
             ax.contour(da_hh, levels=contours, antialiased=False,
@@ -303,7 +303,7 @@ def get_extent(data: xr.DataArray):
     """
     return [
         np.min(data.n_low) - 0.5,
-        np.max(data.n_low) - 0.5,
+        np.max(data.n_low) + 0.5,
         np.min(data.n_high) - 0.5,
-        np.max(data.n_high) - 0.5,
+        np.max(data.n_high) + 0.5,
     ]
