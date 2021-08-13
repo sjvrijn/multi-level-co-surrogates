@@ -282,9 +282,9 @@ class ProtoEG:
         ax.set_xlabel(LABEL_N_LOW)
 
         if xlim:
-            ax.set_xlim(xlim)
+            ax.set_xlim((xlim[0]-.5, max(xlim[1], max(data.n_low))+.5))
         if ylim:
-            ax.set_ylim(ylim)
+            ax.set_ylim((ylim[0]-.5, max(ylim[1], max(data.n_high))+.5))
 
         if include_colorbar:
             cax = divider.append_axes("right", size=0.2, pad=0.05)

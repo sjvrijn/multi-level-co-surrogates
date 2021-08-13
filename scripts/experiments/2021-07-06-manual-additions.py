@@ -125,8 +125,8 @@ def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, f
                 as_log=True,
                 save_as=plot_dir / f'protoeg-EG-opt-{func.name}-{budget/cost_ratio:.0f}',
                 save_exts=('png',),
-                xlim=(2.5, init_budget + .5),
-                ylim=(1.5, (init_budget // 2) + .5),
+                xlim=(3, init_budget),
+                ylim=(2, (init_budget // 2)),
             )
             try:
                 plot_archive(
@@ -278,7 +278,7 @@ def main(idx=None):
         mf2.park91b,
     ]
 
-    if idx:
+    if idx is not None:
         functions = [functions[idx]]
 
     for func in functions:
