@@ -102,7 +102,7 @@ def plot_old_file_formats():
             df['tau'].plot()
             plt.savefig(plot_path / f'{func.name}-tau.png', bbox_inches='tight')
             #plt.show()
-            plt.clf()
+            plt.close()
 
     # ## Plotting best high/low-fidelity evaluation over time
     # ### New-style: using `df[fitness]`
@@ -126,7 +126,7 @@ def plot_old_file_formats():
             plt.xlim([35, 0])
             plt.savefig(plot_path / f'{func.name}-evals.png', bbox_inches='tight')
             #plt.show()
-            plt.clf()
+            plt.close()
 
 
 def main():
