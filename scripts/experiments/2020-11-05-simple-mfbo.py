@@ -94,8 +94,7 @@ def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, n
     while budget > 0:
         tau = calc_tau_from_EG(proto_eg.error_grid['mses'], cost_ratio)
 
-        # compare \tau with current count t to select fidelity, must be >= 1
-        fidelity = 'high' if 1 <= tau <= iter_since_high_eval else 'low'
+        fidelity = 'high' if tau <= iter_since_high_eval and archive.count('high') < archive.count('low') else 'low'
 
         # predict best place to evaluate:
         if fidelity == 'high':
@@ -198,8 +197,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
         EG = create_subsampling_error_grid(archive, num_reps=num_reps, func=func, **mfbo_opts)
         tau = calc_tau_from_EG(EG, cost_ratio)
 
-        #compare \tau with current count t to select fidelity, must be >= 1
-        fidelity = 'high' if 1 <= tau <= iter_since_high_eval else 'low'
+        fidelity = 'high' if tau <= iter_since_high_eval and archive.count('high') < archive.count('low') else 'low'
 
         #predict best place to evaluate:
         if fidelity == 'high':
@@ -275,8 +273,7 @@ def fixed_ratio_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num
     iter_since_high_eval = 0
     while budget > 0:
         #select next fidelity to evaluate:
-        #compare \tau with current count t to select fidelity, must be >= 1
-        fidelity = 'high' if 1 <= tau <= iter_since_high_eval else 'low'
+        fidelity = 'high' if tau <= iter_since_high_eval and archive.count('high') < archive.count('low') else 'low'
 
         #predict best place to evaluate:
         if fidelity == 'high':
