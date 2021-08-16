@@ -117,27 +117,26 @@ def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, f
 
         # update model & error grid
         mfm.retrain()
-        if budget > 0:  # prevent unnecessary computation
-            proto_eg.update_errorgrid_with_sample(x, fidelity=fidelity)
-            plot_title = f'{func.ndim}D {func.name} with {budget:.1f} budget left'
-            proto_eg.plot_errorgrid(
+        proto_eg.update_errorgrid_with_sample(x, fidelity=fidelity)
+        plot_title = f'{func.ndim}D {func.name} with {budget:.1f} budget left'
+        proto_eg.plot_errorgrid(
+            title=plot_title,
+            as_log=True,
+            save_as=plot_dir / f'protoeg-EG-opt-{func.name}-{budget/cost_ratio:.0f}',
+            save_exts=('png',),
+            xlim=(3, init_budget),
+            ylim=(2, (init_budget // 2)),
+        )
+        try:
+            plot_archive(
+                archive,
+                func,
                 title=plot_title,
-                as_log=True,
-                save_as=plot_dir / f'protoeg-EG-opt-{func.name}-{budget/cost_ratio:.0f}',
+                save_as=plot_dir / f'protoeg-archive-opt-{func.name}-{budget/cost_ratio:.0f}',
                 save_exts=('png',),
-                xlim=(3, init_budget),
-                ylim=(2, (init_budget // 2)),
             )
-            try:
-                plot_archive(
-                    archive,
-                    func,
-                    title=plot_title,
-                    save_as=plot_dir / f'protoeg-archive-opt-{func.name}-{budget/cost_ratio:.0f}',
-                    save_exts=('png',),
-                )
-            except NotImplementedError:
-                pass
+        except NotImplementedError:
+            pass
 
         # logging
         entries.append(Entry(budget, iter_since_high_eval, tau, fidelity, time()-start, archive.count('high'), archive.count('low'), proto_eg.reuse_fraction))
