@@ -222,9 +222,9 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, fidelity
     return mfbo, pd.DataFrame.from_records(entries, columns=Entry._fields), archive
 
 
-
 class TauSmallerThanOneWarning(UserWarning):
     """warns that fidelity-selection parameter 'tau' is smaller than one"""
+
 
 def calc_tau_from_EG(EG, cost_ratio):
     # fit lin-reg for beta_1, beta_2
@@ -236,6 +236,7 @@ def calc_tau_from_EG(EG, cost_ratio):
     if tau <= 1:
         warn('Low-fidelity not expected to add information', category=TauSmallerThanOneWarning)
     return tau
+
 
 def select_high_fid_only_candidates(archive):
     all_low = {
