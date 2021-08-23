@@ -13,13 +13,17 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import mf2
 import pandas as pd
+from pathlib import Path
 from parse import compile
 from pyprojroot import here
 
 import processing as proc
+
 module_path = str(here())
 if module_path not in sys.path:
     sys.path.append(module_path)
+
+import multiLevelCoSurrogates as mlcs
 
 from multiLevelCoSurrogates import CandidateArchive
 
@@ -29,6 +33,7 @@ plot_path.mkdir(exist_ok=True, parents=True)
 
 subfolder_template = compile('{func_name}-{method}-b{budget:d}-i{idx:d}')
 archive_template = compile('archive_{iteration:d}.pkl')
+
 
 named_functions = {
     func.name.lower(): func
@@ -68,6 +73,33 @@ def plot_on_axes(axes, budget_used, df, label=''):
     ax.set_ylabel('model reuse fraction')
     ax.set_xlabel('evaluation cost')
 
+    ax = axes[2,0]
+    # (wall-time / num_pixels) / budget
+    num_pixels = calc_num_pixels(df['nhigh'].values, df['nlow'].values)
+    ax.plot(budget_used, np.cumsum(num_pixels) / df['wall_time'].values)
+    ax.set_title('pixel-normalized wall-time')
+    ax.set_ylim(bottom=0)
+    ax.set_ylabel('wall-time / num EG pixels')
+    ax.set_xlabel('evaluation cost')
+
+    ax = axes[2,1]
+    # scatter diff wall-time / diff num_pixels
+    diff_time = np.diff(np.insert(df['wall_time'].values, 0, 0))
+    diff_pixels = np.diff(np.insert(num_pixels, 0, 0))
+    ax.plot(diff_time, diff_pixels, marker='o')
+    ax.set_title('diff wall-time vs diff num_pixels')
+    ax.set_ylim(bottom=0)
+    ax.set_ylabel('consecutive difference num EG pixels')
+    ax.set_xlabel('consecutive difference wall-time')
+
+
+def calc_num_pixels(num_high, num_low):
+
+    return np.array([
+        len(mlcs.InstanceSpec(h, l, num_reps=1))
+        for h, l in zip(num_high, num_low)
+    ])
+
 
 def make_all_plots_for_experiment_directory(experiment_dir: Path):
 
@@ -94,7 +126,7 @@ def plot_log(in_folder: Path, out_folder: Path, save_exts=('png', 'pdf')) -> Non
     if not match:
         raise ValueError(f"Folder name {in_folder.name} does not match expected template")
 
-    fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(8, 6), constrained_layout=True)
+    fig, axes = plt.subplots(ncols=2, nrows=3, figsize=(8, 9), constrained_layout=True)
     fig.suptitle(
         f"{match['method']} for {match['func_name']} with budget={match['budget']} (idx {match['idx']})"
     )
