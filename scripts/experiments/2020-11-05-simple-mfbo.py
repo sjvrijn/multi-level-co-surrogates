@@ -4,6 +4,7 @@
 """Experiment file for comparing simple versions of multi-fidelity optimizers"""
 
 import argparse
+from csv import writer
 from pickle import dump
 from warnings import warn, simplefilter
 
@@ -57,7 +58,7 @@ def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
 
 
 # @timing
-def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, num_reps=50):
+def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps=50):
     #np.random.seed(20160501)
     N_RAND_SAMPLES = 100
     start = time()
@@ -69,8 +70,14 @@ def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, n
         kernel='Matern',
         scaling='off',
     )
+    logfile = run_save_dir / f'log.csv'
+    archive_file_template = 'archive_{}.pkl'
+    errorgrid_file_template = 'errorgrid_{}.nc'
 
-    Entry = namedtuple('Entry', 'budget iter_since_high_eval tau fidelity wall_time nhigh nlow reuse_fraction')
+    Entry = namedtuple('Entry', 'iteration budget iter_since_high_eval tau fidelity wall_time nhigh nlow reuse_fraction candidate fitness')
+    with open(logfile, 'w') as csvfile:
+        logwriter = writer(csvfile, delimiter=';')
+        logwriter.writerow(Entry._fields)
     entries = []
 
     #make mf-DoE
@@ -90,6 +97,7 @@ def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, n
 
     mfm = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=archive, **mfm_opts)
 
+    iterations = 0
     iter_since_high_eval = 0
     while budget > 0:
         tau = calc_tau_from_EG(proto_eg.error_grid['mses'], cost_ratio)
@@ -133,28 +141,35 @@ def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, n
         # update model & error grid
         mfm.retrain()
         proto_eg.update_errorgrid_with_sample(x, fidelity=fidelity)
-        plot_title = f'{func.ndim}D {func.name} with {budget:.1f} budget left'
-        proto_eg.plot_errorgrid(
-            title=plot_title,
-            as_log=True,
-            save_as=plot_dir / f'protoeg-EG-opt-{func.name}-{budget/cost_ratio:.0f}',
-            save_exts=('png',),
-            xlim=(3, init_budget),
-            ylim=(2, (init_budget // 2)),
-        )
-        try:
-            plot_archive(
-                archive,
-                func,
-                title=plot_title,
-                save_as=plot_dir / f'protoeg-archive-opt-{func.name}-{budget/cost_ratio:.0f}',
-                save_exts=('png',),
-            )
-        except NotImplementedError:
-            pass
+        # plot_title = f'{func.ndim}D {func.name} with {budget:.1f} budget left'
+        # proto_eg.plot_errorgrid(
+        #     title=plot_title,
+        #     as_log=True,
+        #     save_as=plot_dir / f'protoeg-EG-opt-{func.name}-{budget/cost_ratio:.0f}',
+        #     save_exts=('png',),
+        #     xlim=(3, init_budget),
+        #     ylim=(2, (init_budget // 2)),
+        # )
+        # try:
+        #     plot_archive(
+        #         archive,
+        #         func,
+        #         title=plot_title,
+        #         save_as=plot_dir / f'protoeg-archive-opt-{func.name}-{budget/cost_ratio:.0f}',
+        #         save_exts=('png',),
+        #     )
+        # except NotImplementedError:
+        #     pass
 
         # logging
-        entries.append(Entry(budget, iter_since_high_eval, tau, fidelity, time()-start, archive.count('high'), archive.count('low'), proto_eg.reuse_fraction))
+        entries.append(Entry(iterations, budget, iter_since_high_eval, tau, fidelity, time()-start, archive.count('high'), archive.count('low'), proto_eg.reuse_fraction, x.flatten(), y))
+        with open(logfile, 'a') as csvfile:
+            logwriter = writer(csvfile, delimiter=';')
+            logwriter.writerow(entries[-1])
+        with open(run_save_dir / archive_file_template.format(iterations), 'wb') as f:
+            dump(str(archive.data), f)
+        proto_eg.error_grid.to_netcdf(run_save_dir / errorgrid_file_template.format(iterations))
+        iterations += 1
 
     return mfm, pd.DataFrame.from_records(entries, columns=Entry._fields), archive
 
@@ -399,13 +414,16 @@ def main(idx=None):
 
 def do_run(func, name, run_func, kwargs):
     print(f'    {name}...')
+    run_save_dir = save_dir / name
+    run_save_dir.mkdir(parents=True, exist_ok=True)
     _, df, archive = run_func(
         func=func,
+        run_save_dir=run_save_dir,
         **kwargs
     )
-    df.to_csv(save_dir / f'{func.name}-tracking-{name}.csv')
-    with open(save_dir / f'{func.name}-archive-{name}.pkl', 'wb') as f:
-        dump(str(archive.data), f)
+    # df.to_csv(save_dir / f'{func.name}-tracking-{name}.csv')
+    # with open(save_dir / f'{func.name}-archive-{name}.pkl', 'wb') as f:
+    #     dump(str(archive.data), f)
 
 
 if __name__ == '__main__':
