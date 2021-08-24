@@ -175,18 +175,22 @@ def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, r
 
 
 # @timing
-def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps=50):
+def simple_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps=50):
     #np.random.seed(20160501)
     start = time()
 
-    if doe_n_high + cost_ratio*doe_n_low >= budget:
+    if doe_n_high + cost_ratio*doe_n_low >= init_budget:
         raise ValueError('Budget should not be exhausted after DoE')
 
     mfbo_opts = dict(
         kernel='Matern',
     )
 
-    Entry = namedtuple('Entry', 'budget iter_since_high_eval tau fidelity wall_time nhigh nlow reuse_fraction')
+    logfile = run_save_dir / f'log.csv'
+    archive_file_template = 'archive_{}.pkl'
+    errorgrid_file_template = 'errorgrid_{}.nc'
+
+    Entry = namedtuple('Entry', 'iteration budget iter_since_high_eval tau fidelity wall_time nhigh nlow reuse_fraction candidate fitness')
     entries = []
 
     #make mf-DoE
@@ -196,7 +200,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
                     func.low(low_x)
 
     #subtract mf-DoE from budget
-    budget -= (doe_n_high + doe_n_low*cost_ratio)
+    budget = init_budget - (doe_n_high + doe_n_low*cost_ratio)
 
     #create archive
     archive = mlcs.CandidateArchive.from_bi_fid_DoE(high_x, low_x, high_y, low_y)
@@ -204,6 +208,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
     #make mf-model using archive
     mfbo = mlcs.MultiFidelityBO(func, archive, **mfbo_opts)
 
+    iterations = 0
     iter_since_high_eval = 0
     while budget > 0:
         #select next fidelity to evaluate:
@@ -247,7 +252,14 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
         #evaluate best place
         y = func[fidelity](x.reshape(1, -1))[0]
         archive.addcandidate(x, y, fidelity=fidelity)
-        entries.append(Entry(budget, iter_since_high_eval, tau, fidelity, time()-start, archive.count('high'), archive.count('low'), 0))
+        entries.append(Entry(iterations, budget, iter_since_high_eval, tau, fidelity, time()-start, archive.count('high'), archive.count('low'), 0, x.flatten(), y))
+        with open(logfile, 'a') as csvfile:
+            logwriter = writer(csvfile, delimiter=';')
+            logwriter.writerow(entries[-1])
+        with open(run_save_dir / archive_file_template.format(iterations), 'wb') as f:
+            dump(str(archive.data), f)
+        EG.to_netcdf(run_save_dir / errorgrid_file_template.format(iterations))
+        iterations += 1
 
         #update model
         mfbo.retrain()
@@ -256,13 +268,18 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps
 
 
 @timing
-def fixed_ratio_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num_reps=50):
+def fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps=50):
     np.random.seed(20160501)
+    start = time()
 
-    if doe_n_high + cost_ratio*doe_n_low >= budget:
+    if doe_n_high + cost_ratio*doe_n_low >= init_budget:
         raise ValueError('Budget should not be exhausted after DoE')
 
-    Entry = namedtuple('Entry', 'budget iter_since_high_eval tau fidelity candidate fitness')
+    logfile = run_save_dir / f'log.csv'
+    archive_file_template = 'archive_{}.pkl'
+    errorgrid_file_template = 'errorgrid_{}.nc'
+
+    Entry = namedtuple('Entry', 'iteration budget iter_since_high_eval tau fidelity wall_time nhigh nlow reuse_fraction candidate fitness')
     entries = []
 
     tau = 1 / cost_ratio
@@ -274,7 +291,7 @@ def fixed_ratio_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num
                     func.low(low_x)
 
     #subtract mf-DoE from budget
-    budget -= (doe_n_high + doe_n_low*cost_ratio)
+    budget = init_budget - (doe_n_high + doe_n_low*cost_ratio)
 
     #create archive
     archive = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
@@ -284,6 +301,7 @@ def fixed_ratio_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num
     #make mf-model using archive
     mfbo = mlcs.MultiFidelityBO(func, archive)
 
+    iterations = 0
     iter_since_high_eval = 0
     while budget > 0:
         #select next fidelity to evaluate:
@@ -335,7 +353,13 @@ def fixed_ratio_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, num
         #evaluate best place
         y = func[fidelity](x.reshape(1, -1))[0]
         archive.addcandidate(x, y, fidelity=fidelity)
-        entries.append(Entry(budget, iter_since_high_eval, tau, fidelity, x, y))
+        entries.append(Entry(iterations, budget, iter_since_high_eval, tau, fidelity, time()-start, archive.count('high'), archive.count('low'), 0, x.flatten(), y))
+        with open(logfile, 'a') as csvfile:
+            logwriter = writer(csvfile, delimiter=';')
+            logwriter.writerow(entries[-1])
+        with open(run_save_dir / archive_file_template.format(iterations), 'wb') as f:
+            dump(str(archive.data), f)
+        iterations += 1
 
         #update model
         mfbo.retrain()
@@ -407,8 +431,8 @@ def main(idx=None):
                 num_reps=2,
             )
             for idx in range(num_iters):
-                #do_run(func, 'fixed', fixed_ratio_multifid_bo, kwargs)
-                #do_run(func, f'naive-b{budget}-i{idx}', simple_multifid_bo, kwargs)
+                do_run(func, f'fixed-b{budget}-i{idx}', fixed_ratio_multifid_bo, kwargs)
+                do_run(func, f'naive-b{budget}-i{idx}', simple_multifid_bo, kwargs)
                 do_run(func, f'proto-eg-b{budget}-i{idx}', proto_EG_multifid_bo, kwargs)
 
 
