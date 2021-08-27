@@ -436,9 +436,9 @@ def main(idx=None):
                 do_run(func, f'proto-eg-b{budget}-i{idx}', proto_EG_multifid_bo, kwargs)
 
 
-def do_run(func, name, run_func, kwargs):
-    print(f'    {name}...')
-    run_save_dir = save_dir / name
+def do_run(func, experiment_name, run_func, kwargs):
+    print(f'    {experiment_name}...')
+    run_save_dir = save_dir / f'{func.name}-{experiment_name}'
     run_save_dir.mkdir(parents=True, exist_ok=True)
     _, df, archive = run_func(
         func=func,
