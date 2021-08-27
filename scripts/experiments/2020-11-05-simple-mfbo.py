@@ -40,6 +40,10 @@ save_dir.mkdir(parents=True, exist_ok=True)
 plot_dir = here('plots/2020-11-05-simple-mfbo/', warn=False)
 plot_dir.mkdir(parents=True, exist_ok=True)
 
+archive_file_template = 'archive_{:03d}.pkl'
+errorgrid_file_template = 'errorgrid_{:03d}.nc'
+
+
 #TODO de-duplicate (already present in processing.py
 def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
     """Return lin-reg coefficients after training index -> value"""
@@ -70,10 +74,7 @@ def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, r
         kernel='Matern',
         scaling='off',
     )
-    logfile = run_save_dir / f'log.csv'
-    archive_file_template = 'archive_{}.pkl'
-    errorgrid_file_template = 'errorgrid_{}.nc'
-
+    logfile = run_save_dir / 'log.csv'
     Entry = namedtuple('Entry', 'iteration budget iter_since_high_eval tau fidelity wall_time nhigh nlow reuse_fraction candidate fitness')
     with open(logfile, 'w') as csvfile:
         logwriter = writer(csvfile, delimiter=';')
@@ -186,11 +187,11 @@ def simple_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run
         kernel='Matern',
     )
 
-    logfile = run_save_dir / f'log.csv'
-    archive_file_template = 'archive_{}.pkl'
-    errorgrid_file_template = 'errorgrid_{}.nc'
-
+    logfile = run_save_dir / 'log.csv'
     Entry = namedtuple('Entry', 'iteration budget iter_since_high_eval tau fidelity wall_time nhigh nlow reuse_fraction candidate fitness')
+    with open(logfile, 'w') as csvfile:
+        logwriter = writer(csvfile, delimiter=';')
+        logwriter.writerow(Entry._fields)
     entries = []
 
     #make mf-DoE
@@ -275,11 +276,11 @@ def fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low
     if doe_n_high + cost_ratio*doe_n_low >= init_budget:
         raise ValueError('Budget should not be exhausted after DoE')
 
-    logfile = run_save_dir / f'log.csv'
-    archive_file_template = 'archive_{}.pkl'
-    errorgrid_file_template = 'errorgrid_{}.nc'
-
+    logfile = run_save_dir / 'log.csv'
     Entry = namedtuple('Entry', 'iteration budget iter_since_high_eval tau fidelity wall_time nhigh nlow reuse_fraction candidate fitness')
+    with open(logfile, 'w') as csvfile:
+        logwriter = writer(csvfile, delimiter=';')
+        logwriter.writerow(Entry._fields)
     entries = []
 
     tau = 1 / cost_ratio
