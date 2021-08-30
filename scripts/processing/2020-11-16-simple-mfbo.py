@@ -14,6 +14,8 @@ from pathlib import Path
 from parse import compile
 from pyprojroot import here
 
+
+
 data_path = here('files/2020-11-05-simple-mfbo/')
 plot_path = here('plots/2020-11-16-simple-mfbo/', warn=False)
 plot_path.mkdir(exist_ok=True, parents=True)
@@ -127,6 +129,49 @@ def plot_old_file_formats():
             plt.savefig(plot_path / f'{func.name}-evals.png', bbox_inches='tight')
             #plt.show()
             plt.close()
+
+
+def make_all_plots_for_experiment_directory(experiment_dir: Path):
+
+    df = pd.read_csv(experiment_dir / 'log.csv', index_col=0)
+    plot_from_log(df)
+
+
+
+
+
+    plot_title = f'{func.ndim}D {func.name} with {budget:.1f} budget left'
+    proto_eg.plot_errorgrid(
+        title=plot_title,
+        as_log=True,
+        save_as=plot_dir / f'protoeg-EG-opt-{func.name}-{budget/cost_ratio:.0f}',
+        save_exts=('png',),
+        xlim=(3, init_budget),
+        ylim=(2, (init_budget // 2)),
+    )
+    try:
+        plot_archive(
+            archive,
+            func,
+            title=plot_title,
+            save_as=plot_dir / f'protoeg-archive-opt-{func.name}-{budget/cost_ratio:.0f}',
+            save_exts=('png',),
+        )
+    except NotImplementedError:
+        pass
+
+
+def plot_from_log(df: pd.Dataframe):
+    ...
+
+
+def plot_and_gifify_archives(archives):
+    ...
+
+
+def plot_and_gifify_errorgrids(error_grids):
+    ...
+
 
 
 def main():
