@@ -53,23 +53,6 @@ def plot_on_axes(axes, budget_used, df, label=''):
     ax.set_xlabel('evaluation cost')
 
 
-def plot_comparison(file_a: Path, file_b: Path):
-
-    fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(8, 6), constrained_layout=True)
-
-    for file in [file_a, file_b]:
-        match = tracking_template.parse(file.name)
-        df = pd.read_csv(file, index_col=0)
-        budget_used = match['budget'] - df['budget'].values
-        plot_on_axes(axes, budget_used, df, label=match['method'])
-
-    fig.suptitle(f"comparison for {match['name']} with budget={match['budget']} (idx {match['idx']})")
-    for ax in axes.flatten():
-        ax.legend(loc=0)
-    # fig.show()
-    fig.savefig(plot_path / file_a.with_suffix('.png').name.replace('naive', 'comparison'))
-
-
 def make_all_plots_for_experiment_directory(experiment_dir: Path):
 
     # plot_title = f'{func.ndim}D {func.name} with {budget:.1f} budget left'
