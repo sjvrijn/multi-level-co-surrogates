@@ -6,14 +6,16 @@ processing.py: Collection of data processing procedures that can be called
 by explicit runner files.
 """
 
+import sys
 from enum import IntEnum
-from itertools import product
 from collections import namedtuple
 from pathlib import Path
 from textwrap import fill
+from typing import Union
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import mf2
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -22,8 +24,14 @@ from matplotlib.lines import Line2D
 from matplotlib.transforms import Bbox
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from parse import Parser
+from pyprojroot import here
 from sklearn.linear_model import LinearRegression
 
+module_path = str(here())
+if module_path not in sys.path:
+    sys.path.append(module_path)
+
+import multiLevelCoSurrogates as mlcs
 
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
@@ -73,6 +81,35 @@ def full_extent(fig, ax, pad=0.0):
     bbox = bbox.expanded(1.0 + pad, 1.0 + pad)
 
     return bbox.transformed(fig.dpi_scale_trans.inverted())
+
+
+def plot_archive(
+        archive: mlcs.CandidateArchive,
+        func: mf2.MultiFidelityFunction,
+        title: str,
+        save_as: Union[str, Path],
+        save_exts=('pdf', 'png'),
+) -> None:
+    """Plot given archive using parameters of func
+
+    param archive: CandidateArchive to plot
+    param func:    MultiFidelityFunction to query for name and bounds
+    param title:   Title of the plot
+    param save_as: Filename to save as
+    """
+    if func.ndim != 2:
+        raise NotImplementedError("plotting for other than 2D not implemented")
+
+    fig, ax = plt.subplots()
+    ax.set_title(title)
+    ax.set_xlim([func.l_bound[0], func.u_bound[0]])
+    ax.set_ylim([func.l_bound[1], func.u_bound[1]])
+    for fid, style in zip(['high', 'low'], [red_dot, blue_circle]):
+        points = archive.getcandidates(fid).candidates
+        ax.scatter(*points.T, **style, label=f'{fid}-fidelity samples')
+    ax.legend(loc=0)
+    for save_ext in save_exts:
+        fig.savefig(f'{save_as}.{save_ext}')
 
 
 def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),

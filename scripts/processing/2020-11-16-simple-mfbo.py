@@ -139,5 +139,6 @@ def main():
     for experiment_folder in data_path.iterdir():
         perform_processing_for(experiment_folder)
 
+
 if __name__ == '__main__':
     main()

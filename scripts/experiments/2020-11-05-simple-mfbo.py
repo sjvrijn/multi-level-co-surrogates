@@ -18,7 +18,7 @@ from scipy.optimize import minimize
 from sklearn.linear_model import LinearRegression
 from pyprojroot import here
 
-from experiments import scale_to_function, create_subsampling_error_grid, mlcs, plot_archive
+from experiments import scale_to_function, create_subsampling_error_grid, mlcs
 
 
 from functools import wraps
