@@ -77,23 +77,27 @@ def make_all_plots_for_experiment_directory(experiment_dir: Path):
     ...
 
 
-def plot_log(in_folder: Path, out_folder: Path, extensions=('png',)):
+def plot_log(in_folder: Path, out_folder: Path, save_exts=('png', 'pdf')) -> None:
+    """Plot the most important logged data from {in_folder}/log.csv
+
+    :param in_folder:  folder containing the log.csv file to read and plot
+    :param out_folder: where to store resulting plots
+    :param save_exts:  which extensions to use when saving plots
+    """
     match = subfolder_template.parse(in_folder.name)
     if not match:
-        return
+        raise ValueError(f"Folder name {in_folder.name} does not match expected template")
 
     fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(8, 6), constrained_layout=True)
     fig.suptitle(
-        f"{match['method']} for {match['func_name']} with budget={match['budget']} (idx {match['idx']})")
+        f"{match['method']} for {match['func_name']} with budget={match['budget']} (idx {match['idx']})"
+    )
 
     df = pd.read_csv(in_folder / 'log.csv', index_col=0, sep=';')
-    try:
-        budget_used = match['budget'] - df['budget'].values
-    except KeyError:  # ignore for now
-        return
+    budget_used = match['budget'] - df['budget'].values
 
     plot_on_axes(axes, budget_used, df)
-    for ext in extensions:
+    for ext in save_exts:
         fig.savefig(out_folder / f'graphs.{ext}')
     plt.close()
 
