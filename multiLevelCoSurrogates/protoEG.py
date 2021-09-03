@@ -73,7 +73,9 @@ class ProtoEG:
     def update_errorgrid_with_sample(self, X, fidelity: str):
         """Add a new sample of given fidelity and update Error Grid accordingly"""
 
-        instance_spec = mlcs.InstanceSpec.from_archive(self.archive, num_reps=self.num_reps)
+        instance_spec = mlcs.InstanceSpec.from_archive(
+            self.archive, num_reps=self.num_reps, step=self.interval
+        )
 
         full_DoE = self.archive.as_doe()
         X = X.reshape(1, -1)
