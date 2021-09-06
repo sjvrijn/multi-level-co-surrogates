@@ -40,7 +40,7 @@ save_dir.mkdir(parents=True, exist_ok=True)
 plot_dir = here('plots/2020-11-05-simple-mfbo/', warn=False)
 plot_dir.mkdir(parents=True, exist_ok=True)
 
-archive_file_template = 'archive_{:03d}.pkl'
+archive_file_template = 'archive_{:03d}.npy'
 errorgrid_file_template = 'errorgrid_{:03d}.nc'
 
 
@@ -148,8 +148,7 @@ def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, r
         with open(logfile, 'a') as csvfile:
             logwriter = writer(csvfile, delimiter=';')
             logwriter.writerow(entries[-1])
-        with open(run_save_dir / archive_file_template.format(iterations), 'wb') as f:
-            dump(str(archive.data), f)
+        np.save(run_save_dir / archive_file_template.format(iterations), archive)
         proto_eg.error_grid.to_netcdf(run_save_dir / errorgrid_file_template.format(iterations))
         iterations += 1
 
@@ -238,8 +237,7 @@ def simple_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run
         with open(logfile, 'a') as csvfile:
             logwriter = writer(csvfile, delimiter=';')
             logwriter.writerow(entries[-1])
-        with open(run_save_dir / archive_file_template.format(iterations), 'wb') as f:
-            dump(str(archive.data), f)
+        np.save(run_save_dir / archive_file_template.format(iterations), archive)
         EG.to_netcdf(run_save_dir / errorgrid_file_template.format(iterations))
         iterations += 1
 
@@ -339,8 +337,7 @@ def fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low
         with open(logfile, 'a') as csvfile:
             logwriter = writer(csvfile, delimiter=';')
             logwriter.writerow(entries[-1])
-        with open(run_save_dir / archive_file_template.format(iterations), 'wb') as f:
-            dump(str(archive.data), f)
+        np.save(run_save_dir / archive_file_template.format(iterations), archive)
         iterations += 1
 
         #update model

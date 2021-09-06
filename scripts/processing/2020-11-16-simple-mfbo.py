@@ -12,6 +12,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import mf2
+import numpy as np
 import pandas as pd
 from pathlib import Path
 from parse import compile
@@ -32,7 +33,7 @@ plot_path = here('plots/2020-11-16-simple-mfbo/', warn=False)
 plot_path.mkdir(exist_ok=True, parents=True)
 
 subfolder_template = compile('{func_name}-{method}-b{budget:d}-i{idx:d}')
-archive_template = compile('archive_{iteration:d}.pkl')
+archive_template = compile('archive_{iteration:d}.npy')
 
 
 named_functions = {
@@ -156,9 +157,7 @@ def plot_and_gifify_archives(in_folder: Path, out_folder: Path, save_exts=('png'
         if archive_template.parse(f.name)
     ]
     for archive_file, iteration_idx in archive_files:
-        archive = CandidateArchive(ndim=0, fidelities=['high', 'low', 'high-low'])
-        with open(archive_file, 'rb') as f:
-            archive.data = pickle.load(f)
+        archive = np.load(archive_file, allow_pickle=True).item()
         proc.plot_archive(
             archive,
             named_functions[func_name.lower()],
@@ -181,7 +180,7 @@ def perform_processing_for(experiment_folder: Path):
     out_folder.mkdir(parents=True, exist_ok=True)
 
     plot_log(experiment_folder, out_folder)
-    # plot_and_gifify_archives(experiment_folder, out_folder)
+    plot_and_gifify_archives(experiment_folder, out_folder)
     # plot_and_gifify_errorgrids(experiment_folder, out_folder)
 
 
