@@ -110,6 +110,7 @@ def plot_archive(
     ax.legend(loc=0)
     for save_ext in save_exts:
         fig.savefig(f'{save_as}.{save_ext}')
+    plt.close()
 
 
 def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
