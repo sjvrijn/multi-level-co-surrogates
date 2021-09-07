@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import mf2
 import numpy as np
 import pandas as pd
-from pathlib import Path
+import xarray as xr
 from parse import compile
 from pyprojroot import here
 
@@ -32,7 +32,7 @@ plot_path.mkdir(exist_ok=True, parents=True)
 
 subfolder_template = compile('{func_name}-{method}-b{budget:d}-i{idx:d}')
 archive_template = compile('archive_{iteration:d}.npy')
-
+errorgrid_template = compile('errorgrid_{iteration:d}.nc')
 
 named_functions = {
     func.name.lower(): func
@@ -153,9 +153,32 @@ def plot_and_gifify_archives(in_folder: Path, out_folder: Path, save_exts=('png'
     # do_gifification_here()
 
 
-def plot_and_gifify_errorgrids(in_folder: Path, out_folder: Path):
-    ...
+def plot_and_gifify_errorgrids(in_folder: Path, out_folder: Path, save_exts=('png', 'pdf')):
+    """Create errorgrid plots errorgrid.nc files in `in_folder`, including animated GIF
 
+    :param in_folder:  folder containing the log.csv file to read and plot
+    :param out_folder: where to store resulting plots
+    :param save_exts:  which extensions to use when saving the individual plots
+    """
+    match = subfolder_template.parse(in_folder.name)
+
+    errorgrid_files = [
+        (f, errorgrid_template.parse(f.name)['iteration'])
+        for f in in_folder.iterdir()
+        if errorgrid_template.parse(f.name)
+    ]
+    for errorgrid_file, iteration_idx in errorgrid_files:
+        errorgrid = xr.load_dataarray(errorgrid_file)
+        proc.plot_error_grid(
+            errorgrid,
+            title=f'plot of errorgrid at iteration {iteration_idx}',
+            as_log=True,
+            xlim=(3, match['budget']),
+            ylim=(2, (match['budget'] // 2)),
+            save_as=out_folder / errorgrid_file.name,
+        )
+
+    # do_gifification_here()
 
 
 def perform_processing_for(experiment_folder: Path):
