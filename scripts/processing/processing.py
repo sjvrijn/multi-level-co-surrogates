@@ -116,24 +116,28 @@ def plot_archive(
 def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
                     contours=0, as_log=False, save_as=None,
                     show=False, include_comparisons=False,
-                    include_colorbar=True, label_y=True, title_width=None):
+                    include_colorbar=True, label_y=True, title_width=None,
+                    xlim=None, ylim=None,):
     """Plot a heatmap of the median MSE for each possible combination of high
     and low-fidelity samples. For comparison, the MSE for the high-only and
     low-only models are displayed as a bar to the left and bottom respectively.
 
-    :param data: `xr.DataArray` containing the MSE values
-    :param title: title to use at top of the image
-    :param vmin: minimum value for color scale normalization
-    :param vmax: maximum value for color scale normalization
-    :param points: iterable of namedtuples for fixed DoE's to plot
-    :param contours: number of contour lines to draw. Default: 0
-    :param as_log: display the log10 of the data or not (default False)
-    :param save_as: desired filename for saving the image. Not saved if `None`
-    :param show: whether or not to call `plt.show()`. Default: False
+    :param data:                `xr.DataArray` containing the MSE values
+    :param title:               title to use at top of the image
+    :param vmin:                minimum value for color scale normalization
+    :param vmax:                maximum value for color scale normalization
+    :param points:              iterable of namedtuples for fixed DoE's to plot
+    :param contours:            number of contour lines to draw. Default: 0
+    :param as_log:              display the log10 of the data or not (default False)
+    :param save_as:             desired filename for saving the image. Not saved if `None`
+    :param show:                whether or not to call `plt.show()`. Default: False
     :param include_comparisons: whether or not to include single-fidelity model
                                 averages along axes. Default: False
-    :param include_colorbar: whether or not to include a colorbar. Default: True
-    :param label_y: whether or not to include axis label and ticks for y-axis. Default: True
+    :param include_colorbar:    whether or not to include a colorbar. Default: True
+    :param label_y:             whether or not to include axis label and ticks for y-axis. Default: True
+    :param title_width:         maximum width of the title for line wrapping
+    :param xlim:                base x-limits, upper will extend to fit data
+    :param ylim:                base y-limits, upper will extend to fit data
     """
     if not (show or save_as):
         return  # no need to make the plot if not showing or saving it
@@ -198,10 +202,14 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
             ax.yaxis.set_tick_params(left=False, labelleft=False, which='both')
         ax.set_xlabel(LABEL_N_LOW)
 
+    if xlim:
+        ax.set_xlim((xlim[0]-.5, max(xlim[1], max(data.n_low))+.5))
+    if ylim:
+        ax.set_ylim((ylim[0]-.5, max(ylim[1], max(data.n_high))+.5))
+
     if include_colorbar:
         cax = divider.append_axes("right", size=0.2, pad=0.05)
         fig.colorbar(img, cax=cax)
-
 
     if points:
         pts = []
