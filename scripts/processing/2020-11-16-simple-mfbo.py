@@ -6,7 +6,6 @@
 files during the simple-mfbo runs
 """
 
-import pickle
 import sys
 from pathlib import Path
 
@@ -25,7 +24,6 @@ if module_path not in sys.path:
     sys.path.append(module_path)
 
 import multiLevelCoSurrogates as mlcs
-
 from multiLevelCoSurrogates import CandidateArchive
 
 data_path = here('files/2020-11-05-simple-mfbo/')
@@ -102,20 +100,6 @@ def calc_num_pixels(num_high, num_low):
     ])
 
 
-def make_all_plots_for_experiment_directory(experiment_dir: Path):
-
-    # plot_title = f'{func.ndim}D {func.name} with {budget:.1f} budget left'
-    # proto_eg.plot_errorgrid(
-    #     title=plot_title,
-    #     as_log=True,
-    #     save_as=plot_dir / f'protoeg-EG-opt-{func.name}-{budget/cost_ratio:.0f}',
-    #     save_exts=('png',),
-    #     xlim=(3, init_budget),
-    #     ylim=(2, (init_budget // 2)),
-    # )
-    ...
-
-
 def plot_log(in_folder: Path, out_folder: Path, save_exts=('png', 'pdf')) -> None:
     """Plot the most important logged data from {in_folder}/log.csv
 
@@ -142,7 +126,7 @@ def plot_log(in_folder: Path, out_folder: Path, save_exts=('png', 'pdf')) -> Non
 
 
 def plot_and_gifify_archives(in_folder: Path, out_folder: Path, save_exts=('png', 'pdf')):
-    """Create 2d plots of all archive.pkl files in `in_folder`, including animated GIF
+    """Create 2d plots of all archive.npy files in `in_folder`, including animated GIF
 
     :param in_folder:  folder containing the log.csv file to read and plot
     :param out_folder: where to store resulting plots
@@ -160,8 +144,8 @@ def plot_and_gifify_archives(in_folder: Path, out_folder: Path, save_exts=('png'
         archive = np.load(archive_file, allow_pickle=True).item()
         proc.plot_archive(
             archive,
-            named_functions[func_name.lower()],
-            f'plot of archive at idx {iteration_idx}',
+            func=named_functions[func_name.lower()],
+            title=f'plot of archive at idx {iteration_idx}',
             save_as=out_folder / archive_file.name,
             save_exts=save_exts
         )
