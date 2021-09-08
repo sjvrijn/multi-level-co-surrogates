@@ -610,5 +610,5 @@ def gifify_in_folder(in_folder: Path, base_name: str):
     ], key=itemgetter(1), reverse=True)
 
     with imageio.get_writer(in_folder / f"{base_name}.gif", mode='I', duration=0.5) as writer:
-        for file in files_to_gifify:
+        for (file, _) in files_to_gifify:
             writer.append_data(imageio.imread(file))

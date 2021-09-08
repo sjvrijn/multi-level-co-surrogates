@@ -194,5 +194,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
     kwargs = {}
     if args.exts:
-        kwargs['save_exts': args.exts]
+        kwargs['save_exts'] = args.exts
     main(**kwargs)
