@@ -151,7 +151,7 @@ def plot_and_gifify_archives(in_folder: Path, out_folder: Path, save_exts=('png'
             save_exts=save_exts
         )
 
-    # do_gifification_here()
+    proc.gifify_in_folder(out_folder, base_name='archive')
 
 
 def plot_and_gifify_errorgrids(in_folder: Path, out_folder: Path, save_exts=('png', 'pdf')):
@@ -179,7 +179,7 @@ def plot_and_gifify_errorgrids(in_folder: Path, out_folder: Path, save_exts=('pn
             save_as=out_folder / errorgrid_file.name,
         )
 
-    # do_gifification_here()
+    proc.gifify_in_folder(out_folder, base_name='errorgrid')
 
 
 def perform_processing_for(experiment_folder: Path, **kwargs):
