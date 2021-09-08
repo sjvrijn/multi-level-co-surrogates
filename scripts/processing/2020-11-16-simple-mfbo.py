@@ -177,7 +177,10 @@ def perform_processing_for(experiment_folder: Path, **kwargs):
     out_folder.mkdir(parents=True, exist_ok=True)
 
     plot_log(experiment_folder, out_folder, **kwargs)
-    plot_and_gifify_archives(experiment_folder, out_folder, **kwargs)
+    try:
+        plot_and_gifify_archives(experiment_folder, out_folder, **kwargs)
+    except NotImplementedError:
+        pass  # function must not be 2d...
     plot_and_gifify_errorgrids(experiment_folder, out_folder, **kwargs)
 
 
