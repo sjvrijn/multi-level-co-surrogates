@@ -101,7 +101,7 @@ def calc_num_pixels(num_high, num_low):
     ])
 
 
-def plot_log(in_folder: Path, out_folder: Path, save_exts=('png', 'pdf')) -> None:
+def plot_log(in_folder: Path, out_folder: Path, save_exts=('.png', '.pdf')) -> None:
     """Plot the most important logged data from {in_folder}/log.csv
 
     :param in_folder:  folder containing the log.csv file to read and plot
@@ -121,12 +121,12 @@ def plot_log(in_folder: Path, out_folder: Path, save_exts=('png', 'pdf')) -> Non
     budget_used = match['budget'] - df['budget'].values
 
     plot_on_axes(axes, budget_used, df)
-    for ext in save_exts:
-        fig.savefig(out_folder / f'graphs.{ext}')
+    for suffix in save_exts:
+        fig.savefig(out_folder / f'graphs{suffix}')
     plt.close()
 
 
-def plot_and_gifify_archives(in_folder: Path, out_folder: Path, save_exts=('png', 'pdf')):
+def plot_and_gifify_archives(in_folder: Path, out_folder: Path, save_exts=('.png', '.pdf')):
     """Create 2d plots of all archive.npy files in `in_folder`, including animated GIF
 
     :param in_folder:  folder containing the log.csv file to read and plot
@@ -147,8 +147,8 @@ def plot_and_gifify_archives(in_folder: Path, out_folder: Path, save_exts=('png'
             archive,
             func=named_functions[func_name.lower()],
             title=f'plot of archive at idx {iteration_idx}',
-            save_as=out_folder / archive_file.name,
-            save_exts=save_exts
+            save_as=out_folder / archive_file.stem,
+            suffixes=save_exts
         )
 
     proc.gifify_in_folder(out_folder, base_name='archive')
@@ -176,7 +176,7 @@ def plot_and_gifify_errorgrids(in_folder: Path, out_folder: Path, save_exts=('pn
             as_log=True,
             xlim=(3, match['budget']),
             ylim=(2, (match['budget'] // 2)),
-            save_as=out_folder / errorgrid_file.name,
+            save_as=out_folder / errorgrid_file.stem,
         )
 
     proc.gifify_in_folder(out_folder, base_name='errorgrid')

@@ -53,7 +53,7 @@ LABEL_N_LOW = "$n_l$"
 wide_figsize = (5.2, 2)
 reg_figsize = (4, 2)
 
-extensions = ['pdf', 'png']
+suffixes = ['.pdf', '.png']
 
 
 def get_extent(data: xr.DataArray):
@@ -90,7 +90,7 @@ def plot_archive(
         func: mf2.MultiFidelityFunction,
         title: str,
         save_as: Union[str, Path],
-        save_exts=('pdf', 'png'),
+        suffixes=('.pdf', '.png'),
 ) -> None:
     """Plot given archive using parameters of func
 
@@ -110,8 +110,8 @@ def plot_archive(
         points = archive.getcandidates(fid).candidates
         ax.scatter(*points.T, **style, label=f'{fid}-fidelity samples')
     ax.legend(loc=0)
-    for save_ext in save_exts:
-        fig.savefig(f'{save_as}.{save_ext}')
+    for suffix in suffixes:
+        fig.savefig(save_as.with_suffix(suffix))
     plt.close()
 
 
@@ -226,8 +226,8 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
 
     plt.tight_layout()
     if save_as:
-        for ext in extensions:
-            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
+        for suffix in suffixes:
+            plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close('all')
@@ -281,8 +281,8 @@ def plot_multiple_error_grids(datas, titles, as_log=True,
 
     plt.tight_layout()
     if save_as:
-        for ext in extensions:
-            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
+        for suffix in suffixes:
+            plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -333,8 +333,8 @@ def plot_high_v_low_diff(to_plot, long_title, norm, save_as=None, show=False):
     plt.title(long_title)
     plt.tight_layout()
     if save_as:
-        for ext in extensions:
-            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
+        for suffix in suffixes:
+            plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -363,8 +363,8 @@ def plot_t_scores(data: xr.DataArray, title: str, t_range: float=5, num_colors: 
 
     plt.tight_layout()
     if save_as:
-        for ext in extensions:
-            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
+        for suffix in suffixes:
+            plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -413,8 +413,8 @@ def plot_extracts(data: xr.DataArray, title: str, save_as: str=None, show: bool=
     plt.legend(loc=0)
     plt.tight_layout()
     if save_as:
-        for ext in extensions:
-            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
+        for suffix in suffixes:
+            plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -450,8 +450,8 @@ def plot_multi_file_extracts(data_arrays, title: str, save_as: str=None, show: b
     plt.tight_layout()
 
     if save_as:
-        for ext in extensions:
-            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
+        for suffix in suffixes:
+            plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
