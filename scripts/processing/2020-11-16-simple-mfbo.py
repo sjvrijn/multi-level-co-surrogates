@@ -6,6 +6,7 @@
 files during the simple-mfbo runs
 """
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -181,21 +182,28 @@ def plot_and_gifify_errorgrids(in_folder: Path, out_folder: Path, save_exts=('pn
     # do_gifification_here()
 
 
-def perform_processing_for(experiment_folder: Path):
+def perform_processing_for(experiment_folder: Path, **kwargs):
     """Run all relevant processing/plotting actions"""
     out_folder = plot_path / experiment_folder.name
     out_folder.mkdir(parents=True, exist_ok=True)
 
-    plot_log(experiment_folder, out_folder)
-    plot_and_gifify_archives(experiment_folder, out_folder)
-    # plot_and_gifify_errorgrids(experiment_folder, out_folder)
+    plot_log(experiment_folder, out_folder, **kwargs)
+    plot_and_gifify_archives(experiment_folder, out_folder, **kwargs)
+    plot_and_gifify_errorgrids(experiment_folder, out_folder, **kwargs)
 
 
 
-def main():
+def main(**kwargs):
     for experiment_folder in data_path.iterdir():
-        perform_processing_for(experiment_folder)
+        print(experiment_folder.name)
+        perform_processing_for(experiment_folder, **kwargs)
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--exts", action="extend", nargs="+", type=str)
+    args = parser.parse_args()
+    kwargs = {}
+    if args.exts:
+        kwargs['save_exts': args.exts]
+    main(**kwargs)
