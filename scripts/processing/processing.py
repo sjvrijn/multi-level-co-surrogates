@@ -9,10 +9,12 @@ by explicit runner files.
 import sys
 from enum import IntEnum
 from collections import namedtuple
+from operator import itemgetter
 from pathlib import Path
 from textwrap import fill
 from typing import Union
 
+import imageio
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import mf2
@@ -595,3 +597,18 @@ def determine_match(CI1, CI2):
     if CI1.lower in CI2 or CI1.upper in CI2:  # reverse is implied
         return Comparison.CI_MATCH
     return Comparison.NO_MATCH
+
+
+def gifify_in_folder(in_folder: Path, base_name: str):
+    """Combine all images matching `{base_name}_{idx}.png` in `in_folder` into `base_name.gif`"""
+
+    template = Parser(base_name + '_{idx:d}.png')
+    files_to_gifify = sorted([
+        (file, match['idx'])
+        for file in in_folder.iterdir()
+        if (match := template.parse(file.name))
+    ], key=itemgetter(1), reverse=True)
+
+    with imageio.get_writer(in_folder / f"{base_name}.gif", mode='I', duration=0.5) as writer:
+        for file in files_to_gifify:
+            writer.append_data(imageio.imread(file))
