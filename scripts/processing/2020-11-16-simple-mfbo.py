@@ -74,23 +74,12 @@ def plot_on_axes(axes, budget_used, df, label=''):
     ax.set_xlabel('evaluation cost')
 
     ax = axes[2,0]
-    # (wall-time / num_pixels) / budget
-    num_pixels = calc_num_pixels(df['nhigh'].values, df['nlow'].values)
-    ax.plot(budget_used, np.cumsum(num_pixels) / df['wall_time'].values)
-    ax.set_title('pixel-normalized wall-time')
+    # fitness vs budget (regardless of fidelity)
+    ax.plot(budget_used, df['fitness'])
+    ax.set_title('evaluated fitness')
     ax.set_ylim(bottom=0)
-    ax.set_ylabel('wall-time / num EG pixels')
+    ax.set_ylabel('fitness (high- and low-fidelity)')
     ax.set_xlabel('evaluation cost')
-
-    ax = axes[2,1]
-    # scatter diff wall-time / diff num_pixels
-    diff_time = np.diff(np.insert(df['wall_time'].values, 0, 0))
-    diff_pixels = np.diff(np.insert(num_pixels, 0, 0))
-    ax.plot(diff_time, diff_pixels, marker='o')
-    ax.set_title('diff wall-time vs diff num_pixels')
-    ax.set_ylim(bottom=0)
-    ax.set_ylabel('consecutive difference num EG pixels')
-    ax.set_xlabel('consecutive difference wall-time')
 
 
 def calc_num_pixels(num_high, num_low):
