@@ -607,7 +607,7 @@ def gifify_in_folder(in_folder: Path, base_name: str):
         (file, match['idx'])
         for file in in_folder.iterdir()
         if (match := template.parse(file.name))
-    ], key=itemgetter(1), reverse=True)
+    ], key=itemgetter(1))
 
     with imageio.get_writer(in_folder / f"{base_name}.gif", mode='I', duration=0.5) as writer:
         for (file, _) in files_to_gifify:
