@@ -61,7 +61,7 @@ def plot_on_axes(axes, budget_used, df, label=''):
     # wall-time / budget
     ax.plot(budget_used, df['wall_time'].values, label=label)
     ax.set_title('wall-time')
-    ax.set_ylim(bottom=0)
+    ax.set_yscale('log')
     ax.set_ylabel('time (s)')
     ax.set_xlabel('evaluation cost')
 
@@ -83,7 +83,6 @@ def plot_on_axes(axes, budget_used, df, label=''):
 
 
 def calc_num_pixels(num_high, num_low):
-
     return np.array([
         len(mlcs.InstanceSpec(h, l, num_reps=1))
         for h, l in zip(num_high, num_low)
@@ -105,10 +104,8 @@ def plot_log(in_folder: Path, out_folder: Path, save_exts=('.png', '.pdf')) -> N
     fig.suptitle(
         f"{match['method']} for {match['func_name']} with budget={match['budget']} (idx {match['idx']})"
     )
-
     df = pd.read_csv(in_folder / 'log.csv', index_col=0, sep=';')
     budget_used = match['budget'] - df['budget'].values
-
     plot_on_axes(axes, budget_used, df)
     for suffix in save_exts:
         fig.savefig(out_folder / f'graphs{suffix}')
@@ -124,7 +121,6 @@ def plot_and_gifify_archives(in_folder: Path, out_folder: Path, save_exts=('.png
     """
     match = subfolder_template.parse(in_folder.name)
     func_name = match['func_name']
-
     archive_files = [
         (f, archive_template.parse(f.name)['iteration'])
         for f in in_folder.iterdir()
@@ -139,7 +135,6 @@ def plot_and_gifify_archives(in_folder: Path, out_folder: Path, save_exts=('.png
             save_as=out_folder / archive_file.stem,
             suffixes=save_exts
         )
-
     proc.gifify_in_folder(out_folder, base_name='archive')
 
 
@@ -151,7 +146,6 @@ def plot_and_gifify_errorgrids(in_folder: Path, out_folder: Path, save_exts=('pn
     :param save_exts:  which extensions to use when saving the individual plots
     """
     match = subfolder_template.parse(in_folder.name)
-
     errorgrid_files = [
         (f, errorgrid_template.parse(f.name)['iteration'])
         for f in in_folder.iterdir()
@@ -167,7 +161,6 @@ def plot_and_gifify_errorgrids(in_folder: Path, out_folder: Path, save_exts=('pn
             ylim=(2, (match['budget'] // 2)),
             save_as=out_folder / errorgrid_file.stem,
         )
-
     proc.gifify_in_folder(out_folder, base_name='errorgrid')
 
 
@@ -177,12 +170,11 @@ def perform_processing_for(experiment_folder: Path, **kwargs):
     out_folder.mkdir(parents=True, exist_ok=True)
 
     plot_log(experiment_folder, out_folder, **kwargs)
+    plot_and_gifify_errorgrids(experiment_folder, out_folder, **kwargs)
     try:
         plot_and_gifify_archives(experiment_folder, out_folder, **kwargs)
     except NotImplementedError:
         pass  # function must not be 2d...
-    plot_and_gifify_errorgrids(experiment_folder, out_folder, **kwargs)
-
 
 
 def main(**kwargs):
