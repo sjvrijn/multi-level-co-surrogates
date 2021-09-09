@@ -25,7 +25,7 @@ data_path = here('files/2020-11-05-simple-mfbo/')
 plot_path = here('plots/2021-09-09-mfbo-comparisons/', warn=False)
 plot_path.mkdir(exist_ok=True, parents=True)
 
-subfolder_template = compile('{func_name}-{method}-b{budget:d}-i{idx:d}')
+subfolder_template = compile('{func_name}-{method}-b{init_budget:d}-i{idx:d}')
 archive_template = compile('archive_{iteration:d}.npy')
 errorgrid_template = compile('errorgrid_{iteration:d}.nc')
 
@@ -56,29 +56,30 @@ def compare_different_strategies(save_exts=('.png', '.pdf')):
         match = subfolder_template.parse(subfolder.name)
         if not match:
             continue
-        group_id = (match['func_name'], match['budget'], match['idx'])
+        group_id = (match['func_name'], match['init_budget'], match['idx'])
         groups[group_id].append((match['method'], subfolder))
 
     # for each group, create and plot a figure
-    for (func_name, budget, idx), folders in groups.items():
-        print(f'{func_name} with budget={budget} (idx {idx})')
+    for (func_name, init_budget, idx), folders in groups.items():
+        print(f'{func_name} with init_budget={init_budget} (idx {idx})')
         fig, axes = plt.subplots(ncols=2, nrows=3, figsize=(8, 9), constrained_layout=True)
         fig.suptitle(
-            f"Method comparison for {func_name} with budget={budget} (idx {idx})"
+            f"Method comparison for {func_name} with init_budget={init_budget} (idx {idx})"
         )
         # for each experiment, plot the data
         for method, folder in sorted(folders, key=itemgetter(0)):
             df = pd.read_csv(folder / 'log.csv', index_col=0, sep=';')
-            budget_used = budget - df['budget'].values
-            plot_on_axes(axes, budget_used, df, label=method)
+            plot_on_axes(axes, init_budget, df, label=method)
         axes[0,0].legend(loc=0)
 
         for suffix in save_exts:
-            fig.savefig(plot_path / f'comparison-{func_name}-b{budget}-i{idx}{suffix}')
+            fig.savefig(plot_path / f'comparison-{func_name}-b{init_budget}-i{idx}{suffix}')
         plt.close()
 
 
-def plot_on_axes(axes, budget_used, df, label=''):
+def plot_on_axes(axes, init_budget, df, label=''):
+    budget_used = init_budget - df['budget'].values
+
     ax = axes[0,0]
     # EG size path
     ax.plot(df['nlow'].values, df['nhigh'].values, marker='o', label=label)

@@ -31,7 +31,7 @@ data_path = here('files/2020-11-05-simple-mfbo/')
 plot_path = here('plots/2020-11-16-simple-mfbo/', warn=False)
 plot_path.mkdir(exist_ok=True, parents=True)
 
-subfolder_template = compile('{func_name}-{method}-b{budget:d}-i{idx:d}')
+subfolder_template = compile('{func_name}-{method}-b{init_budget:d}-i{idx:d}')
 archive_template = compile('archive_{iteration:d}.npy')
 errorgrid_template = compile('errorgrid_{iteration:d}.nc')
 
@@ -40,8 +40,9 @@ named_functions = {
     for func in mf2.bi_fidelity_functions
 }
 
+def plot_on_axes(axes, init_budget, df, label=''):
+    budget_used = init_budget - df['budget'].values
 
-def plot_on_axes(axes, budget_used, df, label=''):
     ax = axes[0,0]
     # EG size path
     ax.plot(df['nlow'].values, df['nhigh'].values, marker='o', label=label)
@@ -102,11 +103,10 @@ def plot_log(in_folder: Path, out_folder: Path, save_exts=('.png', '.pdf')) -> N
 
     fig, axes = plt.subplots(ncols=2, nrows=3, figsize=(8, 9), constrained_layout=True)
     fig.suptitle(
-        f"{match['method']} for {match['func_name']} with budget={match['budget']} (idx {match['idx']})"
+        f"{match['method']} for {match['func_name']} with init_budget={match['init_budget']} (idx {match['idx']})"
     )
     df = pd.read_csv(in_folder / 'log.csv', index_col=0, sep=';')
-    budget_used = match['budget'] - df['budget'].values
-    plot_on_axes(axes, budget_used, df)
+    plot_on_axes(axes, match['init_budget'], df)
     for suffix in save_exts:
         fig.savefig(out_folder / f'graphs{suffix}')
     plt.close()
@@ -157,8 +157,8 @@ def plot_and_gifify_errorgrids(in_folder: Path, out_folder: Path, save_exts=('pn
             errorgrid,
             title=f'plot of errorgrid at iteration {iteration_idx}',
             as_log=True,
-            xlim=(3, match['budget']),
-            ylim=(2, (match['budget'] // 2)),
+            xlim=(3, match['init_budget']),
+            ylim=(2, (match['init_budget'] // 2)),
             save_as=out_folder / errorgrid_file.stem,
         )
     proc.gifify_in_folder(out_folder, base_name='errorgrid')
