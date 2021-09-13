@@ -13,6 +13,7 @@ from operator import itemgetter
 
 import matplotlib.pyplot as plt
 import mf2
+import numpy as np
 import pandas as pd
 from parse import compile
 from pyprojroot import here
@@ -20,6 +21,8 @@ from pyprojroot import here
 module_path = str(here())
 if module_path not in sys.path:
     sys.path.append(module_path)
+
+from multiLevelCoSurrogates import CandidateArchive
 
 data_path = here('files/2020-11-05-simple-mfbo/')
 plot_path = here('plots/2021-09-09-mfbo-comparisons/', warn=False)
@@ -69,6 +72,8 @@ def compare_different_strategies(save_exts=('.png', '.pdf')):
         # for each experiment, plot the data
         for method, folder in sorted(folders, key=itemgetter(0)):
             df = pd.read_csv(folder / 'log.csv', index_col=0, sep=';')
+            archive = np.load(folder / 'archive_000.npy', allow_pickle=True).item()
+            df = add_min_over_time_to_log(df, archive)
             plot_on_axes(axes, init_budget, df, label=method)
         axes[0,0].legend(loc=0)
 
@@ -118,6 +123,30 @@ def plot_on_axes(axes, init_budget, df, label=''):
     ax.set_ylim(bottom=0)
     ax.set_ylabel('fitness (high- and low-fidelity)')
     ax.set_xlabel('evaluation cost')
+
+    ax = axes[2,1]
+    # minimum fitness over time per fidelity
+    ax.plot(budget_used, df['opt_low'], label=f'{label} (low)')
+    ax.plot(budget_used, df['opt_high'], label=f'{label} (high)')
+    ax.set_title('best fitness')
+    ax.set_ylim(bottom=0)
+    ax.set_ylabel('fitness (high- and low-fidelity)')
+    ax.set_xlabel('evaluation cost')
+    ax.legend(loc='best')
+
+
+def add_min_over_time_to_log(df: pd.DataFrame, init_archive: CandidateArchive):
+    """Add the minimum fitness values over time for each fidelity to the dataframe"""
+
+    # gather improvements per fidelity from the dataframe
+    for fidelity in ['low', 'high']:
+        fitnesses = np.array([np.inf] * len(df['fitness']))
+        fitnesses[df['fidelity'] == fidelity] = df.loc[df['fidelity'] == fidelity]['fitness']
+        fitnesses[0] = min(init_archive.min[fidelity], fitnesses[0])
+        fitnesses = np.minimum.accumulate(fitnesses)
+        df[f'opt_{fidelity}'] = fitnesses
+
+    return df
 
 
 def main(**kwargs):
