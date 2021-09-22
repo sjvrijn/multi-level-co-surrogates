@@ -5,12 +5,10 @@
 
 import argparse
 from csv import writer
-from pickle import dump
 from warnings import warn, simplefilter
 
 import mf2
 import numpy as np
-import pandas as pd
 import xarray as xr
 from collections import namedtuple
 from operator import itemgetter
@@ -391,16 +389,17 @@ def main(args):
     if args.idx is not None:
         functions = [functions[args.idx]]
 
+    kwargs = dict(
+        init_budget=args.budget,
+        cost_ratio=0.2,
+        doe_n_high=5,
+        doe_n_low=10,
+        num_reps=args.nreps,
+    )
+
     for func in functions:
         print(func.name)
 
-        kwargs = dict(
-            init_budget=args.budget,
-            cost_ratio=0.2,
-            doe_n_high=5,
-            doe_n_low=10,
-            num_reps=args.nreps,
-        )
         for idx in range(args.niters):
             do_run(func, f'fixed-b{args.budget}-i{idx}', fixed_ratio_multifid_bo, kwargs)
             do_run(func, f'naive-b{args.budget}-i{idx}', simple_multifid_bo, kwargs)
