@@ -6,7 +6,7 @@ CandidateArchive.py: Class to store candidate solutions in an optimization proce
                      (multi-fidelity) fitness values
 """
 from collections import namedtuple
-from typing import Dict, Iterable, Tuple, Union
+from typing import Iterable, Union
 
 from more_itertools import pairwise
 
