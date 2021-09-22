@@ -152,8 +152,6 @@ def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, r
         proto_eg.error_grid.to_netcdf(run_save_dir / errorgrid_file_template.format(iterations))
         iterations += 1
 
-    return mfm, pd.DataFrame.from_records(entries, columns=Entry._fields), archive
-
 
 # @timing
 def simple_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps=50):
@@ -244,11 +242,9 @@ def simple_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run
         #update model
         mfbo.retrain()
 
-    return mfbo, pd.DataFrame.from_records(entries, columns=Entry._fields), archive
-
 
 @timing
-def fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps=50):
+def fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir):
     np.random.seed(20160501)
     start = time()
 
@@ -343,8 +339,6 @@ def fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low
         #update model
         mfbo.retrain()
 
-    return mfbo, pd.DataFrame.from_records(entries, columns=Entry._fields), archive
-
 
 def select_high_fid_only_candidates(archive):
     all_low = {
@@ -419,14 +413,11 @@ def do_run(func, experiment_name, run_func, kwargs):
     print(f'    {experiment_name}...')
     run_save_dir = save_dir / f'{func.name}-{experiment_name}'
     run_save_dir.mkdir(parents=True, exist_ok=True)
-    _, df, archive = run_func(
+    run_func(
         func=func,
         run_save_dir=run_save_dir,
         **kwargs
     )
-    # df.to_csv(save_dir / f'{func.name}-tracking-{name}.csv')
-    # with open(save_dir / f'{func.name}-archive-{name}.pkl', 'wb') as f:
-    #     dump(str(archive.data), f)
 
 
 if __name__ == '__main__':
