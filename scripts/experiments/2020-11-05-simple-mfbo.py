@@ -33,6 +33,9 @@ def timing(f):
     return wrap
 
 
+RANDOM_SEED_BASE = 20160501
+N_RAND_SAMPLES = 100
+
 save_dir = here('files/2020-11-05-simple-mfbo/', warn=False)
 save_dir.mkdir(parents=True, exist_ok=True)
 plot_dir = here('plots/2020-11-05-simple-mfbo/', warn=False)
@@ -60,9 +63,9 @@ def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
 
 
 # @timing
-def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps=50):
-    #np.random.seed(20160501)
-    N_RAND_SAMPLES = 100
+def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps=50, seed_offset=None):
+    if seed_offset:
+        np.random.seed(RANDOM_SEED_BASE + seed_offset)
     start = time()
 
     if doe_n_high + cost_ratio*doe_n_low >= init_budget:
@@ -152,8 +155,9 @@ def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, r
 
 
 # @timing
-def simple_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps=50):
-    #np.random.seed(20160501)
+def simple_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps=50, seed_offset=None):
+    if seed_offset:
+        np.random.seed(RANDOM_SEED_BASE + seed_offset)
     start = time()
 
     if doe_n_high + cost_ratio*doe_n_low >= init_budget:
@@ -215,7 +219,6 @@ def simple_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run
                 bounds=func.bounds.T,
             ).x
 
-            N_RAND_SAMPLES = 100
             while x in archive:  # resample to ensure a new candidate is added to the archive
                 # print(f'Existing candidate {x} ...')
                 random_candidates = scale_to_function(func, np.random.rand(N_RAND_SAMPLES, func.ndim))
@@ -242,8 +245,9 @@ def simple_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run
 
 
 @timing
-def fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir):
-    np.random.seed(20160501)
+def fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, seed_offset=None):
+    if seed_offset:
+        np.random.seed(RANDOM_SEED_BASE + seed_offset)
     start = time()
 
     if doe_n_high + cost_ratio*doe_n_low >= init_budget:
@@ -313,7 +317,6 @@ def fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low
                 bounds=func.bounds.T,
             ).x
 
-            N_RAND_SAMPLES = 100
             while x in archive:  # resample to ensure a new candidate is added to the archive
                 # print(f'Existing candidate {x} ...')
                 random_candidates = scale_to_function(func, np.random.rand(N_RAND_SAMPLES, func.ndim))
@@ -371,7 +374,6 @@ def main(args):
     simplefilter("ignore", category=sklearn.exceptions.ConvergenceWarning)
     simplefilter("ignore", category=TauSmallerThanOneWarning)
     simplefilter("ignore", category=mlcs.LowHighFidSamplesWarning)
-    np.random.seed(20160501)
 
     functions = [
         mf2.branin,
@@ -401,17 +403,18 @@ def main(args):
         print(func.name)
 
         for idx in range(args.niters):
+            kwargs['seed_offset'] = idx
             do_run(func, f'fixed-b{args.budget}-i{idx}', fixed_ratio_multifid_bo, kwargs)
             do_run(func, f'naive-b{args.budget}-i{idx}', simple_multifid_bo, kwargs)
             do_run(func, f'proto-eg-b{args.budget}-i{idx}', proto_EG_multifid_bo, kwargs)
 
 
-def do_run(func, experiment_name, run_func, kwargs):
+def do_run(benchmark_func, experiment_name, run_func, kwargs):
     print(f'    {experiment_name}...')
-    run_save_dir = save_dir / f'{func.name}-{experiment_name}'
+    run_save_dir = save_dir / f'{benchmark_func.name}-{experiment_name}'
     run_save_dir.mkdir(parents=True, exist_ok=True)
     run_func(
-        func=func,
+        func=benchmark_func,
         run_save_dir=run_save_dir,
         **kwargs
     )
