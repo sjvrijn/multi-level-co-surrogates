@@ -367,13 +367,12 @@ def calc_tau_from_EG(EG, cost_ratio):
     return tau
 
 
-def main(idx=None):
+def main(args):
     import sklearn
     simplefilter("ignore", category=FutureWarning)
     simplefilter("ignore", category=sklearn.exceptions.ConvergenceWarning)
     simplefilter("ignore", category=TauSmallerThanOneWarning)
     simplefilter("ignore", category=mlcs.LowHighFidSamplesWarning)
-    num_iters = 5
     np.random.seed(20160501)
 
     functions = [
@@ -389,24 +388,23 @@ def main(idx=None):
         mf2.park91b,
     ]
 
-    if idx is not None:
-        functions = [functions[idx]]
+    if args.idx is not None:
+        functions = [functions[args.idx]]
 
     for func in functions:
         print(func.name)
-        for budget in [25]:  # 8, 9, 10, 12, 14, 16, 18, 20, 25, 30]:
 
-            kwargs = dict(
-                init_budget=budget,
-                cost_ratio=0.2,
-                doe_n_high=5,
-                doe_n_low=10,
-                num_reps=2,
-            )
-            for idx in range(num_iters):
-                do_run(func, f'fixed-b{budget}-i{idx}', fixed_ratio_multifid_bo, kwargs)
-                do_run(func, f'naive-b{budget}-i{idx}', simple_multifid_bo, kwargs)
-                do_run(func, f'proto-eg-b{budget}-i{idx}', proto_EG_multifid_bo, kwargs)
+        kwargs = dict(
+            init_budget=args.budget,
+            cost_ratio=0.2,
+            doe_n_high=5,
+            doe_n_low=10,
+            num_reps=args.nreps,
+        )
+        for idx in range(args.niters):
+            do_run(func, f'fixed-b{args.budget}-i{idx}', fixed_ratio_multifid_bo, kwargs)
+            do_run(func, f'naive-b{args.budget}-i{idx}', simple_multifid_bo, kwargs)
+            do_run(func, f'proto-eg-b{args.budget}-i{idx}', proto_EG_multifid_bo, kwargs)
 
 
 def do_run(func, experiment_name, run_func, kwargs):
@@ -422,7 +420,10 @@ def do_run(func, experiment_name, run_func, kwargs):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('idx', type=int, nargs='?')
-    args = parser.parse_args()
+    parser.add_argument('idx', type=int, nargs='?', help='Experiment indices to run')
+    parser.add_argument('--nreps', type=int, default=50, help='number of independent repetitions to perform for the error grid')
+    parser.add_argument('--niters', type=int, default=5, help='number of independent iterations of the experiment to perform')
+    parser.add_argument('--budget', type=int, default=25, help='evaluation budget')
+    arguments = parser.parse_args()
 
-    main(args.idx)
+    main(arguments)
