@@ -152,15 +152,15 @@ def plot_and_gifify_errorgrids(in_folder: Path, out_folder: Path, save_exts=('pn
         if errorgrid_template.parse(f.name)
     ]
     for errorgrid_file, iteration_idx in errorgrid_files:
-        errorgrid = xr.load_dataarray(errorgrid_file)
-        proc.plot_error_grid(
-            errorgrid,
-            title=f'plot of errorgrid at iteration {iteration_idx}',
-            as_log=True,
-            xlim=(3, match['init_budget']),
-            ylim=(2, (match['init_budget'] // 2)),
-            save_as=out_folder / errorgrid_file.stem,
-        )
+        with xr.load_dataarray(errorgrid_file) as errorgrid:
+            proc.plot_error_grid(
+                errorgrid,
+                title=f'plot of errorgrid at iteration {iteration_idx}',
+                as_log=True,
+                xlim=(3, match['init_budget']),
+                ylim=(2, (match['init_budget'] // 2)),
+                save_as=out_folder / errorgrid_file.stem,
+            )
     proc.gifify_in_folder(out_folder, base_name='errorgrid')
 
 
