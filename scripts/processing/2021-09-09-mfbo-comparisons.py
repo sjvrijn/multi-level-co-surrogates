@@ -38,6 +38,21 @@ named_functions = {
 }
 
 
+optima = {
+    "forrester": -6.0207400557670825,
+    "bohachevsky": 0.0,
+    "booth": 0.0,
+    "branin": -6.157724166521634,
+    "currin": -13.798722044728429,
+    "himmelblau": 0.0,
+    "six hump camelback": 0.0,
+    "park91a": 2.718281828459045e-08,
+    "park91b": 0.6666666666666666,
+    "hartmann6": -3.0424577378363353,
+    "borehole": 7.8217709239567315,
+}
+
+
 def compare_different_runs(save_exts=('.png', '.pdf')):
     """Compare logged data from different runs for the same problem/strategy
 
@@ -73,7 +88,7 @@ def compare_different_strategies(save_exts=('.png', '.pdf')):
         for method, folder in sorted(folders, key=itemgetter(0)):
             df = pd.read_csv(folder / 'log.csv', index_col=0, sep=';')
             archive = np.load(folder / 'archive_000.npy', allow_pickle=True).item()
-            df = add_min_over_time_to_log(df, archive)
+            df = add_min_over_time_to_log(df, archive, func_name.lower())
             plot_on_axes(axes, init_budget, df, label=method)
         axes[0,0].legend(loc=0)
 
@@ -117,14 +132,6 @@ def plot_on_axes(axes, init_budget, df, label=''):
     ax.set_xlabel('evaluation cost')
 
     ax = axes[2,0]
-    # fitness vs budget (regardless of fidelity)
-    ax.plot(budget_used, df['fitness'])
-    ax.set_title('evaluated fitness')
-    ax.set_ylim(bottom=0)
-    ax.set_ylabel('fitness (high- and low-fidelity)')
-    ax.set_xlabel('evaluation cost')
-
-    ax = axes[2,1]
     # minimum fitness over time per fidelity
     ax.plot(budget_used, df['opt_low'], label=f'{label} (low)')
     ax.plot(budget_used, df['opt_high'], label=f'{label} (high)')
@@ -134,8 +141,16 @@ def plot_on_axes(axes, init_budget, df, label=''):
     ax.set_xlabel('evaluation cost')
     ax.legend(loc='best')
 
+    ax = axes[2,1]
+    # error to high-fidelity optimum for high-fid evaluated values
+    ax.plot(budget_used, df['err_to_opt'], label=label)
+    ax.set_title('distance to optimum')
+    ax.set_yscale('log')
+    ax.set_ylabel('y-error')
+    ax.set_xlabel('evaluation cost')
 
-def add_min_over_time_to_log(df: pd.DataFrame, init_archive: CandidateArchive):
+
+def add_min_over_time_to_log(df: pd.DataFrame, init_archive: CandidateArchive, func_name: str):
     """Add the minimum fitness values over time for each fidelity to the dataframe"""
 
     # gather improvements per fidelity from the dataframe
@@ -146,6 +161,7 @@ def add_min_over_time_to_log(df: pd.DataFrame, init_archive: CandidateArchive):
         fitnesses = np.minimum.accumulate(fitnesses)
         df[f'opt_{fidelity}'] = fitnesses
 
+    df['err_to_opt'] = df['opt_high'] - optima[func_name]
     return df
 
 
