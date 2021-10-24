@@ -136,8 +136,7 @@ Test file(s), specifically for the custom `CandidateArchive` class. Note that th
 ## Contact
 
 If you encounter problems or have any questions about this code, please
-[raise an issue][new-issue] in this
-repository or send an [email](mailto-svrijn).
+[raise an issue][new-issue] in this repository.
 
 
 ## Related Work
@@ -152,28 +151,15 @@ If this code has been useful in your research, please cite it:
 
 ```bibtex
 @software{vanRijn2021-github,
-    author = {van Rijn, Sander},
-    title = {Github repository: Multi-Level Co-Surrogates},
-    year = {2021},
-    url = {https://github.com/sjvrijn/multi-level-co-surrogates},
-}
-```
-
-Or if you used an archived version and/or need a DOI, please cite the Zenodo archive instead:
-
-```bibtex
-@software{sander_2021_4552822,
-    author       = {Sander},
-    title        = {sjvrijn/multi-level-co-surrogates: v1},
-    month        = feb,
-    year         = 2021,
-    publisher    = {Zenodo},
+    author       = {van Rijn, Sander},
+    title        = {Github repository: Multi-Level Co-Surrogates},
     version      = {v1},
+    year         = {2021},
+    month        = {feb},
+    url          = {https://github.com/sjvrijn/multi-level-co-surrogates},
     doi          = {10.5281/zenodo.4552822},
-    url          = {https://doi.org/10.5281/zenodo.4552822}
 }
 ```
-
 
 ## Acknowledgements
 
@@ -186,7 +172,6 @@ financed by the Netherlands Organisation for Scientific Research (NWO).
 [bottleneck-issue]: https://github.com/pydata/bottleneck/issues/281
 [build-badge]:	    https://github.com/sjvrijn/multi-level-co-surrogates/workflows/build/badge.svg
 [mf2]:              https://github.com/sjvrijn/mf2
-[mailto-svrijn]:    mailto:s.j.van.rijn@liacs.leidenuniv.nl
 [new-issue]:        https://github.com/sjvrijn/multi-level-co-surrogates/issues/new
 [Zenodo]:           https://doi.org/10.5281/zenodo.4551287
 
