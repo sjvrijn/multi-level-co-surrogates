@@ -103,8 +103,8 @@ def illustrated_bi_fidelity_doe(
             plt.ylabel('$x_2$')
             plt.title(f'step {num_high-len(highs_to_match)}/{num_high}')
             if save_dir:
-                for ext in proc.extensions:
-                    plt.savefig(save_dir / f'illustrated-bi-fid-doe-{num_high-len(highs_to_match)}.{ext}', dpi=300)
+                for suffix in proc.suffixes:
+                    plt.savefig(save_dir / f'illustrated-bi-fid-doe-{num_high-len(highs_to_match)}{suffix}', dpi=300)
             if show:
                 plt.show()
             plt.close()
@@ -125,8 +125,8 @@ def illustrated_bi_fidelity_doe(
 
     if not intermediate:
         if save_dir:
-            for ext in proc.extensions:
-                plt.savefig(save_dir / f'illustrated-bi-fid-doe-start.{ext}', dpi=300)
+            for suffix in proc.suffixes:
+                plt.savefig(save_dir / f'illustrated-bi-fid-doe-start{suffix}', dpi=300)
         if show:
             plt.show()
         plt.close()
@@ -157,8 +157,8 @@ def illustrated_bi_fidelity_doe(
 
     plt.title(plot_title)
     if save_dir:
-        for ext in proc.extensions:
-            plt.savefig(f'{save_dir / save_title}.{ext}', dpi=300)
+        for suffix in proc.suffixes:
+            plt.savefig(f'{save_dir / save_title}{suffix}', dpi=300)
     if show:
         plt.show()
 

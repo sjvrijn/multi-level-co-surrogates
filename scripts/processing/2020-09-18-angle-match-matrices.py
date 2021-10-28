@@ -54,8 +54,8 @@ def plot_kriging_match_angles(df_kriging, df_non_kriging):
     plt.ylabel('functions')
     plt.yticks(range(num_functions), labels=all_models.groupby(['ndim', 'fname']).groups.keys())
     plt.tight_layout()
-    for ext in proc.extensions:
-        plt.savefig(plot_dir / f'kriging_match_angles.{ext}', dpi=300)
+    for suffix in proc.suffixes:
+        plt.savefig(plot_dir / f'kriging_match_angles{suffix}', dpi=300)
 
 
 def plot_model_match_angles(df_kriging, df_non_kriging):
@@ -83,8 +83,8 @@ def plot_model_match_angles(df_kriging, df_non_kriging):
         plt.xticks(range(num_models), labels=surrogates, rotation='vertical')
         plt.yticks(range(num_models), labels=surrogates)
         plt.tight_layout()
-        for ext in proc.extensions:
-            plt.savefig(plot_dir / f'model-match-angle-{ndim}D-{func_name}.{ext}', dpi=300)
+        for suffix in proc.suffixes:
+            plt.savefig(plot_dir / f'model-match-angle-{ndim}D-{func_name}{suffix}', dpi=300)
 
 
 def get_CI(row):

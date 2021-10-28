@@ -172,6 +172,6 @@ for i, (ax, (name, subdf)) in enumerate(zip(axes, grouped_df)):
 
 handles, labels = axes[0].get_legend_handles_labels()
 fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.538, 0.0), ncol=len(handles))
-for ext in proc.extensions:
-    fig.savefig(plot_dir / f'combined_correlations.{ext}', dpi=300)
+for suffix in proc.suffixes:
+    fig.savefig(plot_dir / f'combined_correlations{suffix}', dpi=300)
 

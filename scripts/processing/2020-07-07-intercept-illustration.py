@@ -45,8 +45,8 @@ def do_plot():
     plt.xticks([])
     plt.yticks([])
     plt.legend(loc=2)
-    for ext in proc.extensions:
-        plt.savefig(plot_dir / f'budget-extension-intercept.{ext}',
+    for suffix in proc.suffixes:
+        plt.savefig(plot_dir / f'budget-extension-intercept{suffix}',
                     dpi=300, bbox_inches='tight')
 
 

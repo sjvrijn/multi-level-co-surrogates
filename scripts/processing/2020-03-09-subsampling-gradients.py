@@ -102,9 +102,9 @@ for idx, ax in enumerate(axes):
     ax.xaxis.set_major_locator(MultipleLocator(10))
     ax.yaxis.set_major_locator(MultipleLocator(10))
 
-for ext in proc.extensions:
-    fig.savefig(plot_dir / f'scatter_compare.{ext}', dpi=300)
-    fig.savefig(plot_dir / f'scatter_compare-sub0.{ext}', dpi=300,
+for suffix in proc.suffixes:
+    fig.savefig(plot_dir / f'scatter_compare{suffix}', dpi=300)
+    fig.savefig(plot_dir / f'scatter_compare-sub0{suffix}', dpi=300,
                 bbox_inches=Bbox([[0,0],[width/2,height]]))
-    fig.savefig(plot_dir / f'scatter_compare-sub1.{ext}', dpi=300,
+    fig.savefig(plot_dir / f'scatter_compare-sub1{suffix}', dpi=300,
                 bbox_inches=Bbox([[width/2,0],[width,height]]))
