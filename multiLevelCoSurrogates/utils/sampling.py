@@ -134,7 +134,7 @@ def split_with_include(DoE: BiFidelityDoE, num_high: int, num_low: int,
     if fidelity not in ['high', 'low']:
         raise ValueError(f"Invalid fidelity '{fidelity}', should be 'high' or 'low'")
 
-    remove_from_bi_fid_doe(must_include.flatten(), DoE)
+    DoE = remove_from_bi_fid_doe(must_include.flatten(), DoE)
 
     num_low -= 1
     if fidelity == 'high':
