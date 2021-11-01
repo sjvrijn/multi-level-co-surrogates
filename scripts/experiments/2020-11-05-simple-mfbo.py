@@ -432,7 +432,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('idx', type=int, nargs='?',
                         help='Experiment index to run. Default: all')
-    parser.add_argument('experiment', type=str, nargs='?',
+    parser.add_argument('-e', '--experiment', type=str, nargs='?',
                         help='Experiment function to run. Options: fixed, naive, proto-eg. Default: all')
     parser.add_argument('--nreps', type=int, default=50,
                         help='number of independent repetitions to perform for the error grid')
