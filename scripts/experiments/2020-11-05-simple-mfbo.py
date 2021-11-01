@@ -376,20 +376,20 @@ def main(args):
     simplefilter("ignore", category=mlcs.LowHighFidSamplesWarning)
 
     functions = [
-        mf2.branin,
-        mf2.currin,
-        mf2.himmelblau,
-        mf2.six_hump_camelback,
-        mf2.park91a,
-        mf2.hartmann6,
-        mf2.borehole,
-        mf2.bohachevsky,
-        mf2.booth,
-        mf2.park91b,
+        mf2.branin,              # 0
+        mf2.currin,              # 1
+        mf2.himmelblau,          # 2
+        mf2.six_hump_camelback,  # 3
+        mf2.park91a,             # 4
+        mf2.hartmann6,           # 5
+        mf2.borehole,            # 6
+        mf2.bohachevsky,         # 7
+        mf2.booth,               # 8
+        mf2.park91b,             # 9
     ]
 
-    if args.idx is not None:
-        functions = [functions[args.idx]]
+    if args.idx:
+        functions = [functions[f_idx] for f_idx in args.idx]
 
     kwargs = dict(
         init_budget=args.budget,
@@ -430,8 +430,8 @@ def do_run(benchmark_func, experiment_name, run_func, kwargs):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('idx', type=int, nargs='?',
-                        help='Experiment index to run. Default: all')
+    parser.add_argument('idx', type=int, nargs='*',
+                        help='Experiment indices to run. Default: all')
     parser.add_argument('-e', '--experiment', type=str, nargs='?',
                         help='Experiment function to run. Options: fixed, naive, proto-eg. Default: all')
     parser.add_argument('--nreps', type=int, default=50,
