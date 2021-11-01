@@ -34,7 +34,7 @@ def timing(f):
 
 
 RANDOM_SEED_BASE = 20160501
-N_RAND_SAMPLES = 100
+RAND_SAMPLES_PER_DIM = 10
 
 save_dir = here('files/2020-11-05-simple-mfbo/', warn=False)
 save_dir.mkdir(parents=True, exist_ok=True)
@@ -128,7 +128,7 @@ def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, r
 
             while x in archive:  # resample to ensure a new candidate is added to the archive
                 # print(f'Existing candidate {x} ...')
-                random_candidates = scale_to_function(func, np.random.rand(N_RAND_SAMPLES, func.ndim))
+                random_candidates = scale_to_function(func, np.random.rand(RAND_SAMPLES_PER_DIM * func.ndim, func.ndim))
                 fitnesses = mfm.models['high'].predict(random_candidates)
                 x = random_candidates[np.argmin(fitnesses)]
                 # print(f'... replaced by {x}')
@@ -221,7 +221,7 @@ def simple_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run
 
             while x in archive:  # resample to ensure a new candidate is added to the archive
                 # print(f'Existing candidate {x} ...')
-                random_candidates = scale_to_function(func, np.random.rand(N_RAND_SAMPLES, func.ndim))
+                random_candidates = scale_to_function(func, np.random.rand(RAND_SAMPLES_PER_DIM * func.ndim, func.ndim))
                 fitnesses = mfbo.models['high'].predict(random_candidates)
                 x = random_candidates[np.argmin(fitnesses)]
                 # print(f'... replaced by {x}')
@@ -319,7 +319,7 @@ def fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low
 
             while x in archive:  # resample to ensure a new candidate is added to the archive
                 # print(f'Existing candidate {x} ...')
-                random_candidates = scale_to_function(func, np.random.rand(N_RAND_SAMPLES, func.ndim))
+                random_candidates = scale_to_function(func, np.random.rand(RAND_SAMPLES_PER_DIM * func.ndim, func.ndim))
                 fitnesses = mfbo.models['high'].predict(random_candidates)
                 x = random_candidates[np.argmin(fitnesses)]
                 # print(f'... replaced by {x}')
