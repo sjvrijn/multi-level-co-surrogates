@@ -399,14 +399,22 @@ def main(args):
         num_reps=args.nreps,
     )
 
+    experiment_functions = {
+        'fixed': fixed_ratio_multifid_bo,
+        'naive': simple_multifid_bo,
+        'proto-eg': proto_EG_multifid_bo,
+    }
+
     for func in functions:
         print(func.name)
 
         for idx in range(args.niters):
             kwargs['seed_offset'] = idx
-            do_run(func, f'fixed-b{args.budget}-i{idx}', fixed_ratio_multifid_bo, kwargs)
-            do_run(func, f'naive-b{args.budget}-i{idx}', simple_multifid_bo, kwargs)
-            do_run(func, f'proto-eg-b{args.budget}-i{idx}', proto_EG_multifid_bo, kwargs)
+
+            for name, experiment_func in experiment_functions.items():
+                if args.experiment not in [None, name]:
+                    continue
+                do_run(func, f'{name}-b{args.budget}-i{idx}', experiment_func, kwargs)
 
 
 def do_run(benchmark_func, experiment_name, run_func, kwargs):
@@ -422,10 +430,16 @@ def do_run(benchmark_func, experiment_name, run_func, kwargs):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('idx', type=int, nargs='?', help='Experiment indices to run')
-    parser.add_argument('--nreps', type=int, default=50, help='number of independent repetitions to perform for the error grid')
-    parser.add_argument('--niters', type=int, default=5, help='number of independent iterations of the experiment to perform')
-    parser.add_argument('--budget', type=int, default=25, help='evaluation budget')
+    parser.add_argument('idx', type=int, nargs='?',
+                        help='Experiment index to run. Default: all')
+    parser.add_argument('experiment', type=str, nargs='?',
+                        help='Experiment function to run. Options: fixed, naive, proto-eg. Default: all')
+    parser.add_argument('--nreps', type=int, default=50,
+                        help='number of independent repetitions to perform for the error grid')
+    parser.add_argument('--niters', type=int, default=5,
+                        help='number of independent iterations of the experiment to perform')
+    parser.add_argument('--budget', type=int, default=25,
+                        help='evaluation budget')
     arguments = parser.parse_args()
 
     main(arguments)
