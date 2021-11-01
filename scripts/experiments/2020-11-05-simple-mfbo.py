@@ -376,16 +376,19 @@ def main(args):
     simplefilter("ignore", category=mlcs.LowHighFidSamplesWarning)
 
     functions = [
-        mf2.branin,              # 0
-        mf2.currin,              # 1
-        mf2.himmelblau,          # 2
-        mf2.six_hump_camelback,  # 3
-        mf2.park91a,             # 4
-        mf2.hartmann6,           # 5
-        mf2.borehole,            # 6
-        mf2.bohachevsky,         # 7
-        mf2.booth,               # 8
-        mf2.park91b,             # 9
+        mf2.bohachevsky,         # 0
+        mf2.booth,               # 1
+        mf2.branin,              # 2
+        mf2.currin,              # 3
+        mf2.himmelblau,          # 4
+        mf2.six_hump_camelback,  # 5
+
+        mf2.park91a,             # 6
+        mf2.park91b,             # 7
+
+        mf2.hartmann6,           # 8
+
+        mf2.borehole,            # 9
     ]
 
     if args.idx:
