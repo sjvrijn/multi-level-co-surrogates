@@ -132,8 +132,8 @@ plt.rc('axes', prop_cycle=styles)
 figsize=(6.5, 3.3)
 single_figsize = (3.25, 2.5)
 labels = {
-    'pearson_r': 'Pearson $r$',
-    'pearson_r2': 'Pearson $r^2$',
+    'pearson_r': '$r$',
+    'pearson_r2': '$r^2$',
     'spearman_r': 'Spearman $r$',
     'spearman_r2': 'Spearman $r^2$',
 }
