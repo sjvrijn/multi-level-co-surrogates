@@ -71,7 +71,7 @@ def plotsurfaces(surfaces, *, all_points=None, titles=None, shape=None,
         plt.savefig(save_as)
     if show:
         plt.show()
-    plt.clf()
+    plt.close()
 
 
 def plotsurfaceonaxis(ax, surf, title, point_sets=None, plot_type='wireframe', contour=False):
