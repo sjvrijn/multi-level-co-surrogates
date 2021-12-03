@@ -77,7 +77,7 @@ def full_extent(fig, ax, pad=0.0):
 
 def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
                     contours=0, as_log=False, save_as=None,
-                    show=False, include_comparisons=False,
+                    show=False, include_comparisons=False, gradient_arrow=False,
                     include_colorbar=True, label_y=True, title_width=None):
     """Plot a heatmap of the median MSE for each possible combination of high
     and low-fidelity samples. For comparison, the MSE for the high-only and
@@ -96,6 +96,8 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
                                 averages along axes. Default: False
     :param include_colorbar: whether or not to include a colorbar. Default: True
     :param label_y: whether or not to include axis label and ticks for y-axis. Default: True
+    :param gradient_arrow: whether or not to add an arrow indicating gradient direction through
+                           the center of the figure. Default: False
     """
     if not (show or save_as):
         return  # no need to make the plot if not showing or saving it
@@ -164,6 +166,8 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
         cax = divider.append_axes("right", size=0.2, pad=0.05)
         fig.colorbar(img, cax=cax)
 
+    if gradient_arrow:
+        add_gradient_arrow_line_to_axis(data, ax)
 
     if points:
         pts = []
