@@ -425,6 +425,38 @@ def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
     return reg, SSE
 
 
+def add_gradient_arrow_line_to_axis(da: xr.DataArray, ax: plt.Axes):
+    """Add a line with arrow to axis `ax` to indicate gradient direction"""
+    # preparing variables for n_h = a*n_l + b
+    n_h, n_l = np.max(da.n_high), np.max(da.n_low)
+    a = np.divide(*fit_lin_reg(da).coef_)
+    b = a*(n_l/2) - (n_h/2)
+
+    if np.isinf(a):  # 90 degrees, vertical
+        coords = (
+            [n_l/2, 0],
+            [n_l/2, n_h],
+        )
+    elif b == 0:  # crossing the origin
+        coords = (
+            [  0,   0],
+            [n_l, n_h],
+        )
+    elif a < 0 or b < 0:  # crossing x-axis
+        coords = (
+            [     (-b)/a,   0],
+            [(n_h - b)/a, n_h],
+        )
+    else:  # b > 0; crossing y-axis
+        coords = (
+            [  0,           b],
+            [n_l, (a*n_l) + b],
+        )
+
+    ax.annotate('', xytext=coords[0], xy=[n_l/2, n_h/2], arrowprops={'arrowstyle': '->, head_length=.8, head_width=.4', 'shrinkA': 0, 'shrinkB': 0})
+    ax.annotate('', xytext=[n_l/2, n_h/2], xy=coords[1], arrowprops={'arrowstyle': '-', 'shrinkA': 0, 'shrinkB': 0})
+
+
 class ConfidenceInterval(namedtuple('ConfidenceInterval', 'mean se lower upper')):
 
     def __contains__(self, value: float):
