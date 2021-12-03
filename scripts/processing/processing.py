@@ -106,6 +106,9 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
 
     fig, ax = plt.subplots(figsize=figsize)
 
+    if gradient_arrow:
+        add_gradient_arrow_line_to_axis(data, ax)
+
     ax.set_aspect(1.)
     data = data.median(dim='rep')
     vmin = np.min(data) if vmin is None else vmin
@@ -165,9 +168,6 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
     if include_colorbar:
         cax = divider.append_axes("right", size=0.2, pad=0.05)
         fig.colorbar(img, cax=cax)
-
-    if gradient_arrow:
-        add_gradient_arrow_line_to_axis(data, ax)
 
     if points:
         pts = []
