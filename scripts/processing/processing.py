@@ -432,33 +432,35 @@ def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
 def add_gradient_arrow_line_to_axis(da: xr.DataArray, ax: plt.Axes):
     """Add a line with arrow to axis `ax` to indicate gradient direction"""
     # preparing variables for n_h = a*n_l + b
-    n_h, n_l = np.max(da.n_high), np.max(da.n_low)
-    a = np.divide(*fit_lin_reg(da).coef_)
-    b = a*(n_l/2) - (n_h/2)
+    reg = fit_lin_reg(da)
+    n_l_min, n_l_max, n_h_min, n_h_max = get_extent(da)
+    a = np.divide(*reg.coef_)
+    b = (n_h_max/2) - a*(n_l_max/2)
+    mid_point = [n_l_max/2, n_h_max/2]
 
     if np.isinf(a):  # 90 degrees, vertical
-        coords = (
-            [n_l/2, 0],
-            [n_l/2, n_h],
-        )
+        coords = np.array([
+            [n_l_max/2, n_h_min],
+            [n_l_max/2, n_h_max],
+        ])
     elif b == 0:  # crossing the origin
-        coords = (
-            [  0,   0],
-            [n_l, n_h],
-        )
-    elif a < 0 or b < 0:  # crossing x-axis
-        coords = (
-            [     (-b)/a,   0],
-            [(n_h - b)/a, n_h],
-        )
-    else:  # b > 0; crossing y-axis
-        coords = (
-            [  0,           b],
-            [n_l, (a*n_l) + b],
-        )
+        coords = np.array([
+            [n_l_min, n_h_min],
+            [n_l_max, n_h_max],
+        ])
+    elif a < 0 or b < n_h_min:  # crossing x-axis in plotted area
+        coords = np.array([
+            [         (-b)/a, n_h_min],
+            [(n_h_max - b)/a, n_h_max],
+        ])
+    else:  # b > n_h_min; crossing y-axis
+        coords = np.array([
+            [n_l_min,               b],
+            [n_l_max, (a*n_l_max) + b],
+        ])
 
-    ax.annotate('', xytext=coords[0], xy=[n_l/2, n_h/2], arrowprops={'arrowstyle': '->, head_length=.8, head_width=.4', 'shrinkA': 0, 'shrinkB': 0})
-    ax.annotate('', xytext=[n_l/2, n_h/2], xy=coords[1], arrowprops={'arrowstyle': '-', 'shrinkA': 0, 'shrinkB': 0})
+    ax.annotate('', xytext=coords[0], xy=mid_point, arrowprops={'arrowstyle': '->, head_length=.8, head_width=.4', 'shrinkA': 2.5, 'shrinkB': 0})
+    ax.plot(coords.T[0], coords.T[1], color='black')
 
 
 class ConfidenceInterval(namedtuple('ConfidenceInterval', 'mean se lower upper')):
