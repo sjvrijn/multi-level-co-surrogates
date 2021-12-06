@@ -107,7 +107,7 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
     fig, ax = plt.subplots(figsize=figsize)
 
     if gradient_arrow:
-        add_gradient_arrow_line_to_axis(data, ax)
+        add_gradient_arrow_line_to_axis(data.sel(model='high_hier'), ax)
 
     ax.set_aspect(1.)
     data = data.median(dim='rep')
@@ -189,7 +189,7 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
     plt.close('all')
 
 
-def plot_multiple_error_grids(datas, titles, as_log=True,
+def plot_multiple_error_grids(datas, titles, as_log=True, gradient_arrow=False,
                               vmin=None, vmax=None, contours=0,
                               save_as=None, show=False):
     """Plot a heatmap of the median MSE for each possible combination of high
@@ -214,6 +214,9 @@ def plot_multiple_error_grids(datas, titles, as_log=True,
     fig, axes = plt.subplots(ncols=ncols, figsize=figsize)
 
     for ax, data, title in zip(axes, datas, titles):
+
+        if gradient_arrow:
+            add_gradient_arrow_line_to_axis(data.sel(model='high_hier'), ax)
 
         data = data.sel(model='high_hier').median(dim='rep')
         if as_log:
@@ -436,7 +439,6 @@ def add_gradient_arrow_line_to_axis(da: xr.DataArray, ax: plt.Axes):
     n_l_min, n_l_max, n_h_min, n_h_max = get_extent(da)
     a = np.divide(*reg.coef_)
     b = (n_h_max/2) - a*(n_l_max/2)
-    mid_point = [n_l_max/2, n_h_max/2]
 
     if np.isinf(a):  # 90 degrees, vertical
         coords = np.array([
@@ -458,6 +460,8 @@ def add_gradient_arrow_line_to_axis(da: xr.DataArray, ax: plt.Axes):
             [n_l_min,               b],
             [n_l_max, (a*n_l_max) + b],
         ])
+
+    mid_point = np.sum(coords, axis=0) / 2
 
     ax.annotate('', xytext=coords[0], xy=mid_point, arrowprops={'arrowstyle': '->, head_length=.8, head_width=.4', 'shrinkA': 2.5, 'shrinkB': 0})
     ax.plot(coords.T[0], coords.T[1], color='black')
