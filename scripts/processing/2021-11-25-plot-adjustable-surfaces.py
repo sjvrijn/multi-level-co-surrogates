@@ -13,6 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 import mf2
+import parse
 from pyprojroot import here
 
 import processing as proc
@@ -54,19 +55,23 @@ def plot_adjustable_surface_collection(func: mf2.MultiFidelityFunction, params=N
     f = func(0)
     steps = (f.u_bound - f.l_bound) / 25
     print(f.name)
+    base_name = parse.parse('Adjustable {name} 0', f.name)['name']
+
     for suffix in proc.extensions:
-        filename = plot_path / f'{f.name[:-2].lower().replace(" ", "_")}-high-fid.{suffix}'
+        filename = plot_path / f'adjustable-{base_name.lower()}-high-fid.{suffix}'
         surface = mlcs.plotting.createsurface(f.high, l_bound=f.l_bound, u_bound=f.u_bound, step=steps)
-        #mlcs.plotting.plotsurfaces([surface], titles=[f.name[:-2]], save_as=filename, as_3d=True, show=False)
-        to_plot.append((surface, f'{f.name[:-2]}: high-fidelity', filename))
+        title = f'{base_name}: high-fidelity'
+        to_plot.append((surface, title, filename))
 
     #plot low-fid
-    for f in (func(p) for p in params):
+    for p in params:
+        f = func(p)
+        p_str = f'{p:.2f}'
         for suffix in proc.extensions:
-            filename = plot_path / f'{f.name.lower().replace(" ", "_").replace(".", "")}-low-fid.{suffix}'
+            filename = plot_path / f'adjustable-{base_name.lower()}-{p_str.replace(".", "")}-low-fid.{suffix}'
             surface = mlcs.plotting.createsurface(f.low, l_bound=f.l_bound, u_bound=f.u_bound, step=steps)
-            #mlcs.plotting.plotsurfaces([surface], titles=[f.name], save_as=filename, as_3d=True, show=False)
-            to_plot.append((surface, f.name, filename))
+            title = f'{base_name} low-fidelity: A={p:.2f}'
+            to_plot.append((surface, title, filename))
 
     # Determine range of surface.Z values for axis-limit or colormap range
     if 'branin' in f.name.lower():
