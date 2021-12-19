@@ -1,5 +1,6 @@
 # Multi-Level Co-Surrogates
 
+[![Python Version](https://img.shields.io/badge/Python-3.9-blue)](https://python.org)
 [![build status][build-badge]][actions-page]
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![DOI](https://zenodo.org/badge/256506176.svg)](https://zenodo.org/badge/latestdoi/256506176)
@@ -23,7 +24,8 @@ Computer Science, Leiden University, the Netherlands.
 
 ## Installation
 
-The easiest way to work with this code is as follows:
+This code has been written and tested for Python 3.9. The easiest way to work
+with this code is as follows:
 
 * First clone clone the repository
 
@@ -129,8 +131,8 @@ do not yet exist. Details on each script can be found in the file's docstring.
 
 ### tests
 
-Test file(s), specifically for the custom `CandidateArchive` class. Note that the packages in
-`requirements-dev.txt` have to be installed to run them.
+Test file(s) for some specific classes such as `CandidateArchive` and `Instance`.
+Note that the packages in `requirements-dev.txt` have to be installed to run them.
 
 
 ## Contact
