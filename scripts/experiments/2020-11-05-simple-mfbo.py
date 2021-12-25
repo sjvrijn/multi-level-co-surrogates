@@ -5,10 +5,13 @@
 
 import argparse
 from csv import writer
+from functools import partial
 from warnings import warn, simplefilter
 
+import bayes_opt as bo
 import mf2
 import numpy as np
+import pandas as pd
 import xarray as xr
 from collections import namedtuple
 from operator import itemgetter
@@ -43,6 +46,120 @@ plot_dir.mkdir(parents=True, exist_ok=True)
 
 archive_file_template = 'archive_{:03d}.npy'
 errorgrid_file_template = 'errorgrid_{:03d}.nc'
+
+
+
+Entry = namedtuple('Entry', 'budget time_since_high_eval tau fidelity candidate fitness')
+
+
+class Optimizer:
+    N_RAND_SAMPLES = 100
+
+    def __init__(self, func, budget, cost_ratio, doe_n_high, doe_n_low, fid_selection_method, num_reps=50):
+        np.random.seed(20160501)
+
+        self.func = func
+        self.init_budget = budget
+        self.cost_ratio = cost_ratio
+        self.num_reps = num_reps
+        self.fid_selection_method = fid_selection_method
+
+        if doe_n_high + cost_ratio * doe_n_low >= budget:
+            raise ValueError('Budget should not be exhausted after DoE')
+
+        self.entries = []
+
+        # make mf-DoE
+        high_x, low_x = mlcs.bi_fidelity_doe(func.ndim, doe_n_high, doe_n_low)
+        high_x, low_x = scale_to_function(func, [high_x, low_x])
+        high_y, low_y = func.high(high_x), func.low(low_x)
+        # create archive
+        self.archive = mlcs.CandidateArchive.from_bi_fid_DoE(high_x, low_x, high_y, low_y)
+
+        # subtract mf-DoE from budget
+        self.budget = self.init_budget - (doe_n_high + doe_n_low * cost_ratio)
+
+        if fid_selection_method == 'EG':
+            self.proto_eg = mlcs.ProtoEG(self.archive, num_reps=num_reps)
+            self.proto_eg.subsample_errorgrid()
+        else:
+            self.proto_eg = None
+
+        self.mfm = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=self.archive,
+                                           kernel='Matern', scaling='off')
+
+        self.utility = bo.util.UtilityFunction(kind='ei', kappa=2.576, xi=1.0).utility
+        self.acq_max = partial(
+            bo.util.acq_max,
+            ac=self.utility, gp=self.mfm.top_level_model, bounds=self.func.bounds.T,
+            n_warmup=1000, n_iter=50, random_state=np.random.RandomState()
+        )
+
+        self.time_since_high_eval = 0
+
+
+    def iterate(self):  # sourcery skip: assign-if-exp
+        while self.budget > 0:
+            fidelity = self.select_fidelity()
+
+            # predict best place to evaluate:
+            if fidelity == 'high':
+                x = self.eval_high_fid()
+            else:  # elif fidelity == 'low':
+                x = self.eval_low_fid()
+
+            # evaluate best place
+            y = self.func[fidelity](x.reshape(1, -1))[0]
+            self.archive.addcandidate(candidate=x.flatten(), fitness=y, fidelity=fidelity)
+
+            # update model & error grid
+            self.mfm.retrain()
+            if self.proto_eg and self.budget > 0:  # prevent unnecessary computation
+                self.proto_eg.update_errorgrid_with_sample(x, fidelity=fidelity)
+
+            # logging
+            # self.entries.append(Entry(self.budget, self.time_since_high_eval, tau, fidelity, x, y))
+
+        return self.mfm, pd.DataFrame.from_records(self.entries, columns=Entry._fields), self.archive
+
+
+    def eval_high_fid(self):
+        # best predicted low-fid only datapoint for high-fid (to maintain hierarchical model)
+        candidates = select_high_fid_only_candidates(self.archive)
+        candidate_predictions = [
+            (cand, self.utility(
+                cand.reshape(1, -1),
+                gp=self.mfm.top_level_model,
+                y_max=self.archive.max['high'])
+             )
+            for cand in candidates
+        ]
+
+        x = min(candidate_predictions, key=itemgetter(1))[0].ravel()
+        self.time_since_high_eval = 0
+        self.budget -= 1
+        return x
+
+
+    def eval_low_fid(self):
+        self.time_since_high_eval += 1
+        self.budget -= self.cost_ratio
+        return self.acq_max(y_max=self.archive.max['high'])
+
+
+    def select_fidelity(self):
+
+        if self.fid_selection_method == 'EG':
+            tau = calc_tau_from_EG(self.proto_eg.error_grid['mses'], self.cost_ratio)
+            # compare \tau with current count t to select fidelity, must be >= 1
+            fidelity = 'high' if 1 <= tau <= self.time_since_high_eval else 'low'
+        elif self.fid_selection_method == 'fixed':
+            fidelity = 'high' if 1 <= (1 / self.cost_ratio) <= self.time_since_high_eval else 'low'
+        else:
+            raise NotImplementedError(f"Fidelity selection method '{self.fid_selection_method}' has no implementation")
+
+        return fidelity
+
 
 
 #TODO de-duplicate (already present in processing.py
@@ -85,8 +202,7 @@ def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, r
     #make mf-DoE
     high_x, low_x = mlcs.bi_fidelity_doe(func.ndim, doe_n_high, doe_n_low)
     high_x, low_x = scale_to_function(func, [high_x, low_x])
-    high_y, low_y = func.high(high_x), \
-                    func.low(low_x)
+    high_y, low_y = func.high(high_x), func.low(low_x)
 
     #subtract mf-DoE from budget
     budget = init_budget - (doe_n_high + doe_n_low*cost_ratio)
@@ -341,6 +457,13 @@ def fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low
         mfbo.retrain()
 
 
+def class_fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, seed_offset=None, **_):
+    opt = Optimizer(func, init_budget, cost_ratio, doe_n_high, doe_n_low, fid_selection_method='fixed')
+    results = opt.iterate()
+    print(opt.archive.data)
+    return results
+
+
 def select_high_fid_only_candidates(archive):
     all_low = {
         tuple(candidate)
@@ -403,7 +526,7 @@ def main(args):
     )
 
     experiment_functions = {
-        'fixed': fixed_ratio_multifid_bo,
+        'fixed': class_fixed_ratio_multifid_bo,
         'naive': simple_multifid_bo,
         'proto-eg': proto_EG_multifid_bo,
     }
