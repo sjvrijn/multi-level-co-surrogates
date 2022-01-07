@@ -56,6 +56,9 @@ class Optimizer:
     N_RAND_SAMPLES = 100
 
     def __init__(self, func, budget, cost_ratio, doe_n_high, doe_n_low, fid_selection_method, num_reps=50):
+        if doe_n_high + cost_ratio * doe_n_low >= budget:
+            raise ValueError('Budget should not be exhausted after DoE')
+
         np.random.seed(20160501)
 
         self.func = func
@@ -63,19 +66,9 @@ class Optimizer:
         self.cost_ratio = cost_ratio
         self.num_reps = num_reps
         self.fid_selection_method = fid_selection_method
-
-        if doe_n_high + cost_ratio * doe_n_low >= budget:
-            raise ValueError('Budget should not be exhausted after DoE')
-
+        self.time_since_high_eval = 0
         self.entries = []
-
-        # make mf-DoE
-        high_x, low_x = mlcs.bi_fidelity_doe(func.ndim, doe_n_high, doe_n_low)
-        high_x, low_x = scale_to_function(func, [high_x, low_x])
-        high_y, low_y = func.high(high_x), func.low(low_x)
-        # create archive
-        self.archive = mlcs.CandidateArchive.from_bi_fid_DoE(high_x, low_x, high_y, low_y)
-
+        self.archive = make_mf_doe(func, doe_n_high, doe_n_low)
         # subtract mf-DoE from budget
         self.budget = self.init_budget - (doe_n_high + doe_n_low * cost_ratio)
 
@@ -94,8 +87,6 @@ class Optimizer:
             ac=self.utility, gp=self.mfm.top_level_model, bounds=self.func.bounds.T,
             n_warmup=1000, n_iter=50, random_state=np.random.RandomState()
         )
-
-        self.time_since_high_eval = 0
 
 
     def iterate(self):  # sourcery skip: assign-if-exp
@@ -160,6 +151,14 @@ class Optimizer:
 
         return fidelity
 
+
+def make_mf_doe(func: mf2.MultiFidelityFunction, doe_n_high: int, doe_n_low: int):
+    # make mf-DoE
+    high_x, low_x = mlcs.bi_fidelity_doe(func.ndim, doe_n_high, doe_n_low)
+    high_x, low_x = scale_to_function(func, [high_x, low_x])
+    high_y, low_y = func.high(high_x), func.low(low_x)
+    # create archive
+    return mlcs.CandidateArchive.from_bi_fid_DoE(high_x, low_x, high_y, low_y)
 
 
 #TODO de-duplicate (already present in processing.py
