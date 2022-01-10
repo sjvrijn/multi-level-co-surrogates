@@ -49,13 +49,24 @@ errorgrid_file_template = 'errorgrid_{:03d}.nc'
 
 
 
-Entry = namedtuple('Entry', 'budget time_since_high_eval tau fidelity candidate fitness')
+Entry = namedtuple('Entry', 'iteration budget time_since_high_eval tau fidelity nhigh nlow candidate fitness')
 
 
 class Optimizer:
     N_RAND_SAMPLES = 100
 
-    def __init__(self, func, budget, cost_ratio, doe_n_high, doe_n_low, fid_selection_method, num_reps=50):
+    def __init__(
+        self,
+        func,
+        budget,
+        cost_ratio,
+        doe_n_high,
+        doe_n_low,
+        run_save_dir,
+        fid_selection_method,
+        num_reps=50
+    ):
+
         if doe_n_high + cost_ratio * doe_n_low >= budget:
             raise ValueError('Budget should not be exhausted after DoE')
 
@@ -66,11 +77,17 @@ class Optimizer:
         self.cost_ratio = cost_ratio
         self.num_reps = num_reps
         self.fid_selection_method = fid_selection_method
+        self.run_save_dir = run_save_dir
         self.time_since_high_eval = 0
         self.entries = []
         self.archive = make_mf_doe(func, doe_n_high, doe_n_low)
         # subtract mf-DoE from budget
         self.budget = self.init_budget - (doe_n_high + doe_n_low * cost_ratio)
+
+        self.logfile = run_save_dir / 'log.csv'
+        with open(self.logfile, 'w') as csvfile:
+            logwriter = writer(csvfile, delimiter=';')
+            logwriter.writerow(Entry._fields)
 
         if fid_selection_method == 'EG':
             self.proto_eg = mlcs.ProtoEG(self.archive, num_reps=num_reps)
@@ -84,12 +101,17 @@ class Optimizer:
         self.utility = bo.util.UtilityFunction(kind='ei', kappa=2.576, xi=1.0).utility
         self.acq_max = partial(
             bo.util.acq_max,
-            ac=self.utility, gp=self.mfm.top_level_model, bounds=self.func.bounds.T,
-            n_warmup=1000, n_iter=50, random_state=np.random.RandomState()
+            ac=self.utility,
+            gp=self.mfm.top_level_model,
+            bounds=self.func.bounds.T,
+            n_warmup=1000,
+            n_iter=50,
+            random_state=np.random.RandomState()
         )
 
 
     def iterate(self):  # sourcery skip: assign-if-exp
+        iterations = 0
         while self.budget > 0:
             fidelity = self.select_fidelity()
 
@@ -108,8 +130,19 @@ class Optimizer:
             if self.proto_eg and self.budget > 0:  # prevent unnecessary computation
                 self.proto_eg.update_errorgrid_with_sample(x, fidelity=fidelity)
 
+            iterations += 1
             # logging
-            # self.entries.append(Entry(self.budget, self.time_since_high_eval, tau, fidelity, x, y))
+            self.log_entry(Entry(
+                iterations,
+                self.budget,
+                self.time_since_high_eval,
+                -1,
+                fidelity,
+                self.archive.count('high'),
+                self.archive.count('low'),
+                x, y
+            ))
+            np.save(self.run_save_dir / archive_file_template.format(iterations), self.archive)
 
         return self.mfm, pd.DataFrame.from_records(self.entries, columns=Entry._fields), self.archive
 
@@ -150,6 +183,76 @@ class Optimizer:
             raise NotImplementedError(f"Fidelity selection method '{self.fid_selection_method}' has no implementation")
 
         return fidelity
+
+
+    def log_entry(self, entry):
+
+        self.entries.append(entry)
+        with open(self.logfile, 'a') as csvfile:
+            logwriter = writer(csvfile, delimiter=';')
+            logwriter.writerow(entry)
+
+
+    def _acq_min(self, ac, y_max, gp=None, bounds=None, random_state=None, n_warmup=1000, n_iter=50):
+        """
+        Code adapted from:
+          https://github.com/fmfn/BayesianOptimization/blob/380b0d52ae0e3650b023c4ef6db43f7343c75dea/bayes_opt/util.py
+        Under MIT License
+
+        A function to find the maximum of the acquisition function
+        It uses a combination of random sampling (cheap) and the 'L-BFGS-B'
+        optimization method. First by sampling `n_warmup` (1e5) points at random,
+        and then running L-BFGS-B from `n_iter` (250) random starting points.
+        Parameters
+        ----------
+        :param ac:
+            The acquisition function object that return its point-wise value.
+        :param gp:
+            A gaussian process fitted to the relevant data.
+        :param y_max:
+            The current maximum known value of the target function.
+        :param bounds:
+            The variables bounds to limit the search of the acq max.
+        :param random_state:
+            instance of np.RandomState random number generator
+        :param n_warmup:
+            number of times to randomly sample the aquisition function
+        :param n_iter:
+            number of times to run scipy.minimize
+        Returns
+        -------
+        :return: x_max, The arg max of the acquisition function.
+        """
+
+        # Warm up with random points
+        x_tries = random_state.uniform(bounds[:, 0], bounds[:, 1],
+                                       size=(n_warmup, bounds.shape[0]))
+        ys = ac(x_tries, gp=gp, y_max=y_max)
+        x_max = x_tries[ys.argmax()]
+        max_acq = ys.max()
+
+        # Explore the parameter space more throughly
+        x_seeds = random_state.uniform(bounds[:, 0], bounds[:, 1],
+                                       size=(n_iter, bounds.shape[0]))
+        for x_try in x_seeds:
+            # Find the minimum of minus the acquisition function
+            res = minimize(lambda x: -ac(x.reshape(1, -1), gp=gp, y_max=y_max),
+                           x_try.reshape(1, -1),
+                           bounds=bounds,
+                           method="L-BFGS-B")
+
+            # See if success
+            if not res.success:
+                continue
+
+            # Store it if better than previous minimum(maximum).
+            if max_acq is None or -res.fun[0] >= max_acq:
+                x_max = res.x
+                max_acq = -res.fun[0]
+
+        # Clip output to make sure it lies within the bounds. Due to floating
+        # point technicalities this is not always the case.
+        return np.clip(x_max, bounds[:, 0], bounds[:, 1])
 
 
 def make_mf_doe(func: mf2.MultiFidelityFunction, doe_n_high: int, doe_n_low: int):
@@ -457,7 +560,7 @@ def fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low
 
 
 def class_fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, seed_offset=None, **_):
-    opt = Optimizer(func, init_budget, cost_ratio, doe_n_high, doe_n_low, fid_selection_method='fixed')
+    opt = Optimizer(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, fid_selection_method='fixed')
     results = opt.iterate()
     print(opt.archive.data)
     return results
