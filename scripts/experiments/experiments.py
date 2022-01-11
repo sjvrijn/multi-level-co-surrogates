@@ -273,13 +273,7 @@ def create_model_error_grid(
             values = None
 
         if plot_1d:
-            X = np.linspace(0, 1, 1001).reshape((-1, 1))
-            plt.scatter(low_x, low_y, s=20)
-            plt.scatter(high_x, high_y, s=15)
-            plt.plot(X, mfbo.models['high'].predict(X))
-            plt.plot(X, func.high(X))
-            plt.savefig(save_dir / f'1d-forrester-visualization-{num_high}-{num_low}.png')
-            plt.close()
+            plot_1d_example(func, high_x, high_y, low_x, low_y, mfbo, num_high, num_low, save_dir)
 
         # Store the results
         results.append(Results(mses, r2s, values))
@@ -307,6 +301,16 @@ def create_model_error_grid(
     end = datetime.now()
     print(f"Ended case {func} at {end}\n"
           f"Time spent: {str(end - start)}")
+
+
+def plot_1d_example(func, high_x, high_y, low_x, low_y, mfbo, num_high, num_low, save_dir):
+    X = np.linspace(0, 1, 1001).reshape((-1, 1))
+    plt.scatter(low_x, low_y, s=20)
+    plt.scatter(high_x, high_y, s=15)
+    plt.plot(X, mfbo.models['high'].predict(X))
+    plt.plot(X, func.high(X))
+    plt.savefig(save_dir / f'1d-forrester-visualization-{num_high}-{num_low}.png')
+    plt.close()
 
 
 def create_resampling_error_grid(
