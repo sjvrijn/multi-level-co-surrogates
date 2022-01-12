@@ -6,9 +6,8 @@
 import argparse
 from csv import writer
 from functools import partial
-from warnings import warn, simplefilter
+from warnings import warn, simplefilter, catch_warnings
 
-import bayes_opt as bo
 import mf2
 import numpy as np
 import pandas as pd
@@ -16,6 +15,7 @@ import xarray as xr
 from collections import namedtuple
 from operator import itemgetter
 from scipy.optimize import minimize
+from scipy.stats import norm
 from sklearn.linear_model import LinearRegression
 from pyprojroot import here
 
@@ -48,8 +48,101 @@ archive_file_template = 'archive_{:03d}.npy'
 errorgrid_file_template = 'errorgrid_{:03d}.nc'
 
 
-
 Entry = namedtuple('Entry', 'iteration budget time_since_high_eval tau fidelity nhigh nlow candidate fitness')
+
+
+class UtilityFunction:
+    """
+    Code adapted from:
+      https://github.com/fmfn/BayesianOptimization/blob/380b0d52ae0e3650b023c4ef6db43f7343c75dea/bayes_opt/util.py
+    Under MIT License
+
+    An object to compute the acquisition functions.
+    """
+
+    def __init__(self, kind, kappa=2.576, xi=1, kappa_decay=1, kappa_decay_delay=0):
+
+        self.kappa = kappa
+        self.xi = xi
+
+        self._kappa_decay = kappa_decay
+        self._kappa_decay_delay = kappa_decay_delay
+        self._iters_counter = 0
+
+        if kind not in ['ucb', 'ei', 'ei_orig', 'poi']:
+            err = "The utility function " \
+                  "{} has not been implemented, " \
+                  "please choose one of ucb, ei, or poi.".format(kind)
+            raise NotImplementedError(err)
+        else:
+            self.kind = kind
+
+    def update_params(self):
+        self._iters_counter += 1
+
+        if self._kappa_decay < 1 and self._iters_counter > self._kappa_decay_delay:
+            self.kappa *= self._kappa_decay
+
+    def utility(self, x, gp, y_best, goal='maximize'):
+        if self.kind == 'ucb':
+            return self._ucb(x, gp, self.kappa, goal)
+        if self.kind == 'ei':
+            return self._ei(x, gp, y_best, self.xi, goal)
+        if self.kind == 'ei_orig':
+            return self._ei_orig(x, gp, y_best, self.xi)
+        if self.kind == 'poi':
+            return self._poi(x, gp, y_best, self.xi, goal)
+
+    @staticmethod
+    def _ucb(x, gp, kappa, goal):
+        with catch_warnings():
+            simplefilter("ignore")
+            mean, std = gp.predict(x, return_std=True)
+        if goal == 'maximize':
+            return mean + kappa * std
+        elif goal == 'minimize':
+            return mean - kappa * std
+
+    @staticmethod
+    def _ei(x, gp, y_best, xi, goal):
+        with catch_warnings():
+            simplefilter("ignore")
+            mean, std = gp.predict(x, return_std=True)
+
+        std = std.reshape(-1, 1)
+
+        if goal == 'maximize':
+            a = (mean - y_best - xi)
+        elif goal == 'minimize':
+            a = (y_best - mean + xi)
+
+        z = a / std
+
+        if goal == 'maximize':
+            return a * norm.cdf(z) + std * norm.pdf(z)
+        elif goal == 'minimize':
+            return a * norm.cdf(z) - std * norm.pdf(z)
+
+    @staticmethod
+    def _ei_orig(x, gp, y_max, xi):
+        with catch_warnings():
+            simplefilter("ignore")
+            mean, std = gp.predict(x, return_std=True)
+
+        a = (mean - y_max - xi)
+        z = a / std
+        return a * norm.cdf(z) + std * norm.pdf(z)
+
+    @staticmethod
+    def _poi(x, gp, y_best, xi, goal):
+        with catch_warnings():
+            simplefilter("ignore")
+            mean, std = gp.predict(x, return_std=True)
+        if goal == 'maximize':
+            z = (mean - y_best - xi) / std
+        elif goal == 'minimize':
+            z = (y_best - mean - xi) / std
+        return norm.cdf(z)
 
 
 class Optimizer:
@@ -64,7 +157,8 @@ class Optimizer:
         doe_n_low,
         run_save_dir,
         fid_selection_method,
-        num_reps=50
+        num_reps=50,
+        goal='minimize',
     ):
 
         if doe_n_high + cost_ratio * doe_n_low >= budget:
@@ -75,9 +169,10 @@ class Optimizer:
         self.func = func
         self.init_budget = budget
         self.cost_ratio = cost_ratio
-        self.num_reps = num_reps
-        self.fid_selection_method = fid_selection_method
         self.run_save_dir = run_save_dir
+        self.fid_selection_method = fid_selection_method
+        self.num_reps = num_reps
+        self.goal = goal
         self.time_since_high_eval = 0
         self.entries = []
         self.archive = make_mf_doe(func, doe_n_high, doe_n_low)
@@ -98,16 +193,7 @@ class Optimizer:
         self.mfm = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=self.archive,
                                            kernel='Matern', scaling='off')
 
-        self.utility = bo.util.UtilityFunction(kind='ei', kappa=2.576, xi=1.0).utility
-        self.acq_max = partial(
-            bo.util.acq_max,
-            ac=self.utility,
-            gp=self.mfm.top_level_model,
-            bounds=self.func.bounds.T,
-            n_warmup=1000,
-            n_iter=50,
-            random_state=np.random.RandomState()
-        )
+        self.utility = partial(UtilityFunction(kind='ei').utility, goal=self.goal)
 
 
     def iterate(self):  # sourcery skip: assign-if-exp
@@ -154,7 +240,7 @@ class Optimizer:
             (cand, self.utility(
                 cand.reshape(1, -1),
                 gp=self.mfm.top_level_model,
-                y_max=self.archive.max['high'])
+                y_best=self.archive.max['high'])
              )
             for cand in candidates
         ]
@@ -168,7 +254,7 @@ class Optimizer:
     def eval_low_fid(self):
         self.time_since_high_eval += 1
         self.budget -= self.cost_ratio
-        return self.acq_max(y_max=self.archive.max['high'])
+        return self.acq_max(y_best=self.archive.max['high'], random_state=np.random.RandomState())
 
 
     def select_fidelity(self):
@@ -193,7 +279,7 @@ class Optimizer:
             logwriter.writerow(entry)
 
 
-    def _acq_min(self, ac, y_max, gp=None, bounds=None, random_state=None, n_warmup=1000, n_iter=50):
+    def acq_max(self, y_best, random_state, n_warmup=1e4, n_iter=50):
         """
         Code adapted from:
           https://github.com/fmfn/BayesianOptimization/blob/380b0d52ae0e3650b023c4ef6db43f7343c75dea/bayes_opt/util.py
@@ -201,18 +287,12 @@ class Optimizer:
 
         A function to find the maximum of the acquisition function
         It uses a combination of random sampling (cheap) and the 'L-BFGS-B'
-        optimization method. First by sampling `n_warmup` (1e5) points at random,
-        and then running L-BFGS-B from `n_iter` (250) random starting points.
+        optimization method. First by sampling `n_warmup` (1e4) points at random,
+        and then running L-BFGS-B from `n_iter` (50) random starting points.
         Parameters
         ----------
-        :param ac:
-            The acquisition function object that return its point-wise value.
-        :param gp:
-            A gaussian process fitted to the relevant data.
-        :param y_max:
+        :param y_best:
             The current maximum known value of the target function.
-        :param bounds:
-            The variables bounds to limit the search of the acq max.
         :param random_state:
             instance of np.RandomState random number generator
         :param n_warmup:
@@ -224,10 +304,16 @@ class Optimizer:
         :return: x_max, The arg max of the acquisition function.
         """
 
+        bounds = self.func.bounds.T
+
         # Warm up with random points
-        x_tries = random_state.uniform(bounds[:, 0], bounds[:, 1],
-                                       size=(n_warmup, bounds.shape[0]))
-        ys = ac(x_tries, gp=gp, y_max=y_max)
+        x_tries = random_state.uniform(
+            bounds[:, 0],
+            bounds[:, 1],
+            size=(n_warmup, bounds.shape[0])
+        )
+        ys = self.utility(x_tries, gp=self.mfm.top_level_model, y_best=y_best)
+        # print(f'{x_tries.shape=}, {ys.shape=}')
         x_max = x_tries[ys.argmax()]
         max_acq = ys.max()
 
@@ -236,10 +322,16 @@ class Optimizer:
                                        size=(n_iter, bounds.shape[0]))
         for x_try in x_seeds:
             # Find the minimum of minus the acquisition function
-            res = minimize(lambda x: -ac(x.reshape(1, -1), gp=gp, y_max=y_max),
-                           x_try.reshape(1, -1),
-                           bounds=bounds,
-                           method="L-BFGS-B")
+            res = minimize(
+                lambda x: -self.utility(
+                    x.reshape(1, -1),
+                    gp=self.mfm.top_level_model,
+                    y_best=y_best
+                ).reshape(-1,),
+                x_try.reshape(1, -1),
+                bounds=bounds,
+                method="L-BFGS-B",
+            )
 
             # See if success
             if not res.success:
