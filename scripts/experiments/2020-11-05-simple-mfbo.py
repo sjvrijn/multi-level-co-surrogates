@@ -249,7 +249,7 @@ class Optimizer:
         pprint(candidate_predictions)
         print()
 
-        x = min(candidate_predictions, key=itemgetter(1))[0].ravel()
+        x = max(candidate_predictions, key=itemgetter(1))[0].ravel()
         self.time_since_high_eval = 0
         self.budget -= 1
         return x
