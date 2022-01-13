@@ -7,6 +7,7 @@ import argparse
 from csv import writer
 from functools import partial
 from warnings import warn, simplefilter, catch_warnings
+from pprint import pprint
 
 import mf2
 import numpy as np
@@ -240,10 +241,13 @@ class Optimizer:
             (cand, self.utility(
                 cand.reshape(1, -1),
                 gp=self.mfm.top_level_model,
-                y_best=self.archive.max['high'])
-             )
+                y_best=self.archive.min['high']
+                ), self.mfm.models['high'].predict(cand)
+            )
             for cand in candidates
         ]
+        pprint(candidate_predictions)
+        print()
 
         x = min(candidate_predictions, key=itemgetter(1))[0].ravel()
         self.time_since_high_eval = 0
