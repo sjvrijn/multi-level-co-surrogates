@@ -109,7 +109,7 @@ class UtilityFunction:
             simplefilter("ignore")
             mean, std = gp.predict(x, return_std=True)
 
-        std = std.reshape(-1, 1)
+        mean, std = mean.reshape(-1, 1), std.reshape(-1, 1)
 
         if goal == 'maximize':
             a = (mean - y_best - xi)
@@ -279,7 +279,7 @@ class Optimizer:
             logwriter.writerow(entry)
 
 
-    def acq_max(self, y_best, random_state, n_warmup=1e4, n_iter=50):
+    def acq_max(self, y_best, random_state, n_warmup=1_000, n_iter=50):
         """
         Code adapted from:
           https://github.com/fmfn/BayesianOptimization/blob/380b0d52ae0e3650b023c4ef6db43f7343c75dea/bayes_opt/util.py
@@ -706,6 +706,8 @@ def main(args):
         mf2.hartmann6,           # 8
 
         mf2.borehole,            # 9
+
+        mf2.forrester,           # 10
     ]
 
     if args.idx:
