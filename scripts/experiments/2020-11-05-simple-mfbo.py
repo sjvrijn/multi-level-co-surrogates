@@ -700,7 +700,7 @@ def main(args):
         mf2.bohachevsky,         # 0
         mf2.booth,               # 1
         mf2.branin,              # 2
-        mf2.currin,              # 3
+        mf2.invert(mf2.currin),  # 3
         mf2.himmelblau,          # 4
         mf2.six_hump_camelback,  # 5
 
@@ -711,7 +711,7 @@ def main(args):
 
         mf2.borehole,            # 9
 
-        mf2.forrester,           # 10
+        # mf2.forrester,           # 10
     ]
 
     if args.idx:
