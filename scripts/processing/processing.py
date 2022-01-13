@@ -115,9 +115,7 @@ def plot_archive(
 
     fig, ax = plt.subplots()
     ax.set_title(title)
-    ax.set_xlim([l_bound[0] - step[0]/2, u_bound[0] + step[0]/2])
-    ax.set_ylim([l_bound[1] - step[1]/2, u_bound[1] + step[1]/2])
-    ax.pcolormesh(surf.X, surf.Y, surf.Z, cmap='viridis_r')
+    ax.imshow(surf.Z, extent=extent, cmap='viridis_r', origin='lower')
     for fid, style in zip(['high', 'low'], [red_dot, blue_circle]):
         points = archive.getcandidates(fid).candidates
         ax.scatter(*points.T, **style, label=f'{fid}-fidelity samples')
