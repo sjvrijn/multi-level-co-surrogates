@@ -102,10 +102,22 @@ def plot_archive(
     if func.ndim != 2:
         raise NotImplementedError("plotting for other than 2D not implemented")
 
+    num_intervals = 50
+    u_bound, l_bound = func.u_bound, func.l_bound
+    step = (u_bound - l_bound) / num_intervals
+    surf = mlcs.createsurface(func.high, l_bound=l_bound, u_bound=u_bound, step=step, wide=False)
+    extent = [
+        l_bound[0] - step[0]/2,
+        u_bound[0] + step[0]/2,
+        l_bound[1] - step[1]/2,
+        u_bound[1] + step[1]/2
+    ]
+
     fig, ax = plt.subplots()
     ax.set_title(title)
-    ax.set_xlim([func.l_bound[0], func.u_bound[0]])
-    ax.set_ylim([func.l_bound[1], func.u_bound[1]])
+    ax.set_xlim([l_bound[0] - step[0]/2, u_bound[0] + step[0]/2])
+    ax.set_ylim([l_bound[1] - step[1]/2, u_bound[1] + step[1]/2])
+    ax.pcolormesh(surf.X, surf.Y, surf.Z, cmap='viridis_r')
     for fid, style in zip(['high', 'low'], [red_dot, blue_circle]):
         points = archive.getcandidates(fid).candidates
         ax.scatter(*points.T, **style, label=f'{fid}-fidelity samples')
