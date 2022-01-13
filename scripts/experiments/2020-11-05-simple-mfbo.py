@@ -764,7 +764,7 @@ if __name__ == '__main__':
                         help='number of independent repetitions to perform for the error grid')
     parser.add_argument('--niters', type=int, default=5,
                         help='number of independent iterations of the experiment to perform')
-    parser.add_argument('--budget', type=int, default=25,
+    parser.add_argument('-b', '--budget', type=int, default=25,
                         help='evaluation budget')
     arguments = parser.parse_args()
 
