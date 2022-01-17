@@ -160,6 +160,7 @@ class Optimizer:
         doe_n_low: int,
         run_save_dir: Path,
         fid_selection_method: str,
+        seed_offset: int=0,
         num_reps: int=50,
         goal: str='minimize',
     ):
@@ -167,7 +168,7 @@ class Optimizer:
         if doe_n_high + cost_ratio * doe_n_low >= budget:
             raise ValueError('Budget should not be exhausted after DoE')
 
-        np.random.seed(20160501)
+        np.random.seed(20160501 + seed_offset)
 
         self.func = func
         self.init_budget = budget
@@ -658,7 +659,7 @@ def fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low
 
 
 def class_fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, seed_offset=None, **_):
-    opt = Optimizer(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, fid_selection_method='fixed')
+    opt = Optimizer(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, seed_offset=seed_offset, fid_selection_method='fixed')
     results = opt.iterate()
     pprint(opt.archive.data)
     print()
