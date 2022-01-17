@@ -45,6 +45,7 @@ save_dir.mkdir(parents=True, exist_ok=True)
 plot_dir = here('plots/2020-11-05-simple-mfbo/', warn=False)
 plot_dir.mkdir(parents=True, exist_ok=True)
 
+FOLDER_NAME_TEMPLATE = '{func_name}-{name}-c{cost_ratio:f}-b{budget:d}-i{idx:d}'
 archive_file_template = 'archive_{:03d}.npy'
 errorgrid_file_template = 'errorgrid_{:03d}.nc'
 
@@ -717,15 +718,15 @@ def main(args):
     if args.idx:
         functions = [functions[f_idx] for f_idx in args.idx]
 
-    kwargs = dict(
-        init_budget=args.budget,
-        cost_ratio=0.2,
-        doe_n_high=5,
-        doe_n_low=10,
-        num_reps=args.nreps,
-    )
+    kwargs = {
+        'init_budget': args.budget,
+        'cost_ratio': args.cost_ratio,
+        'doe_n_high': 5,
+        'doe_n_low': 10,
+        'num_reps': args.nreps,
+    }
 
-    experiment_functions = {
+    optimizers = {
         'fixed': class_fixed_ratio_multifid_bo,
         'naive': simple_multifid_bo,
         'proto-eg': proto_EG_multifid_bo,
@@ -737,17 +738,23 @@ def main(args):
         for idx in range(args.niters):
             kwargs['seed_offset'] = idx
 
-            for name, experiment_func in experiment_functions.items():
+            for name, optimizer in optimizers.items():
                 if args.experiment not in [None, name]:
                     continue
-                do_run(func, f'{name}-b{args.budget}-i{idx}', experiment_func, kwargs)
+                run_save_dir = save_dir / FOLDER_NAME_TEMPLATE.format(
+                    func_name=func.name,
+                    name=name,
+                    cost_ratio=args.cost_ratio,
+                    budget=args.budget,
+                    idx=idx,
+                )
+                print(f'    {name} c{args.cost_ratio} b{args.budget} i{idx}...')
+                do_run(func, run_save_dir, optimizer, kwargs)
 
 
-def do_run(benchmark_func, experiment_name, run_func, kwargs):
-    print(f'    {experiment_name}...')
-    run_save_dir = save_dir / f'{benchmark_func.name}-{experiment_name}'
+def do_run(benchmark_func, run_save_dir, optimizer, kwargs):
     run_save_dir.mkdir(parents=True, exist_ok=True)
-    run_func(
+    optimizer(
         func=benchmark_func,
         run_save_dir=run_save_dir,
         **kwargs
@@ -766,6 +773,8 @@ if __name__ == '__main__':
                         help='number of independent iterations of the experiment to perform')
     parser.add_argument('-b', '--budget', type=int, default=25,
                         help='evaluation budget')
+    parser.add_argument('-c', '--cost-ratio', type=float, default=0.2,
+                        help='relative cost of a low- vs high-fidelity evaluation')
     arguments = parser.parse_args()
 
     main(arguments)
