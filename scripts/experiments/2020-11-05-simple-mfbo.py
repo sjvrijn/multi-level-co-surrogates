@@ -266,6 +266,9 @@ class Optimizer:
 
     def select_fidelity(self):
 
+        if self.archive.count('high') >= self.archive.count('low'):
+            return 'low'
+
         if self.fid_selection_method == 'EG':
             tau = calc_tau_from_EG(self.proto_eg.error_grid['mses'], self.cost_ratio)
             # compare \tau with current count t to select fidelity, must be >= 1
