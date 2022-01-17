@@ -8,6 +8,7 @@ from csv import writer
 from functools import partial
 from warnings import warn, simplefilter, catch_warnings
 from pprint import pprint
+from pathlib import Path
 
 import mf2
 import numpy as np
@@ -153,14 +154,14 @@ class Optimizer:
     def __init__(
         self,
         func,
-        budget,
-        cost_ratio,
-        doe_n_high,
-        doe_n_low,
-        run_save_dir,
-        fid_selection_method,
-        num_reps=50,
-        goal='minimize',
+        budget: int,
+        cost_ratio: float,
+        doe_n_high: int,
+        doe_n_low: int,
+        run_save_dir: Path,
+        fid_selection_method: str,
+        num_reps: int=50,
+        goal: str='minimize',
     ):
 
         if doe_n_high + cost_ratio * doe_n_low >= budget:
@@ -659,7 +660,8 @@ def fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low
 def class_fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, seed_offset=None, **_):
     opt = Optimizer(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, fid_selection_method='fixed')
     results = opt.iterate()
-    print(opt.archive.data)
+    pprint(opt.archive.data)
+    print()
     return results
 
 
