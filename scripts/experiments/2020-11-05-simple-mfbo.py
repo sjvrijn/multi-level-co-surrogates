@@ -51,7 +51,7 @@ archive_file_template = 'archive_{:03d}.npy'
 errorgrid_file_template = 'errorgrid_{:03d}.nc'
 
 
-Entry = namedtuple('Entry', 'iteration budget time_since_high_eval tau fidelity nhigh nlow candidate fitness')
+Entry = namedtuple('Entry', 'iteration budget time_since_high_eval tau fidelity wall_time nhigh nlow reuse_fraction candidate fitness')
 
 
 class UtilityFunction:
@@ -201,7 +201,9 @@ class Optimizer:
 
 
     def iterate(self):  # sourcery skip: assign-if-exp
+        reuse_fraction = 0  # only updated when (proto)EG is used
         iterations = 0
+        start_time = time()
         while self.budget > 0:
             fidelity = self.select_fidelity()
 
@@ -219,18 +221,22 @@ class Optimizer:
             self.mfm.retrain()
             if self.proto_eg and self.budget > 0:  # prevent unnecessary computation
                 self.proto_eg.update_errorgrid_with_sample(x, fidelity=fidelity)
+                reuse_fraction = self.proto_eg.reuse_fraction
 
             iterations += 1
             # logging
             self.log_entry(Entry(
-                iterations,
-                self.budget,
-                self.time_since_high_eval,
-                -1,
-                fidelity,
-                self.archive.count('high'),
-                self.archive.count('low'),
-                x, y
+                iteration=iterations,
+                budget=self.budget,
+                time_since_high_eval=self.time_since_high_eval,
+                tau=-1,
+                fidelity=fidelity,
+                wall_time=time() - start_time,
+                nhigh=self.archive.count('high'),
+                nlow=self.archive.count('low'),
+                reuse_fraction=reuse_fraction,
+                candidate=x,
+                fitness=y,
             ))
             np.save(self.run_save_dir / archive_file_template.format(iterations), self.archive)
 
