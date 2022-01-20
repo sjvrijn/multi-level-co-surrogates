@@ -26,20 +26,6 @@ from pyprojroot import here
 from experiments import scale_to_function, create_subsampling_error_grid, mlcs
 
 
-from functools import wraps
-from time import time
-
-def timing(f):
-    @wraps(f)
-    def wrap(*args, **kw):
-        start = time()
-        result = f(*args, **kw)
-        end = time()
-        print(f'func {f.__name__}: {end-start:2.4f} sec')
-        return result
-    return wrap
-
-
 RANDOM_SEED_BASE = 20160501
 RAND_SAMPLES_PER_DIM = 10
 
@@ -391,7 +377,6 @@ def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
     return reg, SSE
 
 
-# @timing
 def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps=50, seed_offset=None):
     if seed_offset:
         np.random.seed(RANDOM_SEED_BASE + seed_offset)
@@ -482,7 +467,6 @@ def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, r
         iterations += 1
 
 
-# @timing
 def simple_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps=50, seed_offset=None):
     if seed_offset:
         np.random.seed(RANDOM_SEED_BASE + seed_offset)
@@ -572,7 +556,6 @@ def simple_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run
         mfbo.retrain()
 
 
-@timing
 def fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, seed_offset=None, **_):
     if seed_offset:
         np.random.seed(RANDOM_SEED_BASE + seed_offset)
