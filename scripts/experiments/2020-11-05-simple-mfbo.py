@@ -756,6 +756,9 @@ def do_run(benchmark_func, run_save_dir, optimizer, kwargs):
 
 
 if __name__ == '__main__':
+
+    cost_ratios = [0.1, 0.2, 0.25, 0.5]
+
     parser = argparse.ArgumentParser()
     parser.add_argument('idx', type=int, nargs='*',
                         help='Experiment indices to run. Default: all')
@@ -767,7 +770,7 @@ if __name__ == '__main__':
                         help='number of independent iterations of the experiment to perform')
     parser.add_argument('-b', '--budget', type=int, default=100,
                         help='evaluation budget')
-    parser.add_argument('-c', '--cost-ratio', type=float, default='0.1 0.2 0.25 0.5', nargs='*',
+    parser.add_argument('-c', '--cost-ratio', type=float, default=cost_ratios, nargs='*',
                         help='relative cost of a low- vs high-fidelity evaluation')
     arguments = parser.parse_args()
 
