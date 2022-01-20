@@ -151,6 +151,8 @@ def plot_and_gifify_errorgrids(in_folder: Path, out_folder: Path, save_exts=('pn
         for f in in_folder.iterdir()
         if errorgrid_template.parse(f.name)
     ]
+    if not errorgrid_files:
+        return
     for errorgrid_file, iteration_idx in errorgrid_files:
         with xr.load_dataarray(errorgrid_file) as errorgrid:
             proc.plot_error_grid(
