@@ -587,6 +587,15 @@ def calc_tau_from_EG(EG, cost_ratio):
     return tau
 
 
+def do_run(benchmark_func, run_save_dir, optimizer, kwargs):
+    run_save_dir.mkdir(parents=True, exist_ok=True)
+    optimizer(
+        func=benchmark_func,
+        run_save_dir=run_save_dir,
+        **kwargs
+    )
+
+
 def main(args):
     import sklearn
     simplefilter("ignore", category=FutureWarning)
@@ -648,15 +657,6 @@ def main(args):
                 )
                 print(f'    {name} c{cost_ratio} b{args.budget} i{idx}...')
                 do_run(func, run_save_dir, optimizer, kwargs)
-
-
-def do_run(benchmark_func, run_save_dir, optimizer, kwargs):
-    run_save_dir.mkdir(parents=True, exist_ok=True)
-    optimizer(
-        func=benchmark_func,
-        run_save_dir=run_save_dir,
-        **kwargs
-    )
 
 
 if __name__ == '__main__':
