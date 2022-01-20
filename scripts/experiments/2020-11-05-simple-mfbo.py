@@ -6,9 +6,11 @@
 import argparse
 from csv import writer
 from functools import partial
-from warnings import warn, simplefilter, catch_warnings
-from pprint import pprint
+from itertools import product
 from pathlib import Path
+from pprint import pprint
+from time import time
+from warnings import warn, simplefilter, catch_warnings
 
 import mf2
 import numpy as np
@@ -747,8 +749,9 @@ def main(args):
     for func in functions:
         print(func.name)
 
-        for idx in range(args.niters):
+        for idx, cost_ratio in product(range(args.niters), args.cost_ratio):
             kwargs['seed_offset'] = idx
+            kwargs['cost_ratio'] = cost_ratio
 
             for name, optimizer in optimizers.items():
                 if args.experiment not in [None, name]:
@@ -756,7 +759,7 @@ def main(args):
                 run_save_dir = save_dir / FOLDER_NAME_TEMPLATE.format(
                     func_name=func.name,
                     name=name,
-                    cost_ratio=args.cost_ratio,
+                    cost_ratio=cost_ratio,
                     budget=args.budget,
                     idx=idx,
                 )
@@ -785,7 +788,7 @@ if __name__ == '__main__':
                         help='number of independent iterations of the experiment to perform')
     parser.add_argument('-b', '--budget', type=int, default=25,
                         help='evaluation budget')
-    parser.add_argument('-c', '--cost-ratio', type=float, default=0.2,
+    parser.add_argument('-c', '--cost-ratio', type=float, default='0.2', nargs='*',
                         help='relative cost of a low- vs high-fidelity evaluation')
     arguments = parser.parse_args()
 
