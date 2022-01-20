@@ -156,7 +156,7 @@ class Optimizer:
         if doe_n_high + cost_ratio * doe_n_low >= budget:
             raise ValueError('Budget should not be exhausted after DoE')
 
-        np.random.seed(20160501 + seed_offset)
+        np.random.seed(RANDOM_SEED_BASE + seed_offset)
 
         self.func = func
         self.init_budget = budget
