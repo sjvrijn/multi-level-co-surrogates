@@ -746,7 +746,7 @@ def main(args):
                     budget=args.budget,
                     idx=idx,
                 )
-                print(f'    {name} c{args.cost_ratio} b{args.budget} i{idx}...')
+                print(f'    {name} c{cost_ratio} b{args.budget} i{idx}...')
                 do_run(func, run_save_dir, optimizer, kwargs)
 
 
@@ -769,9 +769,9 @@ if __name__ == '__main__':
                         help='number of independent repetitions to perform for the error grid')
     parser.add_argument('--niters', type=int, default=5,
                         help='number of independent iterations of the experiment to perform')
-    parser.add_argument('-b', '--budget', type=int, default=25,
+    parser.add_argument('-b', '--budget', type=int, default=100,
                         help='evaluation budget')
-    parser.add_argument('-c', '--cost-ratio', type=float, default='0.2', nargs='*',
+    parser.add_argument('-c', '--cost-ratio', type=float, default='0.1 0.2 0.25 0.5', nargs='*',
                         help='relative cost of a low- vs high-fidelity evaluation')
     arguments = parser.parse_args()
 
