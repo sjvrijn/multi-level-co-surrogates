@@ -560,6 +560,12 @@ def class_fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe
     return results
 
 
+def class_proto_eg_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, nreps, seed_offset=None):
+    opt = Optimizer(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps=nreps, seed_offset=seed_offset, fid_selection_method='EG')
+    results = opt.iterate()
+    return results
+
+
 def select_high_fid_only_candidates(archive):
     all_low = {
         tuple(candidate)
@@ -635,7 +641,8 @@ def main(args):
     optimizers = {
         'fixed': class_fixed_ratio_multifid_bo,
         'naive': simple_multifid_bo,
-        'proto-eg': proto_EG_multifid_bo,
+        'proto-eg': class_proto_eg_multifid_bo,
+        # 'proto-eg': proto_EG_multifid_bo,
     }
 
     for func in functions:
