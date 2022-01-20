@@ -243,8 +243,6 @@ class Optimizer:
             )
             for cand in candidates
         ]
-        pprint(candidate_predictions)
-        print()
 
         x = max(candidate_predictions, key=itemgetter(1))[0].ravel()
         self.time_since_high_eval = 0
@@ -655,8 +653,6 @@ def fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low
 def class_fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, seed_offset=None, **_):
     opt = Optimizer(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, seed_offset=seed_offset, fid_selection_method='fixed')
     results = opt.iterate()
-    pprint(opt.archive.data)
-    print()
     return results
 
 
