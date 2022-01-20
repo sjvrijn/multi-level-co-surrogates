@@ -31,7 +31,7 @@ data_path = here('files/2020-11-05-simple-mfbo/')
 plot_path = here('plots/2020-11-16-simple-mfbo/', warn=False)
 plot_path.mkdir(exist_ok=True, parents=True)
 
-subfolder_template = compile('{func_name}-{method}-b{init_budget:d}-i{idx:d}')
+subfolder_template = compile('{func_name}-{method}-c{cost_ratio:f}-b{init_budget:d}-i{idx:d}')
 archive_template = compile('archive_{iteration:d}.npy')
 errorgrid_template = compile('errorgrid_{iteration:d}.nc')
 
@@ -103,7 +103,7 @@ def plot_log(in_folder: Path, out_folder: Path, save_exts=('.png', '.pdf')) -> N
 
     fig, axes = plt.subplots(ncols=2, nrows=3, figsize=(8, 9), constrained_layout=True)
     fig.suptitle(
-        f"{match['method']} for {match['func_name']} with init_budget={match['init_budget']} (idx {match['idx']})"
+        f"{match['method']} for {match['func_name']} ($\phi$={match['cost_ratio']}) with init_budget={match['init_budget']} (idx {match['idx']})"
     )
     df = pd.read_csv(in_folder / 'log.csv', index_col=0, sep=';')
     plot_on_axes(axes, match['init_budget'], df)
