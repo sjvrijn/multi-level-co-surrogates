@@ -195,11 +195,11 @@ class Optimizer:
         while self.budget > 0:
             fidelity = self.select_fidelity()
 
-            # predict best place to evaluate:
+            # select next best place to evaluate:
             if fidelity == 'high':
-                x = self.eval_high_fid()
+                x = self.select_next_high_fid()
             else:  # elif fidelity == 'low':
-                x = self.eval_low_fid()
+                x = self.select_next_low_fid()
 
             # evaluate best place
             y = self.func[fidelity](x.reshape(1, -1))[0]
@@ -231,7 +231,7 @@ class Optimizer:
         return self.mfm, pd.DataFrame.from_records(self.entries, columns=Entry._fields), self.archive
 
 
-    def eval_high_fid(self):
+    def select_next_high_fid(self):
         # best predicted low-fid only datapoint for high-fid (to maintain hierarchical model)
         candidates = select_high_fid_only_candidates(self.archive)
         candidate_predictions = [
@@ -250,7 +250,7 @@ class Optimizer:
         return x
 
 
-    def eval_low_fid(self):
+    def select_next_low_fid(self):
         self.time_since_high_eval += 1
         self.budget -= self.cost_ratio
         return self.acq_max(y_best=self.archive.max['high'], random_state=np.random.RandomState())
