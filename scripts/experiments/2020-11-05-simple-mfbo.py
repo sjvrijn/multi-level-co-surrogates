@@ -593,8 +593,14 @@ def calc_tau_from_EG(EG, cost_ratio):
     return tau
 
 
-def do_run(benchmark_func, run_save_dir, optimizer, kwargs):
+def do_run(benchmark_func, run_save_dir, optimizer, kwargs, force_rerun=False):
     run_save_dir.mkdir(parents=True, exist_ok=True)
+    if force_rerun:
+        for file in run_save_dir.iterdir():
+            file.unlink()
+    elif list(run_save_dir.iterdir()):
+        return  # directory already contains files: don't overwrite
+
     optimizer(
         func=benchmark_func,
         run_save_dir=run_save_dir,
@@ -663,7 +669,7 @@ def main(args):
                     idx=idx,
                 )
                 print(f'    {name} c{cost_ratio} b{args.budget} i{idx}...')
-                do_run(func, run_save_dir, optimizer, kwargs)
+                do_run(func, run_save_dir, optimizer, kwargs, args.force_rerun)
 
 
 if __name__ == '__main__':
@@ -683,6 +689,8 @@ if __name__ == '__main__':
                         help='evaluation budget')
     parser.add_argument('-c', '--cost-ratio', type=float, default=cost_ratios, nargs='*',
                         help='relative cost of a low- vs high-fidelity evaluation')
+    parser.add_argument('-f', '--force-rerun', action='store_true',
+                        help='Force rerunning this experiment. Deletes previous files')
     arguments = parser.parse_args()
 
     main(arguments)
