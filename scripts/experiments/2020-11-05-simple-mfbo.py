@@ -22,6 +22,7 @@ from scipy.optimize import minimize
 from scipy.stats import norm
 from sklearn.linear_model import LinearRegression
 from pyprojroot import here
+from tqdm import tqdm, TqdmWarning
 
 from experiments import scale_to_function, create_subsampling_error_grid, mlcs
 
@@ -137,7 +138,6 @@ class UtilityFunction:
 
 
 class Optimizer:
-    N_RAND_SAMPLES = 100
 
     def __init__(
         self,
@@ -191,42 +191,48 @@ class Optimizer:
     def iterate(self):  # sourcery skip: assign-if-exp
         reuse_fraction = 0  # only updated when (proto)EG is used
         iterations = 0
+        eval_cost = {'high': 1, 'low': self.cost_ratio}
         start_time = time()
-        while self.budget > 0:
-            fidelity = self.select_fidelity()
+        with tqdm(total=self.init_budget, leave=False) as pbar:
+            pbar.update(self.init_budget - self.budget)
 
-            # select next best place to evaluate:
-            if fidelity == 'high':
-                x = self.select_next_high_fid()
-            else:  # elif fidelity == 'low':
-                x = self.select_next_low_fid()
+            while self.budget > 0:
+                fidelity = self.select_fidelity()
 
-            # evaluate best place
-            y = self.func[fidelity](x.reshape(1, -1))[0]
-            self.archive.addcandidate(candidate=x.flatten(), fitness=y, fidelity=fidelity)
+                # select next best place to evaluate:
+                if fidelity == 'high':
+                    x = self.select_next_high_fid()
+                else:  # elif fidelity == 'low':
+                    x = self.select_next_low_fid()
 
-            # update model & error grid
-            self.mfm.retrain()
-            if self.proto_eg and self.budget > 0:  # prevent unnecessary computation
-                self.proto_eg.update_errorgrid_with_sample(x, fidelity=fidelity)
-                reuse_fraction = self.proto_eg.reuse_fraction
+                # evaluate best place
+                self.budget -= eval_cost[fidelity]
+                pbar.update(eval_cost[fidelity])
+                y = self.func[fidelity](x.reshape(1, -1))[0]
+                self.archive.addcandidate(candidate=x.flatten(), fitness=y, fidelity=fidelity)
 
-            iterations += 1
-            # logging
-            self.log_entry(Entry(
-                iteration=iterations,
-                budget=self.budget,
-                time_since_high_eval=self.time_since_high_eval,
-                tau=-1,
-                fidelity=fidelity,
-                wall_time=time() - start_time,
-                nhigh=self.archive.count('high'),
-                nlow=self.archive.count('low'),
-                reuse_fraction=reuse_fraction,
-                candidate=x,
-                fitness=y,
-            ))
-            np.save(self.run_save_dir / archive_file_template.format(iterations), self.archive)
+                # update model & error grid
+                self.mfm.retrain()
+                if self.proto_eg and self.budget > 0:  # prevent unnecessary computation
+                    self.proto_eg.update_errorgrid_with_sample(x, fidelity=fidelity)
+                    reuse_fraction = self.proto_eg.reuse_fraction
+
+                iterations += 1
+                # logging
+                self.log_entry(Entry(
+                    iteration=iterations,
+                    budget=self.budget,
+                    time_since_high_eval=self.time_since_high_eval,
+                    tau=-1,
+                    fidelity=fidelity,
+                    wall_time=time() - start_time,
+                    nhigh=self.archive.count('high'),
+                    nlow=self.archive.count('low'),
+                    reuse_fraction=reuse_fraction,
+                    candidate=x,
+                    fitness=y,
+                ))
+                np.save(self.run_save_dir / archive_file_template.format(iterations), self.archive)
 
         return self.mfm, pd.DataFrame.from_records(self.entries, columns=Entry._fields), self.archive
 
@@ -246,13 +252,11 @@ class Optimizer:
 
         x = max(candidate_predictions, key=itemgetter(1))[0].ravel()
         self.time_since_high_eval = 0
-        self.budget -= 1
         return x
 
 
     def select_next_low_fid(self):
         self.time_since_high_eval += 1
-        self.budget -= self.cost_ratio
         return self.acq_max(y_best=self.archive.max['high'], random_state=np.random.RandomState())
 
 
@@ -614,6 +618,7 @@ def main(args):
     simplefilter("ignore", category=sklearn.exceptions.ConvergenceWarning)
     simplefilter("ignore", category=TauSmallerThanOneWarning)
     simplefilter("ignore", category=mlcs.LowHighFidSamplesWarning)
+    simplefilter("ignore", category=TqdmWarning)
 
     functions = [
         mf2.bohachevsky,         # 0
