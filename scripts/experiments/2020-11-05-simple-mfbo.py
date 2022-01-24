@@ -184,6 +184,7 @@ class Optimizer:
             logwriter.writerow(Entry._fields)
 
         self.proto_eg = None
+        self.tau = 0
         if fid_selection_method in [FidelitySelection.NAIVE_EG, FidelitySelection.PROTO_EG]:
             self.proto_eg = mlcs.ProtoEG(self.archive, num_reps=num_reps)
             self.proto_eg.subsample_errorgrid()
@@ -232,7 +233,7 @@ class Optimizer:
                     iteration=iterations,
                     budget=self.budget,
                     time_since_high_eval=self.time_since_high_eval,
-                    tau=-1,
+                    tau=self.tau,
                     fidelity=fidelity,
                     wall_time=time() - start_time,
                     nhigh=self.archive.count('high'),
@@ -275,9 +276,9 @@ class Optimizer:
             return 'low'
 
         if self.fid_selection_method in [FidelitySelection.NAIVE_EG, FidelitySelection.PROTO_EG]:
-            tau = calc_tau_from_EG(self.proto_eg.error_grid['mses'], self.cost_ratio)
+            self.tau = calc_tau_from_EG(self.proto_eg.error_grid['mses'], self.cost_ratio)
             # compare \tau with current count t to select fidelity, must be >= 1
-            fidelity = 'high' if 1 <= tau <= self.time_since_high_eval else 'low'
+            fidelity = 'high' if 1 <= self.tau <= self.time_since_high_eval else 'low'
         elif self.fid_selection_method == FidelitySelection.FIXED:
             fidelity = 'high' if 1 <= (1 / self.cost_ratio) <= self.time_since_high_eval else 'low'
         else:
