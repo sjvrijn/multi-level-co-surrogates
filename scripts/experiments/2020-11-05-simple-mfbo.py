@@ -186,7 +186,7 @@ class Optimizer:
             logwriter.writerow(Entry._fields)
 
         self.proto_eg = None
-        if fid_selection_method == FidelitySelection.PROTO_EG:
+        if fid_selection_method in [FidelitySelection.NAIVE_EG, FidelitySelection.PROTO_EG]:
             self.proto_eg = mlcs.ProtoEG(self.archive, num_reps=num_reps)
             self.proto_eg.subsample_errorgrid()
 
@@ -222,7 +222,10 @@ class Optimizer:
                 # update model & error grid
                 self.mfm.retrain()
                 if self.proto_eg and self.budget > 0:  # prevent unnecessary computation
-                    self.proto_eg.update_errorgrid_with_sample(x, fidelity=fidelity)
+                    if self.fid_selection_method == FidelitySelection.PROTO_EG:
+                        self.proto_eg.update_errorgrid_with_sample(x, fidelity=fidelity)
+                    elif self.fid_selection_method == FidelitySelection.NAIVE_EG:
+                        self.proto_eg.subsample_errorgrid()
                     reuse_fraction = self.proto_eg.reuse_fraction
 
                 iterations += 1
