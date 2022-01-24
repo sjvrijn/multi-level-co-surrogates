@@ -437,7 +437,7 @@ def calc_tau_from_EG(EG, cost_ratio):
     return tau
 
 
-def do_run(benchmark_func, run_save_dir, optimizer, kwargs, force_rerun=False):
+def do_run(benchmark_func, run_save_dir, fidelity_selector, kwargs, force_rerun=False):
     run_save_dir.mkdir(parents=True, exist_ok=True)
     if force_rerun:
         for file in run_save_dir.iterdir():
@@ -445,11 +445,13 @@ def do_run(benchmark_func, run_save_dir, optimizer, kwargs, force_rerun=False):
     elif list(run_save_dir.iterdir()):
         return  # directory already contains files: don't overwrite
 
-    optimizer(
+    optimizer = Optimizer(
         func=benchmark_func,
         run_save_dir=run_save_dir,
-        **kwargs
+        fid_selection_method=fidelity_selector,
+        **kwargs,
     )
+    return optimizer.iterate()
 
 
 def main(args):
@@ -489,10 +491,10 @@ def main(args):
         'num_reps': args.nreps,
     }
 
-    optimizers = {
-        'fixed': class_fixed_ratio_multifid_bo,
-        'naive': class_naive_eg_multifid_bo,
-        'proto-eg': class_proto_eg_multifid_bo,
+    fidelity_selectors = {
+        'fixed': FidelitySelection.FIXED,
+        'naive': FidelitySelection.NAIVE_EG,
+        'proto-eg': FidelitySelection.PROTO_EG,
     }
 
     for func in functions:
@@ -502,7 +504,7 @@ def main(args):
             kwargs['seed_offset'] = idx
             kwargs['cost_ratio'] = cost_ratio
 
-            for name, optimizer in optimizers.items():
+            for name, fidelity_selector in fidelity_selectors.items():
                 if args.experiment not in [None, name]:
                     continue
                 run_save_dir = save_dir / FOLDER_NAME_TEMPLATE.format(
@@ -513,7 +515,7 @@ def main(args):
                     idx=idx,
                 )
                 print(f'    {name} c{cost_ratio} b{args.budget} i{idx}...')
-                do_run(func, run_save_dir, optimizer, kwargs, args.force_rerun)
+                do_run(func, run_save_dir, fidelity_selector, kwargs, args.force_rerun)
 
 
 if __name__ == '__main__':
