@@ -33,8 +33,6 @@ RAND_SAMPLES_PER_DIM = 10
 
 save_dir = here('files/2020-11-05-simple-mfbo/', warn=False)
 save_dir.mkdir(parents=True, exist_ok=True)
-plot_dir = here('plots/2020-11-05-simple-mfbo/', warn=False)
-plot_dir.mkdir(parents=True, exist_ok=True)
 
 FOLDER_NAME_TEMPLATE = '{func_name}-{name}-c{cost_ratio:f}-b{budget:d}-i{idx:d}'
 archive_file_template = 'archive_{:03d}.npy'
@@ -573,7 +571,6 @@ def main(args):
         'fixed': class_fixed_ratio_multifid_bo,
         'naive': simple_multifid_bo,
         'proto-eg': class_proto_eg_multifid_bo,
-        # 'proto-eg': proto_EG_multifid_bo,
     }
 
     for func in functions:
