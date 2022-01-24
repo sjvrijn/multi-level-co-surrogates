@@ -147,7 +147,7 @@ class Optimizer:
     def __init__(
         self,
         func,
-        budget: int,
+        init_budget: int,
         cost_ratio: float,
         doe_n_high: int,
         doe_n_low: int,
@@ -158,7 +158,7 @@ class Optimizer:
         goal: str='minimize',
     ):
 
-        if doe_n_high + cost_ratio * doe_n_low >= budget:
+        if doe_n_high + cost_ratio * doe_n_low >= init_budget:
             raise ValueError('Budget should not be exhausted after DoE')
         if not isinstance(fid_selection_method, FidelitySelection):
             raise ValueError('Invalid fidelity selection method, not in FidelitySelection')
@@ -166,7 +166,7 @@ class Optimizer:
         np.random.seed(RANDOM_SEED_BASE + seed_offset)
 
         self.func = func
-        self.init_budget = budget
+        self.init_budget = init_budget
         self.cost_ratio = cost_ratio
         self.run_save_dir = run_save_dir
         self.fid_selection_method = fid_selection_method
