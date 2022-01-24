@@ -200,6 +200,8 @@ class Optimizer:
         iterations = 0
         eval_cost = {'high': 1, 'low': self.cost_ratio}
         start_time = time()
+        if self.proto_eg:
+            self.proto_eg.error_grid.to_netcdf(self.run_save_dir / errorgrid_file_template.format(iterations))
         with tqdm(total=self.init_budget, leave=False) as pbar:
             pbar.update(self.init_budget - self.budget)
 
@@ -220,12 +222,14 @@ class Optimizer:
 
                 # update model & error grid
                 self.mfm.retrain()
-                if self.proto_eg and self.budget > 0:  # prevent unnecessary computation
-                    if self.fid_selection_method == FidelitySelection.PROTO_EG:
-                        self.proto_eg.update_errorgrid_with_sample(x, fidelity=fidelity)
-                    elif self.fid_selection_method == FidelitySelection.NAIVE_EG:
-                        self.proto_eg.subsample_errorgrid()
-                    reuse_fraction = self.proto_eg.reuse_fraction
+                if self.proto_eg:
+                    self.proto_eg.error_grid.to_netcdf(self.run_save_dir / errorgrid_file_template.format(iterations))
+                    if self.budget > 0:  # prevent unnecessary computation
+                        if self.fid_selection_method == FidelitySelection.PROTO_EG:
+                            self.proto_eg.update_errorgrid_with_sample(x, fidelity=fidelity)
+                        elif self.fid_selection_method == FidelitySelection.NAIVE_EG:
+                            self.proto_eg.subsample_errorgrid()
+                        reuse_fraction = self.proto_eg.reuse_fraction
 
                 iterations += 1
                 # logging
