@@ -5,6 +5,7 @@
 
 import argparse
 from csv import writer
+from enum import IntEnum
 from functools import partial
 from itertools import product
 from pathlib import Path
@@ -41,6 +42,12 @@ errorgrid_file_template = 'errorgrid_{:03d}.nc'
 
 
 Entry = namedtuple('Entry', 'iteration budget time_since_high_eval tau fidelity wall_time nhigh nlow reuse_fraction candidate fitness')
+
+
+class FidelitySelection(IntEnum):
+    FIXED = 0
+    NAIVE_EG = 1
+    PROTO_EG = 2
 
 
 class UtilityFunction:
@@ -147,7 +154,7 @@ class Optimizer:
         doe_n_high: int,
         doe_n_low: int,
         run_save_dir: Path,
-        fid_selection_method: str,
+        fid_selection_method: FidelitySelection,
         seed_offset: int=0,
         num_reps: int=50,
         goal: str='minimize',
@@ -155,6 +162,8 @@ class Optimizer:
 
         if doe_n_high + cost_ratio * doe_n_low >= budget:
             raise ValueError('Budget should not be exhausted after DoE')
+        if not isinstance(fid_selection_method, FidelitySelection):
+            raise ValueError('Invalid fidelity selection method, not in FidelitySelection')
 
         np.random.seed(RANDOM_SEED_BASE + seed_offset)
 
@@ -176,11 +185,10 @@ class Optimizer:
             logwriter = writer(csvfile, delimiter=';')
             logwriter.writerow(Entry._fields)
 
-        if fid_selection_method == 'EG':
+        self.proto_eg = None
+        if fid_selection_method == FidelitySelection.PROTO_EG:
             self.proto_eg = mlcs.ProtoEG(self.archive, num_reps=num_reps)
             self.proto_eg.subsample_errorgrid()
-        else:
-            self.proto_eg = None
 
         self.mfm = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=self.archive,
                                            kernel='Matern', scaling='off')
@@ -265,11 +273,11 @@ class Optimizer:
         if self.archive.count('high') >= self.archive.count('low'):
             return 'low'
 
-        if self.fid_selection_method == 'EG':
+        if self.fid_selection_method in [FidelitySelection.NAIVE_EG, FidelitySelection.PROTO_EG]:
             tau = calc_tau_from_EG(self.proto_eg.error_grid['mses'], self.cost_ratio)
             # compare \tau with current count t to select fidelity, must be >= 1
             fidelity = 'high' if 1 <= tau <= self.time_since_high_eval else 'low'
-        elif self.fid_selection_method == 'fixed':
+        elif self.fid_selection_method == FidelitySelection.FIXED:
             fidelity = 'high' if 1 <= (1 / self.cost_ratio) <= self.time_since_high_eval else 'low'
         else:
             raise NotImplementedError(f"Fidelity selection method '{self.fid_selection_method}' has no implementation")
@@ -559,13 +567,13 @@ def simple_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run
 
 
 def class_fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, seed_offset=None, **_):
-    opt = Optimizer(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, seed_offset=seed_offset, fid_selection_method='fixed')
+    opt = Optimizer(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, seed_offset=seed_offset, fid_selection_method=FidelitySelection.FIXED)
     results = opt.iterate()
     return results
 
 
 def class_proto_eg_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, nreps, seed_offset=None):
-    opt = Optimizer(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps=nreps, seed_offset=seed_offset, fid_selection_method='EG')
+    opt = Optimizer(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps=nreps, seed_offset=seed_offset, fid_selection_method=FidelitySelection.PROTO_EG)
     results = opt.iterate()
     return results
 
