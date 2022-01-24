@@ -437,7 +437,8 @@ def calc_tau_from_EG(EG, cost_ratio):
     return tau
 
 
-def do_run(benchmark_func, run_save_dir, fidelity_selector, kwargs, force_rerun=False):
+def do_run(benchmark_func, fidelity_selector, kwargs, force_rerun=False):
+    run_save_dir = kwargs['run_save_dir']
     run_save_dir.mkdir(parents=True, exist_ok=True)
     if force_rerun:
         for file in run_save_dir.iterdir():
@@ -447,7 +448,6 @@ def do_run(benchmark_func, run_save_dir, fidelity_selector, kwargs, force_rerun=
 
     optimizer = Optimizer(
         func=benchmark_func,
-        run_save_dir=run_save_dir,
         fid_selection_method=fidelity_selector,
         **kwargs,
     )
@@ -507,7 +507,7 @@ def main(args):
             for name, fidelity_selector in fidelity_selectors.items():
                 if args.experiment not in [None, name]:
                     continue
-                run_save_dir = save_dir / FOLDER_NAME_TEMPLATE.format(
+                kwargs['run_save_dir'] = save_dir / FOLDER_NAME_TEMPLATE.format(
                     func_name=func.name,
                     name=name,
                     cost_ratio=cost_ratio,
@@ -515,7 +515,7 @@ def main(args):
                     idx=idx,
                 )
                 print(f'    {name} c{cost_ratio} b{args.budget} i{idx}...')
-                do_run(func, run_save_dir, fidelity_selector, kwargs, args.force_rerun)
+                do_run(func, fidelity_selector, kwargs, args.force_rerun)
 
 
 if __name__ == '__main__':
