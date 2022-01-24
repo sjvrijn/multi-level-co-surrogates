@@ -123,7 +123,6 @@ class ProtoEG:
         return self.num_models_reused / total
 
 
-
     def _get_resample_indices(self, fidelity: str, h: int, l: int):
         fraction = 1 - self.calculate_reuse_fraction(h, l, fidelity)
         num_models_to_resample = int(fraction * self.num_reps)
@@ -171,7 +170,7 @@ class ProtoEG:
 
     def calculate_reuse_fraction(self, num_high: int, num_low: int, fidelity: str,
                                  *, max_high: int=None, max_low: int=None) -> float:
-        """Calculate the fraction of models that can be reused
+        r"""Calculate the fraction of models that can be reused
 
         Given `max_high` H, `max_low` L, `num_high` h and `num_low` l, the number of
         unique possible subsamples is given by binom(H, h) * binom(L-h, l-h), i.e.:
