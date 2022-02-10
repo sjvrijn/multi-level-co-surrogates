@@ -29,6 +29,7 @@ sys.path.append(str(here()))
 
 import multiLevelCoSurrogates as mlcs
 
+np.random.seed(20160501)
 np.set_printoptions(linewidth=200, edgeitems=5)
 
 print(f'Running script: {__file__}')
