@@ -32,8 +32,6 @@ function_cases = [
     *[mf2.adjustable.trid(a4)      for a4 in [0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00]],
 ]
 
-DoE_high, DoE_low = 50, 125
-
 
 def main(args):
     if args.idx:
@@ -41,27 +39,37 @@ def main(args):
     else:
         full_cases = function_cases
 
-    min_high, max_high = 2, DoE_high
-    min_low, max_low = 3, DoE_low
+    for DoE_high, DoE_low in args.doe_sizes:
 
-    instances = [Instance(h, l, r)
-                 for h, l, r in product(range(min_high, max_high),
-                                        range(min_low, max_low),
-                                        range(args.numreps))
-                 if h < l]
+        min_high, max_high = 2, DoE_high
+        min_low, max_low = 3, DoE_low
 
-    mfbo_options = {
-        # 'surrogate_name': 'ElasticNet',
-        'kernel': 'Matern',
-        'scaling': 'off'
-    }
-    extra_attributes = {'mf2_version': mf2.__version__}
+        instances = [Instance(h, l, r)
+                     for h, l, r in product(range(min_high, max_high),
+                                            range(min_low, max_low),
+                                            range(args.numreps))
+                     if h < l]
 
-    for case, offset in product(full_cases, args.seeds):
-        create_resampling_leftover_error_grid(case, (DoE_high, DoE_low),
-                                              instances, mfbo_options, save_dir,
-                                              seed_offset=offset,
-                                              extra_attributes=extra_attributes)
+        mfbo_options = {
+            # 'surrogate_name': 'ElasticNet',
+            'kernel': 'Matern',
+            'scaling': 'off'
+        }
+        extra_attributes = {'mf2_version': mf2.__version__}
+
+        for case, offset in product(full_cases, args.seeds):
+            create_resampling_leftover_error_grid(case, (DoE_high, DoE_low),
+                                                  instances, mfbo_options, save_dir,
+                                                  seed_offset=offset,
+                                                  extra_attributes=extra_attributes)
+
+
+def parse_doe_sizes(doe_sizes):
+    """Parse ['30,75', '50,125'] into [(30, 75), (50, 125)]"""
+    return [
+        tuple(map(int, s.split(',')))
+        for s in doe_sizes
+    ]
 
 
 if __name__ == '__main__':
@@ -70,8 +78,23 @@ if __name__ == '__main__':
                         help='Indices of specific cases to run')
     parser.add_argument('--numreps', type=int, default=50,
                         help='Number of repetitions to perform. Default: 50')
-    parser.add_argument('--seeds', nargs='+', type=int, default=range(5),
-                        help='Seed offsets to run with')
+    parser.add_argument('--seeds', nargs='+', type=int, default=None,
+                        help='Seed offsets to run with. Default: 0 for DoE size 30,75, 0...4 for 50,125')
+    parser.add_argument('--doe-sizes', nargs='+', default=None, metavar='N_HIGH,N_LOW',
+                        help='Specify the initial DoE size(s). Default is both 30,75 and 50,125')
     args = parser.parse_args()
+
+    if args.doe_sizes is None:
+        args.doe_sizes = ['30,75', '50,125']
+        if args.seeds is None:
+            args.seeds = [[0], range(5)]
+        else:
+            args.seeds = [args.seeds] * len(args.doe_sizes)
+    elif args.seeds is None:
+        args.seeds = [range(5)] * len(args.doe_sizes)
+    else:
+        args.seeds = [args.seeds] * len(args.doe_sizes)
+
+    args.doe_sizes = parse_doe_sizes(args.doe_sizes)
 
     main(args)
