@@ -6,19 +6,14 @@ experiments: is the mse-plot gradient also visible in mse-plots based on
 bootstrap-resampled DoE's? Uses adjustable correlation functions to sample a
 spread of possible angle values. Additionally calculates MSE and R^2 based on
 cross-validation principle by using only the left-out data
-
-Takes three optional arguments:
- - the index of the case to run (0-14)
- - the 'scale' [0-1] of how much to sample
- - the seed offset
 """
 
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 
+import argparse
 from itertools import product
-import sys
 
 from pyprojroot import here
 
@@ -37,46 +32,46 @@ function_cases = [
     *[mf2.adjustable.trid(a4)      for a4 in [0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00]],
 ]
 
-
-scale = 1
-seed_offset = range(5)
-
-if len(sys.argv) > 1:
-    case_idx = int(sys.argv[1])
-    function_cases = function_cases[case_idx:case_idx+1]
-
-if len(sys.argv) > 2:
-    scale = float(sys.argv[2])
-
-if len(sys.argv) > 3:
-    seed_offset = [int(sys.argv[3])]
-
-
 DoE_high, DoE_low = 50, 125
-final_num_reps = 50
-
-min_high, max_high = 2, int(DoE_high * scale)
-min_low, max_low = 3, int(DoE_low * scale)
-step = 1
-num_reps = max(1, int(final_num_reps * scale))
-
-instances = [Instance(h, l, r)
-             for h, l, r in product(range(min_high, max_high),
-                                    range(min_low, max_low),
-                                    range(num_reps))
-             if h < l]
 
 
-mfbo_options = {
-    # 'surrogate_name': 'ElasticNet',
-    'kernel': 'Matern',
-    'scaling': 'off'
-}
-extra_attributes = {'mf2_version': mf2.__version__}
+def main(args):
+    if args.idx:
+        full_cases = [function_cases[idx] for idx in args.idx]
+    else:
+        full_cases = function_cases
+
+    min_high, max_high = 2, DoE_high
+    min_low, max_low = 3, DoE_low
+
+    instances = [Instance(h, l, r)
+                 for h, l, r in product(range(min_high, max_high),
+                                        range(min_low, max_low),
+                                        range(args.numreps))
+                 if h < l]
+
+    mfbo_options = {
+        # 'surrogate_name': 'ElasticNet',
+        'kernel': 'Matern',
+        'scaling': 'off'
+    }
+    extra_attributes = {'mf2_version': mf2.__version__}
+
+    for case, offset in product(full_cases, args.seeds):
+        create_resampling_leftover_error_grid(case, (DoE_high, DoE_low),
+                                              instances, mfbo_options, save_dir,
+                                              seed_offset=offset,
+                                              extra_attributes=extra_attributes)
 
 
-for case, offset in product(function_cases, seed_offset):
-    create_resampling_leftover_error_grid(case, (DoE_high, DoE_low),
-                                          instances, mfbo_options, save_dir,
-                                          seed_offset=offset,
-                                          extra_attributes=extra_attributes)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('idx', nargs='+', type=int,
+                        help='Indices of specific cases to run')
+    parser.add_argument('--numreps', type=int, default=50,
+                        help='Number of repetitions to perform')
+    parser.add_argument('--seeds', nargs='+', type=int, default=range(5),
+                        help='Seed offsets to run with')
+    args = parser.parse_args()
+
+    main(args)

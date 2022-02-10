@@ -4,13 +4,12 @@
 2019-10-07-adjustables.py: Experiment runner file for generating data for
 many combinations of numbers of high- vs. low-fidelity samples, specifically
 for the adjustable benchmark functions.
-A specific adjustable parameter can be given as commandline argument.
 """
 
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-import sys
+import argparse
 from itertools import product
 
 import numpy as np
@@ -30,17 +29,6 @@ funcs = [
     mf2.adjustable.trid,
 ]
 
-if len(sys.argv) > 1:
-    params = [float(x) for x in sys.argv[1:]]
-else:
-    params = np.round(np.linspace(0, 1.0, 21), 2)
-
-cases = [
-    f(param)
-    for f in funcs
-    for param in params
-]
-
 kernels = ['Matern']
 scaling_options = [
     'off',
@@ -51,21 +39,37 @@ scaling_options = [
 
 min_high, max_high = 2, 50
 min_low, max_low = 3, 125
-step = 1
-num_reps = 50
-
-instances = [Instance(h, l, r)
-             for h, l, r in product(range(min_high, max_high + 1, step),
-                                    range(min_low, max_low + 1, step),
-                                    range(num_reps))
-             if h < l]
-
 extra_attributes = {'mf2_version': mf2.__version__}
 
-for case, kernel, scale in product(cases, kernels, scaling_options):
-    if 'paciorek' in case.name.lower() and float(case.name[-3:]) == 0.0:
-        continue  # In this case the functions are equal, leading to badly defined diff models
 
-    mfbo_options = {'kernel': kernel, 'scaling': scale}
-    create_model_error_grid(case, instances, mfbo_options, save_dir=save_dir,
-                            extra_attributes=extra_attributes)
+def main(args):
+    cases = [
+        f(param)
+        for f in funcs
+        for param in args.params
+    ]
+
+    instances = [Instance(h, l, r)
+                 for h, l, r in product(range(min_high, max_high + 1),
+                                        range(min_low, max_low + 1),
+                                        range(args.numreps))
+                 if h < l]
+
+    for case, kernel, scale in product(cases, kernels, scaling_options):
+        if 'paciorek' in case.name.lower() and float(case.name[-3:]) == 0.0:
+            continue  # In this case the functions are equal, leading to badly defined diff models
+
+        mfbo_options = {'kernel': kernel, 'scaling': scale}
+        create_model_error_grid(case, instances, mfbo_options, save_dir=save_dir,
+                                extra_attributes=extra_attributes)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('params', nargs='+', type=float, default=np.round(np.linspace(0, 1.0, 21), 2),
+                        help='Adjustable parameters for the adjustable functions')
+    parser.add_argument('--numreps', type=int, default=50,
+                        help='Number of repetitions to perform')
+    args = parser.parse_args()
+
+    main(args)
