@@ -66,7 +66,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('params', nargs='+', type=float, default=np.round(np.linspace(0, 1.0, 21), 2),
+    parser.add_argument('params', nargs='*', type=float, default=np.round(np.linspace(0, 1.0, 21), 2),
                         help='Adjustable parameters for the adjustable functions')
     parser.add_argument('--numreps', type=int, default=50,
                         help='Number of repetitions to perform')

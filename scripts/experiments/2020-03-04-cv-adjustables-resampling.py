@@ -66,7 +66,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('idx', nargs='+', type=int,
+    parser.add_argument('idx', nargs='*', type=int,
                         help='Indices of specific cases to run')
     parser.add_argument('--numreps', type=int, default=50,
                         help='Number of repetitions to perform')
