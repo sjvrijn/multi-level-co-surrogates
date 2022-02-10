@@ -39,7 +39,7 @@ def main(args):
     else:
         full_cases = function_cases
 
-    for DoE_high, DoE_low in args.doe_sizes:
+    for (DoE_high, DoE_low), seeds in args.doe_sizes, args.seeds:
 
         min_high, max_high = 2, DoE_high
         min_low, max_low = 3, DoE_low
@@ -57,7 +57,7 @@ def main(args):
         }
         extra_attributes = {'mf2_version': mf2.__version__}
 
-        for case, offset in product(full_cases, args.seeds):
+        for case, offset in product(full_cases, seeds):
             create_resampling_leftover_error_grid(case, (DoE_high, DoE_low),
                                                   instances, mfbo_options, save_dir,
                                                   seed_offset=offset,
