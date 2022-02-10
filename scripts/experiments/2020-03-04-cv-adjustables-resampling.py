@@ -69,7 +69,7 @@ if __name__ == '__main__':
     parser.add_argument('idx', nargs='*', type=int,
                         help='Indices of specific cases to run')
     parser.add_argument('--numreps', type=int, default=50,
-                        help='Number of repetitions to perform')
+                        help='Number of repetitions to perform. Default: 50')
     parser.add_argument('--seeds', nargs='+', type=int, default=range(5),
                         help='Seed offsets to run with')
     args = parser.parse_args()
