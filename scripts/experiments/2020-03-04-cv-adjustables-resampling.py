@@ -39,7 +39,7 @@ def main(args):
     else:
         full_cases = function_cases
 
-    for (DoE_high, DoE_low), seeds in args.doe_sizes, args.seeds:
+    for (DoE_high, DoE_low), seeds in zip(args.doe_sizes, args.seeds):
 
         min_high, max_high = 2, DoE_high
         min_low, max_low = 3, DoE_low
