@@ -11,8 +11,8 @@ Takes a single optional argument: the index of the case to run
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
+import argparse
 from itertools import product
-import sys
 
 from pyprojroot import here
 
@@ -61,23 +61,36 @@ scaling_options = [
 
 min_high, max_high = 2, 50
 min_low, max_low = 3, 125
-step = 1
-num_reps = 50
 
-instances = [Instance(h, l, r)
-             for h, l, r in product(range(min_high, max_high + 1, step),
-                                    range(min_low, max_low + 1, step),
-                                    range(num_reps))
-             if h < l]
 
-full_cases = list(product(cases, surrogate_names, scaling_options))
-extra_attributes = {'mf2_version': mf2.__version__}
+def main(args):
+    instances = [Instance(h, l, r)
+                 for h, l, r in product(range(min_high, max_high + 1),
+                                        range(min_low, max_low + 1),
+                                        range(args.numreps))
+                 if h < l]
 
-if len(sys.argv) > 1:
-    case_idx = int(sys.argv[1])
-    full_cases = full_cases[case_idx:case_idx + 1]
+    if not instances:
+        return
 
-for function, surr_name, scale in full_cases:
-    mfbo_options = {'surrogate_name': surr_name, 'scaling': scale}
-    create_model_error_grid(function, instances, mfbo_options, save_dir=save_dir,
-                            extra_attributes=extra_attributes)
+    full_cases = list(product(cases, surrogate_names, scaling_options))
+    extra_attributes = {'mf2_version': mf2.__version__}
+
+    if args.idx:
+        full_cases = [full_cases[idx] for idx in args.idx]
+
+    for function, surr_name, scale in full_cases:
+        mfbo_options = {'surrogate_name': surr_name, 'scaling': scale}
+        create_model_error_grid(function, instances, mfbo_options, save_dir=save_dir,
+                                extra_attributes=extra_attributes)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('idx', nargs='*', type=int,
+                        help='Indices of specific cases to run')
+    parser.add_argument('--numreps', type=int, default=50,
+                        help='Number of repetitions to perform. Default: 50')
+    args = parser.parse_args()
+
+    main(args)

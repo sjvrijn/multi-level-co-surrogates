@@ -12,7 +12,7 @@ Takes a single optional argument: the index of the case to run (0-14)
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-import sys
+import argparse
 from itertools import product
 
 import numpy as np
@@ -26,7 +26,7 @@ from experiments import Instance, create_model_error_grid
 save_dir = here('files/2019-11-01-extend-ratios/')
 save_dir.mkdir(parents=True, exist_ok=True)
 
-cases = [
+func_cases = [
     mf2.forrester,
 
     mf2.Forrester(ndim=2),
@@ -58,31 +58,40 @@ scaling_options = [
 
 min_high, max_high = 2, 50
 min_low, max_low = 3, 125
-step = 1
-num_reps = 50
-max_ratio = 20
 
-n_highs = np.arange(min_high, max_high + 1, 10)
-default_n_lows = np.arange(min_low, max_low + 1, step)
-ratios = default_n_lows / n_highs[0]
-ratios = ratios[ratios <= max_ratio]
 
-instances = [Instance(h, int(ratio*h), rep)
-             for h, ratio, rep in product(n_highs, ratios, range(num_reps))
-             if int(ratio*h) > max_low]
+def main(args):
+    n_highs = np.arange(min_high, max_high + 1, 10)
+    default_n_lows = np.arange(min_low, max_low + 1)
+    ratios = default_n_lows / n_highs[0]
+    ratios = ratios[ratios <= args.maxratio]
 
-extra_attributes = {'mf2_version': mf2.__version__}
+    instances = [Instance(h, int(ratio*h), rep)
+                 for h, ratio, rep in product(n_highs, ratios, range(args.numreps))
+                 if int(ratio*h) > max_low]
 
-if instances:
+    extra_attributes = {'mf2_version': mf2.__version__}
 
-    if len(sys.argv) > 1:
-        case_idx = int(sys.argv[1])
-        cases = cases[case_idx:case_idx+1]
+    if not instances:
+        print("No instances to run")
+        return
+
+    cases = [func_cases[idx] for idx in args.idx] if args.idx else func_cases
 
     for case, kernel, scale in product(cases, kernels, scaling_options):
         mfbo_options = {'kernel': kernel, 'scaling': scale}
         create_model_error_grid(case, instances, mfbo_options, save_dir=save_dir,
                                 extra_attributes=extra_attributes)
 
-else:
-    print("No instances to run")
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('idx', nargs='*', type=int,
+                        help='Indices of specific cases to run')
+    parser.add_argument('--numreps', type=int, default=50,
+                        help='Number of repetitions to perform. Default: 50')
+    parser.add_argument('--maxratio', type=int, default=20,
+                        help='Maximum ratio. Default: 20')
+    args = parser.parse_args()
+
+    main(args)
