@@ -32,18 +32,19 @@ plot_path = here('plots/2021-11-25-plot-adjustable-surfaces/', warn=False)
 plot_path.mkdir(exist_ok=True, parents=True)
 
 
-def plot_adjustable_surface_collection(func: mf2.MultiFidelityFunction, params=None):
+def plot_adjustable_surface_collection(func, fig_size, params=None):
     """Plot all relevant surfaces for an adjustable multi-fidelity function.
 
     Typically, this is the high-fidelity surface, and the low-fidelity surfaces
     for A=[0.00, 0.05, 0.10, ..., 0.95, 1.00] (i.e. linspace(0, 1, 21))
 
-    :param func:   Function to plot
-    :param params: Set of parameter values to plot for. Default: linspace(0, 1, 21)
+    :param func:     Function to plot
+    :param fig_size: Size of the figure in inches. Default: 3
+    :param params:   Set of parameter values to plot for. Default: linspace(0, 1, 21)
 
     """
 
-    if params is None:
+    if not params:
         params = np.round(np.linspace(0, 1.0, 21), 2)
     elif isinstance(params, int):
         params = np.round(np.linspace(0, 1.0, params), 2)
@@ -85,9 +86,9 @@ def plot_adjustable_surface_collection(func: mf2.MultiFidelityFunction, params=N
         zlim = [min(z_mins), max(z_maxs)]
         zticks = None
 
-
+    figsize = (fig_size, 0.9*fig_size)
     for surface, title, filename in to_plot:
-        fig, ax = plt.subplots(figsize=(5, 4.5), subplot_kw={'projection': '3d'})
+        fig, ax = plt.subplots(figsize=figsize, subplot_kw={'projection': '3d'})
         mlcs.plotting.plotsurfaceonaxis(ax, surface, title, plot_type='wireframe', contour=False)
         ax.set_zlim(zlim)
         if zticks:
@@ -99,7 +100,8 @@ def plot_adjustable_surface_collection(func: mf2.MultiFidelityFunction, params=N
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--force-regen', action='store_true')
+    parser.add_argument('--figsize', type=float, default=3)
+    parser.add_argument('--params', nargs='*', type=float)
     args = parser.parse_args()
 
     functions = [
@@ -108,5 +110,5 @@ if __name__ == '__main__':
     ]
 
     for function in functions:
-        plot_adjustable_surface_collection(function)
+        plot_adjustable_surface_collection(function, args.figsize, args.params)
 
