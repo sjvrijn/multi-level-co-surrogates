@@ -210,9 +210,10 @@ def plot_multiple_error_grids(datas, titles, as_log=True, gradient_arrow=False,
         return  # no need to make the plot if not showing or saving it
 
     ncols = len(datas)
-    figsize = (4*ncols, 2)
-    fig, axes = plt.subplots(ncols=ncols, figsize=figsize)
+    figsize = (3.5*ncols, 2)
+    fig, axes = plt.subplots(ncols=ncols, figsize=figsize, sharey=True)
 
+    is_first_ax = True
     for ax, data, title in zip(axes, datas, titles):
 
         if gradient_arrow:
@@ -235,8 +236,13 @@ def plot_multiple_error_grids(datas, titles, as_log=True, gradient_arrow=False,
                        colors='black', alpha=.2, linewidths=1)
 
         ax.set_title(fill(f'{title}', width=32))
-        ax.set_ylabel(LABEL_N_HIGH)
         ax.set_xlabel(LABEL_N_LOW)
+        if is_first_ax:
+            ax.set_ylabel(LABEL_N_HIGH)
+            is_first_ax = False
+        else:
+            for label in ax.get_yticklabels():
+                label.set_visible(False)
 
     plt.tight_layout()
     if save_as:
