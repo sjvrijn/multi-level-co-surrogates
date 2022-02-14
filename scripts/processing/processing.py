@@ -210,7 +210,7 @@ def plot_multiple_error_grids(datas, titles, as_log=True, gradient_arrow=False,
         return  # no need to make the plot if not showing or saving it
 
     ncols = len(datas)
-    figsize = (3.5*ncols, 2)
+    figsize = (3*ncols, 2)
     fig, axes = plt.subplots(ncols=ncols, figsize=figsize, sharey=True)
 
     is_first_ax = True
