@@ -75,18 +75,23 @@ def plot_adjustable_surface_collection(func: mf2.MultiFidelityFunction, params=N
 
     # Determine range of surface.Z values for axis-limit or colormap range
     if 'branin' in f.name.lower():
-        zlim = [-180, 450]
+        zlim = [-200, 400]
+        zticks = [-200, 0, 200, 400]
     elif 'paciorek' in f.name.lower():
-        zlim = [-9, 9]
+        zlim = [-10, 10]
+        zticks = [-10, -5, 0, 5, 10]
     else:
         z_mins, z_maxs = zip(*[(np.min(s.Z), np.max(s.Z)) for s, _, _ in to_plot])
         zlim = [min(z_mins), max(z_maxs)]
+        zticks = None
 
 
     for surface, title, filename in to_plot:
         fig, ax = plt.subplots(figsize=(5, 4.5), subplot_kw={'projection': '3d'})
         mlcs.plotting.plotsurfaceonaxis(ax, surface, title, plot_type='wireframe', contour=False)
         ax.set_zlim(zlim)
+        if zticks:
+            ax.set_zticks(zticks)
         ax.zaxis.set_major_formatter(FormatStrFormatter('%.0f'))
         fig.savefig(filename, bbox_inches='tight')
         plt.close(fig)
