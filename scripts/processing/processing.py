@@ -241,8 +241,7 @@ def plot_multiple_error_grids(datas, titles, as_log=True, gradient_arrow=False,
             ax.set_ylabel(LABEL_N_HIGH)
             is_first_ax = False
         else:
-            for label in ax.get_yticklabels():
-                label.set_visible(False)
+            ax.yaxis.set_tick_params(left=False, labelleft=False, which='both')
 
     plt.tight_layout()
     if save_as:
