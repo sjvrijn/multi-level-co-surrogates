@@ -70,7 +70,7 @@ def plot_extrapolation_suggestion(file_small, file_large):
         da = ds['mses'].sel(model='high_hier')
     with da.load() as da:
         deg_large = angle_from_linreg(proc.fit_lin_reg(da))
-        data_along_budget_line = da.median(dim='rep').sel(n_low=num_lows, n_high=num_highs).values
+        data_along_budget_line = np.log10(da.median(dim='rep').sel(n_low=num_lows, n_high=num_highs).values)
 
     if 'Adjustable' in file_large.stem:
         kernel, ndim, fname, param = parse("{}-{:d}d-Adjustable-{}-{:f}", file_large.stem)
@@ -82,12 +82,12 @@ def plot_extrapolation_suggestion(file_small, file_large):
     smallest_at_angle = angles[np.argmin(data_along_budget_line)]
     gradient_budget_intercept = calc_intercept(80, small_h, small_l, gradient, costratio)
 
-    plt.figure(figsize=(4.8, 2.4), constrained_layout=True)
-    plt.plot(angles, data_along_budget_line, marker='o', label='MSEs from DoE enumeration')
-    plt.ylabel('MSE')
+    plt.figure(figsize=(3.6, 2.1), constrained_layout=True)
+    plt.plot(angles, data_along_budget_line, marker='o', markersize=4, label='MSE from enumeration')
+    plt.ylabel('log$_{10}$ MSE')
     plt.xlabel('angle measured from (30, 75)')
-    plt.yscale('log')
-    plt.axvline(deg_small, ls=':', label='Predicted best angle', color='C1')
+    #plt.yscale('log')
+    plt.axvline(deg_small, ls=':', label='Predicted angle', color='C1')
     plt.legend(loc=0)
     plt.xlim([0,90])
     plt.title(title)
