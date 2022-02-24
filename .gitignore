@@ -12,6 +12,9 @@ plots/
 *.log
 *.pdf
 files/
+files
 venv/
 .hypothesis/
 *.png
+plots/
+plots

@@ -61,10 +61,10 @@ def get_extent(data: xr.DataArray):
     centered in the 'pixels'
     """
     return [
-        np.min(data.n_low) - 0.5,
-        np.max(data.n_low) + 0.5,
-        np.min(data.n_high) - 0.5,
-        np.max(data.n_high) + 0.5,
+        np.min(data.n_low).item() - 0.5,
+        np.max(data.n_low).item() + 0.5,
+        np.min(data.n_high).item() - 0.5,
+        np.max(data.n_high).item() + 0.5,
     ]
 
 
@@ -127,7 +127,7 @@ def plot_archive(
 
 def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
                     contours=0, as_log=False, save_as=None,
-                    show=False, include_comparisons=False,
+                    show=False, include_comparisons=False, gradient_arrow=False,
                     include_colorbar=True, label_y=True, title_width=None,
                     xlim=None, ylim=None,):
     """Plot a heatmap of the median MSE for each possible combination of high
@@ -147,6 +147,8 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
                                 averages along axes. Default: False
     :param include_colorbar:    whether or not to include a colorbar. Default: True
     :param label_y:             whether or not to include axis label and ticks for y-axis. Default: True
+    :param gradient_arrow:      whether or not to add an arrow indicating gradient direction through
+                                the center of the figure. Default: False
     :param title_width:         maximum width of the title for line wrapping
     :param xlim:                base x-limits, upper will extend to fit data
     :param ylim:                base y-limits, upper will extend to fit data
@@ -157,6 +159,9 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
     figsize = wide_figsize if include_comparisons else reg_figsize
 
     fig, ax = plt.subplots(figsize=figsize)
+
+    if gradient_arrow:
+        add_gradient_arrow_line_to_axis(data.sel(model='high_hier'), ax)
 
     ax.set_aspect(1.)
     data = data.median(dim='rep')
@@ -243,7 +248,7 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
     plt.close('all')
 
 
-def plot_multiple_error_grids(datas, titles, as_log=True,
+def plot_multiple_error_grids(datas, titles, as_log=True, gradient_arrow=False,
                               vmin=None, vmax=None, contours=0,
                               save_as=None, show=False):
     """Plot a heatmap of the median MSE for each possible combination of high
@@ -264,10 +269,14 @@ def plot_multiple_error_grids(datas, titles, as_log=True,
         return  # no need to make the plot if not showing or saving it
 
     ncols = len(datas)
-    figsize = (4*ncols, 2)
-    fig, axes = plt.subplots(ncols=ncols, figsize=figsize)
+    figsize = (3*ncols, 2)
+    fig, axes = plt.subplots(ncols=ncols, figsize=figsize, sharey=True)
 
+    is_first_ax = True
     for ax, data, title in zip(axes, datas, titles):
+
+        if gradient_arrow:
+            add_gradient_arrow_line_to_axis(data.sel(model='high_hier'), ax)
 
         data = data.sel(model='high_hier').median(dim='rep')
         if as_log:
@@ -286,8 +295,12 @@ def plot_multiple_error_grids(datas, titles, as_log=True,
                        colors='black', alpha=.2, linewidths=1)
 
         ax.set_title(fill(f'{title}', width=32))
-        ax.set_ylabel(LABEL_N_HIGH)
         ax.set_xlabel(LABEL_N_LOW)
+        if is_first_ax:
+            ax.set_ylabel(LABEL_N_HIGH)
+            is_first_ax = False
+        else:
+            ax.yaxis.set_tick_params(left=False, labelleft=False, which='both')
 
     plt.tight_layout()
     if save_as:
@@ -481,6 +494,41 @@ def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
     pred_y = reg.predict(X)
     SSE = np.sum((pred_y - y)**2)
     return reg, SSE
+
+
+def add_gradient_arrow_line_to_axis(da: xr.DataArray, ax: plt.Axes):
+    """Add a line with arrow to axis `ax` to indicate gradient direction"""
+    # preparing variables for n_h = a*n_l + b
+    reg = fit_lin_reg(da)
+    n_l_min, n_l_max, n_h_min, n_h_max = get_extent(da)
+    a = np.divide(*reg.coef_)
+    b = (n_h_max/2) - a*(n_l_max/2)
+
+    if np.isinf(a):  # 90 degrees, vertical
+        coords = np.array([
+            [n_l_max/2, n_h_min],
+            [n_l_max/2, n_h_max],
+        ])
+    elif b == 0:  # crossing the origin
+        coords = np.array([
+            [n_l_min, n_h_min],
+            [n_l_max, n_h_max],
+        ])
+    elif a < 0 or b < n_h_min:  # crossing x-axis in plotted area
+        coords = np.array([
+            [         (-b)/a, n_h_min],
+            [(n_h_max - b)/a, n_h_max],
+        ])
+    else:  # b > n_h_min; crossing y-axis
+        coords = np.array([
+            [n_l_min,               b],
+            [n_l_max, (a*n_l_max) + b],
+        ])
+
+    mid_point = np.sum(coords, axis=0) / 2
+
+    ax.annotate('', xytext=coords[0], xy=mid_point, arrowprops={'arrowstyle': '->, head_length=.8, head_width=.4', 'shrinkA': 2.5, 'shrinkB': 0})
+    ax.plot(coords.T[0], coords.T[1], color='black')
 
 
 class ConfidenceInterval(namedtuple('ConfidenceInterval', 'mean se lower upper')):
