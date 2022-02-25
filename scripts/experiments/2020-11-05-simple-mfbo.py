@@ -156,6 +156,7 @@ class Optimizer:
         seed_offset: int=0,
         num_reps: int=50,
         goal: str='minimize',
+        use_x_opt: bool=False,
     ):
 
         if doe_n_high + cost_ratio * doe_n_low >= init_budget:
@@ -172,6 +173,7 @@ class Optimizer:
         self.fid_selection_method = fid_selection_method
         self.num_reps = num_reps
         self.goal = goal
+        self.use_x_opt = use_x_opt
         self.time_since_high_eval = 0
         self.entries = []
         self.archive = make_mf_doe(func, doe_n_high, doe_n_low)
@@ -202,6 +204,10 @@ class Optimizer:
         start_time = time()
         if self.proto_eg:
             self.proto_eg.error_grid.to_netcdf(self.run_save_dir / errorgrid_file_template.format(iterations))
+
+        if self.use_x_opt:
+            y_opt = self.func.high(self.func.x_opt)
+
         with tqdm(total=self.init_budget, leave=False) as pbar:
             pbar.update(self.init_budget - self.budget)
 
@@ -247,6 +253,10 @@ class Optimizer:
                     fitness=y,
                 ))
                 np.save(self.run_save_dir / archive_file_template.format(iterations), self.archive)
+
+            if fidelity == 'high' and self.use_x_opt and self.check_optimum_reached(y_opt):
+                # shortcut the while-loop
+                self.budget = 0
 
         return self.mfm, pd.DataFrame.from_records(self.entries, columns=Entry._fields), self.archive
 
@@ -364,6 +374,15 @@ class Optimizer:
         # Clip output to make sure it lies within the bounds. Due to floating
         # point technicalities this is not always the case.
         return np.clip(x_max, bounds[:, 0], bounds[:, 1])
+
+
+    def check_optimum_reached(self, y_opt, tolerance=1e-6):
+        if self.goal == 'minimize':
+            best_found = self.archive.min['high']
+        else:  # self.goal == 'maximize'
+            best_found = self.archive.max['high']
+
+        return abs(best_found - y_opt) < tolerance
 
 
 def make_mf_doe(func: mf2.MultiFidelityFunction, doe_n_high: int, doe_n_low: int):
@@ -489,6 +508,7 @@ def main(args):
         'doe_n_high': 5,
         'doe_n_low': 10,
         'num_reps': args.nreps,
+        'use_x_opt': args.shortcut,
     }
 
     fidelity_selectors = {
@@ -537,6 +557,8 @@ if __name__ == '__main__':
                         help='relative cost of a low- vs high-fidelity evaluation')
     parser.add_argument('-f', '--force-rerun', action='store_true',
                         help='Force rerunning this experiment. Deletes previous files')
+    parser.add_argument('--shortcut', action='store_true',
+                        help="Stop optimization when optimum reached based on function's `x_opt`")
     arguments = parser.parse_args()
 
     main(arguments)
