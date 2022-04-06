@@ -23,7 +23,7 @@ def prepare_DoE(func, nh=3, nl=5):
     np.random.seed(20160501)  # Setting seed for reproducibility
     init_DoE = mlcs.bi_fidelity_doe(func.ndim, nh, nl)
     DoE = exp.scale_to_function(func, init_DoE)
-    return DoE
+    return mlcs.BiFidelityDoE(*DoE)
 
 
 def get_experiment_subsampled_EG(func, DoE, instances):

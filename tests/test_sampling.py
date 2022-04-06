@@ -115,3 +115,17 @@ def test_split_bifiddoe():
     assert len(a.high) == a_high
     assert len(a.low) + len(b.low) == len(DoE.low)
     assert len(a.high) + len(b.high) == len(DoE.high)
+
+
+def test_valueerror_split_bifiddoe():
+    """This test uses a sample archive that caused a ValueError in the previous
+    implementation of split_bi_fid_doe() which used `row in np.ndarray`. The
+    reason is that in numpy, this is implemented as `np.any(row == np.ndarray)`,
+    which returns True if values match in *AT LEAST ONE* column, instead of all.
+    """
+    archive_path = here('tests/test-files/split_bi_fid_doe_regression_archive.npy')
+    doe = np.load(archive_path, allow_pickle=True).item().as_doe()
+
+    # split_bi_fidelity_doe() would fail under exactly these circumstances:
+    np.random.seed(3)
+    _ = mlcs.split_bi_fidelity_doe(doe, 11, 12)
