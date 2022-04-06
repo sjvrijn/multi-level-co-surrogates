@@ -46,6 +46,8 @@ def standardize_name(name):
     return name.lower().replace(' ', '-')
 
 
+np.random.seed(20160501)  # standardize random seed for reproducibility
+
 size_per_dim = 2000
 dims = [1, 2, 3, 4, 6, 8, 10]
 test_sample = {
