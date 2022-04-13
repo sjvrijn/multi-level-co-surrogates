@@ -166,12 +166,15 @@ def plot_and_gifify_errorgrids(in_folder: Path, out_folder: Path, save_exts=('pn
     proc.gifify_in_folder(out_folder, base_name='errorgrid')
 
 
-def perform_processing_for(experiment_folder: Path, **kwargs):
+def perform_processing_for(experiment_folder: Path, gif=True, **kwargs):
     """Run all relevant processing/plotting actions"""
     out_folder = plot_path / experiment_folder.name
     out_folder.mkdir(parents=True, exist_ok=True)
 
     plot_log(experiment_folder, out_folder, **kwargs)
+    if not gif:
+        return
+
     plot_and_gifify_errorgrids(experiment_folder, out_folder, **kwargs)
     try:
         plot_and_gifify_archives(experiment_folder, out_folder, **kwargs)
@@ -187,9 +190,13 @@ def main(**kwargs):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--exts", action="extend", nargs="+", type=str)
+    parser.add_argument("--exts", action="extend", nargs="+", type=str,
+                        help="File extensions to use when saving images. Default: [PNG, PDF].")
+    parser.add_argument("--gif", action=argparse.BooleanOptionalAction, default=True,
+                        help="Whether or not to make animated GIFs of progress. Default: --gif.")
     args = parser.parse_args()
-    kwargs = {}
+
+    kwargs = {'gif': args.gif}
     if args.exts:
         kwargs['save_exts'] = args.exts
     main(**kwargs)
