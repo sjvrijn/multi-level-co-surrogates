@@ -1,22 +1,32 @@
+# cache folders
+.hypothesis/
+.idea/
+.ipynb_checkpoints/
+
+# cache files
+*.pyc
+
+
+# local editable install info
 *.egg-info/
 
-*.pyc
-.idea/
-local.py
+# local python version info
+.python-version
 .venv/
+venv/
+
+# output file folders
+files/
 plots/
+# in case of symbolic links
+files
+plots
+
+# output files
 *.html
 *.tex
-.ipynb_checkpoints/
 *.npy
 *.npz
-.python-version
 *.log
 *.pdf
-files/
-files
-venv/
-.hypothesis/
 *.png
-plots/
-plots
