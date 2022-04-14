@@ -163,6 +163,7 @@ def plot_and_gifify_errorgrids(in_folder: Path, out_folder: Path, gif=True, save
                 xlim=(3, match['init_budget']),
                 ylim=(2, (match['init_budget'] // 2)),
                 save_as=out_folder / errorgrid_file.stem,
+                gradient_arrow=True,
             )
     if gif:
         proc.gifify_in_folder(out_folder, base_name='errorgrid')
