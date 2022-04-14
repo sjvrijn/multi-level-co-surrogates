@@ -112,7 +112,7 @@ def plot_log(in_folder: Path, out_folder: Path, save_exts=('.png', '.pdf')) -> N
     plt.close()
 
 
-def plot_and_gifify_archives(in_folder: Path, out_folder: Path, save_exts=('.png', '.pdf')):
+def plot_and_gifify_archives(in_folder: Path, out_folder: Path, gif=True, save_exts=('.png', '.pdf')):
     """Create 2d plots of all archive.npy files in `in_folder`, including animated GIF
 
     :param in_folder:  folder containing the log.csv file to read and plot
@@ -135,10 +135,11 @@ def plot_and_gifify_archives(in_folder: Path, out_folder: Path, save_exts=('.png
             save_as=out_folder / archive_file.stem,
             suffixes=save_exts
         )
-    proc.gifify_in_folder(out_folder, base_name='archive')
+    if gif:
+        proc.gifify_in_folder(out_folder, base_name='archive')
 
 
-def plot_and_gifify_errorgrids(in_folder: Path, out_folder: Path, save_exts=('png', 'pdf')):
+def plot_and_gifify_errorgrids(in_folder: Path, out_folder: Path, gif=True, save_exts=('png', 'pdf')):
     """Create errorgrid plots errorgrid.nc files in `in_folder`, including animated GIF
 
     :param in_folder:  folder containing the log.csv file to read and plot
@@ -163,7 +164,8 @@ def plot_and_gifify_errorgrids(in_folder: Path, out_folder: Path, save_exts=('pn
                 ylim=(2, (match['init_budget'] // 2)),
                 save_as=out_folder / errorgrid_file.stem,
             )
-    proc.gifify_in_folder(out_folder, base_name='errorgrid')
+    if gif:
+        proc.gifify_in_folder(out_folder, base_name='errorgrid')
 
 
 def perform_processing_for(experiment_folder: Path, gif=True, **kwargs):
@@ -172,12 +174,10 @@ def perform_processing_for(experiment_folder: Path, gif=True, **kwargs):
     out_folder.mkdir(parents=True, exist_ok=True)
 
     plot_log(experiment_folder, out_folder, **kwargs)
-    if not gif:
-        return
 
-    plot_and_gifify_errorgrids(experiment_folder, out_folder, **kwargs)
+    plot_and_gifify_errorgrids(experiment_folder, out_folder, gif=gif, **kwargs)
     try:
-        plot_and_gifify_archives(experiment_folder, out_folder, **kwargs)
+        plot_and_gifify_archives(experiment_folder, out_folder, gif=gif, **kwargs)
     except NotImplementedError:
         pass  # function must not be 2d...
 
