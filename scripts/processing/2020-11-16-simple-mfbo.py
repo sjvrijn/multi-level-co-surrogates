@@ -9,6 +9,7 @@ files during the simple-mfbo runs
 import argparse
 import sys
 from pathlib import Path
+from warnings import warn
 
 import matplotlib.pyplot as plt
 import mf2
@@ -98,8 +99,6 @@ def plot_log(in_folder: Path, out_folder: Path, save_exts=('.png', '.pdf')) -> N
     :param save_exts:  which extensions to use when saving plots
     """
     match = subfolder_template.parse(in_folder.name)
-    if not match:
-        raise ValueError(f"Folder name {in_folder.name} does not match expected template")
 
     fig, axes = plt.subplots(ncols=2, nrows=3, figsize=(8, 9), constrained_layout=True)
     fig.suptitle(
@@ -174,6 +173,11 @@ def perform_processing_for(experiment_folder: Path, gif=True, **kwargs):
     out_folder = plot_path / experiment_folder.name
     out_folder.mkdir(parents=True, exist_ok=True)
 
+    match = subfolder_template.parse(experiment_folder.name)
+    if not match:
+        warn(f"Skipping folder {experiment_folder.name}; name does not match expected template")
+        return
+
     plot_log(experiment_folder, out_folder, **kwargs)
 
     plot_and_gifify_errorgrids(experiment_folder, out_folder, gif=gif, **kwargs)
@@ -185,7 +189,7 @@ def perform_processing_for(experiment_folder: Path, gif=True, **kwargs):
 
 def main(**kwargs):
     for experiment_folder in data_path.iterdir():
-        print(experiment_folder.name)
+        print(f"Processing {experiment_folder.name}")
         perform_processing_for(experiment_folder, **kwargs)
 
 
