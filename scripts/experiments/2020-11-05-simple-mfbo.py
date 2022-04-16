@@ -48,6 +48,31 @@ class FidelitySelection(IntEnum):
     PROTO_EG = 2
 
 
+FIDELITY_SELECTORS = {
+    'fixed': FidelitySelection.FIXED,
+    'naive': FidelitySelection.NAIVE_EG,
+    'proto-eg': FidelitySelection.PROTO_EG,
+}
+
+FUNCTIONS = [
+    mf2.bohachevsky,  # 0
+    mf2.booth,  # 1
+    mf2.branin,  # 2
+    mf2.invert(mf2.currin),  # 3
+    mf2.himmelblau,  # 4
+    mf2.six_hump_camelback,  # 5
+
+    mf2.park91a,  # 6
+    mf2.park91b,  # 7
+
+    mf2.hartmann6,  # 8
+
+    mf2.borehole,  # 9
+
+    # mf2.forrester,           # 10
+]
+
+
 class UtilityFunction:
     """
     Code adapted from:
@@ -481,26 +506,7 @@ def main(args):
     simplefilter("ignore", category=mlcs.LowHighFidSamplesWarning)
     simplefilter("ignore", category=TqdmWarning)
 
-    functions = [
-        mf2.bohachevsky,         # 0
-        mf2.booth,               # 1
-        mf2.branin,              # 2
-        mf2.invert(mf2.currin),  # 3
-        mf2.himmelblau,          # 4
-        mf2.six_hump_camelback,  # 5
-
-        mf2.park91a,             # 6
-        mf2.park91b,             # 7
-
-        mf2.hartmann6,           # 8
-
-        mf2.borehole,            # 9
-
-        # mf2.forrester,           # 10
-    ]
-
-    if args.idx:
-        functions = [functions[f_idx] for f_idx in args.idx]
+    functions = [FUNCTIONS[f_idx] for f_idx in args.idx]
 
     kwargs = {
         'init_budget': args.budget,
@@ -511,42 +517,33 @@ def main(args):
         'use_x_opt': args.shortcut,
     }
 
-    fidelity_selectors = {
-        'fixed': FidelitySelection.FIXED,
-        'naive': FidelitySelection.NAIVE_EG,
-        'proto-eg': FidelitySelection.PROTO_EG,
-    }
-
     for func in functions:
         print(func.name)
 
-        for idx, cost_ratio in product(range(args.niters), args.cost_ratio):
+        for idx, cost_ratio, experiment in product(range(args.niters), args.cost_ratio, args.experiment):
             kwargs['seed_offset'] = idx
             kwargs['cost_ratio'] = cost_ratio
-
-            for name, fidelity_selector in fidelity_selectors.items():
-                if args.experiment not in [None, name]:
-                    continue
-                kwargs['run_save_dir'] = save_dir / FOLDER_NAME_TEMPLATE.format(
-                    func_name=func.name,
-                    name=name,
-                    cost_ratio=cost_ratio,
-                    budget=args.budget,
-                    idx=idx,
-                )
-                print(f'    {name} c{cost_ratio} b{args.budget} i{idx}...')
-                do_run(func, fidelity_selector, kwargs, args.force_rerun)
+            kwargs['run_save_dir'] = save_dir / FOLDER_NAME_TEMPLATE.format(
+                func_name=func.name,
+                name=experiment,
+                cost_ratio=cost_ratio,
+                budget=args.budget,
+                idx=idx,
+            )
+            print(f'    {experiment} c{cost_ratio} b{args.budget} i{idx}...')
+            do_run(func, FIDELITY_SELECTORS[experiment], kwargs, args.force_rerun)
 
 
 if __name__ == '__main__':
 
     cost_ratios = [0.1, 0.2, 0.25, 0.5]
+    experiments = ['fixed', 'naive', 'proto-eg']
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('idx', type=int, nargs='*',
-                        help='Experiment indices to run. Default: all')
-    parser.add_argument('-e', '--experiment', type=str, nargs='?',
-                        help='Experiment function to run. Options: fixed, naive, proto-eg. Default: all')
+    parser.add_argument('idx', type=int, default=range(len(FUNCTIONS)), nargs='*',
+                        help=f'Experiment indices [0-{len(FUNCTIONS) - 1}] to run. Default: all')
+    parser.add_argument('-e', '--experiment', type=str, default=experiments, nargs='*',
+                        help=f'Experiment function to run. Options: {", ".join(experiments)}. Default: all')
     parser.add_argument('--nreps', type=int, default=50,
                         help='number of independent repetitions to perform for the error grid')
     parser.add_argument('--niters', type=int, default=5,
@@ -560,5 +557,14 @@ if __name__ == '__main__':
     parser.add_argument('--shortcut', action='store_true',
                         help="Stop optimization when optimum reached based on function's `x_opt`")
     arguments = parser.parse_args()
+
+    # ensure only valid experiment names are passed on
+    valid_experiments = []
+    for exp in arguments.experiment:
+        if exp in FIDELITY_SELECTORS:
+            valid_experiments.append(exp)
+        else:
+            warn(f"Skipping experiment '{exp}', name not recognised.")
+    arguments.experiment = valid_experiments
 
     main(arguments)
