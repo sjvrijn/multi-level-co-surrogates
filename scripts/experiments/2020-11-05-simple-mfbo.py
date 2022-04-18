@@ -447,24 +447,6 @@ def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
     return reg, SSE
 
 
-def class_fixed_ratio_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, seed_offset=None, **_):
-    opt = Optimizer(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, seed_offset=seed_offset, fid_selection_method=FidelitySelection.FIXED)
-    results = opt.iterate()
-    return results
-
-
-def class_proto_eg_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps, seed_offset=None):
-    opt = Optimizer(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps=num_reps, seed_offset=seed_offset, fid_selection_method=FidelitySelection.PROTO_EG)
-    results = opt.iterate()
-    return results
-
-
-def class_naive_eg_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps, seed_offset=None):
-    opt = Optimizer(func, init_budget, cost_ratio, doe_n_high, doe_n_low, run_save_dir, num_reps=num_reps, seed_offset=seed_offset, fid_selection_method=FidelitySelection.NAIVE_EG)
-    results = opt.iterate()
-    return results
-
-
 def select_high_fid_only_candidates(archive):
     all_low = {
         tuple(candidate)
