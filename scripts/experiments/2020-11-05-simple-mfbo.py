@@ -69,7 +69,17 @@ FUNCTIONS = [
 
     mf2.borehole,  # 9
 
-    # mf2.forrester,           # 10
+    mf2.adjustable.branin(0.1),  # 10
+    mf2.adjustable.branin(0.2),  # 11
+
+    mf2.adjustable.paciorek(0.1),  # 12
+    mf2.adjustable.paciorek(0.3),  # 13
+
+    mf2.adjustable.hartmann3(0.2),  # 14
+    mf2.adjustable.hartmann3(0.4),  # 15
+
+    mf2.adjustable.trid(0.7),  # 16
+    mf2.adjustable.trid(0.8),  # 17
 ]
 
 
