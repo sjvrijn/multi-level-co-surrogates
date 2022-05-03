@@ -227,6 +227,7 @@ class Optimizer:
         iterations = 0
         eval_cost = {'high': 1, 'low': self.cost_ratio}
         start_time = time()
+        np.save(self.run_save_dir / archive_file_template.format(iterations), self.archive)
         if self.proto_eg:
             self.proto_eg.error_grid.to_netcdf(self.run_save_dir / errorgrid_file_template.format(iterations))
 
