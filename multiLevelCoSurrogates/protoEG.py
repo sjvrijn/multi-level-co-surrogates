@@ -52,12 +52,12 @@ class ProtoEG:
             train, test = mlcs.split_bi_fidelity_doe(doe, h, l)
 
             test_x = test.high
-            self.test_sets[(h, l)].append(test_x)
+            # self.test_sets[(h, l)].append(test_x)
 
             train_archive = self._create_train_archive(train)
 
             model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive, **self.mfm_opts)
-            self.models[(h,l)].append(model)
+            # self.models[(h,l)].append(model)
 
             test_y = self.archive.getfitnesses(test_x, fidelity='high')
             mse = mean_squared_error(test_y, model.top_level_model.predict(test_x))
