@@ -1,30 +1,48 @@
 from collections import defaultdict
-from typing import Tuple
+from typing import Tuple, Union
+from textwrap import fill
 
 import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_squared_error
 import xarray as xr
 
+import matplotlib.pyplot as plt
+from matplotlib import colors
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 import multiLevelCoSurrogates as mlcs
 
 
 class ProtoEG:
 
-    def __init__(self, archive: mlcs.CandidateArchive, num_reps: int=50):
+    def __init__(
+            self,
+            archive: mlcs.CandidateArchive,
+            num_reps: int=50,
+            interval: int=2,
+            mfm_opts=None,
+    ):
         """Container for everything needed to create (advanced) Error Grids"""
 
         self.archive = archive
         self.num_reps = num_reps
+        self.interval = interval
+        self.mfm_opts = mfm_opts if mfm_opts is not None else dict()
 
         self.models = defaultdict(list)  # models[(n_high, n_low)] = [model_1, ..., model_nreps]
         self.test_sets = defaultdict(list)  # test_sets[(n_high, n_low)] = [test_1, ..., test_nreps]
         self.error_grid = None  # xr.Dataset
 
+        self.num_models_trained = 0
+        self.num_models_reused = 0
+
 
     def subsample_errorgrid(self):
         """Create an error grid by subsampling from the known archive"""
-        instance_spec = mlcs.InstanceSpec.from_archive(self.archive, num_reps=self.num_reps)
+        instance_spec = mlcs.InstanceSpec.from_archive(
+            self.archive, num_reps=self.num_reps, step=self.interval
+        )
         doe = self.archive.as_doe()
 
         error_records = []
@@ -34,17 +52,18 @@ class ProtoEG:
             train, test = mlcs.split_bi_fidelity_doe(doe, h, l)
 
             test_x = test.high
-            self.test_sets[(h, l)].append(test_x)
+            # self.test_sets[(h, l)].append(test_x)
 
             train_archive = self._create_train_archive(train)
 
-            model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive, kernel='Matern', scaling='off')
-            self.models[(h,l)].append(model)
+            model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive, **self.mfm_opts)
+            # self.models[(h,l)].append(model)
 
             test_y = self.archive.getfitnesses(test_x, fidelity='high')
             mse = mean_squared_error(test_y, model.top_level_model.predict(test_x))
             error_records.append([h, l, rep, 'high_hier', mse])
 
+        self.num_models_trained += len(error_records)
         columns = ['n_high', 'n_low', 'rep', 'model', 'mses']
 
         tmp_df = pd.DataFrame.from_records(error_records, columns=columns, index=columns[:4])
@@ -54,7 +73,9 @@ class ProtoEG:
     def update_errorgrid_with_sample(self, X, fidelity: str):
         """Add a new sample of given fidelity and update Error Grid accordingly"""
 
-        instance_spec = mlcs.InstanceSpec.from_archive(self.archive, num_reps=self.num_reps)
+        instance_spec = mlcs.InstanceSpec.from_archive(
+            self.archive, num_reps=self.num_reps, step=self.interval
+        )
 
         full_DoE = self.archive.as_doe()
         X = X.reshape(1, -1)
@@ -79,8 +100,7 @@ class ProtoEG:
                 train_archive = self._create_train_archive(train_doe)
 
                 # create and store model
-                model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive,
-                                                kernel='Matern', scaling='off')
+                model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive, **self.mfm_opts)
                 self.models[(h,l)][idx] = model
 
                 # calculate and store error of model at this `idx`
@@ -88,10 +108,19 @@ class ProtoEG:
                 mse = mean_squared_error(test_y, model.top_level_model.predict(test_high))
                 self.error_grid['mses'].loc[h, l, idx, 'high_hier'] = mse
 
+            self.num_models_trained += len(indices_to_resample)
+            self.num_models_reused += self.num_reps - len(indices_to_resample)
+
             if fidelity == 'high':
                 indices_to_update_errors = set(range(self.num_reps)) - set(indices_to_resample)
                 for idx in indices_to_update_errors:
                     self._update_errors_of_existing_model(X, h, l, idx)
+
+
+    @property
+    def reuse_fraction(self):
+        total = self.num_models_trained + self.num_models_reused
+        return self.num_models_reused / total
 
 
     def _get_resample_indices(self, fidelity: str, h: int, l: int):
@@ -141,7 +170,7 @@ class ProtoEG:
 
     def calculate_reuse_fraction(self, num_high: int, num_low: int, fidelity: str,
                                  *, max_high: int=None, max_low: int=None) -> float:
-        """Calculate the fraction of models that can be reused
+        r"""Calculate the fraction of models that can be reused
 
         Given `max_high` H, `max_low` L, `num_high` h and `num_low` l, the number of
         unique possible subsamples is given by binom(H, h) * binom(L-h, l-h), i.e.:
@@ -199,3 +228,92 @@ class ProtoEG:
         if not (0 <= fraction <= 1):
             raise ValueError('Invalid fraction calculated, please check inputs')
         return fraction
+
+
+    def plot_errorgrid(self, title, vmin=None, vmax=None,
+                       contours=0, as_log=False, save_as=None, save_exts=('pdf', 'png'),
+                       include_colorbar=True, label_y=True, title_width=None,
+                       xlim=None, ylim=None):
+        """Plot a heatmap of the median MSE for each possible combination of high
+        and low-fidelity samples. For comparison, the MSE for the high-only and
+        low-only models are displayed as a bar to the left and bottom respectively.
+
+        :param title: title to use at top of the image
+        :param vmin: minimum value for color scale normalization
+        :param vmax: maximum value for color scale normalization
+        :param contours: number of contour lines to draw. Default: 0
+        :param as_log: display the log10 of the data or not (default False)
+        :param save_as: desired filename for saving the image. Not saved if `None`
+        :param include_colorbar: whether or not to include a colorbar. Default: True
+        :param label_y: whether or not to include axis label and ticks for y-axis. Default: True
+        """
+        if not save_as:
+            return  # no need to make the plot if not showing or saving it
+
+        data = self.error_grid['mses']
+        LABEL_N_HIGH = "$n_h$"
+        LABEL_N_LOW = "$n_l$"
+
+        fig, ax = plt.subplots(figsize=(7.5, 4))
+
+        ax.set_aspect(1.)
+        data = data.median(dim='rep')
+        vmin = np.min(data) if vmin is None else vmin
+        vmax = np.max(data) if vmax is None else vmax
+        if as_log:
+            data = np.log10(data)
+            vmin = np.log10(vmin)
+            vmax = np.log10(vmax)
+            norm = colors.Normalize(vmin=vmin, vmax=vmax, clip=True)
+        else:
+            norm = colors.LogNorm(vmin=vmin, vmax=vmax, clip=True)
+
+        imshow_style = {'cmap': 'viridis_r', 'norm': norm, 'origin': 'lower'}
+
+        plot_title = f'{"log10 " if as_log else ""}Median MSE for $z_h$ - {title}'
+        if title_width:
+            plot_title = fill(plot_title, width=title_width)
+        plt.title(plot_title)
+
+        da_hh = data.sel(model='high_hier')
+
+        extent = get_extent(data)
+        img = ax.imshow(da_hh, extent=extent, **imshow_style)
+        if contours:
+            ax.contour(da_hh, levels=contours, antialiased=False,
+                       extent=extent, colors='black', alpha=.2, linewidths=1)
+
+        divider = make_axes_locatable(ax)
+
+        if label_y:
+            ax.set_ylabel(LABEL_N_HIGH)
+        else:
+            ax.yaxis.set_tick_params(left=False, labelleft=False, which='both')
+        ax.set_xlabel(LABEL_N_LOW)
+
+        if xlim:
+            ax.set_xlim((xlim[0]-.5, max(xlim[1], max(data.n_low))+.5))
+        if ylim:
+            ax.set_ylim((ylim[0]-.5, max(ylim[1], max(data.n_high))+.5))
+
+        if include_colorbar:
+            cax = divider.append_axes("right", size=0.2, pad=0.05)
+            fig.colorbar(img, cax=cax)
+
+        plt.tight_layout()
+        if save_as:
+            for ext in save_exts:
+                plt.savefig(f'{save_as}.{ext}')
+        plt.close('all')
+
+
+def get_extent(data: xr.DataArray):
+    """Calculate an 'extent' for an Error Grid such that axis ticks are
+    centered in the 'pixels'
+    """
+    return [
+        np.min(data.n_low) - 0.5,
+        np.max(data.n_low) + 0.5,
+        np.min(data.n_high) - 0.5,
+        np.max(data.n_high) + 0.5,
+    ]

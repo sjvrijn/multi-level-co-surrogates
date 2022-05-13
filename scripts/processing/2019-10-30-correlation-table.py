@@ -46,6 +46,8 @@ def standardize_name(name):
     return name.lower().replace(' ', '-')
 
 
+np.random.seed(20160501)  # standardize random seed for reproducibility
+
 size_per_dim = 2000
 dims = [1, 2, 3, 4, 6, 8, 10]
 test_sample = {
@@ -173,6 +175,6 @@ for i, (ax, (name, subdf)) in enumerate(zip(axes, grouped_df)):
 
 handles, labels = axes[0].get_legend_handles_labels()
 fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.538, 0.0), ncol=len(handles))
-for ext in proc.extensions:
-    fig.savefig(plot_dir / f'combined_correlations.{ext}', dpi=300)
+for suffix in proc.suffixes:
+    fig.savefig(plot_dir / f'combined_correlations{suffix}', dpi=300)
 

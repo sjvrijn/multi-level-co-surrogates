@@ -5,10 +5,11 @@ from collections import namedtuple
 from functools import partial
 from itertools import product
 from pathlib import Path
-from typing import Sequence, List, Dict, Tuple, Any, NamedTuple
+from typing import Sequence, List, Dict, Tuple, Any, NamedTuple, Union
 from warnings import warn
 
 import matplotlib.pyplot as plt
+import mf2
 import numpy as np
 import xarray as xr
 from parse import parse
@@ -648,7 +649,9 @@ def create_subsampling_error_grid(
         archive: mlcs.CandidateArchive,
         num_reps: int=50,
         interval: int=2,
-        func=None
+        func=None,
+        verbose=False,
+        **mfbo_opts
 ) -> xr.DataArray:
     """Create an error grid through subsampling from the given archive
 
@@ -656,6 +659,7 @@ def create_subsampling_error_grid(
     :param num_reps: Number of independent repetitions for each size
     :param interval: Interval at which to fill the error grid
     :param func:     Multi-fidelity function to re-evaluate known candidates  #TODO: remove argument
+    :param verbose:  toggles progress print statements
     :return:         `xr.DataArray` ErrorGrid
     """
 
@@ -683,7 +687,7 @@ def create_subsampling_error_grid(
 
     for i, (num_high, num_low, rep) in enumerate(instances):
 
-        if i % 1_000 == 0:
+        if verbose and i % 1_000 == 0:
             print(f"{i}/{len(instances)}")
 
         # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
@@ -697,7 +701,7 @@ def create_subsampling_error_grid(
         arch.addcandidates(high_x, high_y, fidelity='high')
 
         # (Automatically) Create the hierarchical model
-        mfbo = mlcs.MultiFidelityBO(func, arch)
+        mfbo = mlcs.MultiFidelityBO(func, arch, **mfbo_opts)
 
         # Get the results we're interested in from the model for this instance
         error_grid[num_high, num_low, rep] = mfbo.getMSE()
@@ -713,6 +717,35 @@ def create_subsampling_error_grid(
             'model': models,
         },
     )
+
+
+def plot_archive(
+        archive: mlcs.CandidateArchive,
+        func: mf2.MultiFidelityFunction,
+        title: str,
+        save_as: Union[str, Path],
+        save_exts=('pdf', 'png'),
+) -> None:
+    """Plot given archive using parameters of func
+
+    param archive: CandidateArchive to plot
+    param func:    MultiFidelityFunction to query for name and bounds
+    param title:   Title of the plot
+    param save_as: Filename to save as
+    """
+    if func.ndim != 2:
+        raise NotImplementedError("plotting for other than 2D not implemented")
+
+    fig, ax = plt.subplots()
+    ax.set_title(title)
+    ax.set_xlim([func.l_bound[0], func.u_bound[0]])
+    ax.set_ylim([func.l_bound[1], func.u_bound[1]])
+    for fid, style in zip(['high', 'low'], [red_dot, blue_circle]):
+        points = archive.getcandidates(fid).candidates
+        ax.scatter(*points.T, **style, label=f'{fid}-fidelity samples')
+    ax.legend(loc=0)
+    for save_ext in save_exts:
+        fig.savefig(f'{save_as}.{save_ext}')
 
 
 def get_tmp_path(path: Path) -> Path:

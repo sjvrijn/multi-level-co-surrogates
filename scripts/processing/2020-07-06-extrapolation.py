@@ -91,8 +91,8 @@ def plot_extrapolation_suggestion(file_small, file_large):
     plt.legend(loc=0)
     plt.xlim([0,90])
     plt.title(title)
-    for ext in proc.extensions:
-        plt.savefig(plot_dir / f'{file_small.stem.replace(".", "")}.{ext}', dpi=300, bbox_inches='tight')
+    for suffix in proc.suffixes:
+        plt.savefig(plot_dir / f'{file_small.stem.replace(".", "")}{suffix}', dpi=300, bbox_inches='tight')
     plt.close()
 
 

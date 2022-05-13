@@ -96,7 +96,7 @@ def plot_adjustable_surface_collection(func, fig_size, params=None):
         ax.zaxis.set_major_formatter(FormatStrFormatter('%.0f'))
         fig.savefig(filename, bbox_inches='tight')
         plt.close(fig)
-    
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

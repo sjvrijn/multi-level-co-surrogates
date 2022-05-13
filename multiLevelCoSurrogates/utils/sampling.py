@@ -72,7 +72,8 @@ def split_bi_fidelity_doe(DoE: BiFidelityDoE, num_high: int, num_low: int) -> Tu
 
     Raises a `ValueError` if invalid `num_high` or `num_low` are given.
     """
-    high, low = DoE
+    high = [tuple(x) for x in DoE.high]
+    low = [tuple(x) for x in DoE.low]
 
     # Errors
     if not 0 <= num_high <= len(high):
@@ -94,24 +95,36 @@ def split_bi_fidelity_doe(DoE: BiFidelityDoE, num_high: int, num_low: int) -> Tu
              category=NoSpareLowFidSamplesWarning)
 
     indices = np.random.permutation(len(high))
-    sub_high, leave_out_high = high[indices[:num_high]], high[indices[num_high:]]
+
+    sub_high = [high[idx] for idx in indices[:num_high]]
+    leave_out_high = [high[idx] for idx in indices[num_high:]]
 
     if num_low == len(low):
         sub_low = low
         leave_out_low = []
     else:
         # remove all sub_high from low
-        filtered_low = np.array([x for x in low if x not in sub_high])
+        filtered_low = [x for x in low if x not in sub_high]
+        sub_high = np.array(sub_high)
+
         # randomly select (num_low - num_high) remaining
         indices = np.random.permutation(len(filtered_low))
         num_low_left = num_low - num_high
-        extra_low, leave_out_low = filtered_low[indices[:num_low_left]], \
-                                   filtered_low[indices[num_low_left:]]
-        # concatenate sub_high with selected sub_low
-        sub_low = np.concatenate([sub_high, extra_low], axis=0)
 
-    selected = BiFidelityDoE(sub_high, sub_low)
-    left_out = BiFidelityDoE(leave_out_high, leave_out_low)
+        extra_low = np.array([filtered_low[idx] for idx in indices[:num_low_left]])
+        leave_out_low = [filtered_low[idx] for idx in indices[num_low_left:]]
+
+        # concatenate sub_high with selected sub_low, avoid if len()==0 for any
+        if len(sub_high) == 0:
+            sub_low = np.array(extra_low)
+        elif len(extra_low) == 0:
+            sub_low = np.array(sub_high)
+        else:
+            sub_low = np.concatenate([sub_high, extra_low], axis=0)
+
+    selected = BiFidelityDoE(np.array(sub_high), sub_low)
+    left_out = BiFidelityDoE(np.array(leave_out_high), np.array(leave_out_low))
+
     return selected, left_out
 
 
@@ -134,7 +147,7 @@ def split_with_include(DoE: BiFidelityDoE, num_high: int, num_low: int,
     if fidelity not in ['high', 'low']:
         raise ValueError(f"Invalid fidelity '{fidelity}', should be 'high' or 'low'")
 
-    remove_from_bi_fid_doe(must_include.flatten(), DoE)
+    DoE = remove_from_bi_fid_doe(must_include.flatten(), DoE)
 
     num_low -= 1
     if fidelity == 'high':

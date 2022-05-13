@@ -23,7 +23,7 @@ def prepare_DoE(func, nh=3, nl=5):
     np.random.seed(20160501)  # Setting seed for reproducibility
     init_DoE = mlcs.bi_fidelity_doe(func.ndim, nh, nl)
     DoE = exp.scale_to_function(func, init_DoE)
-    return DoE
+    return mlcs.BiFidelityDoE(*DoE)
 
 
 def get_experiment_subsampled_EG(func, DoE, instances):
@@ -62,7 +62,7 @@ def get_experiment_subsampled_EG(func, DoE, instances):
 
 def get_subsampled_protoEG(archive, num_reps):
 
-    eg = mlcs.ProtoEG(archive, num_reps=num_reps)
+    eg = mlcs.ProtoEG(archive, num_reps=num_reps, interval=1)
     eg.subsample_errorgrid()
     return eg
 
@@ -143,7 +143,7 @@ def test_protoEG_subsample_errorgrid_create():
     eg1 = proto_eg.error_grid
 
     np.testing.assert_allclose(
-        [0.27112833049506163],
+        0.7159078759175921,
         eg1['mses'].sel(model='high_hier').values.flatten()[0],
     )
 

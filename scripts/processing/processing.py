@@ -6,14 +6,18 @@ processing.py: Collection of data processing procedures that can be called
 by explicit runner files.
 """
 
+import sys
 from enum import IntEnum
-from itertools import product
 from collections import namedtuple
+from operator import itemgetter
 from pathlib import Path
 from textwrap import fill
+from typing import Union
 
+import imageio
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import mf2
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -22,8 +26,14 @@ from matplotlib.lines import Line2D
 from matplotlib.transforms import Bbox
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from parse import Parser
+from pyprojroot import here
 from sklearn.linear_model import LinearRegression
 
+module_path = str(here())
+if module_path not in sys.path:
+    sys.path.append(module_path)
+
+import multiLevelCoSurrogates as mlcs
 
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
@@ -43,7 +53,7 @@ LABEL_N_LOW = "$n_l$"
 wide_figsize = (5.2, 2)
 reg_figsize = (4, 2)
 
-extensions = ['pdf', 'png']
+suffixes = ['.pdf', '.png']
 
 
 def get_extent(data: xr.DataArray):
@@ -52,9 +62,9 @@ def get_extent(data: xr.DataArray):
     """
     return [
         np.min(data.n_low).item() - 0.5,
-        np.max(data.n_low).item() - 0.5,
+        np.max(data.n_low).item() + 0.5,
         np.min(data.n_high).item() - 0.5,
-        np.max(data.n_high).item() - 0.5,
+        np.max(data.n_high).item() + 0.5,
     ]
 
 
@@ -75,29 +85,73 @@ def full_extent(fig, ax, pad=0.0):
     return bbox.transformed(fig.dpi_scale_trans.inverted())
 
 
+def plot_archive(
+        archive: mlcs.CandidateArchive,
+        func: mf2.MultiFidelityFunction,
+        title: str,
+        save_as: Union[str, Path],
+        suffixes=('.pdf', '.png'),
+) -> None:
+    """Plot given archive using parameters of func
+
+    param archive: CandidateArchive to plot
+    param func:    MultiFidelityFunction to query for name and bounds
+    param title:   Title of the plot
+    param save_as: Filename to save as
+    """
+    if func.ndim != 2:
+        raise NotImplementedError("plotting for other than 2D not implemented")
+
+    num_intervals = 50
+    u_bound, l_bound = func.u_bound, func.l_bound
+    step = (u_bound - l_bound) / num_intervals
+    surf = mlcs.createsurface(func.high, l_bound=l_bound, u_bound=u_bound, step=step, wide=False)
+    extent = [
+        l_bound[0] - step[0]/2,
+        u_bound[0] + step[0]/2,
+        l_bound[1] - step[1]/2,
+        u_bound[1] + step[1]/2
+    ]
+
+    fig, ax = plt.subplots()
+    ax.set_title(title)
+    ax.imshow(surf.Z, extent=extent, cmap='viridis_r', origin='lower')
+    for fid, style in zip(['high', 'low'], [red_dot, blue_circle]):
+        points = archive.getcandidates(fid).candidates
+        ax.scatter(*points.T, **style, label=f'{fid}-fidelity samples')
+    ax.legend(loc=0)
+    for suffix in suffixes:
+        fig.savefig(save_as.with_suffix(suffix))
+    plt.close()
+
+
 def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
                     contours=0, as_log=False, save_as=None,
                     show=False, include_comparisons=False, gradient_arrow=False,
-                    include_colorbar=True, label_y=True, title_width=None):
+                    include_colorbar=True, label_y=True, title_width=None,
+                    xlim=None, ylim=None,):
     """Plot a heatmap of the median MSE for each possible combination of high
     and low-fidelity samples. For comparison, the MSE for the high-only and
     low-only models are displayed as a bar to the left and bottom respectively.
 
-    :param data: `xr.DataArray` containing the MSE values
-    :param title: title to use at top of the image
-    :param vmin: minimum value for color scale normalization
-    :param vmax: maximum value for color scale normalization
-    :param points: iterable of namedtuples for fixed DoE's to plot
-    :param contours: number of contour lines to draw. Default: 0
-    :param as_log: display the log10 of the data or not (default False)
-    :param save_as: desired filename for saving the image. Not saved if `None`
-    :param show: whether or not to call `plt.show()`. Default: False
+    :param data:                `xr.DataArray` containing the MSE values
+    :param title:               title to use at top of the image
+    :param vmin:                minimum value for color scale normalization
+    :param vmax:                maximum value for color scale normalization
+    :param points:              iterable of namedtuples for fixed DoE's to plot
+    :param contours:            number of contour lines to draw. Default: 0
+    :param as_log:              display the log10 of the data or not (default False)
+    :param save_as:             desired filename for saving the image. Not saved if `None`
+    :param show:                whether or not to call `plt.show()`. Default: False
     :param include_comparisons: whether or not to include single-fidelity model
                                 averages along axes. Default: False
-    :param include_colorbar: whether or not to include a colorbar. Default: True
-    :param label_y: whether or not to include axis label and ticks for y-axis. Default: True
-    :param gradient_arrow: whether or not to add an arrow indicating gradient direction through
-                           the center of the figure. Default: False
+    :param include_colorbar:    whether or not to include a colorbar. Default: True
+    :param label_y:             whether or not to include axis label and ticks for y-axis. Default: True
+    :param gradient_arrow:      whether or not to add an arrow indicating gradient direction through
+                                the center of the figure. Default: False
+    :param title_width:         maximum width of the title for line wrapping
+    :param xlim:                base x-limits, upper will extend to fit data
+    :param ylim:                base y-limits, upper will extend to fit data
     """
     if not (show or save_as):
         return  # no need to make the plot if not showing or saving it
@@ -165,6 +219,11 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
             ax.yaxis.set_tick_params(left=False, labelleft=False, which='both')
         ax.set_xlabel(LABEL_N_LOW)
 
+    if xlim:
+        ax.set_xlim((xlim[0]-.5, max(xlim[1], max(data.n_low))+.5))
+    if ylim:
+        ax.set_ylim((ylim[0]-.5, max(ylim[1], max(data.n_high))+.5))
+
     if include_colorbar:
         cax = divider.append_axes("right", size=0.2, pad=0.05)
         fig.colorbar(img, cax=cax)
@@ -182,8 +241,8 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
 
     plt.tight_layout()
     if save_as:
-        for ext in extensions:
-            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
+        for suffix in suffixes:
+            plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close('all')
@@ -245,8 +304,8 @@ def plot_multiple_error_grids(datas, titles, as_log=True, gradient_arrow=False,
 
     plt.tight_layout()
     if save_as:
-        for ext in extensions:
-            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
+        for suffix in suffixes:
+            plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -297,8 +356,8 @@ def plot_high_v_low_diff(to_plot, long_title, norm, save_as=None, show=False):
     plt.title(long_title)
     plt.tight_layout()
     if save_as:
-        for ext in extensions:
-            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
+        for suffix in suffixes:
+            plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -327,8 +386,8 @@ def plot_t_scores(data: xr.DataArray, title: str, t_range: float=5, num_colors: 
 
     plt.tight_layout()
     if save_as:
-        for ext in extensions:
-            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
+        for suffix in suffixes:
+            plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -377,8 +436,8 @@ def plot_extracts(data: xr.DataArray, title: str, save_as: str=None, show: bool=
     plt.legend(loc=0)
     plt.tight_layout()
     if save_as:
-        for ext in extensions:
-            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
+        for suffix in suffixes:
+            plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -414,8 +473,8 @@ def plot_multi_file_extracts(data_arrays, title: str, save_as: str=None, show: b
     plt.tight_layout()
 
     if save_as:
-        for ext in extensions:
-            plt.savefig(f'{save_as}.{ext}', bbox_inches='tight')
+        for suffix in suffixes:
+            plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
@@ -596,3 +655,18 @@ def determine_match(CI1, CI2):
     if CI1.lower in CI2 or CI1.upper in CI2:  # reverse is implied
         return Comparison.CI_MATCH
     return Comparison.NO_MATCH
+
+
+def gifify_in_folder(in_folder: Path, base_name: str):
+    """Combine all images matching `{base_name}_{idx}.png` in `in_folder` into `base_name.gif`"""
+
+    template = Parser(base_name + '_{idx:d}.png')
+    files_to_gifify = sorted([
+        (file, match['idx'])
+        for file in in_folder.iterdir()
+        if (match := template.parse(file.name))
+    ], key=itemgetter(1))
+
+    with imageio.get_writer(in_folder / f"{base_name}.gif", mode='I', duration=0.5) as writer:
+        for (file, _) in files_to_gifify:
+            writer.append_data(imageio.imread(file))

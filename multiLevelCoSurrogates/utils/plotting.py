@@ -82,8 +82,13 @@ def plotsurfaceonaxis(ax, surf, title, point_sets=None, plot_type='wireframe', c
 
     if plot_type == 'wireframe':
         colors = cm.viridis_r(rescale(surf.Z))
-        surface = ax.plot_surface(surf.X, surf.Y, surf.Z, rcount=15, ccount=15,
-                                  facecolors=colors, shade=False)
+        surface = ax.plot_surface(surf.X, surf.Y, surf.Z,
+                                  rstride=1, cstride=1,
+                                  # rcount=15, ccount=15,
+                                  # shade=False,
+                                  cmap=cm.viridis_r,
+                                  # facecolors=colors,
+                                  )
         surface.set_facecolor((0,0,0,0))
     elif plot_type == 'surface':
         surface = ax.plot_surface(surf.X, surf.Y, surf.Z, cmap='viridis_r', rcount=rows, ccount=cols,
@@ -108,7 +113,7 @@ def plotsurfaceonaxis(ax, surf, title, point_sets=None, plot_type='wireframe', c
 def plotcmaponaxis(ax, surf, title, point_sets=None):
     """Plot a Surface as 2D heatmap on a given matplotlib Axis"""
 
-    surface = ax.pcolormesh(surf.X, surf.Y, surf.Z, cmap=cm.viridis)
+    surface = ax.pcolormesh(surf.X, surf.Y, surf.Z, cmap=cm.viridis_r)
     if point_sets:
         for x_y, z, style in point_sets:
             ax.scatter(x_y[:, 0], x_y[:, 1], **style)
