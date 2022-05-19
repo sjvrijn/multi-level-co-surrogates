@@ -20,7 +20,7 @@ from multiLevelCoSurrogates import CandidateArchive
 
 
 def test_bare_archive():
-    archive = CandidateArchive(ndim=0)
+    archive = CandidateArchive()
     assert archive.fidelities == ['fitness']
     assert len(archive) == len(archive.data) == 0
     assert len(archive.max) == len(archive.min) == len(archive.fidelities)
@@ -28,19 +28,19 @@ def test_bare_archive():
 
 def test_single_fidelity():
     fid = 'my_fidelity'
-    archive = CandidateArchive(ndim=0, fidelities=[fid])
+    archive = CandidateArchive(fidelities=[fid])
     assert archive.fidelities == [fid]
 
 
 def test_multiple_fidelities():
     fids = [f'my_{i}th_fidelity' for i in range(5)]
-    archive = CandidateArchive(ndim=0, fidelities=fids)
+    archive = CandidateArchive(fidelities=fids)
     assert archive.fidelities == fids
 
 
 def test_fidelity_not_specified():
     fids = [f'my_{i}th_fidelity' for i in range(5)]
-    archive = CandidateArchive(ndim=0, fidelities=fids)
+    archive = CandidateArchive(fidelities=fids)
     with pytest.raises(ValueError):
         archive.addcandidate([1, 2, 3], fitness=1)
 
@@ -56,18 +56,12 @@ def test_from_mff(fidelities, ndim):
     # Each of the n-1 consecutive pairs has to be added as a new fidelity,
     # so len(archive.fidelities) should be n + (n-1) = 2n - 1
     assert len(archive.fidelities) == 2*len(fidelities) - 1
-    assert archive.ndim == ndim
-
-    mff = MultiFidFunc(0.5, fidelities)
-    archive = CandidateArchive.from_multi_fidelity_function(mff, ndim=ndim)
-    # archive.ndim should not be the non-integer value of 0.5 when overwritten
-    assert archive.ndim == ndim
 
 
 ### A 'happy path' is a simple run through some functionality that just works
 
 def test_1fid_happy_path():
-    archive = CandidateArchive(ndim=3)
+    archive = CandidateArchive()
     candidates = np.random.randn(30).reshape((10, 3))
     fitnesses = np.random.randn(10).reshape((10, 1))
     archive.addcandidates(candidates.tolist(), fitnesses)
@@ -84,7 +78,7 @@ def test_1fid_happy_path():
 
 def test_2fid_happy_path():
     ndim = 3
-    archive = CandidateArchive(ndim=ndim, fidelities=['AAA', 'BBB'])
+    archive = CandidateArchive(fidelities=['AAA', 'BBB'])
 
     num_candidates = 10
     candidates = np.random.randn(num_candidates*ndim).reshape((num_candidates, ndim))

@@ -39,7 +39,7 @@ def get_experiment_subsampled_EG(func, DoE, instances):
                                     func.low(train.low)
 
         # Create an archive from the MF-function and MF-DoE data
-        archive = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
+        archive = mlcs.CandidateArchive.from_multi_fidelity_function(func)
         archive.addcandidates(train.low, train_low_y, fidelity='low')
         archive.addcandidates(train.high, train_high_y, fidelity='high')
 
@@ -80,7 +80,7 @@ def valid_subsample_spec(draw):
 @given(valid_subsample_spec())
 def test_calc_reuse_fraction_high(spec):
     num_high, num_low, max_high, max_low = spec
-    peg = mlcs.ProtoEG(archive=mlcs.CandidateArchive(ndim=0))
+    peg = mlcs.ProtoEG(archive=mlcs.CandidateArchive())
 
     part1 = binom(max_high, num_high)
     part2 = binom(max_high + 1, num_high)
@@ -98,7 +98,7 @@ def test_calc_reuse_fraction_high(spec):
 @given(valid_subsample_spec())
 def test_calc_reuse_fraction_low(spec):
     num_high, num_low, max_high, max_low = spec
-    peg = mlcs.ProtoEG(archive=mlcs.CandidateArchive(ndim=0))
+    peg = mlcs.ProtoEG(archive=mlcs.CandidateArchive())
 
     part1 = binom(max_low - num_high, num_low - num_high)
     part2 = binom(max_low+1 - num_high, num_low - num_high)

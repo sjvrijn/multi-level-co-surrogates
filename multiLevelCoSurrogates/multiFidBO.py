@@ -34,7 +34,7 @@ class MultiFidelityBO:
         self.show_plot = show_plot
         self.save_plot = save_plot
         self.func = multi_fid_func
-        self.ndim = archive.ndim if archive else self.func.ndim
+        self.ndim = self.func.ndim
         if len(self.func.u_bound) == self.ndim:
             self.bounds = self.func.bounds
         elif len(self.func.u_bound) == 1:
@@ -137,7 +137,7 @@ class MultiFidelityBO:
         if archive is not None:
             return archive
 
-        archive = CandidateArchive.from_multi_fidelity_function(self.func, ndim=self.ndim)
+        archive = CandidateArchive.from_multi_fidelity_function(self.func)
 
         samples = create_random_sample_set(self.ndim, zip(self.fidelities, [5, 8, 13]),
                                            desired_range=self.input_range)

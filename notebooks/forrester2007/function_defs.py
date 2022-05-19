@@ -47,7 +47,7 @@ def create_mse_tracking(func, sample_generator,
         low_x = sample_generator(ndim, num_low)
         high_x = low_x[np.random.choice(num_low, num_high, replace=False)]
 
-        archive = mlcs.CandidateArchive(ndim=ndim, fidelities=['high', 'low', 'high-low'])
+        archive = mlcs.CandidateArchive(fidelities=['high', 'low', 'high-low'])
         archive.addcandidates(low_x, func.low(low_x), fidelity='low')
         archive.addcandidates(high_x, func.high(high_x), fidelity='high')
 
@@ -138,7 +138,7 @@ blue_circle = {'marker': 'o', 'facecolors': 'none', 'color': 'blue'}
 
 
 def create_models_and_compare(func, low, high, steps=None, save_as=None):
-    archive = mlcs.CandidateArchive(ndim=2, fidelities=['high', 'low', 'high-low'])
+    archive = mlcs.CandidateArchive(fidelities=['high', 'low', 'high-low'])
     archive.addcandidates(low, func.low(low), fidelity='low')
     archive.addcandidates(high, func.high(high), fidelity='high')
 

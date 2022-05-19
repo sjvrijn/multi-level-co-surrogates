@@ -21,7 +21,7 @@ def test_simple_path():
 
     low_x = np.linspace(0,1,11).reshape(-1,1)
     high_x = low_x[[0,4,6,10]]
-    archive = mlcs.CandidateArchive(1, ['high', 'low', 'high-low'])
+    archive = mlcs.CandidateArchive(['high', 'low', 'high-low'])
     archive.addcandidates(low_x, mf2.forrester.low(low_x), fidelity='low')
     archive.addcandidates(high_x, mf2.forrester.high(high_x), fidelity='high')
     mfm = mlcs.MultiFidelityModel(mf2.forrester.fidelity_names, archive)

@@ -148,7 +148,7 @@ def plot_model_and_samples(func: MultiFidelityFunction, kernel: str,
     high_y, low_y = func.high(high_x), \
                     func.low(low_x)
 
-    archive = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
+    archive = mlcs.CandidateArchive.from_multi_fidelity_function(func)
     archive.addcandidates(low_x, low_y, fidelity='low')
     archive.addcandidates(high_x, high_y, fidelity='high')
 
@@ -254,7 +254,7 @@ def create_model_error_grid(
                         func.low(low_x)
 
         # Create an archive from the MF-function and MF-DoE data
-        archive = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
+        archive = mlcs.CandidateArchive.from_multi_fidelity_function(func)
         archive.addcandidates(low_x, low_y, fidelity='low')
         archive.addcandidates(high_x, high_y, fidelity='high')
 
@@ -378,7 +378,7 @@ def create_resampling_error_grid(
                         func.low(low_x)
 
         # Create an archive from the MF-function and MF-DoE data
-        archive = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
+        archive = mlcs.CandidateArchive.from_multi_fidelity_function(func)
         archive.addcandidates(low_x, low_y, fidelity='low')
         archive.addcandidates(high_x, high_y, fidelity='high')
 
@@ -492,7 +492,7 @@ def create_resampling_leftover_error_grid(
                         func.low(selected.low)
 
         # Create an archive from the MF-function and MF-DoE data
-        archive = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
+        archive = mlcs.CandidateArchive.from_multi_fidelity_function(func)
         archive.addcandidates(selected.low, low_y, fidelity='low')
         archive.addcandidates(selected.high, high_y, fidelity='high')
 
@@ -668,12 +668,9 @@ def create_subsampling_error_grid(
         # but that values from `archive` are re-used.
         raise NotImplementedError
 
-    highs = archive.getcandidates(fidelity='high').candidates
-    lows = archive.getcandidates(fidelity='low').candidates
-    DoE = BiFidelityDoE(highs, lows)
-
-    max_num_high = len(highs)
-    max_num_low = len(lows)
+    DoE = archive.as_doe()
+    max_num_high = len(DoE.high)
+    max_num_low = len(DoE.low)
 
     error_grid = np.full((max_num_high+1, max_num_low+1, num_reps+1, 3), np.nan)
 
@@ -696,7 +693,7 @@ def create_subsampling_error_grid(
                         func.low(low_x)
 
         # Create an archive from the MF-function and MF-DoE data
-        arch = mlcs.CandidateArchive.from_multi_fidelity_function(func, ndim=func.ndim)
+        arch = mlcs.CandidateArchive.from_multi_fidelity_function(func)
         arch.addcandidates(low_x, low_y, fidelity='low')
         arch.addcandidates(high_x, high_y, fidelity='high')
 
