@@ -21,6 +21,7 @@ from multiLevelCoSurrogates import CandidateArchive, CandidateArchiveNew
 
 implementations = [
     CandidateArchive,
+    CandidateArchiveNew,
 ]
 
 
