@@ -58,9 +58,19 @@ class CandidateArchiveNew:
         pass
 
 
-    def addcandidate(self, *args, **kwargs):
-        """Add a candidate to the archive. Will overwrite fitness value if candidate is already present"""
-        pass
+    def addcandidate(self, candidate, fitness, fidelity=None):
+        """Add a candidate to the archive.
+        Will overwrite fitness value if candidate is already present
+        """
+        try:
+            idx = self.candidates.index(candidate)
+            self.candidates[idx].fidelities[fidelity] = fitness
+
+        except ValueError:
+            # candidates is not yet present
+            new_idx = len(self.candidates)
+            fidelities = {fidelity: fitness}
+            self.candidates.append(Candidate(new_idx, candidate, fidelities))
 
 
     def getfitnesses(self, *args, **kwargs):
