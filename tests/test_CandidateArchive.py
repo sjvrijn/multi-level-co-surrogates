@@ -70,6 +70,15 @@ def test_add_same_candidate_maintains_length(Archive):
     assert len(archive) == old_length
 
 
+@pytest.mark.parametrize('Archive', implementations)
+def test_from_bifiddoe(Archive):
+    ndim, num_high, num_low = 2, 5, 10
+    doe = mlcs.bi_fidelity_doe(ndim, num_high, num_low)
+
+    archive = Archive.from_bi_fid_DoE(*doe, np.random.rand(num_high), np.random.rand(num_low))
+    assert len(archive) == num_low
+
+
 ### A 'happy path' is a simple run through some functionality that just works
 
 @pytest.mark.parametrize('Archive', implementations)
