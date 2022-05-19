@@ -41,6 +41,20 @@ def test_add_candidate_increases_length(Archive):
 
 
 @pytest.mark.parametrize('Archive', implementations)
+def test_add_candidates_increases_length(Archive):
+    archive1 = Archive()
+    archive2 = Archive()
+    num_candidates = 5
+
+    for _ in range(num_candidates):
+        archive1.addcandidate(np.random.rand(2), np.random.random())
+
+    archive2.addcandidates(np.random.rand(5, 2), np.random.rand(5))
+
+    assert len(archive1) == len(archive2) == num_candidates
+
+
+@pytest.mark.parametrize('Archive', implementations)
 def test_add_same_candidate_maintains_length(Archive):
     archive = Archive()
     candidate, fitness = np.random.rand(2), np.random.random()
