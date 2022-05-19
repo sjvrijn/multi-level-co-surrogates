@@ -31,6 +31,15 @@ def test_bare_archive(Archive):
     assert len(archive) == 0
 
 
+@pytest.mark.parametrize('Archive', implementations)
+def test_add_candidate_increases_length(Archive):
+    archive = Archive()
+    old_length = len(archive)
+
+    archive.addcandidate(np.random.rand(2), np.random.random())
+    assert len(archive) == old_length + 1
+
+
 ### A 'happy path' is a simple run through some functionality that just works
 
 @pytest.mark.parametrize('Archive', implementations)
@@ -41,7 +50,6 @@ def test_1fid_happy_path(Archive):
     archive.addcandidates(candidates.tolist(), fitnesses)
 
     result = archive.getcandidates()
-    assert isinstance(result, mlcs.CandidateSet)
     assert hasattr(result, 'candidates')
     assert hasattr(result, 'fitnesses')
 
