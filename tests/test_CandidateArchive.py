@@ -16,52 +16,25 @@ import numpy as np
 import pytest
 
 import multiLevelCoSurrogates as mlcs
-from multiLevelCoSurrogates import CandidateArchive
+from multiLevelCoSurrogates import CandidateArchive, CandidateArchiveNew
 
 
-def test_bare_archive():
-    archive = CandidateArchive()
-    assert archive.fidelities == ['fitness']
-    assert len(archive) == len(archive.data) == 0
-    assert len(archive.max) == len(archive.min) == len(archive.fidelities)
+implementations = [
+    CandidateArchive,
+]
 
 
-def test_single_fidelity():
-    fid = 'my_fidelity'
-    archive = CandidateArchive(fidelities=[fid])
-    assert archive.fidelities == [fid]
-
-
-def test_multiple_fidelities():
-    fids = [f'my_{i}th_fidelity' for i in range(5)]
-    archive = CandidateArchive(fidelities=fids)
-    assert archive.fidelities == fids
-
-
-def test_fidelity_not_specified():
-    fids = [f'my_{i}th_fidelity' for i in range(5)]
-    archive = CandidateArchive(fidelities=fids)
-    with pytest.raises(ValueError):
-        archive.addcandidate([1, 2, 3], fitness=1)
-
-
-MultiFidFunc = namedtuple('MultiFidFunc', 'ndim fidelity_names')
-
-@given(lists(text(), min_size=2), integers())
-def test_from_mff(fidelities, ndim):
-    mff = MultiFidFunc(ndim, fidelities)
-
-    archive = CandidateArchive.from_multi_fidelity_function(mff)
-
-    # Each of the n-1 consecutive pairs has to be added as a new fidelity,
-    # so len(archive.fidelities) should be n + (n-1) = 2n - 1
-    assert len(archive.fidelities) == 2*len(fidelities) - 1
+@pytest.mark.parametrize('Archive', implementations)
+def test_bare_archive(Archive):
+    archive = Archive()
+    assert len(archive) == 0
 
 
 ### A 'happy path' is a simple run through some functionality that just works
 
-def test_1fid_happy_path():
-    archive = CandidateArchive()
+@pytest.mark.parametrize('Archive', implementations)
+def test_1fid_happy_path(Archive):
+    archive = Archive()
     candidates = np.random.randn(30).reshape((10, 3))
     fitnesses = np.random.randn(10).reshape((10, 1))
     archive.addcandidates(candidates.tolist(), fitnesses)
@@ -76,9 +49,10 @@ def test_1fid_happy_path():
     np.testing.assert_array_almost_equal(fitnesses, fit)
 
 
-def test_2fid_happy_path():
+@pytest.mark.parametrize('Archive', implementations)
+def test_2fid_happy_path(Archive):
     ndim = 3
-    archive = CandidateArchive(fidelities=['AAA', 'BBB'])
+    archive = Archive(fidelities=['AAA', 'BBB'])
 
     num_candidates = 10
     candidates = np.random.randn(num_candidates*ndim).reshape((num_candidates, ndim))
