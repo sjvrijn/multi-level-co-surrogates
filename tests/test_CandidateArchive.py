@@ -40,6 +40,22 @@ def test_add_candidate_increases_length(Archive):
     assert len(archive) == old_length + 1
 
 
+@pytest.mark.parametrize('Archive', implementations)
+def test_add_same_candidate_maintains_length(Archive):
+    archive = Archive()
+    candidate, fitness = np.random.rand(2), np.random.random()
+    archive.addcandidate(candidate, fitness)
+    old_length = len(archive)
+
+    # adding exact same candidate does not change length
+    archive.addcandidate(candidate, fitness)
+    assert len(archive) == old_length
+
+    # adding same candidate with different fitness does not change length
+    archive.addcandidate(candidate, np.random.random())
+    assert len(archive) == old_length
+
+
 ### A 'happy path' is a simple run through some functionality that just works
 
 @pytest.mark.parametrize('Archive', implementations)
