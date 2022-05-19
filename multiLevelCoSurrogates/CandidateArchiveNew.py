@@ -53,14 +53,17 @@ class CandidateArchiveNew:
         return archive
 
 
-    def addcandidates(self, *args, **kwargs):
-        """Add multiple candidates to the archive"""
-        pass
+    def addcandidates(self, candidates, fitnesses, fidelity=None):
+        """Add candidate, fitness pairs to the archive for given fidelity.
+        Will overwrite fitness value if already present.
+        """
+        for candidate, fitness in zip(candidates, fitnesses):
+            self.addcandidate(candidate, fitness, fidelity)
 
 
     def addcandidate(self, candidate, fitness, fidelity=None):
-        """Add a candidate to the archive.
-        Will overwrite fitness value if candidate is already present
+        """Add a candidate, fitness pair to the archive for given fidelity.
+        Will overwrite fitness value if already present
         """
         try:
             idx = self.candidates.index(candidate)
