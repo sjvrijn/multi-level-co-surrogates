@@ -7,6 +7,7 @@ CandidateArchiveNew.py: Reimplementation of CandidateArchive to include indices,
 """
 from collections import namedtuple
 from dataclasses import dataclass
+from itertools import chain
 from typing import Iterable, Union
 
 from more_itertools import pairwise
@@ -76,9 +77,44 @@ class CandidateArchiveNew:
             self.candidates.append(Candidate(new_idx, candidate, fidelities))
 
 
-    def getfitnesses(self, *args, **kwargs):
+    def getfitnesses(self, candidates: Iterable, fidelity: Union[str, Iterable[str]]=None) -> Iterable:
         """Return the relevant fitness values for the given candidates"""
-        pass
+
+        # retrieve all candidates by index, fails if candidate is not in archive
+        candidate_indices = [
+            self.candidates.index(candidate)
+            for candidate in candidates
+        ]
+        fidelities = [
+            self.candidates[i].fidelities
+            for i in candidate_indices
+        ]
+
+        print(fidelities)
+
+        if isinstance(fidelity, str):
+            return np.array([
+                fid.get(fidelity, np.nan)
+                for fid in fidelities
+            ]).reshape(-1, 1)
+
+        elif fidelity:
+            return np.array([
+                [fid.get(f, np.nan) for f in fidelity]
+                for fid in fidelities
+            ])
+
+        else:
+            # can probably be cached upon adding candidates...
+            all_fidelities = set()
+            for fid in fidelities:
+                all_fidelities.update(fid.keys())
+            all_fidelities = list(all_fidelities)
+
+            return np.array([
+                [fid.get(f, np.nan) for f in all_fidelities]
+                for fid in fidelities
+            ])
 
 
     def getcandidates(self, *args, **kwargs):
@@ -113,7 +149,11 @@ class CandidateArchiveNew:
         pass
 
 
-    def _updateminmax(self, *args, **kwargs):
+    def _updateminmax(self, value: float, fidelity: str=None):
+        # if value > self.max[fidelity]:
+        #     self.max[fidelity] = value
+        # elif value < self.min[fidelity]:
+        #     self.min[fidelity] = value
         pass
 
 

@@ -81,6 +81,39 @@ def test_from_bifiddoe(Archive):
     assert archive.count('low') == num_low
 
 
+@pytest.mark.parametrize('Archive', implementations)
+def test_getfitnesses_one_fid(Archive):
+    archive = Archive(fidelities=['A', 'B', 'C'])
+
+    all_candidates = np.random.rand(10, 2)
+
+    data = {
+        'A': (all_candidates[:5], np.random.rand(5)),
+        'B': (all_candidates, np.random.rand(10)),
+        'C': (all_candidates[5:], np.random.rand(5)),
+    }
+    for fidelity, (candidates, fitness) in data.items():
+        archive.addcandidates(candidates, fitness, fidelity=fidelity)
+
+    for fidelity, fitness in data.items():
+        stored_fitness = archive.getfitnesses(data[fidelity][0], fidelity=fidelity)
+        assert np.allclose(stored_fitness, data[fidelity][1])
+
+    for fidelity in data.keys():
+        stored_fitness = archive.getfitnesses(all_candidates, fidelity=fidelity)
+        assert np.count_nonzero(np.isnan(stored_fitness)) == len(data[fidelity][1])
+
+
+# @pytest.mark.parametrize('Archive', implementations)
+# def test_getfitnesses_multiple_fid(Archive):
+#     pass
+#
+#
+# @pytest.mark.parametrize('Archive', implementations)
+# def test_getfitnesses_no_fid(Archive):
+#     pass
+
+
 ### A 'happy path' is a simple run through some functionality that just works
 
 @pytest.mark.parametrize('Archive', implementations)
