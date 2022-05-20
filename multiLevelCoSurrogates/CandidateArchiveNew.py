@@ -96,9 +96,13 @@ class CandidateArchiveNew:
         pass
 
 
-    def count(self, *args, **kwargs):
+    def count(self, fidelity: str=None):
         """Count the number of samples archived for the given fidelity"""
-        pass
+        return sum(
+            1
+            for candidate in self.candidates
+            if fidelity in candidate.fidelities
+        )
 
 
     def _addnewcandidate(self, *args, **kwargs):

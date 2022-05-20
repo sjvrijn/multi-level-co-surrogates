@@ -77,6 +77,8 @@ def test_from_bifiddoe(Archive):
 
     archive = Archive.from_bi_fid_DoE(*doe, np.random.rand(num_high), np.random.rand(num_low))
     assert len(archive) == num_low
+    assert archive.count('high') == num_high
+    assert archive.count('low') == num_low
 
 
 ### A 'happy path' is a simple run through some functionality that just works
