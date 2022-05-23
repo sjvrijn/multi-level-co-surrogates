@@ -25,6 +25,19 @@ implementations = [
 ]
 
 
+def setup_archive(Archive):
+    archive = Archive(fidelities=['A', 'B', 'C'])
+    all_candidates = np.random.rand(10, 2)
+    data = {
+        'A': (all_candidates[:5], np.random.rand(5)),
+        'B': (all_candidates, np.random.rand(10)),
+        'C': (all_candidates[5:], np.random.rand(5)),
+    }
+    for fidelity, (candidates, fitness) in data.items():
+        archive.addcandidates(candidates, fitness, fidelity=fidelity)
+    return all_candidates, archive, data
+
+
 @pytest.mark.parametrize('Archive', implementations)
 def test_bare_archive(Archive):
     archive = Archive()
@@ -83,17 +96,7 @@ def test_from_bifiddoe(Archive):
 
 @pytest.mark.parametrize('Archive', implementations)
 def test_getfitnesses_one_fid(Archive):
-    archive = Archive(fidelities=['A', 'B', 'C'])
-
-    all_candidates = np.random.rand(10, 2)
-
-    data = {
-        'A': (all_candidates[:5], np.random.rand(5)),
-        'B': (all_candidates, np.random.rand(10)),
-        'C': (all_candidates[5:], np.random.rand(5)),
-    }
-    for fidelity, (candidates, fitness) in data.items():
-        archive.addcandidates(candidates, fitness, fidelity=fidelity)
+    all_candidates, archive, data = setup_archive(Archive)
 
     # retrieve exactly the fitnesses that were input for these candidates
     for fidelity, (candidates, fitness) in data.items():
