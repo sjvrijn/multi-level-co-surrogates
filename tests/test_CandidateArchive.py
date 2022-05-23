@@ -121,8 +121,8 @@ def test_getfitnesses_one_fid(Archive):
 @pytest.mark.parametrize('Archive', implementations)
 def test_1fid_happy_path(Archive):
     archive = Archive()
-    candidates = np.random.randn(30).reshape((10, 3))
-    fitnesses = np.random.randn(10).reshape((10, 1))
+    candidates = np.random.rand(10, 3)
+    fitnesses = np.random.rand(10, 1)
     archive.addcandidates(candidates.tolist(), fitnesses)
 
     result = archive.getcandidates()
@@ -140,8 +140,8 @@ def test_2fid_happy_path(Archive):
     archive = Archive(fidelities=['AAA', 'BBB'])
 
     num_candidates = 10
-    candidates = np.random.randn(num_candidates*ndim).reshape((num_candidates, ndim))
-    fitnesses = np.random.randn(num_candidates).reshape((num_candidates, 1))
+    candidates = np.random.rand(num_candidates, ndim)
+    fitnesses = np.random.rand(num_candidates, 1)
     with pytest.raises(ValueError):
         archive.addcandidates(candidates, fitnesses)
 
@@ -154,7 +154,7 @@ def test_2fid_happy_path(Archive):
     np.testing.assert_array_almost_equal(fitnesses, fit)
 
     num_fitnesses_BBB = 5
-    new_fitnesses = np.random.randn(num_fitnesses_BBB).reshape((num_fitnesses_BBB, 1))
+    new_fitnesses = np.random.rand(num_fitnesses_BBB, 1)
     indices = np.random.choice(np.arange(10), num_fitnesses_BBB, replace=False)
 
     archive.addcandidates(candidates[indices].tolist(), new_fitnesses, fidelity='BBB')
