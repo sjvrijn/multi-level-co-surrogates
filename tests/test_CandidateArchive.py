@@ -95,13 +95,15 @@ def test_getfitnesses_one_fid(Archive):
     for fidelity, (candidates, fitness) in data.items():
         archive.addcandidates(candidates, fitness, fidelity=fidelity)
 
-    for fidelity, fitness in data.items():
-        stored_fitness = archive.getfitnesses(data[fidelity][0], fidelity=fidelity)
-        assert np.allclose(stored_fitness, data[fidelity][1])
+    # retrieve exactly the fitnesses that were input for these candidates
+    for fidelity, (candidates, fitness) in data.items():
+        stored_fitness = archive.getfitnesses(candidates, fidelity=fidelity)
+        assert np.allclose(stored_fitness, fitness)
 
-    for fidelity in data.keys():
+    # retrieve this fitness for all candidates, assert #input are not NaN
+    for fidelity, (_, fitness) in data.items():
         stored_fitness = archive.getfitnesses(all_candidates, fidelity=fidelity)
-        assert np.count_nonzero(np.isnan(stored_fitness)) == len(data[fidelity][1])
+        assert np.count_nonzero(~np.isnan(stored_fitness)) == len(fitness)
 
 
 # @pytest.mark.parametrize('Archive', implementations)
