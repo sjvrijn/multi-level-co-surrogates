@@ -14,6 +14,7 @@ from hypothesis import given
 from hypothesis.strategies import lists, text, integers
 import numpy as np
 import pytest
+from more_itertools import pairwise
 
 import multiLevelCoSurrogates as mlcs
 from multiLevelCoSurrogates import CandidateArchive, CandidateArchiveNew
@@ -29,9 +30,9 @@ def setup_archive(Archive):
     archive = Archive(fidelities=['A', 'B', 'C'])
     all_candidates = np.random.rand(10, 2)
     data = {
-        'A': (all_candidates[:5], np.random.rand(5)),
+        'A': (all_candidates[:3], np.random.rand(3)),
         'B': (all_candidates, np.random.rand(10)),
-        'C': (all_candidates[5:], np.random.rand(5)),
+        'C': (all_candidates[3:], np.random.rand(7)),
     }
     for fidelity, (candidates, fitness) in data.items():
         archive.addcandidates(candidates, fitness, fidelity=fidelity)
@@ -109,11 +110,21 @@ def test_getfitnesses_one_fid(Archive):
         assert np.count_nonzero(~np.isnan(stored_fitness)) == len(fitness)
 
 
-# @pytest.mark.parametrize('Archive', implementations)
-# def test_getfitnesses_multiple_fid(Archive):
-#     pass
-#
-#
+@pytest.mark.parametrize('Archive', implementations)
+def test_getfitnesses_multiple_fid(Archive):
+    all_candidates, archive, data = setup_archive(Archive)
+
+    for fidelities in pairwise(data.keys()):
+        stored_fitness = archive.getfitnesses(all_candidates, fidelity=fidelities)
+
+        assert stored_fitness.shape == (len(all_candidates), len(fidelities))
+
+        # check that fidelity order as columns is correct
+        for i, fidelity in enumerate(fidelities):
+            column = stored_fitness[:, i]
+            assert np.count_nonzero(~np.isnan(column)) == len(data[fidelity][1])
+
+
 # @pytest.mark.parametrize('Archive', implementations)
 # def test_getfitnesses_no_fid(Archive):
 #     pass
