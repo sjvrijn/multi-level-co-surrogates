@@ -125,11 +125,6 @@ def test_getfitnesses_multiple_fid(Archive):
             assert np.count_nonzero(~np.isnan(column)) == len(data[fidelity][1])
 
 
-# @pytest.mark.parametrize('Archive', implementations)
-# def test_getfitnesses_no_fid(Archive):
-#     pass
-
-
 ### A 'happy path' is a simple run through some functionality that just works
 
 @pytest.mark.parametrize('Archive', implementations)

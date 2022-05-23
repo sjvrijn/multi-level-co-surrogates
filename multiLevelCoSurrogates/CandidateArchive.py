@@ -105,7 +105,7 @@ class CandidateArchive:
                 self._updatecandidate(candidate, fit, fid, verbose=verbose)
 
 
-    def getfitnesses(self, candidates: Iterable, fidelity: Union[str, Iterable[str]]=None) -> Iterable:
+    def getfitnesses(self, candidates: Iterable, fidelity: Union[str, Iterable[str]]) -> Iterable:
         """Return the relevant fitness values for the given candidates"""
 
         fitnesses = np.array([

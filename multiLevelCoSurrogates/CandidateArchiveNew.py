@@ -77,42 +77,26 @@ class CandidateArchiveNew:
             self.candidates.append(Candidate(new_idx, candidate, fidelities))
 
 
-    def getfitnesses(self, candidates: Iterable, fidelity: Union[str, Iterable[str]]=None) -> Iterable:
+    def getfitnesses(self, candidates: Iterable, fidelity: Union[str, Iterable[str]]) -> Iterable:
         """Return the relevant fitness values for the given candidates"""
+
+        if isinstance(fidelity, str):
+            fidelity = [fidelity]
 
         # retrieve all candidates by index, fails if candidate is not in archive
         candidate_indices = [
             self.candidates.index(candidate)
             for candidate in candidates
         ]
-        fidelities = [
-            self.candidates[i].fidelities
+
+        fitnesses = np.array([
+            [self.candidates[i].fidelities.get(f, np.nan) for f in fidelity]
             for i in candidate_indices
-        ]
+        ])
 
-        if isinstance(fidelity, str):
-            return np.array([
-                fid.get(fidelity, np.nan)
-                for fid in fidelities
-            ])
-
-        elif fidelity:
-            return np.array([
-                [fid.get(f, np.nan) for f in fidelity]
-                for fid in fidelities
-            ])
-
-        else:
-            # can probably be cached upon adding candidates...
-            all_fidelities = set()
-            for fid in fidelities:
-                all_fidelities.update(fid.keys())
-            all_fidelities = list(all_fidelities)
-
-            return np.array([
-                [fid.get(f, np.nan) for f in all_fidelities]
-                for fid in fidelities
-            ])
+        if len(fidelity) == 1:
+            return fitnesses.reshape(-1)
+        return fitnesses
 
 
     def getcandidates(self, *args, **kwargs):
