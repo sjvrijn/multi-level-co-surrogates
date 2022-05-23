@@ -90,13 +90,11 @@ class CandidateArchiveNew:
             for i in candidate_indices
         ]
 
-        print(fidelities)
-
         if isinstance(fidelity, str):
             return np.array([
                 fid.get(fidelity, np.nan)
                 for fid in fidelities
-            ]).reshape(-1, 1)
+            ])
 
         elif fidelity:
             return np.array([
