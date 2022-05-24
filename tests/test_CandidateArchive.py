@@ -8,7 +8,6 @@ test_CandidateArchive.py: Set of tests for the mlcs.CandidateArchive
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
-from collections import namedtuple
 
 from hypothesis import given
 from hypothesis.strategies import lists, text, integers
@@ -106,6 +105,25 @@ def test_from_bifiddoe(Archive):
     assert len(archive) == num_low
     assert archive.count('high') == num_high
     assert archive.count('low') == num_low
+
+
+@pytest.mark.parametrize('Archive', implementations)
+def test_as_doe(Archive):
+    archive = Archive(fidelities=['high', 'low'])
+
+    high_x = np.random.rand(10, 2)
+    archive.addcandidates(high_x, np.random.rand(10), fidelity='high')
+
+    low_x = np.random.rand(20, 2)
+    archive.addcandidates(low_x, np.random.rand(20), fidelity='low')
+
+    doe = archive.as_doe()
+
+    assert hasattr(doe, 'high')
+    assert hasattr(doe, 'low')
+
+    np.testing.assert_array_almost_equal(doe.high, high_x)
+    np.testing.assert_array_almost_equal(doe.low, low_x)
 
 
 @pytest.mark.parametrize('Archive', implementations)
