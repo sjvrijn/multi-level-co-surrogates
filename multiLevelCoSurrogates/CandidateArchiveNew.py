@@ -114,18 +114,27 @@ class CandidateArchiveNew:
         return fitnesses
 
 
-    def getcandidates(self, *args, **kwargs):
+    def getcandidates(self, fidelity=None):
         """Retrieve candidates and fitnesses from the archive.
-        :return:                        Candidates, Fitnesses (tuple of numpy arrays)
+        :fidelity:  (List of) fidelities to select by. Default: all
+        :return:    Candidates, Fitnesses (tuple of numpy arrays)
         """
+        if not fidelity:
+            fidelity = self.fidelities
+        elif isinstance(fidelity, str):
+            fidelity = [fidelity]
+
         candidates, fitnesses = [], []
         for candidate in self.candidates:
-            candidates.append(candidate.x)
-            fitnesses.append(np.ravel([
-                candidate.fidelities.get(fidelity, np.nan)
-                for fidelity in self.fidelities
-            ]))
-            print(fitnesses)
+            fitness = [
+                candidate.fidelities.get(fid, np.nan)
+                for fid in fidelity
+            ]
+
+            # add if any specified fidelities are present for this candidate
+            if np.count_nonzero(~np.isnan(fitness)):
+                fitnesses.append(fitness)
+                candidates.append(candidate.x)
 
         return CandidateSet(np.array(candidates), np.array(fitnesses))
 
