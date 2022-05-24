@@ -141,7 +141,10 @@ class CandidateArchiveNew:
 
     def as_doe(self):
         """Present the stored candidates as a bi-fidelity DoE"""
-        pass
+        return BiFidelityDoE(
+            self.getcandidates(fidelity='high').candidates,
+            self.getcandidates(fidelity='low').candidates,
+        )
 
 
     def count(self, fidelity: str=None):
