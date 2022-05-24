@@ -5,19 +5,14 @@
 CandidateArchiveNew.py: Reimplementation of CandidateArchive to include indices,
                         be nicer and easier.
 """
-from collections import namedtuple
 from dataclasses import dataclass
-from itertools import chain
 from typing import Iterable, Union
-
-from more_itertools import pairwise
 
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 
 import numpy as np
-from warnings import warn
 
 import mf2
 from multiLevelCoSurrogates.utils import BiFidelityDoE
@@ -159,14 +154,6 @@ class CandidateArchiveNew:
         )
 
 
-    def _addnewcandidate(self, *args, **kwargs):
-        pass
-
-
-    def _updatecandidate(self, *args, **kwargs):
-        pass
-
-
     def _updateminmax(self, value: float, fidelity: str=None):
 
         if fidelity not in self.max:  # or self.min
@@ -179,10 +166,6 @@ class CandidateArchiveNew:
 
     def __len__(self):
         return len(self.candidates)
-
-
-    def __index__(self, val):
-        pass
 
 
 @dataclass(eq=False)
