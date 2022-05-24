@@ -72,6 +72,12 @@ class CandidateArchiveNew:
         """Add a candidate, fitness pair to the archive for given fidelity.
         Will overwrite fitness value if already present
         """
+        # unspecified fidelity when explicit fidelities are present raises Error
+        if fidelity is None and len(self.fidelities) >= 1 and fidelity not in self.fidelities:
+            raise ValueError(f'Since explcit fidelities are present, new candidates '
+                             f'cannot be added with implicit fidelity. Fidelities '
+                             f'currently present: {self.fidelities}')
+
         try:
             idx = self.candidates.index(candidate)
             self.candidates[idx].fidelities[fidelity] = fitness
