@@ -32,6 +32,9 @@ class CandidateArchiveNew:
         self._update_history = []
         self._all_fidelities = {}  # dictionary keys used as 'ordered set'
 
+        self.min = {}
+        self.max = {}
+
 
     @classmethod
     def from_multi_fidelity_function(
@@ -90,6 +93,7 @@ class CandidateArchiveNew:
 
         # create key entry if it does not yet exist
         self._all_fidelities[fidelity] = None
+        self._updateminmax(fitness, fidelity)
 
 
     def getfitnesses(self, candidates: Iterable, fidelity: Union[str, Iterable[str]]) -> Iterable:
@@ -164,15 +168,13 @@ class CandidateArchiveNew:
 
 
     def _updateminmax(self, value: float, fidelity: str=None):
-        # if value > self.max[fidelity]:
-        #     self.max[fidelity] = value
-        # elif value < self.min[fidelity]:
-        #     self.min[fidelity] = value
-        pass
 
-
-    def __contains__(self, val):
-        pass
+        if fidelity not in self.max:  # or self.min
+            self.max[fidelity] = self.min[fidelity] = value
+        elif value > self.max[fidelity]:
+            self.max[fidelity] = value
+        elif value < self.min[fidelity]:
+            self.min[fidelity] = value
 
 
     def __len__(self):
