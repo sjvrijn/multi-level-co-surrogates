@@ -85,6 +85,19 @@ def test_add_same_candidate_maintains_length(Archive):
 
 
 @pytest.mark.parametrize('Archive', implementations)
+def test_add_candidate_without_fidelity_raises_error(Archive):
+    all_candidates, archive, data = setup_archive(Archive)
+
+    candidates = np.random.rand(5, 2)
+    fitnesses = np.random.rand(5, 1)
+
+    with pytest.raises(ValueError):
+        archive.addcandidate(candidates[0], fitnesses[0])
+    with pytest.raises(ValueError):
+        archive.addcandidates(candidates, fitnesses)
+
+
+@pytest.mark.parametrize('Archive', implementations)
 def test_from_bifiddoe(Archive):
     ndim, num_high, num_low = 2, 5, 10
     doe = mlcs.bi_fidelity_doe(ndim, num_high, num_low)
