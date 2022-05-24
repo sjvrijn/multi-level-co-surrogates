@@ -30,6 +30,7 @@ class CandidateArchiveNew:
         """Archive of candidates that record fitnessin multiple fidelities"""
         self.candidates = []
         self._update_history = []
+        self._all_fidelities = {}  # dictionary keys used as 'ordered set'
 
 
     @classmethod
@@ -54,6 +55,11 @@ class CandidateArchiveNew:
         return archive
 
 
+    @property
+    def fidelities(self):
+        return self._all_fidelities.keys()
+
+
     def addcandidates(self, candidates, fitnesses, fidelity=None):
         """Add candidate, fitness pairs to the archive for given fidelity.
         Will overwrite fitness value if already present.
@@ -75,6 +81,9 @@ class CandidateArchiveNew:
             new_idx = len(self.candidates)
             fidelities = {fidelity: fitness}
             self.candidates.append(Candidate(new_idx, candidate, fidelities))
+
+        # create key entry if it does not yet exist
+        self._all_fidelities[fidelity] = None
 
 
     def getfitnesses(self, candidates: Iterable, fidelity: Union[str, Iterable[str]]) -> Iterable:
@@ -101,12 +110,18 @@ class CandidateArchiveNew:
 
     def getcandidates(self, *args, **kwargs):
         """Retrieve candidates and fitnesses from the archive.
-
-        :param fidelity:                (optional) Only return candidate and fitness information for the specified fidelities
-        :param num_recent_candidates:   (optional) Only return the last `n` candidates added to the archive
         :return:                        Candidates, Fitnesses (tuple of numpy arrays)
         """
-        pass
+        candidates, fitnesses = [], []
+        for candidate in self.candidates:
+            candidates.append(candidate.x)
+            fitnesses.append(np.ravel([
+                candidate.fidelities.get(fidelity, np.nan)
+                for fidelity in self.fidelities
+            ]))
+            print(fitnesses)
+
+        return CandidateSet(np.array(candidates), np.array(fitnesses))
 
 
     def as_doe(self):
