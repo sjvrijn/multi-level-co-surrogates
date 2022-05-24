@@ -209,7 +209,9 @@ class CandidateArchive:
 
 
     def _updateminmax(self, fidelity: str, value):
-        if value > self.max[fidelity]:
+        if np.isinf(self.min[fidelity]):
+            self.max[fidelity] = self.min[fidelity] = value
+        elif value > self.max[fidelity]:
             self.max[fidelity] = value
         elif value < self.min[fidelity]:
             self.min[fidelity] = value
