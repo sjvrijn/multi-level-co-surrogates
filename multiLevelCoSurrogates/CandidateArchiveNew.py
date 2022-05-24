@@ -64,7 +64,7 @@ class CandidateArchiveNew:
         """Add candidate, fitness pairs to the archive for given fidelity.
         Will overwrite fitness value if already present.
         """
-        for candidate, fitness in zip(candidates, fitnesses):
+        for candidate, fitness in zip(candidates, np.ravel(fitnesses)):
             self.addcandidate(candidate, fitness, fidelity)
 
 
