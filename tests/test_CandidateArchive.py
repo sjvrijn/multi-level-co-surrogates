@@ -84,6 +84,15 @@ def test_add_same_candidate_maintains_length(Archive):
 
 
 @pytest.mark.parametrize('Archive', implementations)
+def test_min_max(Archive):
+    all_candidates, archive, data = setup_archive(Archive)
+
+    for fidelity, (_, fitnesses) in data.items():
+        assert archive.max[fidelity] == np.max(fitnesses)
+        assert archive.min[fidelity] == np.min(fitnesses)
+
+
+@pytest.mark.parametrize('Archive', implementations)
 def test_add_candidate_without_fidelity_raises_error(Archive):
     all_candidates, archive, data = setup_archive(Archive)
 
