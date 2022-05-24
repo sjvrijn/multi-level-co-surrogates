@@ -138,9 +138,8 @@ class CandidateArchiveNew:
     def count(self, fidelity: str=None):
         """Count the number of samples archived for the given fidelity"""
         return sum(
-            1
+            fidelity in candidate.fidelities
             for candidate in self.candidates
-            if fidelity in candidate.fidelities
         )
 
 
