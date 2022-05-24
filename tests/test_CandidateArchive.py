@@ -138,10 +138,8 @@ def test_getfitnesses_multiple_fid(Archive):
             assert np.count_nonzero(~np.isnan(column)) == len(data[fidelity][1])
 
 
-### A 'happy path' is a simple run through some functionality that just works
-
 @pytest.mark.parametrize('Archive', implementations)
-def test_1fid_happy_path(Archive):
+def test_1fid_getcandidates(Archive):
     archive = Archive()
     candidates = np.random.rand(10, 3)
     fitnesses = np.random.rand(10, 1)
@@ -157,19 +155,14 @@ def test_1fid_happy_path(Archive):
 
 
 @pytest.mark.parametrize('Archive', implementations)
-def test_2fid_happy_path(Archive):
+def test_2fid_getcandidates(Archive):
     ndim = 3
     archive = Archive(fidelities=['AAA', 'BBB'])
 
     num_candidates = 10
     candidates = np.random.rand(num_candidates, ndim)
     fitnesses = np.random.rand(num_candidates, 1)
-    with pytest.raises(ValueError):
-        archive.addcandidates(candidates, fitnesses)
-
     archive.addcandidates(candidates.tolist(), fitnesses, fidelity='AAA')
-    assert archive.count('AAA') == num_candidates
-    assert archive.count('BBB') == 0
 
     cand, fit = archive.getcandidates(fidelity='AAA')
     np.testing.assert_array_almost_equal(candidates, cand)
@@ -180,8 +173,6 @@ def test_2fid_happy_path(Archive):
     indices = np.random.choice(np.arange(10), num_fitnesses_BBB, replace=False)
 
     archive.addcandidates(candidates[indices].tolist(), new_fitnesses, fidelity='BBB')
-    assert archive.count('AAA') == num_candidates
-    assert archive.count('BBB') == num_fitnesses_BBB
 
     cand, fit = archive.getcandidates(fidelity='BBB')
     # comparing sorted because order does not matter...
