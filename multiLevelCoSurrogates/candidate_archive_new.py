@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-CandidateArchiveNew.py: Reimplementation of CandidateArchive to include indices,
-                        be nicer and easier.
+candidate_archive_new.py: Reimplementation of CandidateArchive to include indices,
+                          be nicer and easier.
 """
 from dataclasses import dataclass
 from typing import Iterable, Union
