@@ -126,9 +126,9 @@ class ProtoEG:
     def _get_resample_indices(self, fidelity: str, h: int, l: int):
         fraction = 1 - self.calculate_reuse_fraction(h, l, fidelity)
         num_models_to_resample = int(fraction * self.num_reps)
-        indices_to_resample = np.random.choice(self.num_reps, size=num_models_to_resample,
-                                               replace=False)
-        return indices_to_resample
+        return np.random.choice(
+            self.num_reps, size=num_models_to_resample, replace=False
+        )
 
 
     def _create_train_archive(self, train):
@@ -215,8 +215,8 @@ class ProtoEG:
         :returns: fraction [0, 1] of samples that can be reused
         """
 
-        max_high = self.archive.count('high') if not max_high else max_high
-        max_low = self.archive.count('low') if not max_low else max_low
+        max_high = max_high or self.archive.count('high')
+        max_low = max_low or self.archive.count('low')
 
         if fidelity == 'high':
             fraction = (max_high-num_high+1) / (max_high+1)
@@ -251,7 +251,6 @@ class ProtoEG:
             return  # no need to make the plot if not showing or saving it
 
         data = self.error_grid['mses']
-        LABEL_N_HIGH = "$n_h$"
         LABEL_N_LOW = "$n_l$"
 
         fig, ax = plt.subplots(figsize=(7.5, 4))
@@ -286,6 +285,7 @@ class ProtoEG:
         divider = make_axes_locatable(ax)
 
         if label_y:
+            LABEL_N_HIGH = "$n_h$"
             ax.set_ylabel(LABEL_N_HIGH)
         else:
             ax.yaxis.set_tick_params(left=False, labelleft=False, which='both')

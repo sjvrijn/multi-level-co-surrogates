@@ -29,8 +29,7 @@ def prepare_DoE(func, nh=3, nl=5):
 def get_experiment_subsampled_EG(func, DoE, instances):
 
     results = []
-    for i, (num_high, num_low, rep) in enumerate(instances):
-
+    for num_high, num_low, rep in instances:
         mlcs.set_seed_by_instance(num_high, num_low, rep)
 
         # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
@@ -179,7 +178,7 @@ def test_protoEG_subsample_errorgrid_update_high():
     proto_eg = get_subsampled_protoEG(archive, num_reps)
 
     np.random.seed(0)
-    non_high = set(tuple(c) for c in DoE_low) - set(tuple(c) for c in DoE_high)
+    non_high = {tuple(c) for c in DoE_low} - {tuple(c) for c in DoE_high}
     new_sample = np.array(next(iter(non_high))).reshape(1, -1) # just take 1 element
     archive.addcandidate(candidate=new_sample.flatten(), fitness=func.high(new_sample), fidelity='high')
 

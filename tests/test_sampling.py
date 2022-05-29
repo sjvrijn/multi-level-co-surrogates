@@ -27,10 +27,10 @@ def test_split_doe_with_include_high():
     assert len(other.high) == len(doe.high) - num_high + 1
 
     X = tuple(X[0])
-    assert X in set(tuple(x) for x in selected.low)
-    assert X in set(tuple(x) for x in selected.high)
-    assert X not in set(tuple(x) for x in other.low)
-    assert X not in set(tuple(x) for x in other.high)
+    assert X in {tuple(x) for x in selected.low}
+    assert X in {tuple(x) for x in selected.high}
+    assert X not in {tuple(x) for x in other.low}
+    assert X not in {tuple(x) for x in other.high}
 
 
 def test_split_doe_with_include_low():
@@ -45,10 +45,10 @@ def test_split_doe_with_include_low():
     assert len(other.high) == len(doe.high) - num_high
 
     X = tuple(X[0])
-    assert X in set(tuple(x) for x in selected.low)
-    assert X not in set(tuple(x) for x in selected.high)
-    assert X not in set(tuple(x) for x in other.low)
-    assert X not in set(tuple(x) for x in other.high)
+    assert X in {tuple(x) for x in selected.low}
+    assert X not in {tuple(x) for x in selected.high}
+    assert X not in {tuple(x) for x in other.low}
+    assert X not in {tuple(x) for x in other.high}
 
 
 def test_must_include_no_warning():

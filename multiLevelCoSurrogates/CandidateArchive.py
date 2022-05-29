@@ -201,11 +201,7 @@ class CandidateArchive:
             return len(self.data)
 
         idx = self.fidelities.index(fidelity)
-        return sum(
-            1
-            for fitnesses in self.data.values()
-            if not np.isnan(fitnesses[idx])
-        )
+        return sum(not np.isnan(fitnesses[idx]) for fitnesses in self.data.values())
 
 
     def _updateminmax(self, fidelity: str, value):
