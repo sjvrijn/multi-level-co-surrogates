@@ -22,7 +22,7 @@ from .CandidateArchive import CandidateSet
 class CandidateArchiveNew:
 
     def __init__(self, *args, **kwargs):
-        """Archive of candidates that record fitnessin multiple fidelities"""
+        """Archive of candidates that record fitness in multiple fidelities"""
         self.candidates = []
         self._update_history = []
         self._all_fidelities = {}  # dictionary keys used as 'ordered set'
