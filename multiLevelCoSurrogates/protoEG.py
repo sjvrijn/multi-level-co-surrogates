@@ -77,7 +77,7 @@ class ProtoEG:
             self.archive, num_reps=self.num_reps, step=self.interval
         )
 
-        full_DoE = self.archive.as_doe()
+        full_doe = self.archive.as_doe()
         X = X.reshape(1, -1)
 
         for h, l in instance_spec.pixels:
@@ -91,7 +91,7 @@ class ProtoEG:
 
             for idx in indices_to_resample:
                 mlcs.set_seed_by_instance(h, l, idx)
-                train_doe, test_doe = mlcs.split_with_include(full_DoE, h, l, must_include=X, fidelity=fidelity)
+                train_doe, test_doe = mlcs.split_with_include(full_doe, h, l, must_include=X, fidelity=fidelity)
                 test_high = test_doe.high
 
                 self.test_sets[(h,l)][idx] = test_high
@@ -134,7 +134,7 @@ class ProtoEG:
     def _create_train_archive(self, train):
         train_low_y = self.archive.getfitnesses(train.low, fidelity='low')
         train_high_y = self.archive.getfitnesses(train.high, fidelity='high')
-        return mlcs.CandidateArchive.from_bi_fid_DoE(train.high, train.low, train_high_y, train_low_y)
+        return mlcs.CandidateArchive.from_bi_fid_doe(train.high, train.low, train_high_y, train_low_y)
 
 
     def _extend_error_grid(self, fidelity: str, coord: Tuple[int, int]):

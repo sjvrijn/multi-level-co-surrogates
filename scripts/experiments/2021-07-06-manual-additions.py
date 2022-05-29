@@ -66,7 +66,7 @@ def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, f
     budget = init_budget - (doe_n_high + doe_n_low*cost_ratio)
 
     #create archive
-    archive = mlcs.CandidateArchive.from_bi_fid_DoE(high_x, low_x, high_y, low_y)
+    archive = mlcs.CandidateArchive.from_bi_fid_doe(high_x, low_x, high_y, low_y)
 
     proto_eg = mlcs.ProtoEG(archive, num_reps=num_reps, mfm_opts=mfm_opts)
     proto_eg.subsample_errorgrid()
@@ -164,7 +164,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, fidelity
     budget -= (doe_n_high + doe_n_low*cost_ratio)
 
     #create archive
-    archive = mlcs.CandidateArchive.from_bi_fid_DoE(high_x, low_x, high_y, low_y)
+    archive = mlcs.CandidateArchive.from_bi_fid_doe(high_x, low_x, high_y, low_y)
 
     #make mf-model using archive
     mfbo = mlcs.MultiFidelityBO(func, archive, **mfm_opts)

@@ -24,9 +24,8 @@ CandidateSet = namedtuple('CandidateSet', ['candidates', 'fitnesses'])
 
 class CandidateArchive:
 
-    def __init__(self, ndim: int, fidelities=None):
+    def __init__(self, fidelities=None):
         """An archive of candidate: fitnesses pairs, for one or multiple fidelities"""
-        self.ndim = ndim
 
         if not fidelities:
             fidelities = ['fitness']
@@ -38,7 +37,7 @@ class CandidateArchive:
 
 
     @classmethod
-    def from_multi_fidelity_function(cls, multi_fid_func, ndim: int=None):
+    def from_multi_fidelity_function(cls, multi_fid_func):
         """Create a CandidateArchive based on a multi-fidelity function. This
         creates an archive with 'columns' for every fidelity of the function
         *plus* a difference-column for each consequtive pair of fidelities.
@@ -53,25 +52,23 @@ class CandidateArchive:
             For `fidelities=('high', 'medium', 'low')`, creates an archive with
             `fidelities=('high', 'medium', 'low', 'high-medium', 'medium-low')`
         """
-        if ndim is None:
-            ndim = multi_fid_func.ndim
 
         diff_fidelities = tuple('-'.join(fidelities)
                                 for fidelities in pairwise(multi_fid_func.fidelity_names))
 
         fidelities = tuple(multi_fid_func.fidelity_names) + diff_fidelities
 
-        return cls(ndim=ndim, fidelities=fidelities)
+        return cls(fidelities=fidelities)
 
 
     @classmethod
-    def from_bi_fid_DoE(cls, high_x, low_x, high_y, low_y):
+    def from_bi_fid_doe(cls, high_x, low_x, high_y, low_y):
         """Create a populated CandidateArchive from an existing bi-fidelity DoE
         (high_x, low_x) with corresponding fitness values (high_y, low_y)
         """
         ndim = len(high_x[0])
         fidelities = ['high', 'low', 'high-low']
-        archive = cls(ndim=ndim, fidelities=fidelities)
+        archive = cls(fidelities=fidelities)
         archive.addcandidates(low_x, low_y, fidelity='low')
         archive.addcandidates(high_x, high_y, fidelity='high')
         return archive
@@ -108,7 +105,7 @@ class CandidateArchive:
                 self._updatecandidate(candidate, fit, fid, verbose=verbose)
 
 
-    def getfitnesses(self, candidates: Iterable, fidelity: Union[str, Iterable[str]]=None) -> Iterable:
+    def getfitnesses(self, candidates: Iterable, fidelity: Union[str, Iterable[str]]) -> Iterable:
         """Return the relevant fitness values for the given candidates"""
 
         fitnesses = np.array([
@@ -210,40 +207,11 @@ class CandidateArchive:
             if not np.isnan(fitnesses[idx])
         )
 
-    def items(self, fidelity: str=None):
-        """Retrieve candidates and fitnesses from the archive.
-
-        :param fidelity:                (optional) Only return candidate and fitness information for the specified fidelities
-        :return:                        Candidates, Fitnesses (tuple of numpy arrays)
-        """
-
-        if type(fidelity) in [tuple, list]:
-            pass
-        elif fidelity:
-            fidelity = [fidelity]
-        else:
-            fidelity = ['fitness']
-
-        indices = [self.fidelities.index(fid) for fid in fidelity]
-
-        candidates = []
-        fitnesses = []
-        for candidate, fits in self.data.items():
-            for idx in indices:
-                if np.isnan(fits[idx]):
-                    break
-            else:
-                candidates.append(list(candidate))
-                fitnesses.append([fits[idx] for idx in indices])
-
-        candidates = np.array(candidates)
-        fitnesses = np.array(fitnesses)
-
-        return zip(candidates, fitnesses)
-
 
     def _updateminmax(self, fidelity: str, value):
-        if value > self.max[fidelity]:
+        if np.isinf(self.min[fidelity]):
+            self.max[fidelity] = self.min[fidelity] = value
+        elif value > self.max[fidelity]:
             self.max[fidelity] = value
         elif value < self.min[fidelity]:
             self.min[fidelity] = value
@@ -255,11 +223,3 @@ class CandidateArchive:
 
     def __len__(self):
         return len(self.data)
-
-
-    def __index__(self, val) -> dict[str: float]:
-        return {
-            fid: fitness
-            for fid, fitness
-            in zip(self.fidelities, self.data[tuple(val)])
-        }

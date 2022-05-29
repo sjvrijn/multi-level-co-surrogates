@@ -62,59 +62,59 @@ def test_must_include_no_warning():
 
 # remove_from_bi_fid_doe
 def test_remove_from_bifiddoe():
-    DoE = mlcs.bi_fidelity_doe(2, 5, 10)
-    X = DoE.high[3]
-    assert X in DoE.high and X in DoE.low
-    DoE = mlcs.remove_from_bi_fid_doe(X=X, DoE=DoE)
-    assert X not in DoE.high and X not in DoE.low
+    doe = mlcs.bi_fidelity_doe(2, 5, 10)
+    X = doe.high[3]
+    assert X in doe.high and X in doe.low
+    doe = mlcs.remove_from_bi_fid_doe(X=X, doe=doe)
+    assert X not in doe.high and X not in doe.low
 
 
 # split_bi_fidelity_doe
 def test_split_bifiddoe_errors():
-    DoE = mlcs.bi_fidelity_doe(2, 5, 10)
+    doe = mlcs.bi_fidelity_doe(2, 5, 10)
     # invalid num_high
     with raises(ValueError):
-        mlcs.split_bi_fidelity_doe(DoE, -1, 7)
+        mlcs.split_bi_fidelity_doe(doe, -1, 7)
     with raises(ValueError):
-        mlcs.split_bi_fidelity_doe(DoE, 6, 7)
+        mlcs.split_bi_fidelity_doe(doe, 6, 7)
 
     # invalid num_low
     with raises(ValueError):
-        mlcs.split_bi_fidelity_doe(DoE, 3, 11)
+        mlcs.split_bi_fidelity_doe(doe, 3, 11)
 
     # # invalid comparison
     with raises(ValueError):
-        mlcs.split_bi_fidelity_doe(DoE, 4, 3)
+        mlcs.split_bi_fidelity_doe(doe, 4, 3)
 
 
 def test_split_bifiddoe_warnings():
-    DoE = mlcs.bi_fidelity_doe(2, 5, 10)
+    doe = mlcs.bi_fidelity_doe(2, 5, 10)
 
     # not enough high-fid
     with warns(mlcs.LowHighFidSamplesWarning):
-        mlcs.split_bi_fidelity_doe(DoE, 0, 3)
+        mlcs.split_bi_fidelity_doe(doe, 0, 3)
     with warns(mlcs.LowHighFidSamplesWarning):
-        mlcs.split_bi_fidelity_doe(DoE, 1, 3)
+        mlcs.split_bi_fidelity_doe(doe, 1, 3)
 
     # no high-fid samples in test-set
     with warns(mlcs.NoHighFidTrainSamplesWarning):
-        mlcs.split_bi_fidelity_doe(DoE, 5, 7)
+        mlcs.split_bi_fidelity_doe(doe, 5, 7)
 
     # no non-high-fidelity low-fidelity samples in test set
     with warns(mlcs.NoSpareLowFidSamplesWarning):
-        mlcs.split_bi_fidelity_doe(DoE, 3, 3)
+        mlcs.split_bi_fidelity_doe(doe, 3, 3)
 
 
 def test_split_bifiddoe():
-    DoE = mlcs.bi_fidelity_doe(2, 5, 10)
+    doe = mlcs.bi_fidelity_doe(2, 5, 10)
 
     a_high, a_low = 3, 7
-    a, b = mlcs.split_bi_fidelity_doe(DoE, 3, 7)
+    a, b = mlcs.split_bi_fidelity_doe(doe, 3, 7)
 
     assert len(a.low) == a_low
     assert len(a.high) == a_high
-    assert len(a.low) + len(b.low) == len(DoE.low)
-    assert len(a.high) + len(b.high) == len(DoE.high)
+    assert len(a.low) + len(b.low) == len(doe.low)
+    assert len(a.high) + len(b.high) == len(doe.high)
 
 
 def test_valueerror_split_bifiddoe():
