@@ -316,7 +316,7 @@ def plot_1d_example(func, high_x, high_y, low_x, low_y, mfbo, num_high, num_low,
 
 def create_resampling_error_grid(
         func: MultiFidelityFunction,
-        DoE_spec: Tuple[int, int],
+        doe_spec: Tuple[int, int],
         instances: Sequence[Instance],
         mfbo_options: Dict[str, Any],
         save_dir: Path,
@@ -335,7 +335,7 @@ def create_resampling_error_grid(
 
     # Determine unique output path for this experiment
     surr_name = repr_surrogate_name(mfbo_options)
-    doe_high, doe_low = DoE_spec
+    doe_high, doe_low = doe_spec
 
     fname = standardize_fname_for_file(func.name)
     output_path = save_dir / f"{surr_name}-{func.ndim}d-{fname}-sub{doe_high}-{doe_low}.nc"
@@ -360,8 +360,8 @@ def create_resampling_error_grid(
 
     # Create initial DoE
     np.random.seed(20160501)  # Setting seed for reproducibility
-    DoE = mlcs.bi_fidelity_doe(func.ndim, doe_high, doe_low)
-    DoE = scale_to_function(func, DoE)
+    doe = mlcs.bi_fidelity_doe(func.ndim, doe_high, doe_low)
+    doe = scale_to_function(func, doe)
 
 
     results = []
@@ -373,7 +373,7 @@ def create_resampling_error_grid(
         set_seed_by_instance(num_high, num_low, rep)
 
         # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
-        (high_x, low_x), _ = mlcs.split_bi_fidelity_doe(DoE, num_high, num_low)
+        (high_x, low_x), _ = mlcs.split_bi_fidelity_doe(doe, num_high, num_low)
         high_y, low_y = func.high(high_x), \
                         func.low(low_x)
 
@@ -429,7 +429,7 @@ def create_resampling_error_grid(
 
 def create_resampling_leftover_error_grid(
         func: MultiFidelityFunction,
-        DoE_spec: Tuple[int, int],
+        doe_spec: Tuple[int, int],
         instances: Sequence[Instance],
         mfbo_options: Dict[str, Any],
         save_dir: Path,
@@ -449,7 +449,7 @@ def create_resampling_leftover_error_grid(
 
     # Determine unique output path for this experiment
     surr_name = repr_surrogate_name(mfbo_options)
-    doe_high, doe_low = DoE_spec
+    doe_high, doe_low = doe_spec
 
     fname = standardize_fname_for_file(func.name)
     output_path = save_dir / f"{surr_name}-{func.ndim}d-{fname}-sub{doe_high}-{doe_low}-seed{seed_offset}.nc"
@@ -474,8 +474,8 @@ def create_resampling_leftover_error_grid(
 
     # Create initial DoE
     np.random.seed(20160501 + seed_offset)  # Setting seed for reproducibility
-    DoE = mlcs.bi_fidelity_doe(func.ndim, doe_high, doe_low)
-    DoE = scale_to_function(func, DoE)
+    doe = mlcs.bi_fidelity_doe(func.ndim, doe_high, doe_low)
+    doe = scale_to_function(func, doe)
 
 
     results = []
@@ -487,7 +487,7 @@ def create_resampling_leftover_error_grid(
         set_seed_by_instance(num_high, num_low, rep)
 
         # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
-        selected, test = mlcs.split_bi_fidelity_doe(DoE, num_high, num_low)
+        selected, test = mlcs.split_bi_fidelity_doe(doe, num_high, num_low)
         high_y, low_y = func.high(selected.high), \
                         func.low(selected.low)
 
@@ -668,9 +668,9 @@ def create_subsampling_error_grid(
         # but that values from `archive` are re-used.
         raise NotImplementedError
 
-    DoE = archive.as_doe()
-    max_num_high = len(DoE.high)
-    max_num_low = len(DoE.low)
+    doe = archive.as_doe()
+    max_num_high = len(doe.high)
+    max_num_low = len(doe.low)
 
     error_grid = np.full((max_num_high+1, max_num_low+1, num_reps+1, 3), np.nan)
 
@@ -688,7 +688,7 @@ def create_subsampling_error_grid(
             print(f"{i}/{len(instances)}")
 
         # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification
-        (high_x, low_x), _ = mlcs.split_bi_fidelity_doe(DoE, num_high, num_low)
+        (high_x, low_x), _ = mlcs.split_bi_fidelity_doe(doe, num_high, num_low)
         high_y, low_y = func.high(high_x), \
                         func.low(low_x)
 

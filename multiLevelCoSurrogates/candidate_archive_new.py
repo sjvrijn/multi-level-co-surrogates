@@ -37,10 +37,11 @@ class CandidateArchiveNew:
 
 
     @classmethod
-    def from_bi_fid_DoE(cls, high_x: np.ndarray, low_x: np.ndarray,
+    def from_bi_fid_doe(cls, high_x: np.ndarray, low_x: np.ndarray,
                         high_y: Iterable[float], low_y: Iterable[float]):
-        """Create a populated CandidateArchive from an existing bi-fidelity DoE
-        (high_x, low_x) with corresponding fitness values (high_y, low_y)
+        """Create a populated CandidateArchive from an existing bi-fidelity
+        Design of Experiments (DoE) [high_x, low_x] with corresponding fitness
+        values [high_y, low_y]
         """
         archive = cls()
         archive.addcandidates(low_x, low_y, fidelity='low')

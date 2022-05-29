@@ -62,7 +62,7 @@ class CandidateArchive:
 
 
     @classmethod
-    def from_bi_fid_DoE(cls, high_x, low_x, high_y, low_y):
+    def from_bi_fid_doe(cls, high_x, low_x, high_y, low_y):
         """Create a populated CandidateArchive from an existing bi-fidelity DoE
         (high_x, low_x) with corresponding fitness values (high_y, low_y)
         """

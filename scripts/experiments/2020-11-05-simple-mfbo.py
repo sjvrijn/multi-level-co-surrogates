@@ -427,7 +427,7 @@ def make_mf_doe(func: mf2.MultiFidelityFunction, doe_n_high: int, doe_n_low: int
     high_x, low_x = scale_to_function(func, [high_x, low_x])
     high_y, low_y = func.high(high_x), func.low(low_x)
     # create archive
-    return mlcs.CandidateArchive.from_bi_fid_DoE(high_x, low_x, high_y, low_y)
+    return mlcs.CandidateArchive.from_bi_fid_doe(high_x, low_x, high_y, low_y)
 
 
 #TODO de-duplicate (already present in processing.py
