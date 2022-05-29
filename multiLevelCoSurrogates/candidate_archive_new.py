@@ -32,18 +32,13 @@ class CandidateArchiveNew:
 
 
     @classmethod
-    def from_multi_fidelity_function(
-            cls,
-            multi_fid_func: mf2.MultiFidelityFunction,
-            *args,
-            **kwargs
-    ):
-
+    def from_multi_fidelity_function(cls, multi_fid_func: mf2.MultiFidelityFunction):
         return cls()
 
 
     @classmethod
-    def from_bi_fid_DoE(cls, high_x, low_x, high_y, low_y):
+    def from_bi_fid_DoE(cls, high_x: np.ndarray, low_x: np.ndarray,
+                        high_y: Iterable[float], low_y: Iterable[float]):
         """Create a populated CandidateArchive from an existing bi-fidelity DoE
         (high_x, low_x) with corresponding fitness values (high_y, low_y)
         """
@@ -58,7 +53,8 @@ class CandidateArchiveNew:
         return self._all_fidelities.keys()
 
 
-    def addcandidates(self, candidates, fitnesses, fidelity=None):
+    def addcandidates(self, candidates: np.ndarray,
+                      fitnesses: Iterable[float], fidelity: str=None):
         """Add candidate, fitness pairs to the archive for given fidelity.
         Will overwrite fitness value if already present.
         """
@@ -66,7 +62,7 @@ class CandidateArchiveNew:
             self.addcandidate(candidate, fitness, fidelity)
 
 
-    def addcandidate(self, candidate, fitness, fidelity=None):
+    def addcandidate(self, candidate: np.ndarray, fitness: float, fidelity: str=None):
         """Add a candidate, fitness pair to the archive for given fidelity.
         Will overwrite fitness value if already present
         """
@@ -91,7 +87,8 @@ class CandidateArchiveNew:
         self._updateminmax(fitness, fidelity)
 
 
-    def getfitnesses(self, candidates: Iterable, fidelity: Union[str, Iterable[str]]) -> Iterable:
+    def getfitnesses(self, candidates: np.ndarray,
+                     fidelity: Union[str, Iterable[str]]) -> np.ndarray:
         """Return the relevant fitness values for the given candidates"""
 
         if isinstance(fidelity, str):
@@ -113,7 +110,7 @@ class CandidateArchiveNew:
         return fitnesses
 
 
-    def getcandidates(self, fidelity=None):
+    def getcandidates(self, fidelity: Union[str, Iterable[str]]=None) -> CandidateSet:
         """Retrieve candidates and fitnesses from the archive.
         :fidelity:  (List of) fidelities to select by. Default: all
         :return:    Candidates, Fitnesses (tuple of numpy arrays)
@@ -138,7 +135,7 @@ class CandidateArchiveNew:
         return CandidateSet(np.array(candidates), np.array(fitnesses))
 
 
-    def as_doe(self):
+    def as_doe(self) -> BiFidelityDoE:
         """Present the stored candidates as a bi-fidelity DoE"""
         return BiFidelityDoE(
             self.getcandidates(fidelity='high').candidates,
@@ -146,7 +143,7 @@ class CandidateArchiveNew:
         )
 
 
-    def count(self, fidelity: str=None):
+    def count(self, fidelity: str=None) -> int:
         """Count the number of samples archived for the given fidelity"""
         return sum(
             fidelity in candidate.fidelities
