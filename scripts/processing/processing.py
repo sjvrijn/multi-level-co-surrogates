@@ -115,7 +115,8 @@ def plot_archive(
     ax.legend(loc=0)
     for suffix in suffixes:
         fig.savefig(save_as.with_suffix(suffix))
-    plt.close()
+    fig.clear()
+    plt.close('all')
 
 
 def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
@@ -238,6 +239,7 @@ def plot_error_grid(data, title, vmin=.5, vmax=100, points=(),
             plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
+    fig.clear()
     plt.close('all')
 
 
@@ -301,7 +303,8 @@ def plot_multiple_error_grids(datas, titles, as_log=True, gradient_arrow=False,
             plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
-    plt.close()
+    fig.clear()
+    plt.close('all')
 
 
 def plot_error_grid_diff(data, title, max_diff=None, save_as=None):
@@ -353,7 +356,8 @@ def plot_high_v_low_diff(to_plot, long_title, norm, save_as=None, show=False):
             plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
-    plt.close()
+    fig.clear()
+    plt.close('all')
 
 
 def plot_t_scores(data: xr.DataArray, title: str, t_range: float=5, num_colors: int=10, save_as: str=None, show: bool=False):
@@ -383,7 +387,8 @@ def plot_t_scores(data: xr.DataArray, title: str, t_range: float=5, num_colors: 
             plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
-    plt.close()
+    fig.clear()
+    plt.close('all')
 
 
 def plot_extracts(data: xr.DataArray, title: str, save_as: str=None, show: bool=False, *,
@@ -433,7 +438,8 @@ def plot_extracts(data: xr.DataArray, title: str, save_as: str=None, show: bool=
             plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
-    plt.close()
+    fig.clear()
+    plt.close('all')
 
 
 def plot_multi_file_extracts(data_arrays, title: str, save_as: str=None, show: bool=False):
@@ -470,7 +476,8 @@ def plot_multi_file_extracts(data_arrays, title: str, save_as: str=None, show: b
             plt.savefig(f'{save_as}{suffix}', bbox_inches='tight')
     if show:
         plt.show()
-    plt.close()
+    fig.clear()
+    plt.close('all')
 
 
 def add_gradient_arrow_line_to_axis(da: xr.DataArray, ax: plt.Axes):

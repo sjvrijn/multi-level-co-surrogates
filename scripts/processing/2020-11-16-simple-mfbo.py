@@ -107,7 +107,8 @@ def plot_log(in_folder: Path, out_folder: Path, save_exts=('.png', '.pdf')) -> N
     plot_on_axes(axes, match['init_budget'], df)
     for suffix in save_exts:
         fig.savefig(out_folder / f'graphs{suffix}')
-    plt.close()
+    fig.clear()
+    plt.close('all')
 
 
 def plot_and_gifify_archives(in_folder: Path, out_folder: Path, gif=True, save_exts=('.png', '.pdf')):
