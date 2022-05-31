@@ -320,6 +320,10 @@ class Optimizer:
 
     def select_fidelity(self):
 
+        if self.budget <= 1:
+            return 'high'
+        if self.budget <= 2:
+            return 'low'
         if self.archive.count('high') >= self.archive.count('low'):
             return 'low'
 
