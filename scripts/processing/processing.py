@@ -6,7 +6,6 @@ processing.py: Collection of data processing procedures that can be called
 by explicit runner files.
 """
 
-import sys
 from enum import IntEnum
 from collections import namedtuple
 from operator import itemgetter
@@ -26,12 +25,6 @@ from matplotlib.lines import Line2D
 from matplotlib.transforms import Bbox
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from parse import Parser
-from pyprojroot import here
-from sklearn.linear_model import LinearRegression
-
-module_path = str(here())
-if module_path not in sys.path:
-    sys.path.append(module_path)
 
 import multiLevelCoSurrogates as mlcs
 
@@ -480,26 +473,10 @@ def plot_multi_file_extracts(data_arrays, title: str, save_as: str=None, show: b
     plt.close()
 
 
-def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
-    """Return lin-reg coefficients after training index -> value"""
-
-    series = da.to_series().dropna()
-    X = np.array(series.index.tolist())[:,:2]  # remove rep_idx (3rd column)
-    y = np.log10(series.values)
-    reg = LinearRegression().fit(X, y)
-
-    if not calc_SSE:
-        return reg
-
-    pred_y = reg.predict(X)
-    SSE = np.sum((pred_y - y)**2)
-    return reg, SSE
-
-
 def add_gradient_arrow_line_to_axis(da: xr.DataArray, ax: plt.Axes):
     """Add a line with arrow to axis `ax` to indicate gradient direction"""
     # preparing variables for n_h = a*n_l + b
-    reg = fit_lin_reg(da)
+    reg = mlcs.utils.error_grids.fit_lin_reg(da)
     n_l_min, n_l_max, n_h_min, n_h_max = get_extent(da)
     a = np.divide(*reg.coef_)
     b = (n_h_max/2) - a*(n_l_max/2)
@@ -529,58 +506,6 @@ def add_gradient_arrow_line_to_axis(da: xr.DataArray, ax: plt.Axes):
 
     ax.annotate('', xytext=coords[0], xy=mid_point, arrowprops={'arrowstyle': '->, head_length=.8, head_width=.4', 'shrinkA': 2.5, 'shrinkB': 0})
     ax.plot(coords.T[0], coords.T[1], color='black')
-
-
-class ConfidenceInterval(namedtuple('ConfidenceInterval', 'mean se lower upper')):
-
-    def __contains__(self, value: float):
-        return self.lower < value < self.upper
-
-    def __str__(self):
-        lower = self.lower if self.lower is not None else self.mean - 1.96*self.se
-        upper = self.upper if self.upper is not None else self.mean + 1.96*self.se
-        return f'95% CI: {self.mean:.4f} +/- {1.96*self.se:.4f} {np.array([lower, upper])}: ' \
-               f'H0{" not" if 0 in self else ""} rejected'
-
-
-def calc_angle(da: xr.DataArray):
-    """Calculate the global gradient angle of an Error Grid based
-    on the slope of beta_1 / beta_2 from a linear regression fit.
-    """
-    AngleSummary = namedtuple('AngleSummary', 'alpha beta theta deg deg_low deg_high')
-    reg, SSE = fit_lin_reg(da, calc_SSE=True)
-
-    beta_high, beta_low = reg.coef_
-    ratio = beta_high / beta_low
-    df = da.size - 3
-
-    nhighs = da.coords['n_high'].values
-    var_nhigh = np.sqrt(np.sum((nhighs - np.mean(nhighs))**2))
-
-    nlows = da.coords['n_low'].values
-    var_nlow = np.sqrt(np.sum((nlows - np.mean(nlows))**2))
-
-    s = np.sqrt(SSE / df)
-
-    se_nhigh = s / var_nhigh
-    se_nlow = s / var_nlow
-    se_ratio = np.sqrt((se_nhigh / beta_high)**2 + (se_nlow / beta_low)**2)
-
-    ci_beta_high = ConfidenceInterval(beta_high, se_nhigh, beta_high-1.96*se_nhigh, beta_high+1.96*se_nhigh)
-    ci_beta_low = ConfidenceInterval(beta_low, se_nlow, beta_low-1.96*se_nlow, beta_low+1.96*se_nlow)
-    ci_beta_ratio = ConfidenceInterval(ratio, se_ratio, ratio-1.96*se_ratio, ratio+1.96*se_ratio)
-
-    theta = np.arctan(ratio)
-    mid_angle = np.rad2deg(theta)
-
-    min_angle = np.rad2deg(np.arctan(ci_beta_ratio.lower))
-    max_angle = np.rad2deg(np.arctan(ci_beta_ratio.upper))
-    if mid_angle < 0:
-        min_angle, mid_angle, max_angle = min_angle+180, mid_angle+180, max_angle+180
-    elif mid_angle > 180:
-        min_angle, mid_angle, max_angle = min_angle-180, mid_angle-180, max_angle-180
-
-    return AngleSummary(beta_high, beta_low, theta, mid_angle, min_angle, max_angle)
 
 
 def get_gradient_angles(directory: Path, force_regen: bool=False):
@@ -627,7 +552,7 @@ def calculate_gradient_angles(directory: Path):
         with xr.open_dataset(file) as ds:
             da = ds['mses'].sel(model='high_hier')
         with da.load() as da:
-            angle_summary = calc_angle(da)
+            angle_summary = mlcs.utils.error_grids.calc_angle(da)
         records.append(
             Record(match['surrogate'], category, match['fname'].lower(), match['ndim'], param,
                    *angle_summary)

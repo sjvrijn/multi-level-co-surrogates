@@ -1,5 +1,4 @@
 # coding: utf-8
-import sys
 from datetime import datetime
 from collections import namedtuple
 from functools import partial
@@ -13,13 +12,8 @@ import mf2
 import numpy as np
 import xarray as xr
 from parse import parse
-from pyprojroot import here
 from sklearn.metrics import mean_squared_error, r2_score
 from mf2 import MultiFidelityFunction
-
-module_path = str(here())
-if module_path not in sys.path:
-    sys.path.append(module_path)
 
 import multiLevelCoSurrogates as mlcs
 

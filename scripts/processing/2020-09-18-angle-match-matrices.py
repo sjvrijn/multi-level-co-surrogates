@@ -7,14 +7,13 @@ from using different surrogate models, and plot them as 'heatmaps'.
 """
 
 import argparse
-from collections import namedtuple
-from enum import IntEnum
 from itertools import combinations
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from pyprojroot import here
+
+import multiLevelCoSurrogates as mlcs
 
 import processing as proc
 
@@ -88,7 +87,7 @@ def plot_model_match_angles(df_kriging, df_non_kriging):
 
 
 def get_CI(row):
-    return proc.ConfidenceInterval(row['deg'], None, row['deg_low'], row['deg_high'])
+    return mlcs.utils.error_grids.ConfidenceInterval(row['deg'], None, row['deg_low'], row['deg_high'])
 
 
 if __name__ == '__main__':

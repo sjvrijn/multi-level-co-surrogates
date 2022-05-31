@@ -17,6 +17,7 @@ import xarray as xr
 from pathlib import Path
 from pyprojroot import here
 
+import multiLevelCoSurrogates as mlcs
 import processing as proc
 
 print(f'Running script: {__file__}')
@@ -74,7 +75,7 @@ def calculate_gradients_of_reduced(da: xr.DataArray, reduction_options: dict) ->
     """
 
     results = [
-        proc.calc_angle(reduce_size(da, *options))
+        mlcs.utils.error_grids.calc_angle(reduce_size(da, *options))
         for options in product(*reduction_options.values())
     ]
 
