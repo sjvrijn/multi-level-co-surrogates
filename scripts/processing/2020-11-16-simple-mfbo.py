@@ -26,7 +26,6 @@ if module_path not in sys.path:
     sys.path.append(module_path)
 
 import multiLevelCoSurrogates as mlcs
-from multiLevelCoSurrogates import CandidateArchive
 
 data_path = here('files/2020-11-05-simple-mfbo/')
 plot_path = here('plots/2020-11-16-simple-mfbo/', warn=False)
