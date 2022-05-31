@@ -100,9 +100,8 @@ class UtilityFunction:
         self._iters_counter = 0
 
         if kind not in ['ucb', 'ei', 'ei_orig', 'poi']:
-            err = "The utility function " \
-                  "{} has not been implemented, " \
-                  "please choose one of ucb, ei, or poi.".format(kind)
+            err = f"The utility function {kind} has not been implemented, please choose one of ucb, ei, or poi."
+
             raise NotImplementedError(err)
         else:
             self.kind = kind
