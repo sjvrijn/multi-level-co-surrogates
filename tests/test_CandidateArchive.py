@@ -16,12 +16,11 @@ import pytest
 from more_itertools import pairwise
 
 import multiLevelCoSurrogates as mlcs
-from multiLevelCoSurrogates import CandidateArchive, CandidateArchiveNew
+from multiLevelCoSurrogates import CandidateArchive
 
 
 implementations = [
     CandidateArchive,
-    CandidateArchiveNew,
 ]
 
 
