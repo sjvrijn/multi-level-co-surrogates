@@ -260,7 +260,7 @@ def plot_multiple_error_grids(datas, titles, as_log=True, gradient_arrow=False,
     :param show: whether or not to call `plt.show()`. Default: False
     """
 
-    if not (show or save_as):
+    if not show and not save_as:
         return  # no need to make the plot if not showing or saving it
 
     ncols = len(datas)
@@ -277,8 +277,8 @@ def plot_multiple_error_grids(datas, titles, as_log=True, gradient_arrow=False,
         if as_log:
             data = np.log10(data)
 
-        vmin = np.min(data) if not vmin else vmin
-        vmax = np.max(data) if not vmax else vmax
+        vmin = vmin or np.min(data)
+        vmax = vmax or np.max(data)
         norm = colors.Normalize(vmin=vmin, vmax=vmax, clip=True)
 
         ax.set_aspect(1.)
@@ -416,7 +416,7 @@ def plot_extracts(data: xr.DataArray, title: str, save_as: str=None, show: bool=
         axes[1].plot(x, to_plot, label=nhigh, zorder=nhigh)
 
     axes[0].set_title(title)
-    axes[1].set_title(title + ' log-scale')
+    axes[1].set_title(f'{title} log-scale')
     axes[1].set_yscale('log')
 
     if normalize:
@@ -462,7 +462,7 @@ def plot_multi_file_extracts(data_arrays, title: str, save_as: str=None, show: b
         data.close()
 
     ax[0].set_title(title)
-    ax[1].set_title(title + ' log-scale')
+    ax[1].set_title(f'{title} log-scale')
     ax[1].set_yscale('log')
 
     legend_input = [(Line2D([0], [0], color=f'C{i}'), nhigh)
