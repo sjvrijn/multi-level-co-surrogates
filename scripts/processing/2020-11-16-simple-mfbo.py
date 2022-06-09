@@ -7,7 +7,6 @@ files during the simple-mfbo runs
 """
 
 import argparse
-import sys
 from pathlib import Path
 from warnings import warn
 
@@ -19,13 +18,9 @@ import xarray as xr
 from parse import compile
 from pyprojroot import here
 
-import processing as proc
-
-module_path = str(here())
-if module_path not in sys.path:
-    sys.path.append(module_path)
-
 import multiLevelCoSurrogates as mlcs
+
+import processing as proc
 
 data_path = here('files/2020-11-05-simple-mfbo/')
 plot_path = here('plots/2020-11-16-simple-mfbo/', warn=False)

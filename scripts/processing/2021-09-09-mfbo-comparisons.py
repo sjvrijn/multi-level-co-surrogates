@@ -7,7 +7,6 @@ runs of (different) multi-fidelity bayesian optimization algorithms
 """
 
 import argparse
-import sys
 from collections import defaultdict
 from operator import itemgetter
 
@@ -17,10 +16,6 @@ import numpy as np
 import pandas as pd
 from parse import compile
 from pyprojroot import here
-
-module_path = str(here())
-if module_path not in sys.path:
-    sys.path.append(module_path)
 
 from multiLevelCoSurrogates import CandidateArchive
 
