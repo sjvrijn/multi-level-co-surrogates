@@ -314,7 +314,31 @@ class Optimizer:
 
     def select_next_low_fid(self):
         self.time_since_high_eval += 1
-        return self.acq_max(y_best=self.archive.max['high'], random_state=np.random.RandomState())
+        x = self.acq_max(y_best=self.archive.max['high'],
+                         random_state=np.random.RandomState())
+
+        if x in self.archive:
+            x = self._suggest_low_fid_from_random()
+
+        return x
+
+
+    def _suggest_low_fid_from_random(self, n_per_dim=RAND_SAMPLES_PER_DIM):
+        """Suggest a new candidate: best according to model from random sample
+
+        This method is intended as a fall-back option in case the regular
+        low-fidelity selection procedure selects a candidate that is already
+        present in the archive.
+        """
+        ndim = self.func.ndim
+
+        while True:
+            new_x = np.random.rand(n_per_dim*ndim, ndim)
+            mlcs.rescale(new_x, range_in=(0,1), range_out=self.func.bounds)
+            y = self.mfm.top_level_model(new_x)
+            x = new_x[np.argmin(y)]
+            if x not in self.archive:
+                return x
 
 
     def select_fidelity(self):
@@ -333,7 +357,8 @@ class Optimizer:
         elif self.fid_selection_method == FidelitySelection.FIXED:
             fidelity = 'high' if 1 <= (1 / self.cost_ratio) <= self.time_since_high_eval else 'low'
         else:
-            raise NotImplementedError(f"Fidelity selection method '{self.fid_selection_method}' has no implementation")
+            msg = f"Fidelity selection method '{self.fid_selection_method}' has no implementation"
+            raise NotImplementedError(msg)
 
         return fidelity
 
