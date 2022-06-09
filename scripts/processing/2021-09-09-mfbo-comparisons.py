@@ -8,6 +8,7 @@ runs of (different) multi-fidelity bayesian optimization algorithms
 
 import argparse
 from collections import defaultdict
+from itertools import product
 from operator import itemgetter
 
 import matplotlib.pyplot as plt
@@ -32,20 +33,12 @@ named_functions = {
     for func in mf2.bi_fidelity_functions
 }
 
-
-optima = {
-    "forrester": -6.0207400557670825,
-    "bohachevsky": 0.0,
-    "booth": 0.0,
-    "branin": -6.157724166521634,
-    "currin": -13.798722044728429,
-    "himmelblau": 0.0,
-    "six hump camelback": 0.0,
-    "park91a": 2.718281828459045e-08,
-    "park91b": 0.6666666666666666,
-    "hartmann6": -3.0424577378363353,
-    "borehole": 7.819676328755232,
-}
+for a, f in product(np.round(np.linspace(0, 1, 11),2),
+                    mf2.adjustable.bi_fidelity_functions):
+    if a == 0 and 'paciorek' in f.name.lower():
+        continue
+    func = f(a)
+    named_functions[func.name.lower()] = func
 
 
 def compare_different_runs(save_exts=('.png', '.pdf')):
@@ -156,7 +149,8 @@ def add_min_over_time_to_log(df: pd.DataFrame, init_archive: CandidateArchive, f
         fitnesses = np.minimum.accumulate(fitnesses)
         df[f'opt_{fidelity}'] = fitnesses
 
-    df['err_to_opt'] = df['opt_high'] - optima[func_name]
+    func = named_functions[func_name]
+    df['err_to_opt'] = df['opt_high'] - func.high(func.x_opt)
     return df
 
 
