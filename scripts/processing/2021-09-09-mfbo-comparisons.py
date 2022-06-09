@@ -99,9 +99,10 @@ def plot_on_axes(axes, init_budget, df, label=''):
     # tau / budget
     ax.plot(budget_used, df['tau'].values, label=label)
     ax.set_title('Tau')
-    ax.set_ylim(bottom=0)
+    ax.set_ylim(bottom=0, top=max(df['tau'].values))
     ax.set_ylabel('$\\tau$')
     ax.set_xlabel('evaluation cost')
+    ax.legend(loc='best')
 
     ax = axes[1, 0]
     # wall-time / budget
@@ -110,6 +111,7 @@ def plot_on_axes(axes, init_budget, df, label=''):
     ax.set_yscale('log')
     ax.set_ylabel('time (s)')
     ax.set_xlabel('evaluation cost')
+    ax.legend(loc='best')
 
     ax = axes[1, 1]
     # reuse_fraction / budget
@@ -118,6 +120,7 @@ def plot_on_axes(axes, init_budget, df, label=''):
     ax.set_ylim(bottom=0, top=1)
     ax.set_ylabel('model reuse fraction')
     ax.set_xlabel('evaluation cost')
+    ax.legend(loc='best')
 
     ax = axes[2,0]
     # minimum fitness over time per fidelity
@@ -136,6 +139,7 @@ def plot_on_axes(axes, init_budget, df, label=''):
     ax.set_yscale('log')
     ax.set_ylabel('y-error')
     ax.set_xlabel('evaluation cost')
+    ax.legend(loc='best')
 
 
 def add_min_over_time_to_log(df: pd.DataFrame, init_archive: CandidateArchive, func_name: str):
