@@ -123,8 +123,13 @@ def test_valueerror_split_bifiddoe():
     reason is that in numpy, this is implemented as `np.any(row == np.ndarray)`,
     which returns True if values match in *AT LEAST ONE* column, instead of all.
     """
-    archive_path = here('tests/test-files/split_bi_fid_doe_regression_archive.npy')
-    doe = np.load(archive_path, allow_pickle=True).item().as_doe()
+    archive_path = here('tests/test-files/split_bi_fid_doe_regression_archive.npz')
+    npzfile = np.load(archive_path)
+
+    archive = mlcs.CandidateArchive(fidelities=['high', 'low'])
+    archive.addcandidates(npzfile['candidates'], npzfile['high'], fidelity='high')
+    archive.addcandidates(npzfile['candidates'], npzfile['low'], fidelity='low')
+    doe = archive.as_doe()
 
     # split_bi_fidelity_doe() would fail under exactly these circumstances:
     np.random.seed(3)
