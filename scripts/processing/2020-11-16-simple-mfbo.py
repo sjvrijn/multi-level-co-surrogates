@@ -200,7 +200,7 @@ def main(**kwargs):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--exts", action="extend", nargs="+", type=str,
-                        help="File extensions to use when saving images. Default: [PNG, PDF].")
+                        help="File extensions to use when saving images. Default: [.PNG, .PDF].")
     parser.add_argument("--gif", action=argparse.BooleanOptionalAction, default=True,
                         help="Whether or not to make animated GIFs of progress. Default: --gif.")
     args = parser.parse_args()

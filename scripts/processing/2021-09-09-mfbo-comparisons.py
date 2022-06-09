@@ -160,7 +160,8 @@ def main(**kwargs):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--exts", action="extend", nargs="+", type=str)
+    parser.add_argument("--exts", action="extend", nargs="+", type=str,
+                        help="File extensions to use when saving images. Default: [.PNG, .PDF].")
     args = parser.parse_args()
     kwargs = {}
     if args.exts:
