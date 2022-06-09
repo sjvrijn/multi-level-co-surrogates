@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-CandidateArchive.py: Class to store candidate solutions in an optimization process with their respective
+candidate_archive.py: Class to store candidate solutions in an optimization process with their respective
                      (multi-fidelity) fitness values
 """
 from collections import namedtuple

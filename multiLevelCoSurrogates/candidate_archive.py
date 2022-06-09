@@ -5,21 +5,24 @@
 candidate_archive_new.py: Reimplementation of CandidateArchive to include indices,
                           be nicer and easier.
 """
-from dataclasses import dataclass
-from typing import Iterable, Union
 
 __author__ = 'Sander van Rijn'
 __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 
+from collections import namedtuple
+from dataclasses import dataclass
+from typing import Iterable, Union
+
 import numpy as np
 
 import mf2
 from multiLevelCoSurrogates.utils import BiFidelityDoE
-from .CandidateArchive import CandidateSet
+
+CandidateSet = namedtuple('CandidateSet', ['candidates', 'fitnesses'])
 
 
-class CandidateArchiveNew:
+class CandidateArchive:
 
     def __init__(self, *args, **kwargs):
         """Archive of candidates that record fitness in multiple fidelities"""
@@ -111,7 +114,8 @@ class CandidateArchiveNew:
         return fitnesses
 
 
-    def getcandidates(self, fidelity: Union[str, Iterable[str]]=None) -> CandidateSet:
+    def getcandidates(self, fidelity: Union[str, Iterable[str]]=None,
+                      num_recent_candidates: int=None) -> CandidateSet:
         """Retrieve candidates and fitnesses from the archive.
         :fidelity:  (List of) fidelities to select by. Default: all
         :return:    Candidates, Fitnesses (tuple of numpy arrays)
