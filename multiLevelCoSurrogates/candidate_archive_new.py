@@ -79,12 +79,12 @@ class CandidateArchiveNew:
 
         except ValueError:
             # candidates is not yet present
-            new_idx = len(self.candidates)
+            idx = len(self.candidates)
             fidelities = {fidelity: fitness}
-            self.candidates.append(Candidate(new_idx, candidate, fidelities))
+            self.candidates.append(Candidate(idx, candidate, fidelities))
 
-        # create key entry if it does not yet exist
-        self._all_fidelities[fidelity] = None
+        self._update_history.append((idx, fidelity))  # record update order
+        self._all_fidelities[fidelity] = None  # add key entry
         self._updateminmax(fitness, fidelity)
 
 
