@@ -132,8 +132,8 @@ class CandidateArchive:
                 for fid in fidelity
             ]
 
-            # add if any specified fidelities are present for this candidate
-            if np.count_nonzero(~np.isnan(fitness)):
+            # add if all specified fidelities are present for this candidate
+            if not np.count_nonzero(np.isnan(fitness)):
                 fitnesses.append(fitness)
                 candidates.append(candidate.x)
 
