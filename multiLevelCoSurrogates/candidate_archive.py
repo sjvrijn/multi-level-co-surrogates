@@ -12,6 +12,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 from collections import namedtuple
 from dataclasses import dataclass
+from numbers import Number
 from typing import Iterable, Union
 
 import numpy as np
@@ -66,7 +67,8 @@ class CandidateArchive:
             self.addcandidate(candidate, fitness, fidelity)
 
 
-    def addcandidate(self, candidate: np.ndarray, fitness: float, fidelity: str=None):
+    def addcandidate(self, candidate: np.ndarray,
+                     fitness: Union[float, np.ndarray], fidelity: str=None):
         """Add a candidate, fitness pair to the archive for given fidelity.
         Will overwrite fitness value if already present
         """
@@ -75,6 +77,10 @@ class CandidateArchive:
             raise ValueError(f'Since explcit fidelities are present, new candidates '
                              f'cannot be added with implicit fidelity. Fidelities '
                              f'currently present: {self.fidelities}')
+
+        # explicitly casting to float in case it isn't a number, e.g. np.ndarray
+        if not isinstance(fitness, Number):
+            fitness = float(fitness)
 
         try:
             idx = self.candidates.index(candidate)
