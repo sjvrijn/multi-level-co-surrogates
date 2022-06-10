@@ -207,3 +207,25 @@ def test_2fid_getcandidates(Archive):
         sorted(cand.tolist())
     )
     np.testing.assert_array_almost_equal(sorted(new_fitnesses), sorted(fit))
+
+
+@pytest.mark.parametrize('Archive', implementations)
+def test_2fid_getcandidates_fidelity_list(Archive):
+    """When passing multiple fidelities, results should be for candidates
+    for which *ALL* fidelities are known/present"""
+    ndim = 3
+    archive = Archive(fidelities=['AAA', 'BBB'])
+
+    num_candidates = 10
+    candidates = np.random.rand(num_candidates, ndim)
+    fitnesses = np.random.rand(num_candidates, 1)
+    archive.addcandidates(candidates.tolist(), fitnesses, fidelity='AAA')
+
+    num_fitnesses_BBB = 5
+    new_fitnesses = np.random.rand(num_fitnesses_BBB, 1)
+    indices = np.random.choice(np.arange(10), num_fitnesses_BBB, replace=False)
+    archive.addcandidates(candidates[indices].tolist(), new_fitnesses, fidelity='BBB')
+
+    cand, fit = archive.getcandidates(['AAA', 'BBB'])
+    assert len(fit) == num_fitnesses_BBB
+    assert np.count_nonzero(np.isnan(fit)) == 0
