@@ -251,7 +251,7 @@ class Optimizer:
                 if fidelity == 'high':
                     x = self.select_next_high_fid()
                 else:  # elif fidelity == 'low':
-                    x = self.select_next_low_fid()
+                    x, fidelity = self.select_next_low_fid()
 
                 # evaluate best place
                 self.budget -= eval_cost[fidelity]
@@ -313,14 +313,33 @@ class Optimizer:
 
 
     def select_next_low_fid(self):
+        """Suggest next sample by maximizing acquisition function on model.
+
+        If the acquisition function suggests a previous sample again, there are
+        two fallback options:
+         - if the sample has not yet been evaluated in high-fidelity, the
+           same sample is returned, but with fidelity switched to 'high'
+         - if it has also already been evaluated in high-fidelity,
+           `_suggest_low_from_random` is called to pick a random sample.
+        """
+        fidelity = 'low'
         self.time_since_high_eval += 1
         x = self.acq_max(y_best=self.archive.max['high'],
                          random_state=np.random.RandomState())
 
-        if x in self.archive:
-            x = self._suggest_low_fid_from_random()
+        if x not in self.archive:
+            return x, fidelity
 
-        return x
+        # pass `x` as list and unpack result, since getfitnesses expects a list
+        fitness = self.archive.getfitnesses([x], fidelity='high')[0]
+
+        # `x` is not yet evaluated in high-fidelty, switch fidelity
+        if np.isnan(fitness):
+            return x, 'high'
+
+        # `x` has also already been evaluated in high-fidelity, select new random instead
+        x = self._suggest_low_fid_from_random()
+        return x, fidelity
 
 
     def _suggest_low_fid_from_random(self, n_per_dim=RAND_SAMPLES_PER_DIM):
