@@ -67,17 +67,10 @@ FUNCTIONS = [
 
     mf2.borehole,  # 9
 
-    mf2.adjustable.branin(0.1),  # 10
-    mf2.adjustable.branin(0.2),  # 11
-
-    mf2.adjustable.paciorek(0.1),  # 12
-    mf2.adjustable.paciorek(0.3),  # 13
-
-    mf2.adjustable.hartmann3(0.2),  # 14
-    mf2.adjustable.hartmann3(0.4),  # 15
-
-    mf2.adjustable.trid(0.7),  # 16
-    mf2.adjustable.trid(0.8),  # 17
+    [mf2.adjustable.branin(a) for a in np.linspace(0, 1, 11)],      # 10-20
+    [mf2.adjustable.paciorek(a) for a in np.linspace(0.1, 1, 10)],  # 21-30
+    [mf2.adjustable.hartmann3(a) for a in np.linspace(0, 1, 11)],   # 31-41
+    [mf2.adjustable.trid(a) for a in np.linspace(0, 1, 11)],        # 42-52
 ]
 
 
@@ -251,7 +244,7 @@ class Optimizer:
                 if fidelity == 'high':
                     x = self.select_next_high_fid()
                 else:  # elif fidelity == 'low':
-                    x = self.select_next_low_fid()
+                    x, fidelity = self.select_next_low_fid()
 
                 # evaluate best place
                 self.budget -= eval_cost[fidelity]
@@ -313,14 +306,33 @@ class Optimizer:
 
 
     def select_next_low_fid(self):
+        """Suggest next sample by maximizing acquisition function on model.
+
+        If the acquisition function suggests a previous sample again, there are
+        two fallback options:
+         - if the sample has not yet been evaluated in high-fidelity, the
+           same sample is returned, but with fidelity switched to 'high'
+         - if it has also already been evaluated in high-fidelity,
+           `_suggest_low_from_random` is called to pick a random sample.
+        """
+        fidelity = 'low'
         self.time_since_high_eval += 1
         x = self.acq_max(y_best=self.archive.max['high'],
                          random_state=np.random.RandomState())
 
-        if x in self.archive:
-            x = self._suggest_low_fid_from_random()
+        if x not in self.archive:
+            return x, fidelity
 
-        return x
+        # pass `x` as list and unpack result, since getfitnesses expects a list
+        fitness = self.archive.getfitnesses([x], fidelity='high')[0]
+
+        # `x` is not yet evaluated in high-fidelty, switch fidelity
+        if np.isnan(fitness):
+            return x, 'high'
+
+        # `x` has also already been evaluated in high-fidelity, select new random instead
+        x = self._suggest_low_fid_from_random()
+        return x, fidelity
 
 
     def _suggest_low_fid_from_random(self, n_per_dim=RAND_SAMPLES_PER_DIM):
@@ -335,7 +347,7 @@ class Optimizer:
         while True:
             new_x = np.random.rand(n_per_dim*ndim, ndim)
             mlcs.rescale(new_x, range_in=(0,1), range_out=self.func.bounds)
-            y = self.mfm.top_level_model(new_x)
+            y = self.mfm.top_level_model.predict(new_x)
             x = new_x[np.argmin(y)]
             if x not in self.archive:
                 return x

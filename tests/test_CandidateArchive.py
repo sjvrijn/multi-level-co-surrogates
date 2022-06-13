@@ -16,17 +16,11 @@ import pytest
 from more_itertools import pairwise
 
 import multiLevelCoSurrogates as mlcs
-from multiLevelCoSurrogates import CandidateArchive, CandidateArchiveNew
+from multiLevelCoSurrogates import CandidateArchive
 
 
-implementations = [
-    CandidateArchive,
-    CandidateArchiveNew,
-]
-
-
-def setup_archive(Archive):
-    archive = Archive(fidelities=['A', 'B', 'C'])
+def setup_archive():
+    archive = CandidateArchive(fidelities=['A', 'B', 'C'])
     all_candidates = np.random.rand(10, 2)
     data = {
         'A': (all_candidates[:3], np.random.rand(3)),
@@ -38,25 +32,22 @@ def setup_archive(Archive):
     return all_candidates, archive, data
 
 
-@pytest.mark.parametrize('Archive', implementations)
-def test_bare_archive(Archive):
-    archive = Archive()
+def test_bare_archive():
+    archive = CandidateArchive()
     assert len(archive) == 0
 
 
-@pytest.mark.parametrize('Archive', implementations)
-def test_add_candidate_increases_length(Archive):
-    archive = Archive()
+def test_add_candidate_increases_length():
+    archive = CandidateArchive()
     old_length = len(archive)
 
     archive.addcandidate(np.random.rand(2), np.random.random())
     assert len(archive) == old_length + 1
 
 
-@pytest.mark.parametrize('Archive', implementations)
-def test_add_candidates_increases_length(Archive):
-    archive1 = Archive()
-    archive2 = Archive()
+def test_add_candidates_increases_length():
+    archive1 = CandidateArchive()
+    archive2 = CandidateArchive()
     num_candidates = 5
 
     for _ in range(num_candidates):
@@ -67,9 +58,8 @@ def test_add_candidates_increases_length(Archive):
     assert len(archive1) == len(archive2) == num_candidates
 
 
-@pytest.mark.parametrize('Archive', implementations)
-def test_add_same_candidate_maintains_length(Archive):
-    archive = Archive()
+def test_add_same_candidate_maintains_length():
+    archive = CandidateArchive()
     candidate, fitness = np.random.rand(2), np.random.random()
     archive.addcandidate(candidate, fitness)
     old_length = len(archive)
@@ -83,18 +73,16 @@ def test_add_same_candidate_maintains_length(Archive):
     assert len(archive) == old_length
 
 
-@pytest.mark.parametrize('Archive', implementations)
-def test_min_max(Archive):
-    all_candidates, archive, data = setup_archive(Archive)
+def test_min_max():
+    all_candidates, archive, data = setup_archive()
 
     for fidelity, (_, fitnesses) in data.items():
         assert archive.max[fidelity] == np.max(fitnesses)
         assert archive.min[fidelity] == np.min(fitnesses)
 
 
-@pytest.mark.parametrize('Archive', implementations)
-def test_add_candidate_without_fidelity_raises_error(Archive):
-    all_candidates, archive, data = setup_archive(Archive)
+def test_add_candidate_without_fidelity_raises_error():
+    all_candidates, archive, data = setup_archive()
 
     candidates = np.random.rand(5, 2)
     fitnesses = np.random.rand(5, 1)
@@ -105,20 +93,18 @@ def test_add_candidate_without_fidelity_raises_error(Archive):
         archive.addcandidates(candidates, fitnesses)
 
 
-@pytest.mark.parametrize('Archive', implementations)
-def test_from_bifiddoe(Archive):
+def test_from_bifiddoe():
     ndim, num_high, num_low = 2, 5, 10
     doe = mlcs.bi_fidelity_doe(ndim, num_high, num_low)
 
-    archive = Archive.from_bi_fid_doe(*doe, np.random.rand(num_high), np.random.rand(num_low))
+    archive = CandidateArchive.from_bi_fid_doe(*doe, np.random.rand(num_high), np.random.rand(num_low))
     assert len(archive) == num_low
     assert archive.count('high') == num_high
     assert archive.count('low') == num_low
 
 
-@pytest.mark.parametrize('Archive', implementations)
-def test_as_doe(Archive):
-    archive = Archive(fidelities=['high', 'low'])
+def test_as_doe():
+    archive = CandidateArchive(fidelities=['high', 'low'])
 
     high_x = np.random.rand(10, 2)
     archive.addcandidates(high_x, np.random.rand(10), fidelity='high')
@@ -135,9 +121,8 @@ def test_as_doe(Archive):
     np.testing.assert_array_almost_equal(doe.low, low_x)
 
 
-@pytest.mark.parametrize('Archive', implementations)
-def test_getfitnesses_one_fid(Archive):
-    all_candidates, archive, data = setup_archive(Archive)
+def test_getfitnesses_one_fid():
+    all_candidates, archive, data = setup_archive()
 
     # retrieve exactly the fitnesses that were input for these candidates
     for fidelity, (candidates, fitness) in data.items():
@@ -150,9 +135,8 @@ def test_getfitnesses_one_fid(Archive):
         assert np.count_nonzero(~np.isnan(stored_fitness)) == len(fitness)
 
 
-@pytest.mark.parametrize('Archive', implementations)
-def test_getfitnesses_multiple_fid(Archive):
-    all_candidates, archive, data = setup_archive(Archive)
+def test_getfitnesses_multiple_fid():
+    all_candidates, archive, data = setup_archive()
 
     for fidelities in pairwise(data.keys()):
         stored_fitness = archive.getfitnesses(all_candidates, fidelity=fidelities)
@@ -165,9 +149,8 @@ def test_getfitnesses_multiple_fid(Archive):
             assert np.count_nonzero(~np.isnan(column)) == len(data[fidelity][1])
 
 
-@pytest.mark.parametrize('Archive', implementations)
-def test_1fid_getcandidates(Archive):
-    archive = Archive()
+def test_1fid_getcandidates():
+    archive = CandidateArchive()
     candidates = np.random.rand(10, 3)
     fitnesses = np.random.rand(10, 1)
     archive.addcandidates(candidates.tolist(), fitnesses)
@@ -181,10 +164,9 @@ def test_1fid_getcandidates(Archive):
     np.testing.assert_array_almost_equal(fitnesses, fit)
 
 
-@pytest.mark.parametrize('Archive', implementations)
-def test_2fid_getcandidates(Archive):
+def test_2fid_getcandidates():
     ndim = 3
-    archive = Archive(fidelities=['AAA', 'BBB'])
+    archive = CandidateArchive(fidelities=['AAA', 'BBB'])
 
     num_candidates = 10
     candidates = np.random.rand(num_candidates, ndim)
@@ -208,3 +190,24 @@ def test_2fid_getcandidates(Archive):
         sorted(cand.tolist())
     )
     np.testing.assert_array_almost_equal(sorted(new_fitnesses), sorted(fit))
+
+
+def test_2fid_getcandidates_fidelity_list():
+    """When passing multiple fidelities, results should be for candidates
+    for which *ALL* fidelities are known/present"""
+    ndim = 3
+    archive = CandidateArchive(fidelities=['AAA', 'BBB'])
+
+    num_candidates = 10
+    candidates = np.random.rand(num_candidates, ndim)
+    fitnesses = np.random.rand(num_candidates, 1)
+    archive.addcandidates(candidates.tolist(), fitnesses, fidelity='AAA')
+
+    num_fitnesses_BBB = 5
+    new_fitnesses = np.random.rand(num_fitnesses_BBB, 1)
+    indices = np.random.choice(np.arange(10), num_fitnesses_BBB, replace=False)
+    archive.addcandidates(candidates[indices].tolist(), new_fitnesses, fidelity='BBB')
+
+    cand, fit = archive.getcandidates(['AAA', 'BBB'])
+    assert len(fit) == num_fitnesses_BBB
+    assert np.count_nonzero(np.isnan(fit)) == 0
