@@ -182,6 +182,7 @@ class CandidateArchive:
         save_args = {
             'candidates': np.array([c.x for c in self.candidates]),
             'history': np.array(self._update_history, dtype=history_type),
+            'fidelities': [str(f) for f in self.fidelities],
         }
         for fid in self.fidelities:
             fitnesses = self.getfitnesses(save_args['candidates'], fidelity=fid)
