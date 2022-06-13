@@ -13,6 +13,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 from collections import namedtuple
 from dataclasses import dataclass
 from numbers import Number
+from pathlib import Path
 from typing import Iterable, Union
 
 import numpy as np
@@ -160,6 +161,25 @@ class CandidateArchive:
             fidelity in candidate.fidelities
             for candidate in self.candidates
         )
+
+
+    def save(self, file: Union[str, Path]):
+        """Save the archive as a reusable .npz file
+
+        Stores candidates, fitness values per fidelity and the update history,
+        allowing for a perfect recreation of the archive at a later date.
+        """
+        save_args = {
+            'candidates': np.array([c.x for c in self.candidates]),
+            'history': self._update_history,
+        }
+        for fid in self.fidelities:
+            fitnesses = self.getfitnesses(save_args['candidates'], fidelity=fid)
+            if fid is None:
+                fid = 'None'
+            save_args[fid] = fitnesses
+
+        np.savez(file, **save_args)
 
 
     def _updateminmax(self, value: float, fidelity: str=None):

@@ -211,3 +211,15 @@ def test_2fid_getcandidates_fidelity_list():
     cand, fit = archive.getcandidates(['AAA', 'BBB'])
     assert len(fit) == num_fitnesses_BBB
     assert np.count_nonzero(np.isnan(fit)) == 0
+
+
+def test_save(tmp_path):
+    all_candidates, archive, data = setup_archive()
+
+    test_path = tmp_path / 'test_archive.npz'
+    archive.save(test_path)
+
+    loaded_data = np.load(test_path)
+
+    assert np.allclose(all_candidates, loaded_data['candidates'])
+    assert all(fid in loaded_data for fid in archive.fidelities)
