@@ -354,7 +354,7 @@ class Optimizer:
         while True:
             new_x = np.random.rand(n_per_dim*ndim, ndim)
             mlcs.rescale(new_x, range_in=(0,1), range_out=self.func.bounds)
-            y = self.mfm.top_level_model(new_x)
+            y = self.mfm.top_level_model.predict(new_x)
             x = new_x[np.argmin(y)]
             if x not in self.archive:
                 return x
