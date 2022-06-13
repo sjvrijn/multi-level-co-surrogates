@@ -54,6 +54,24 @@ class CandidateArchive:
         return archive
 
 
+    @classmethod
+    def from_file(cls, file: Union[str, Path]):
+        """Load a candidate archive from a previously saved .npz file"""
+        loaded_data = np.load(file)
+
+        candidates = loaded_data['candidates']
+        history = loaded_data['history']
+
+        archive = cls()
+
+        for fid in loaded_data['fidelities']:
+            fitnesses = loaded_data[fid]
+            archive.addcandidates(candidates, fitnesses, fidelity=fid)
+
+        archive._update_history = history
+        return archive
+
+
     @property
     def fidelities(self):
         return self._all_fidelities.keys()
