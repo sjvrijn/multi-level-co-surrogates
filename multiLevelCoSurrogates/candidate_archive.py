@@ -85,6 +85,10 @@ class CandidateArchive:
 
         try:
             idx = self.candidates.index(candidate)
+            # ignore update if re-adding same fitness value
+            if np.isclose(self.candidates[idx].fidelities.get(fidelity, np.nan), fitness):
+                return
+
             self.candidates[idx].fidelities[fidelity] = fitness
 
         except ValueError:
