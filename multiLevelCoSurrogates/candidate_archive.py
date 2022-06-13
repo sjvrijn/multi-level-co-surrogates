@@ -176,6 +176,11 @@ class CandidateArchive:
         return len(self.candidates)
 
 
+    def __contains__(self, item):
+        # comparison order matters: want to use candidate.__eq__
+        return any(candidate == item for candidate in self.candidates)
+
+
 @dataclass(eq=False)
 class Candidate:
     idx: int
