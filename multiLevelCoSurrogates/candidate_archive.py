@@ -169,9 +169,15 @@ class CandidateArchive:
         Stores candidates, fitness values per fidelity and the update history,
         allowing for a perfect recreation of the archive at a later date.
         """
+        # prepare a type specification to correctly store the update_history
+        history_type = np.dtype([
+            ('idx', int),
+            ('fidelity', np.unicode_, max(len(str(f)) for f in self.fidelities)),
+        ])
+
         save_args = {
             'candidates': np.array([c.x for c in self.candidates]),
-            'history': self._update_history,
+            'history': np.array(self._update_history, dtype=history_type),
         }
         for fid in self.fidelities:
             fitnesses = self.getfitnesses(save_args['candidates'], fidelity=fid)
