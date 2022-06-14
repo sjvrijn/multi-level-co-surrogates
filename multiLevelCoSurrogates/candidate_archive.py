@@ -58,17 +58,22 @@ class CandidateArchive:
     def from_file(cls, file: Union[str, Path]):
         """Load a candidate archive from a previously saved .npz file"""
         loaded_data = np.load(file)
-
         candidates = loaded_data['candidates']
-        history = loaded_data['history']
-
         archive = cls()
 
         for fid in loaded_data['fidelities']:
             fitnesses = loaded_data[fid]
-            archive.addcandidates(candidates, fitnesses, fidelity=fid)
 
-        archive._update_history = history
+            # NaN values are stored in file for completeness,
+            # but must be excluded again when adding
+            nan_fitnesses = np.isnan(fitnesses)
+            archive.addcandidates(
+                candidates[~nan_fitnesses], fitnesses[~nan_fitnesses],
+                fidelity=fid
+            )
+
+        # Overwrite history
+        archive._update_history = loaded_data['history'].tolist()
         return archive
 
 

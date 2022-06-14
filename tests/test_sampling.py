@@ -124,11 +124,8 @@ def test_valueerror_split_bifiddoe():
     which returns True if values match in *AT LEAST ONE* column, instead of all.
     """
     archive_path = here('tests/test-files/split_bi_fid_doe_regression_archive.npz')
-    npzfile = np.load(archive_path)
 
-    archive = mlcs.CandidateArchive(fidelities=['high', 'low'])
-    archive.addcandidates(npzfile['candidates'], npzfile['high'], fidelity='high')
-    archive.addcandidates(npzfile['candidates'], npzfile['low'], fidelity='low')
+    archive = mlcs.CandidateArchive.from_file(archive_path)
     doe = archive.as_doe()
 
     # split_bi_fidelity_doe() would fail under exactly these circumstances:

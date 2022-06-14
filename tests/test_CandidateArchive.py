@@ -82,7 +82,10 @@ def test_min_max():
 
 
 def test_add_candidate_without_fidelity_raises_error():
-    all_candidates, archive, data = setup_archive()
+    """Adding candidates of unspecified fidelity to an archive with previously
+     specified fidelities should raise ValueError.
+     """
+    _, archive, _ = setup_archive()
 
     candidates = np.random.rand(5, 2)
     fitnesses = np.random.rand(5, 1)
@@ -223,3 +226,20 @@ def test_save(tmp_path):
 
     assert np.allclose(all_candidates, loaded_data['candidates'])
     assert all(fid in loaded_data for fid in archive.fidelities)
+
+
+def test_roundtrip(tmp_path):
+    all_candidates, archive, data = setup_archive()
+
+    test_path = tmp_path / 'test_archive.npz'
+    archive.save(test_path)
+
+    new_archive = CandidateArchive.from_file(test_path)
+
+    assert len(archive) == len(new_archive)
+    assert archive.min == new_archive.min
+    assert archive.max == new_archive.max
+    assert list(archive.fidelities) == list(new_archive.fidelities)
+
+    for fid in archive.fidelities:
+        assert archive.count(fid) == new_archive.count(fid)
