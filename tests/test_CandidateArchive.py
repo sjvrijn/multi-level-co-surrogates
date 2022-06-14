@@ -96,6 +96,18 @@ def test_add_candidate_without_fidelity_raises_error():
         archive.addcandidates(candidates, fitnesses)
 
 
+def test_add_candidate_with_nan_raises_error():
+    """Adding candidates with `NaN` as fitness raises ValueError"""
+    archive = CandidateArchive()
+    with pytest.raises(ValueError):
+        archive.addcandidate(np.random.rand(5), np.nan)
+
+    fitnesses = np.random.rand(5)
+    fitnesses[2] = np.nan
+    with pytest.raises(ValueError):
+        archive.addcandidates(np.random.rand(5,5), fitnesses)
+
+
 def test_from_bifiddoe():
     ndim, num_high, num_low = 2, 5, 10
     doe = mlcs.bi_fidelity_doe(ndim, num_high, num_low)

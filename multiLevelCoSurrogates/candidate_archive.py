@@ -106,6 +106,9 @@ class CandidateArchive:
         if not isinstance(fitness, Number):
             fitness = float(fitness)
 
+        if np.isnan(fitness):
+            raise ValueError(f'invalid fitness value `NaN` for candidate {candidate}')
+
         try:
             idx = self.candidates.index(candidate)
             # ignore update if re-adding same fitness value
