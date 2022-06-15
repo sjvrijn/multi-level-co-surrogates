@@ -32,28 +32,11 @@ errorgrid_template = compile('errorgrid_{iteration:d}.nc')
 
 
 def plot_folder_angles_as_polar(folder: Path, exts):
-
-    # todo: rewrite proc.get_gradient_angles to be more generic?
-    # angle_df = proc.get_gradient_angles(folder)
-
     match = subfolder_template.parse(folder.name)
     if not match:
         return
 
-    budgets = [0]
-    init_budget = match['init_budget']
-    df = pd.read_csv(folder / 'log.csv', index_col=0, sep=';')
-    budgets.extend((init_budget - df['budget'].values).tolist())
-
-    angles = []
-    for file in sorted(folder.iterdir()):
-        if not errorgrid_template.parse(file.name):
-            continue
-        with xr.open_dataset(file) as ds:
-            da = ds['mses'].sel(model='high_hier')
-        with da.load() as da:
-            angle_summary = mlcs.utils.error_grids.calc_angle(da)
-        angles.append(angle_summary.theta)
+    angles, budgets = get_budget_and_angles(folder)
 
     if not angles:
         return  # no .nc files were present
@@ -66,6 +49,27 @@ def plot_folder_angles_as_polar(folder: Path, exts):
     ax.plot(angles, budgets)
     for ext in exts:
         fig.savefig(plot_path / f'{folder.name}{ext}')
+
+
+def get_budget_and_angles(folder):
+    budgets = [0]
+    init_budget = subfolder_template.parse(folder.name)['init_budget']
+    df = pd.read_csv(folder / 'log.csv', index_col=0, sep=';')
+    budgets.extend((init_budget - df['budget'].values).tolist())
+
+    # todo: rewrite proc.get_gradient_angles to be more generic?
+    # angle_df = proc.get_gradient_angles(folder)
+    angles = []
+    for file in sorted(folder.iterdir()):
+        if not errorgrid_template.parse(file.name):
+            continue
+        with xr.open_dataset(file) as ds:
+            da = ds['mses'].sel(model='high_hier')
+        with da.load() as da:
+            angle_summary = mlcs.utils.error_grids.calc_angle(da)
+        angles.append(angle_summary.theta)
+
+    return angles, budgets
 
 
 def main(args):
