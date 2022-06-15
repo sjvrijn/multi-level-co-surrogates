@@ -7,16 +7,13 @@ error grids as polar coordinates (angle, budget_used) for an optimization run.
 """
 
 import argparse
-from itertools import product
+from itertools import groupby
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import mf2
-import numpy as np
 import pandas as pd
 from parse import compile
 from pyprojroot import here
-from tqdm import tqdm
 import xarray as xr
 
 import multiLevelCoSurrogates as mlcs
@@ -49,6 +46,34 @@ def plot_folder_angles_as_polar(folder: Path, exts):
     ax.plot(angles, budgets)
     for ext in exts:
         fig.savefig(plot_path / f'{folder.name}{ext}')
+    fig.clear()
+    plt.close('all')
+
+
+def plot_grouped_folder_angles_as_polar(group_of_folders, group_name, exts):
+    print(f'plotting group {group_name}')
+
+    fig, ax = plt.subplots(1, 1, subplot_kw={'projection': 'polar'})
+    for folder in group_of_folders:
+        match = subfolder_template.parse(folder.name)
+        if not match:
+            return
+
+        angles, budgets = get_budget_and_angles(folder)
+
+        if not angles:
+            return  # no .nc files were present
+
+        if len(angles) != len(budgets):
+            actual_length = min(len(angles), len(budgets))
+            angles, budgets = angles[:actual_length], budgets[:actual_length]
+
+        ax.plot(angles, budgets)
+
+    for ext in exts:
+        fig.savefig(plot_path / f'{group_name}{ext}')
+    fig.clear()
+    plt.close('all')
 
 
 def get_budget_and_angles(folder):
@@ -72,14 +97,24 @@ def get_budget_and_angles(folder):
     return angles, budgets
 
 
+def remove_idx(name):
+    if isinstance(name, Path):
+        name = name.name
+    return name[:name.find('-i')]
+
+
 def main(args):
     suffixes = args.exts or proc.suffixes
+    folders = []
     for subfolder in sorted(data_path.iterdir()):
         if not subfolder.is_dir():
             continue
+        folders.append(subfolder)
         print(subfolder.name)
-        plot_folder_angles_as_polar(subfolder, suffixes)
+        # plot_folder_angles_as_polar(subfolder, suffixes)
 
+    for name, folder_group in groupby(folders, key=remove_idx):
+        plot_grouped_folder_angles_as_polar(folder_group, name, suffixes)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
