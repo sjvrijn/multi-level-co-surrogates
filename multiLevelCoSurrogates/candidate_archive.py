@@ -219,6 +219,19 @@ class CandidateArchive:
         np.savez(file, **save_args)
 
 
+    def undo_last(self):
+        """Undo the latest addition to the archive
+
+        This only undoes additions. If a value has been first added and then
+        overwritten, `undo_last()` will simply remove it.
+        Undone actions also cannot be replayed, so be sure to have an original
+        copy (saved) and use with care.
+        """
+        idx, fid = self._update_history.pop(-1)
+        assert self.candidates[idx].idx == idx  # runtime sanity check
+        del self.candidates[idx].fidelities[fid]
+
+
     def _updateminmax(self, value: float, fidelity: str=None):
 
         if fidelity not in self.max:  # or self.min

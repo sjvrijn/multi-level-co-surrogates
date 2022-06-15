@@ -255,3 +255,27 @@ def test_roundtrip(tmp_path):
 
     for fid in archive.fidelities:
         assert archive.count(fid) == new_archive.count(fid)
+
+
+def test_undo_last():
+    archive = CandidateArchive()
+    archive.addcandidate(np.random.rand(2), np.random.rand(), fidelity='A')
+    archive.addcandidate(np.random.rand(2), np.random.rand(), fidelity='B')
+    archive.addcandidate(np.random.rand(2), np.random.rand(), fidelity='A')
+
+    archive.undo_last()
+    assert archive.count('A') == 1
+    assert archive.count('B') == 1
+
+
+def test_undo_last_overwritten():
+    archive = CandidateArchive()
+    overwrite_candidate = np.random.rand(2)
+    archive.addcandidate(np.random.rand(2), np.random.rand(), fidelity='A')
+    archive.addcandidate(np.random.rand(2), np.random.rand(), fidelity='B')
+    archive.addcandidate(overwrite_candidate, np.random.rand(), fidelity='A')
+    archive.addcandidate(overwrite_candidate, np.random.rand(), fidelity='A')
+
+    archive.undo_last()
+    assert archive.count('A') == 1
+    assert archive.count('B') == 1
