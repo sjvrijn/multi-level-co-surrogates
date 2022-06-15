@@ -18,15 +18,11 @@ import pandas as pd
 from parse import compile
 from pyprojroot import here
 
-from multiLevelCoSurrogates import CandidateArchive
-
 data_path = here('files/2020-11-05-simple-mfbo/')
 plot_path = here('plots/2021-09-09-mfbo-comparisons/', warn=False)
 plot_path.mkdir(exist_ok=True, parents=True)
 
 subfolder_template = compile('{func_name}-{method}-b{init_budget:d}-i{idx:d}')
-archive_template = compile('archive_{iteration:d}.npy')
-errorgrid_template = compile('errorgrid_{iteration:d}.nc')
 
 named_functions = {
     func.name.lower(): func
@@ -75,8 +71,7 @@ def compare_different_strategies(save_exts=('.png', '.pdf')):
         # for each experiment, plot the data
         for method, folder in sorted(folders, key=itemgetter(0)):
             df = pd.read_csv(folder / 'log.csv', index_col=0, sep=';')
-            archive = np.load(folder / 'archive_000.npy', allow_pickle=True).item()
-            df = add_min_over_time_to_log(df, archive, func_name.lower())
+            df = add_min_over_time_to_log(df, func_name.lower())
             plot_on_axes(axes, init_budget, df, label=method)
         axes[0,0].legend(loc=0)
 
@@ -142,14 +137,13 @@ def plot_on_axes(axes, init_budget, df, label=''):
     ax.legend(loc='best')
 
 
-def add_min_over_time_to_log(df: pd.DataFrame, init_archive: CandidateArchive, func_name: str):
+def add_min_over_time_to_log(df: pd.DataFrame, func_name: str):
     """Add the minimum fitness values over time for each fidelity to the dataframe"""
 
     # gather improvements per fidelity from the dataframe
     for fidelity in ['low', 'high']:
         fitnesses = np.array([np.inf] * len(df['fitness']))
         fitnesses[df['fidelity'] == fidelity] = df.loc[df['fidelity'] == fidelity]['fitness']
-        fitnesses[0] = min(init_archive.min[fidelity], fitnesses[0])
         fitnesses = np.minimum.accumulate(fitnesses)
         df[f'opt_{fidelity}'] = fitnesses
 
