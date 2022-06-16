@@ -28,7 +28,7 @@ plot_path = here('plots/2020-11-16-simple-mfbo/', warn=False)
 plot_path.mkdir(exist_ok=True, parents=True)
 
 subfolder_template = compile('{func_name}-{method}-c{cost_ratio:f}-b{init_budget:d}-i{idx:d}')
-archive_template = compile('archive_{iteration:d}.npy')
+archive_template = 'archive_{iteration:03d}'
 errorgrid_template = compile('errorgrid_{iteration:d}.nc')
 
 named_functions = {
@@ -118,24 +118,37 @@ def plot_log(in_folder: Path, out_folder: Path, save_exts=('.png', '.pdf')) -> N
 def plot_and_gifify_archives(in_folder: Path, out_folder: Path, gif=True, save_exts=('.png', '.pdf')):
     """Create 2d plots of all archive.npy files in `in_folder`, including animated GIF
 
-    :param in_folder:  folder containing the log.csv file to read and plot
+    :param in_folder:  folder containing the archive.npz and log.csv file to read and plot
     :param out_folder: where to store resulting plots
     :param save_exts:  which extensions to use when saving the individual plots
     """
+    df = pd.read_csv(in_folder / 'log.csv', sep=';', index_col=0)
+    idx = df.index[-1]
+    reverse_addition_order = reversed(list(enumerate(df['fidelity'])))
+
     match = subfolder_template.parse(in_folder.name)
     func_name = match['func_name']
-    archive_files = [
-        (f, archive_template.parse(f.name)['iteration'])
-        for f in in_folder.iterdir()
-        if archive_template.parse(f.name)
-    ]
-    for archive_file, iteration_idx in archive_files:
-        archive = np.load(archive_file, allow_pickle=True).item()
+    func = named_functions[func_name.lower()]
+
+    archive = mlcs.CandidateArchive.from_file(in_folder / 'archive.npz')
+
+    # plot final archive, before undoing any additions
+    proc.plot_archive(
+        archive=archive,
+        func=func,
+        title=f'plot of archive at idx {idx}',
+        save_as=out_folder / archive_template.format(iteration=idx),
+        suffixes=save_exts
+    )
+
+    # undo last (relevant) addition and plot archive
+    for idx, fidelity in reverse_addition_order:
+        archive.undo_last(fidelity=fidelity)
         proc.plot_archive(
-            archive,
-            func=named_functions[func_name.lower()],
-            title=f'plot of archive at idx {iteration_idx}',
-            save_as=out_folder / archive_file.stem,
+            archive=archive,
+            func=func,
+            title=f'plot of archive at idx {idx}',
+            save_as=out_folder / archive_template.format(iteration=idx),
             suffixes=save_exts
         )
     if gif:
