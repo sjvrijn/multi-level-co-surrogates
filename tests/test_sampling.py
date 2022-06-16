@@ -27,10 +27,10 @@ def test_split_doe_with_include_high():
     assert len(other.high) == len(doe.high) - num_high + 1
 
     X = tuple(X[0])
-    assert X in set(tuple(x) for x in selected.low)
-    assert X in set(tuple(x) for x in selected.high)
-    assert X not in set(tuple(x) for x in other.low)
-    assert X not in set(tuple(x) for x in other.high)
+    assert X in {tuple(x) for x in selected.low}
+    assert X in {tuple(x) for x in selected.high}
+    assert X not in {tuple(x) for x in other.low}
+    assert X not in {tuple(x) for x in other.high}
 
 
 def test_split_doe_with_include_low():
@@ -45,10 +45,10 @@ def test_split_doe_with_include_low():
     assert len(other.high) == len(doe.high) - num_high
 
     X = tuple(X[0])
-    assert X in set(tuple(x) for x in selected.low)
-    assert X not in set(tuple(x) for x in selected.high)
-    assert X not in set(tuple(x) for x in other.low)
-    assert X not in set(tuple(x) for x in other.high)
+    assert X in {tuple(x) for x in selected.low}
+    assert X not in {tuple(x) for x in selected.high}
+    assert X not in {tuple(x) for x in other.low}
+    assert X not in {tuple(x) for x in other.high}
 
 
 def test_must_include_no_warning():
@@ -124,11 +124,8 @@ def test_valueerror_split_bifiddoe():
     which returns True if values match in *AT LEAST ONE* column, instead of all.
     """
     archive_path = here('tests/test-files/split_bi_fid_doe_regression_archive.npz')
-    npzfile = np.load(archive_path)
 
-    archive = mlcs.CandidateArchive(fidelities=['high', 'low'])
-    archive.addcandidates(npzfile['candidates'], npzfile['high'], fidelity='high')
-    archive.addcandidates(npzfile['candidates'], npzfile['low'], fidelity='low')
+    archive = mlcs.CandidateArchive.from_file(archive_path)
     doe = archive.as_doe()
 
     # split_bi_fidelity_doe() would fail under exactly these circumstances:

@@ -33,7 +33,7 @@ save_dir = here('files/2020-11-05-simple-mfbo/', warn=False)
 save_dir.mkdir(parents=True, exist_ok=True)
 
 FOLDER_NAME_TEMPLATE = '{func_name}-{name}-c{cost_ratio:f}-b{budget:d}-i{idx:d}'
-archive_file_template = 'archive_{:03d}.npy'
+archive_file = 'archive.npz'
 errorgrid_file_template = 'errorgrid_{:03d}.nc'
 
 
@@ -67,10 +67,10 @@ FUNCTIONS = [
 
     mf2.borehole,  # 9
 
-    [mf2.adjustable.branin(a) for a in np.linspace(0, 1, 11)],      # 10-20
-    [mf2.adjustable.paciorek(a) for a in np.linspace(0.1, 1, 10)],  # 21-30
-    [mf2.adjustable.hartmann3(a) for a in np.linspace(0, 1, 11)],   # 31-41
-    [mf2.adjustable.trid(a) for a in np.linspace(0, 1, 11)],        # 42-52
+    *[mf2.adjustable.branin(a) for a in np.linspace(0, 1, 11)],      # 10-20
+    *[mf2.adjustable.paciorek(a) for a in np.linspace(0.1, 1, 10)],  # 21-30
+    *[mf2.adjustable.hartmann3(a) for a in np.linspace(0, 1, 11)],   # 31-41
+    *[mf2.adjustable.trid(a) for a in np.linspace(0, 1, 11)],        # 42-52
 ]
 
 
@@ -227,7 +227,7 @@ class Optimizer:
         iterations = 0
         eval_cost = {'high': 1, 'low': self.cost_ratio}
         start_time = time()
-        np.save(self.run_save_dir / archive_file_template.format(iterations), self.archive)
+        self.archive.save(self.run_save_dir / archive_file)
         if self.proto_eg:
             self.proto_eg.error_grid.to_netcdf(self.run_save_dir / errorgrid_file_template.format(iterations))
 
@@ -278,7 +278,7 @@ class Optimizer:
                     candidate=x,
                     fitness=y,
                 ))
-                np.save(self.run_save_dir / archive_file_template.format(iterations), self.archive)
+            self.archive.save(self.run_save_dir / archive_file)
 
             if fidelity == 'high' and self.use_x_opt and self.check_optimum_reached(y_opt):
                 # shortcut the while-loop

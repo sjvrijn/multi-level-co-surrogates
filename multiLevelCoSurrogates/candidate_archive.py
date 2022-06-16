@@ -13,6 +13,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 from collections import namedtuple
 from dataclasses import dataclass
 from numbers import Number
+from pathlib import Path
 from typing import Iterable, Union
 
 import numpy as np
@@ -53,6 +54,29 @@ class CandidateArchive:
         return archive
 
 
+    @classmethod
+    def from_file(cls, file: Union[str, Path]):
+        """Load a candidate archive from a previously saved .npz file"""
+        loaded_data = np.load(file)
+        candidates = loaded_data['candidates']
+        archive = cls()
+
+        for fid in loaded_data['fidelities']:
+            fitnesses = loaded_data[fid]
+
+            # NaN values are stored in file for completeness,
+            # but must be excluded again when adding
+            nan_fitnesses = np.isnan(fitnesses)
+            archive.addcandidates(
+                candidates[~nan_fitnesses], fitnesses[~nan_fitnesses],
+                fidelity=fid
+            )
+
+        # Overwrite history
+        archive._update_history = loaded_data['history'].tolist()
+        return archive
+
+
     @property
     def fidelities(self):
         return self._all_fidelities.keys()
@@ -82,18 +106,25 @@ class CandidateArchive:
         if not isinstance(fitness, Number):
             fitness = float(fitness)
 
+        if np.isnan(fitness):
+            raise ValueError(f'invalid fitness value `NaN` for candidate {candidate}')
+
         try:
             idx = self.candidates.index(candidate)
+            # ignore update if re-adding same fitness value
+            if np.isclose(self.candidates[idx].fidelities.get(fidelity, np.nan), fitness):
+                return
+
             self.candidates[idx].fidelities[fidelity] = fitness
 
         except ValueError:
             # candidates is not yet present
-            new_idx = len(self.candidates)
+            idx = len(self.candidates)
             fidelities = {fidelity: fitness}
-            self.candidates.append(Candidate(new_idx, candidate, fidelities))
+            self.candidates.append(Candidate(idx, candidate, fidelities))
 
-        # create key entry if it does not yet exist
-        self._all_fidelities[fidelity] = None
+        self._update_history.append((idx, fidelity))  # record update order
+        self._all_fidelities[fidelity] = None  # add key entry
         self._updateminmax(fitness, fidelity)
 
 
@@ -160,6 +191,45 @@ class CandidateArchive:
             fidelity in candidate.fidelities
             for candidate in self.candidates
         )
+
+
+    def save(self, file: Union[str, Path]):
+        """Save the archive as a reusable .npz file
+
+        Stores candidates, fitness values per fidelity and the update history,
+        allowing for a perfect recreation of the archive at a later date.
+        """
+        # prepare a type specification to correctly store the update_history
+        history_type = np.dtype([
+            ('idx', int),
+            ('fidelity', np.unicode_, max(len(str(f)) for f in self.fidelities)),
+        ])
+
+        save_args = {
+            'candidates': np.array([c.x for c in self.candidates]),
+            'history': np.array(self._update_history, dtype=history_type),
+            'fidelities': [str(f) for f in self.fidelities],
+        }
+        for fid in self.fidelities:
+            fitnesses = self.getfitnesses(save_args['candidates'], fidelity=fid)
+            if fid is None:
+                fid = 'None'
+            save_args[fid] = fitnesses
+
+        np.savez(file, **save_args)
+
+
+    def undo_last(self):
+        """Undo the latest addition to the archive
+
+        This only undoes additions. If a value has been first added and then
+        overwritten, `undo_last()` will simply remove it.
+        Undone actions also cannot be replayed, so be sure to have an original
+        copy (saved) and use with care.
+        """
+        idx, fid = self._update_history.pop(-1)
+        assert self.candidates[idx].idx == idx  # runtime sanity check
+        del self.candidates[idx].fidelities[fid]
 
 
     def _updateminmax(self, value: float, fidelity: str=None):

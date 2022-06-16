@@ -82,7 +82,10 @@ def test_min_max():
 
 
 def test_add_candidate_without_fidelity_raises_error():
-    all_candidates, archive, data = setup_archive()
+    """Adding candidates of unspecified fidelity to an archive with previously
+     specified fidelities should raise ValueError.
+     """
+    _, archive, _ = setup_archive()
 
     candidates = np.random.rand(5, 2)
     fitnesses = np.random.rand(5, 1)
@@ -91,6 +94,18 @@ def test_add_candidate_without_fidelity_raises_error():
         archive.addcandidate(candidates[0], fitnesses[0])
     with pytest.raises(ValueError):
         archive.addcandidates(candidates, fitnesses)
+
+
+def test_add_candidate_with_nan_raises_error():
+    """Adding candidates with `NaN` as fitness raises ValueError"""
+    archive = CandidateArchive()
+    with pytest.raises(ValueError):
+        archive.addcandidate(np.random.rand(5), np.nan)
+
+    fitnesses = np.random.rand(5)
+    fitnesses[2] = np.nan
+    with pytest.raises(ValueError):
+        archive.addcandidates(np.random.rand(5,5), fitnesses)
 
 
 def test_from_bifiddoe():
@@ -211,3 +226,56 @@ def test_2fid_getcandidates_fidelity_list():
     cand, fit = archive.getcandidates(['AAA', 'BBB'])
     assert len(fit) == num_fitnesses_BBB
     assert np.count_nonzero(np.isnan(fit)) == 0
+
+
+def test_save(tmp_path):
+    all_candidates, archive, data = setup_archive()
+
+    test_path = tmp_path / 'test_archive.npz'
+    archive.save(test_path)
+
+    loaded_data = np.load(test_path)
+
+    assert np.allclose(all_candidates, loaded_data['candidates'])
+    assert all(fid in loaded_data for fid in archive.fidelities)
+
+
+def test_roundtrip(tmp_path):
+    all_candidates, archive, data = setup_archive()
+
+    test_path = tmp_path / 'test_archive.npz'
+    archive.save(test_path)
+
+    new_archive = CandidateArchive.from_file(test_path)
+
+    assert len(archive) == len(new_archive)
+    assert archive.min == new_archive.min
+    assert archive.max == new_archive.max
+    assert list(archive.fidelities) == list(new_archive.fidelities)
+
+    for fid in archive.fidelities:
+        assert archive.count(fid) == new_archive.count(fid)
+
+
+def test_undo_last():
+    archive = CandidateArchive()
+    archive.addcandidate(np.random.rand(2), np.random.rand(), fidelity='A')
+    archive.addcandidate(np.random.rand(2), np.random.rand(), fidelity='B')
+    archive.addcandidate(np.random.rand(2), np.random.rand(), fidelity='A')
+
+    archive.undo_last()
+    assert archive.count('A') == 1
+    assert archive.count('B') == 1
+
+
+def test_undo_last_overwritten():
+    archive = CandidateArchive()
+    overwrite_candidate = np.random.rand(2)
+    archive.addcandidate(np.random.rand(2), np.random.rand(), fidelity='A')
+    archive.addcandidate(np.random.rand(2), np.random.rand(), fidelity='B')
+    archive.addcandidate(overwrite_candidate, np.random.rand(), fidelity='A')
+    archive.addcandidate(overwrite_candidate, np.random.rand(), fidelity='A')
+
+    archive.undo_last()
+    assert archive.count('A') == 1
+    assert archive.count('B') == 1
