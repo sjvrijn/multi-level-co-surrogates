@@ -279,3 +279,18 @@ def test_undo_last_overwritten():
     archive.undo_last()
     assert archive.count('A') == 1
     assert archive.count('B') == 1
+
+
+def test_undo_last_specify_fidelity():
+    archive = CandidateArchive()
+    fidelity_order = 'AABBBBBAA'
+    for fid in fidelity_order:
+        archive.addcandidate(np.random.rand(2), np.random.rand(), fidelity=fid)
+
+    archive.undo_last(fidelity='B')
+    assert archive.count('A') == 2
+    assert archive.count('B') == 4
+
+    archive.undo_last(fidelity='A')
+    assert archive.count('A') == 1
+    assert archive.count('B') == 0
