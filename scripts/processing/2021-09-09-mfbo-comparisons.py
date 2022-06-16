@@ -152,10 +152,6 @@ def add_min_over_time_to_log(df: pd.DataFrame, func_name: str):
     return df
 
 
-def main(**kwargs):
-    compare_different_strategies(**kwargs)
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--exts", action="extend", nargs="+", type=str,
@@ -164,4 +160,4 @@ if __name__ == '__main__':
     kwargs = {}
     if args.exts:
         kwargs['save_exts'] = args.exts
-    main(**kwargs)
+    compare_different_strategies(**kwargs)
