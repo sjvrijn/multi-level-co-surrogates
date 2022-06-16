@@ -294,3 +294,14 @@ def test_undo_last_specify_fidelity():
     archive.undo_last(fidelity='A')
     assert archive.count('A') == 1
     assert archive.count('B') == 0
+
+
+def test_undo_last_incorrect_fidelity():
+
+    archive = CandidateArchive()
+    fidelity_order = 'AABB'
+    for fid in fidelity_order:
+        archive.addcandidate(np.random.rand(2), np.random.rand(), fidelity=fid)
+
+    with pytest.raises(ValueError):
+        archive.undo_last(fidelity='C')

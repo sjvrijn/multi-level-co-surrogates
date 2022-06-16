@@ -219,7 +219,7 @@ class CandidateArchive:
         np.savez(file, **save_args)
 
 
-    def undo_last(self, fidelity=None):
+    def undo_last(self, *, fidelity=None):
         """Undo the latest addition to the archive
 
         This only undoes additions. If a value has been first added and then
@@ -231,6 +231,9 @@ class CandidateArchive:
         # TODO: deal more nicely with 'None' in list of fidelities, just confusing now...
         if fidelity is None and len(self.fidelities) > 1:
             fidelity = self._update_history[-1][1]
+
+        if fidelity not in self.fidelities:
+            raise ValueError(f'Specified fidelity `{fidelity}` is not in archive.')
 
         while True:  # do-while
             idx, fid = self._update_history.pop(-1)
