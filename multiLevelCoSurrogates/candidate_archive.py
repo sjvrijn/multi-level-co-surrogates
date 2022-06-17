@@ -15,11 +15,12 @@ from dataclasses import dataclass
 from numbers import Number
 from pathlib import Path
 from typing import Iterable, Union
+from warnings import warn
 
 import numpy as np
 
 import mf2
-from multiLevelCoSurrogates.utils import BiFidelityDoE
+from multiLevelCoSurrogates.utils import BiFidelityDoE, LowHighFidSamplesWarning, NoHighFidTrainSamplesWarning, NoSpareLowFidSamplesWarning
 
 CandidateSet = namedtuple('CandidateSet', ['candidates', 'fitnesses'])
 
@@ -242,6 +243,76 @@ class CandidateArchive:
 
             if fid == fidelity:
                 break
+
+
+    def split(self, num_high: int, num_low: int) -> tuple['CandidateArchive', 'CandidateArchive']:
+        """Split the archive into two according to the given size.
+
+        Assumes the archive has fidelity levels 'high' and 'low'. Will split
+        such that the first returned archive matches the specified size, and the
+        other archive contains all remaining samples and fitness values.
+
+        Note: this method makes shallow copies of the Candidates, so any changes
+        in the original archive apply to the split archives and vice versa.
+        """
+        cur_num_high, cur_num_low = self.count('high'), self.count('low')
+        # Errors
+        if 'high' not in self.fidelities or 'low' not in self.fidelities:
+            raise ValueError("Fidelity levels 'high' and 'low' are both "
+                             "required, but not present")
+        if not 0 <= num_high <= cur_num_high:
+            raise ValueError(f"'num_high' must be in the range [0, len(doe.high) "
+                             f"(={cur_num_high})], but is {num_high}")
+        if num_low > cur_num_low:
+            raise ValueError(f"'num_low' cannot be greater than len(doe.low) "
+                             f"(={cur_num_low}), but is {num_low}")
+        if num_low < num_high:
+            raise ValueError(f"'num_low' must be at least 'num_high', "
+                             f"but {num_low} < {num_high}")
+
+        # Warnings
+        if num_high < 2:
+            warn("Not enough high-fidelity samples selected to serve as a training set",
+                 category=LowHighFidSamplesWarning)
+        if num_high == cur_num_high:
+            warn("All high-fidelity samples selected, none left over as test set",
+                 category=NoHighFidTrainSamplesWarning)
+        if num_low == num_high:
+            warn("No additional low-fidelity samples to be selected",
+                 category=NoSpareLowFidSamplesWarning)
+
+        # indices = np.random.permutation(len(high))
+        #
+        # sub_high = [high[idx] for idx in indices[:num_high]]
+        # leave_out_high = [high[idx] for idx in indices[num_high:]]
+        #
+        # if num_low == len(low):
+        #     sub_low = low
+        #     leave_out_low = []
+        # else:
+        #     # remove all sub_high from low
+        #     filtered_low = [x for x in low if x not in sub_high]
+        #     sub_high = np.array(sub_high)
+        #
+        #     # randomly select (num_low - num_high) remaining
+        #     indices = np.random.permutation(len(filtered_low))
+        #     num_low_left = num_low - num_high
+        #
+        #     extra_low = np.array([filtered_low[idx] for idx in indices[:num_low_left]])
+        #     leave_out_low = [filtered_low[idx] for idx in indices[num_low_left:]]
+        #
+        #     # concatenate sub_high with selected sub_low, avoid if len()==0 for any
+        #     if len(sub_high) == 0:
+        #         sub_low = np.array(extra_low)
+        #     elif len(extra_low) == 0:
+        #         sub_low = np.array(sub_high)
+        #     else:
+        #         sub_low = np.concatenate([sub_high, extra_low], axis=0)
+        #
+        # selected = BiFidelityDoE(np.array(sub_high), sub_low)
+        # left_out = BiFidelityDoE(np.array(leave_out_high), np.array(leave_out_low))
+        #
+        # return selected, left_out
 
 
     def _updateminmax(self, value: float, fidelity: str=None):
