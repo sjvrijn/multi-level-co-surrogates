@@ -328,6 +328,7 @@ class Optimizer:
 
         # `x` is not yet evaluated in high-fidelty, switch fidelity
         if np.isnan(fitness):
+            self.time_since_high_eval = 0
             return x, 'high'
 
         # `x` has also already been evaluated in high-fidelity, select new random instead
