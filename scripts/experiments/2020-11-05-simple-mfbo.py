@@ -9,7 +9,7 @@ from enum import IntEnum
 from functools import partial
 from itertools import product
 from pathlib import Path
-from time import time
+from time import perf_counter
 from warnings import warn, simplefilter, catch_warnings
 
 import mf2
@@ -226,7 +226,7 @@ class Optimizer:
         reuse_fraction = 0  # only updated when (proto)EG is used
         iterations = 0
         eval_cost = {'high': 1, 'low': self.cost_ratio}
-        start_time = time()
+        start_time = perf_counter()
         self.archive.save(self.run_save_dir / archive_file)
         if self.proto_eg:
             self.proto_eg.error_grid.to_netcdf(self.run_save_dir / errorgrid_file_template.format(iterations))
@@ -271,7 +271,7 @@ class Optimizer:
                     time_since_high_eval=self.time_since_high_eval,
                     tau=self.tau,
                     fidelity=fidelity,
-                    wall_time=time() - start_time,
+                    wall_time=perf_counter() - start_time,
                     nhigh=self.archive.count('high'),
                     nlow=self.archive.count('low'),
                     reuse_fraction=reuse_fraction,
