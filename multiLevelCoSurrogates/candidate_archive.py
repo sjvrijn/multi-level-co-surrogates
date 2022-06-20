@@ -11,6 +11,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 
 from collections import namedtuple
+from copy import deepcopy
 from dataclasses import dataclass
 from numbers import Number
 from pathlib import Path
@@ -281,38 +282,41 @@ class CandidateArchive:
             warn("No additional low-fidelity samples to be selected",
                  category=NoSpareLowFidSamplesWarning)
 
-        # indices = np.random.permutation(len(high))
-        #
-        # sub_high = [high[idx] for idx in indices[:num_high]]
-        # leave_out_high = [high[idx] for idx in indices[num_high:]]
-        #
-        # if num_low == len(low):
-        #     sub_low = low
-        #     leave_out_low = []
-        # else:
-        #     # remove all sub_high from low
-        #     filtered_low = [x for x in low if x not in sub_high]
-        #     sub_high = np.array(sub_high)
-        #
-        #     # randomly select (num_low - num_high) remaining
-        #     indices = np.random.permutation(len(filtered_low))
-        #     num_low_left = num_low - num_high
-        #
-        #     extra_low = np.array([filtered_low[idx] for idx in indices[:num_low_left]])
-        #     leave_out_low = [filtered_low[idx] for idx in indices[num_low_left:]]
-        #
-        #     # concatenate sub_high with selected sub_low, avoid if len()==0 for any
-        #     if len(sub_high) == 0:
-        #         sub_low = np.array(extra_low)
-        #     elif len(extra_low) == 0:
-        #         sub_low = np.array(sub_high)
-        #     else:
-        #         sub_low = np.concatenate([sub_high, extra_low], axis=0)
-        #
-        # selected = BiFidelityDoE(np.array(sub_high), sub_low)
-        # left_out = BiFidelityDoE(np.array(leave_out_high), np.array(leave_out_low))
-        #
-        # return selected, left_out
+        selected = CandidateArchive()
+
+        # Select high-fidelity samples. Corresponding low-fidelity values are
+        # automatically included
+        indices_high = np.random.permutation([
+            idx
+            for idx, c in enumerate(self.candidates)
+            if 'high' in c.fidelities
+        ])
+        selected_indices_high = indices_high[:num_high]
+        for idx in selected_indices_high:
+            selected.candidates.append(self.candidates[idx])
+
+        # Select low-fidelity samples. If a low-fidelity sample has matching
+        # high-fidelity value, create a copy that only has low-fidelity info
+        indices_low = np.random.permutation(
+            list(
+                set(range(len(self.candidates)))
+                - set(selected_indices_high)
+            )
+        )
+        selected_indices_low = indices_low[:(num_low - num_high)]
+        for idx in selected_indices_low:
+            candidate = self.candidates[idx]
+            if 'high' in candidate.fidelities:
+                candidate = deepcopy(candidate)
+                del candidate.fidelities['high']
+            selected.candidates.append(candidate)
+
+        # Create an archive of the remaining fidelity values.
+        other = CandidateArchive()
+        other_indices_high = indices_high[num_high:]
+        other_indices_low = indices_low[(num_low - num_high):]
+
+        return selected, other
 
 
     def _updateminmax(self, value: float, fidelity: str=None):
