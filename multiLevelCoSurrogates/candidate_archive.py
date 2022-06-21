@@ -247,14 +247,45 @@ class CandidateArchive:
 
 
     def split(self, num_high: int, num_low: int) -> tuple['CandidateArchive', 'CandidateArchive']:
-        """Split the archive into two according to the given size.
+        r"""Split the archive into two according to the given size.
 
         Assumes the archive has fidelity levels 'high' and 'low'. Will split
         such that the first returned archive matches the specified size, and the
         other archive contains all remaining samples and fitness values.
 
-        Note: this method makes shallow copies of the Candidates, so any changes
-        in the original archive apply to the split archives and vice versa.
+        Illustrative example of splitting an archive with 3 high-fidelity and 5
+        low-fidelity into one with 2 high- and 3 low-fidelity, and the remainder
+        (1 high-, 2 low-fidelity).
+
+                                    Original archive:
+
+                               | candidate | high | low |
+                               |-----------|------|-----|
+                               | [0.0,0.1] |  x   |  x  |
+                               | [0.2,0.3] |  x   |  x  |
+                               | [0.4,0.5] |      |  x  |
+                               | [0.6,0.7] |      |  x  |
+                               | [0.8,0.9] |  x   |  x  |
+
+                                        /        \
+                                     /              \
+                                  /                    \
+                               /                          \
+        Selected            /                                \        Remainder
+
+        | candidate | high | low |                    | candidate | high | low |
+        |-----------|------|-----|                    |-----------|------|-----|
+        | [0.0,0.1] |      |  x  |                    | [0.0,0.1] |  x   |     |
+        | [0.2,0.3] |  x   |  x  |                    | [0.2,0.3] |      |     |
+        | [0.4,0.5] |      |     |                    | [0.4,0.5] |      |  x  |
+        | [0.6,0.7] |      |     |                    | [0.6,0.7] |      |  x  |
+        | [0.8,0.9] |  x   |  x  |                    | [0.8,0.9] |      |     |
+
+        Note that 'high' -> 'low'                     Note that 'high' !-> 'low'
+
+        Note: this method only makes deep copies of the Candidates when needed,
+        so any changes in the original archive may apply to the split archives
+        and vice versa.
         """
         cur_num_high, cur_num_low = self.count('high'), self.count('low')
         # Errors
