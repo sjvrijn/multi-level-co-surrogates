@@ -324,7 +324,7 @@ def test_split_archive(bifid_archive):
 
     assert a.count('low') == a_low
     assert a.count('high') == a_high
-    assert a.count('low') + b.count('low') == bifid_archive.count('high')
+    assert a.count('low') + b.count('low') == bifid_archive.count('low')
     assert a.count('high') + b.count('high') == bifid_archive.count('high')
 
 
