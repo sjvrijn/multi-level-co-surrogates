@@ -11,7 +11,6 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 
 
 from collections import namedtuple
-from copy import deepcopy
 from dataclasses import dataclass
 from numbers import Number
 from pathlib import Path
