@@ -21,7 +21,7 @@ from warnings import warn
 import numpy as np
 
 import mf2
-from multiLevelCoSurrogates.utils import BiFidelityDoE, LowHighFidSamplesWarning, NoHighFidTrainSamplesWarning, NoSpareLowFidSamplesWarning
+from multiLevelCoSurrogates.utils import idx_set, split_set, BiFidelityDoE, LowHighFidSamplesWarning, NoHighFidTrainSamplesWarning, NoSpareLowFidSamplesWarning
 
 CandidateSet = namedtuple('CandidateSet', ['candidates', 'fitnesses'])
 
@@ -314,38 +314,27 @@ class CandidateArchive:
                  category=NoSpareLowFidSamplesWarning)
 
         selected = CandidateArchive()
-
-        # Select high-fidelity samples. Corresponding low-fidelity values are
-        # automatically included
-        indices_high = np.random.permutation([
-            idx
-            for idx, c in enumerate(self.candidates)
-            if 'high' in c.fidelities
-        ])
-        selected_indices_high = indices_high[:num_high]
-        for idx in selected_indices_high:
-            selected.candidates.append(self.candidates[idx])
-
-        # Select low-fidelity samples. If a low-fidelity sample has matching
-        # high-fidelity value, create a copy that only has low-fidelity info
-        indices_low = np.random.permutation(
-            list(
-                set(range(len(self.candidates)))
-                - set(selected_indices_high)
-            )
-        )
-        selected_indices_low = indices_low[:(num_low - num_high)]
-        for idx in selected_indices_low:
-            candidate = self.candidates[idx]
-            if 'high' in candidate.fidelities:
-                candidate = deepcopy(candidate)
-                del candidate.fidelities['high']
-            selected.candidates.append(candidate)
-
-        # Create an archive of the remaining fidelity values.
         other = CandidateArchive()
-        other_indices_high = indices_high[num_high:]
-        other_indices_low = indices_low[(num_low - num_high):]
+
+        # prepare the sets of indices by which to split the candidates
+        high_indices = {idx for idx, c in enumerate(self.candidates) if 'high' in c.fidelities}
+        high_select, high_other = split_set(high_indices, num_high)
+        # select remaining low-fidelity from those not already included with high-fidelity
+        low_leftover = idx_set(self.candidates) - high_select
+        low_select, low_other = split_set(low_leftover, num_low - num_high)
+
+        # high-fidelity candidates for which only low-fidelity is selected must be split
+        if to_split_up := low_select & high_other:
+            low_select -= to_split_up
+            high_other -= to_split_up
+            split_candidates = [self.candidates[idx].split() for idx in to_split_up]
+            for high, low in split_candidates:
+                selected.candidates.append(low)
+                other.candidates.append(high)
+
+        # add the relevant candidates
+        selected.candidates.extend([self.candidates[idx] for idx in high_select | low_select])
+        other.candidates.extend([self.candidates[idx] for idx in high_other | low_other])
 
         return selected, other
 
