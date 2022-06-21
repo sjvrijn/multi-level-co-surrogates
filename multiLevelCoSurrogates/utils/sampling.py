@@ -302,3 +302,15 @@ def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
         function_based_sample = np.vstack((function_based_sample, filtered_sample))
 
     return function_based_sample[:n_samples]
+
+
+def split_set(set_, size):
+    """Split a set in two random parts of size `size` and `len(set_) - size`"""
+    seq = np.random.permutation(list(set_))
+    a, b = seq[:size], seq[size:]
+    return set(a), set(b)
+
+
+def idx_set(seq):
+    """short-hand for set(range(len(sequence)))"""
+    return set(range(len(seq)))
