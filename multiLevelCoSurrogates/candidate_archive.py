@@ -380,3 +380,8 @@ class Candidate:
         if isinstance(other, Candidate):
             other = other.x
         return np.all(self.x == other)
+
+    def split(self) -> tuple['Candidate', 'Candidate']:
+        """Split the candidate into two copies with only high- or low-fidelity"""
+        return Candidate(self.idx, self.x, {'high': self.fidelities['high']}), \
+               Candidate(self.idx, self.x, {'low': self.fidelities['low']})
