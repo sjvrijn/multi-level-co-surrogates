@@ -29,18 +29,11 @@ errorgrid_template = compile('errorgrid_{iteration:d}.nc')
 
 
 def plot_folder_angles_as_polar(folder: Path, exts):
-    match = subfolder_template.parse(folder.name)
-    if not match:
+    if not subfolder_template.parse(folder.name):
         return
-
-    angles, budgets = get_budget_and_angles(folder)
-
+    angles, budgets = load_budget_and_angles(folder)
     if not angles:
         return  # no .nc files were present
-
-    if len(angles) != len(budgets):
-        actual_length = min(len(angles), len(budgets))
-        angles, budgets = angles[:actual_length], budgets[:actual_length]
 
     fig, ax = plt.subplots(1, 1, subplot_kw={'projection': 'polar'})
     ax.plot(angles, budgets)
@@ -55,28 +48,26 @@ def plot_grouped_folder_angles_as_polar(group_of_folders, group_name, exts):
 
     fig, ax = plt.subplots(1, 1, subplot_kw={'projection': 'polar'})
     for folder in group_of_folders:
-        match = subfolder_template.parse(folder.name)
-        if not match:
+        if not subfolder_template.parse(folder.name):
             return
-
-        angles, budgets = get_budget_and_angles(folder)
-
+        angles, budgets = load_budget_and_angles(folder)
         if not angles:
             return  # no .nc files were present
 
-        if len(angles) != len(budgets):
-            actual_length = min(len(angles), len(budgets))
-            angles, budgets = angles[:actual_length], budgets[:actual_length]
-
         ax.plot(angles, budgets)
 
+    ax.set_thetalim(thetamin=0, thetamax=120)
+    ax.set_thetagrids([0, 30, 60, 90, 120])
+    ax.set_xlabel('Used budget')
+    ax.set_ylabel('Error Grid gradient angle')
+    ax.set_title(group_name)
     for ext in exts:
         fig.savefig(plot_path / f'{group_name}{ext}')
     fig.clear()
     plt.close('all')
 
 
-def get_budget_and_angles(folder):
+def load_budget_and_angles(folder):
     budgets = [0]
     init_budget = subfolder_template.parse(folder.name)['init_budget']
     df = pd.read_csv(folder / 'log.csv', index_col=0, sep=';')
@@ -93,6 +84,10 @@ def get_budget_and_angles(folder):
         with da.load() as da:
             angle_summary = mlcs.utils.error_grids.calc_angle(da)
         angles.append(angle_summary.theta)
+
+    if len(angles) != len(budgets):
+        actual_length = min(len(angles), len(budgets))
+        angles, budgets = angles[:actual_length], budgets[:actual_length]
 
     return angles, budgets
 
