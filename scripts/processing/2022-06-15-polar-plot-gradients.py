@@ -9,6 +9,7 @@ error grids as polar coordinates (angle, budget_used) for an optimization run.
 import argparse
 from itertools import groupby
 from pathlib import Path
+from typing import Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -54,15 +55,15 @@ def plot_grouped_folder_angles_as_polar(group_of_folders, group_name, exts):
         if not angles:
             return  # no .nc files were present
 
-        ax.plot(angles, budgets)
+        ax.plot(angles, budgets, lw=.75, c='black')
 
     ax.set_thetalim(thetamin=0, thetamax=120)
-    ax.set_thetagrids([0, 30, 60, 90, 120])
+    ax.set_thetagrids([0, 15, 30, 45, 60, 75, 90, 105, 120])
     ax.set_xlabel('Used budget')
     ax.set_ylabel('Error Grid gradient angle')
     ax.set_title(group_name)
     for ext in exts:
-        fig.savefig(plot_path / f'{group_name}{ext}')
+        fig.savefig(plot_path / f'{group_name}{ext}', bbox_inches='tight')
     fig.clear()
     plt.close('all')
 
@@ -92,7 +93,7 @@ def load_budget_and_angles(folder):
     return angles, budgets
 
 
-def remove_idx(name):
+def remove_idx(name: Union[Path, str]) -> str:
     if isinstance(name, Path):
         name = name.name
     return name[:name.find('-i')]
@@ -105,11 +106,11 @@ def main(args):
         if not subfolder.is_dir():
             continue
         folders.append(subfolder)
-        print(subfolder.name)
         # plot_folder_angles_as_polar(subfolder, suffixes)
 
     for name, folder_group in groupby(folders, key=remove_idx):
         plot_grouped_folder_angles_as_polar(folder_group, name, suffixes)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
