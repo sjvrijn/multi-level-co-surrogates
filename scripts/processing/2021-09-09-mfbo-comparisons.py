@@ -64,7 +64,7 @@ def compare_different_strategies(save_exts=('.png', '.pdf')):
     # for each group, create and plot a figure
     for (func_name, init_budget, idx), folders in groups.items():
         print(f'{func_name} with init_budget={init_budget} (idx {idx})')
-        fig, axes = plt.subplots(ncols=2, nrows=3, figsize=(8, 9), constrained_layout=True)
+        fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(8, 6), constrained_layout=True)
         fig.suptitle(
             f"Method comparison for {func_name} with init_budget={init_budget} (idx {idx})"
         )
@@ -73,7 +73,6 @@ def compare_different_strategies(save_exts=('.png', '.pdf')):
             df = pd.read_csv(folder / 'log.csv', index_col=0, sep=';')
             df = add_min_over_time_to_log(df, func_name.lower())
             plot_on_axes(axes, init_budget, df, label=method)
-        axes[0,0].legend(loc=0)
 
         for suffix in save_exts:
             fig.savefig(plot_path / f'comparison-{func_name}-b{init_budget}-i{idx}{suffix}')
@@ -89,12 +88,13 @@ def plot_on_axes(axes, init_budget, df, label=''):
     ax.set_title('EG size \'path\'')
     ax.set_ylabel('high-fid samples')
     ax.set_xlabel('low-fid samples')
+    ax.legend(loc=0)
 
     ax = axes[0, 1]
     # tau / budget
     ax.plot(budget_used, df['tau'].values, label=label)
     ax.set_title('Tau')
-    ax.set_ylim(bottom=0, top=max(df['tau'].values))
+    ax.set_ylim(bottom=-0.1, top=max(df['tau'].values + .1))
     ax.set_ylabel('$\\tau$')
     ax.set_xlabel('evaluation cost')
     ax.legend(loc='best')
@@ -109,25 +109,6 @@ def plot_on_axes(axes, init_budget, df, label=''):
     ax.legend(loc='best')
 
     ax = axes[1, 1]
-    # reuse_fraction / budget
-    ax.plot(budget_used, df['reuse_fraction'].values, label=label)
-    ax.set_title('reuse_fraction')
-    ax.set_ylim(bottom=0, top=1)
-    ax.set_ylabel('model reuse fraction')
-    ax.set_xlabel('evaluation cost')
-    ax.legend(loc='best')
-
-    ax = axes[2,0]
-    # minimum fitness over time per fidelity
-    ax.plot(budget_used, df['opt_low'], label=f'{label} (low)')
-    ax.plot(budget_used, df['opt_high'], label=f'{label} (high)')
-    ax.set_title('best fitness')
-    ax.set_ylim(bottom=0)
-    ax.set_ylabel('fitness (high- and low-fidelity)')
-    ax.set_xlabel('evaluation cost')
-    ax.legend(loc='best')
-
-    ax = axes[2,1]
     # error to high-fidelity optimum for high-fid evaluated values
     ax.plot(budget_used, df['err_to_opt'], label=label)
     ax.set_title('distance to optimum')
