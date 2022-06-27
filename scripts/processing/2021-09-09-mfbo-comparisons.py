@@ -67,12 +67,12 @@ def compare_different_strategies(save_exts=('.png', '.pdf')):
         plt.close()
 
 
-def plot_on_axes(axes, init_budget, df, label=''):
+def plot_on_axes(axes, init_budget, df, label='', color=None):
     budget_used = init_budget - df['budget'].values
 
     ax = axes[0,0]
     # EG size path
-    ax.plot(df['nlow'].values, df['nhigh'].values, marker='o', label=label)
+    ax.plot(df['nlow'].values, df['nhigh'].values, marker='o', label=label, color=color)
     ax.set_title('EG size \'path\'')
     ax.set_ylabel('high-fid samples')
     ax.set_xlabel('low-fid samples')
@@ -80,7 +80,7 @@ def plot_on_axes(axes, init_budget, df, label=''):
 
     ax = axes[0, 1]
     # tau / budget
-    ax.plot(budget_used, df['tau'].values, label=label)
+    ax.plot(budget_used, df['tau'].values, label=label, color=color)
     ax.set_title('Tau')
     ax.set_ylim(bottom=-0.1, top=max(df['tau'].values + .1))
     ax.set_ylabel('$\\tau$')
@@ -89,7 +89,7 @@ def plot_on_axes(axes, init_budget, df, label=''):
 
     ax = axes[1, 0]
     # wall-time / budget
-    ax.plot(budget_used, df['wall_time'].values, label=label)
+    ax.plot(budget_used, df['wall_time'].values, label=label, color=color)
     ax.set_title('wall-time')
     ax.set_yscale('log')
     ax.set_ylabel('time (s)')
@@ -98,7 +98,7 @@ def plot_on_axes(axes, init_budget, df, label=''):
 
     ax = axes[1, 1]
     # error to high-fidelity optimum for high-fid evaluated values
-    ax.plot(budget_used, df['err_to_opt'], label=label)
+    ax.plot(budget_used, df['err_to_opt'], label=label, color=color)
     ax.set_title('distance to optimum')
     ax.set_yscale('log')
     ax.set_ylabel('y-error')
