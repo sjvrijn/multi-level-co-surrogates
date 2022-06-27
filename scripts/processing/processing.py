@@ -8,6 +8,7 @@ by explicit runner files.
 
 from enum import IntEnum
 from collections import namedtuple
+from itertools import product
 from operator import itemgetter
 from pathlib import Path
 from textwrap import fill
@@ -47,6 +48,18 @@ wide_figsize = (5.2, 2)
 reg_figsize = (4, 2)
 
 suffixes = ['.pdf', '.png']
+
+named_functions = {
+    func.name.lower(): func
+    for func in mf2.bi_fidelity_functions
+}
+
+for a, f in product(np.round(np.linspace(0, 1, 11),2),
+                    mf2.adjustable.bi_fidelity_functions):
+    if a == 0 and 'paciorek' in f.name.lower():
+        continue
+    func = f(a)
+    named_functions[func.name.lower()] = func
 
 
 def get_extent(data: xr.DataArray):

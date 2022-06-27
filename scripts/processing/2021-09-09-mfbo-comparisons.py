@@ -8,33 +8,21 @@ runs of (different) multi-fidelity bayesian optimization algorithms
 
 import argparse
 from collections import defaultdict
-from itertools import product
 from operator import itemgetter
 
 import matplotlib.pyplot as plt
-import mf2
 import numpy as np
 import pandas as pd
 from parse import compile
 from pyprojroot import here
+
+import processing as proc
 
 data_path = here('files/2020-11-05-simple-mfbo/')
 plot_path = here('plots/2021-09-09-mfbo-comparisons/', warn=False)
 plot_path.mkdir(exist_ok=True, parents=True)
 
 subfolder_template = compile('{func_name}-{method}-b{init_budget:d}-i{idx:d}')
-
-named_functions = {
-    func.name.lower(): func
-    for func in mf2.bi_fidelity_functions
-}
-
-for a, f in product(np.round(np.linspace(0, 1, 11),2),
-                    mf2.adjustable.bi_fidelity_functions):
-    if a == 0 and 'paciorek' in f.name.lower():
-        continue
-    func = f(a)
-    named_functions[func.name.lower()] = func
 
 
 def compare_different_runs(save_exts=('.png', '.pdf')):
@@ -128,7 +116,7 @@ def add_min_over_time_to_log(df: pd.DataFrame, func_name: str):
         fitnesses = np.minimum.accumulate(fitnesses)
         df[f'opt_{fidelity}'] = fitnesses
 
-    func = named_functions[func_name]
+    func = proc.named_functions[func_name]
     df['err_to_opt'] = df['opt_high'] - func.high(func.x_opt)
     return df
 
