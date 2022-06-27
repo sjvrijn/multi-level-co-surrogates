@@ -31,18 +31,6 @@ subfolder_template = compile('{func_name}-{method}-c{cost_ratio:f}-b{init_budget
 archive_template = 'archive_{iteration:03d}'
 errorgrid_template = compile('errorgrid_{iteration:d}.nc')
 
-named_functions = {
-    func.name.lower(): func
-    for func in mf2.bi_fidelity_functions
-}
-
-for a, f in product(np.round(np.linspace(0, 1, 11),2),
-                    mf2.adjustable.bi_fidelity_functions):
-    if a == 0 and 'paciorek' in f.name.lower():
-        continue
-    func = f(a)
-    named_functions[func.name.lower()] = func
-
 
 def plot_on_axes(axes, init_budget, df, label=''):
     budget_used = init_budget - df['budget'].values
@@ -128,7 +116,7 @@ def plot_and_gifify_archives(in_folder: Path, out_folder: Path, gif=True, save_e
 
     match = subfolder_template.parse(in_folder.name)
     func_name = match['func_name']
-    func = named_functions[func_name.lower()]
+    func = proc.named_functions[func_name.lower()]
 
     archive = mlcs.CandidateArchive.from_file(in_folder / 'archive.npz')
 
