@@ -30,7 +30,38 @@ def compare_different_runs(save_exts=('.png', '.pdf')):
 
     :param save_exts:  which extensions to use when saving plots
     """
-    ...
+    # read & group all subfolders that only differ by 'method' and 'idx'
+    groups = defaultdict(list)
+    for subfolder in data_path.iterdir():
+        match = subfolder_template.parse(subfolder.name)
+        if not match:
+            continue
+        group_id = (match['func_name'], match['init_budget'])
+        groups[group_id].append((match['method'], match['idx'], subfolder))
+
+    # for each group, create and plot a figure
+    for (func_name, init_budget), folders in groups.items():
+        print(f'{func_name} with init_budget={init_budget}')
+        fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(8, 6), constrained_layout=True)
+        fig.suptitle(
+            f"Method comparison for {func_name} with init_budget={init_budget}"
+        )
+        # tracking colors per method for legend
+        colors = {}
+        # for each experiment, plot the data
+        for method, idx, folder in sorted(folders, key=itemgetter(0)):
+            df = pd.read_csv(folder / 'log.csv', index_col=0, sep=';')
+            df = add_min_over_time_to_log(df, func_name.lower())
+            if method in colors:
+                label = ''
+            else:
+                label = method
+                colors[method] = len(colors)
+            plot_on_axes(axes, init_budget, df, label=label, color=f'C{colors[method]}', linewidth=.75)
+
+        for suffix in save_exts:
+            fig.savefig(plot_path / f'comparison-{func_name}-b{init_budget}{suffix}')
+        plt.close()
 
 
 def compare_different_strategies(save_exts=('.png', '.pdf')):
@@ -67,12 +98,12 @@ def compare_different_strategies(save_exts=('.png', '.pdf')):
         plt.close()
 
 
-def plot_on_axes(axes, init_budget, df, label='', color=None):
+def plot_on_axes(axes, init_budget, df, label='', **kwargs):
     budget_used = init_budget - df['budget'].values
 
     ax = axes[0,0]
     # EG size path
-    ax.plot(df['nlow'].values, df['nhigh'].values, marker='o', label=label, color=color)
+    ax.plot(df['nlow'].values, df['nhigh'].values, marker='o', label=label, **kwargs)
     ax.set_title('EG size \'path\'')
     ax.set_ylabel('high-fid samples')
     ax.set_xlabel('low-fid samples')
@@ -80,7 +111,7 @@ def plot_on_axes(axes, init_budget, df, label='', color=None):
 
     ax = axes[0, 1]
     # tau / budget
-    ax.plot(budget_used, df['tau'].values, label=label, color=color)
+    ax.plot(budget_used, df['tau'].values, label=label, **kwargs)
     ax.set_title('Tau')
     ax.set_ylim(bottom=-0.1, top=max(df['tau'].values + .1))
     ax.set_ylabel('$\\tau$')
@@ -89,7 +120,7 @@ def plot_on_axes(axes, init_budget, df, label='', color=None):
 
     ax = axes[1, 0]
     # wall-time / budget
-    ax.plot(budget_used, df['wall_time'].values, label=label, color=color)
+    ax.plot(budget_used, df['wall_time'].values, label=label, **kwargs)
     ax.set_title('wall-time')
     ax.set_yscale('log')
     ax.set_ylabel('time (s)')
@@ -98,7 +129,7 @@ def plot_on_axes(axes, init_budget, df, label='', color=None):
 
     ax = axes[1, 1]
     # error to high-fidelity optimum for high-fid evaluated values
-    ax.plot(budget_used, df['err_to_opt'], label=label, color=color)
+    ax.plot(budget_used, df['err_to_opt'], label=label, **kwargs)
     ax.set_title('distance to optimum')
     ax.set_yscale('log')
     ax.set_ylabel('y-error')
@@ -129,4 +160,5 @@ if __name__ == '__main__':
     kwargs = {}
     if args.exts:
         kwargs['save_exts'] = args.exts
-    compare_different_strategies(**kwargs)
+    # compare_different_strategies(**kwargs)
+    compare_different_runs(**kwargs)
