@@ -156,9 +156,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--exts", action="extend", nargs="+", type=str,
                         help="File extensions to use when saving images. Default: [.PNG, .PDF].")
+    parser.add_argument("--strats", action=argparse.BooleanOptionalAction, default=False,
+                        help="Plot every run comparison individually. Default: --no-strats.")
+    parser.add_argument("--runs", action=argparse.BooleanOptionalAction, default=True,
+                        help="Plot comparison of methods over multiple runs. Default: --runs.")
     args = parser.parse_args()
     kwargs = {}
     if args.exts:
         kwargs['save_exts'] = args.exts
-    # compare_different_strategies(**kwargs)
-    compare_different_runs(**kwargs)
+    if args.strats:
+        compare_different_strategies(**kwargs)
+    if args.runs:
+        compare_different_runs(**kwargs)
