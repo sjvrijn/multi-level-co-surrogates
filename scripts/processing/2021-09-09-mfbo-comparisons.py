@@ -113,7 +113,9 @@ def plot_on_axes(axes, init_budget, df, label='', **kwargs):
     # tau / budget
     ax.plot(budget_used, df['tau'].values, label=label, **kwargs)
     ax.set_title('Tau')
-    ax.set_ylim(bottom=-0.1, top=max(df['tau'].values + .1))
+    _, cur_y_max = ax.get_ylim()
+    new_y_max = max(max(df['tau'].values + .1), cur_y_max)
+    ax.set_ylim(bottom=-0.1, top=new_y_max)
     ax.set_ylabel('$\\tau$')
     ax.set_xlabel('evaluation cost')
     ax.legend(loc='best')
