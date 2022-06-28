@@ -106,16 +106,22 @@ def main(args):
         if not subfolder.is_dir():
             continue
         folders.append(subfolder)
-        # plot_folder_angles_as_polar(subfolder, suffixes)
+        if args.singles:
+            plot_folder_angles_as_polar(subfolder, suffixes)
 
-    for name, folder_group in groupby(folders, key=remove_idx):
-        plot_grouped_folder_angles_as_polar(folder_group, name, suffixes)
+    if args.grouped:
+        for name, folder_group in groupby(folders, key=remove_idx):
+            plot_grouped_folder_angles_as_polar(folder_group, name, suffixes)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--exts", action="extend", nargs="+", type=str,
                         help="File extensions to use when saving images. Default: [.PNG, .PDF].")
+    parser.add_argument("--singles", action=argparse.BooleanOptionalAction, default=False,
+                        help="Plot every run comparison individually. Default: --no-singles.")
+    parser.add_argument("--grouped", action=argparse.BooleanOptionalAction, default=True,
+                        help="Plot comparison of methods over multiple runs. Default: --grouped.")
     args = parser.parse_args()
 
     main(args)
