@@ -64,8 +64,8 @@ def main(save_exts=('.png', '.pdf')):
         naive.sort(key=itemgetter(0))
 
         fig, axes = plt.subplots(nrows=1, ncols=1, constrained_layout=True)
-        axes.plot(*list(zip(*fixed)), label='fixed')
-        axes.plot(*list(zip(*naive)), label='naive')
+        axes.scatter(*list(zip(*fixed)), label='fixed', s=10)
+        axes.scatter(*list(zip(*naive)), label='naive', s=10)
         axes.set_ylabel('error')
         axes.set_xlabel('adjustment parameter a')
         axes.legend(loc=1)
