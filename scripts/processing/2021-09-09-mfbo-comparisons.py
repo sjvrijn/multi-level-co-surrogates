@@ -32,7 +32,7 @@ def compare_different_runs(save_exts=('.png', '.pdf')):
     """
     # read & group all subfolders that only differ by 'method' and 'idx'
     groups = defaultdict(list)
-    for subfolder in data_path.iterdir():
+    for subfolder in sorted(data_path.iterdir()):
         match = subfolder_template.parse(subfolder.name)
         if not match:
             continue
@@ -73,7 +73,7 @@ def compare_different_strategies(save_exts=('.png', '.pdf')):
     """
     # read & group all subfolders that only differ by 'method'
     groups = defaultdict(list)
-    for subfolder in data_path.iterdir():
+    for subfolder in sorted(data_path.iterdir()):
         match = subfolder_template.parse(subfolder.name)
         if not match:
             continue
