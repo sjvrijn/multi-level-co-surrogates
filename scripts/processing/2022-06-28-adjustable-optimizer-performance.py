@@ -71,7 +71,8 @@ def main(save_exts=('.png', '.pdf')):
         axes.legend(loc=1)
         axes.set_yscale('log')
         axes.set_title(func_name)
-        fig.savefig(plot_path / f'adjustable_{func_name}_fixed_naive_comparison.png')
+        for ext in save_exts:
+            fig.savefig(plot_path / f'adjustable_{func_name}_fixed_naive_comparison{ext}')
         fig.clear()
         plt.close('all')
 
