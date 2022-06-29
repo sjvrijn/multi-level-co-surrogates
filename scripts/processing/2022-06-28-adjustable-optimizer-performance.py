@@ -8,9 +8,11 @@ or correlation between high- and low-fidelity
 """
 
 import argparse
+from itertools import groupby
 from operator import itemgetter
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from parse import compile
 from pyprojroot import here
@@ -36,6 +38,8 @@ folder_template = compile('Adjustable {name} {a:f}-{remainder}')
 
 
 def main(save_exts=('.png', '.pdf')):
+    groups = ['fixed', 'naive']
+
     for func_name in optima:
         folders = [
             folder
@@ -43,29 +47,22 @@ def main(save_exts=('.png', '.pdf')):
             if func_name in folder.name and folder_template.parse(folder.name)
         ]
 
-        fixed_folders = [f for f in folders if 'fixed' in f.name]
-        naive_folders = [f for f in folders if 'naive' in f.name]
-
-        fixed = []
-        for folder in fixed_folders:
-            df = pd.read_csv(folder / 'log.csv', index_col=0, sep=';')
-            y_best = df.loc[df['fidelity'] == 'high']['fitness'].min() - optima[func_name]
-            param = folder_template.parse(folder.name)['a']
-            fixed.append((param, float(y_best)))
-
-        naive = []
-        for folder in naive_folders:
-            df = pd.read_csv(folder / 'log.csv', index_col=0, sep=';')
-            y_best = df.loc[df['fidelity'] == 'high']['fitness'].min() - optima[func_name]
-            param = folder_template.parse(folder.name)['a']
-            naive.append((param, float(y_best)))
-
-        fixed.sort(key=itemgetter(0))
-        naive.sort(key=itemgetter(0))
-
         fig, axes = plt.subplots(nrows=1, ncols=1, constrained_layout=True)
-        axes.scatter(*list(zip(*fixed)), label='fixed', s=10)
-        axes.scatter(*list(zip(*naive)), label='naive', s=10)
+
+        for group_name in groups:
+
+            group_folders = [f for f in folders if group_name in f.name]
+
+            group = []
+            for folder in group_folders:
+                df = pd.read_csv(folder / 'log.csv', index_col=0, sep=';')
+                y_best = df.loc[df['fidelity'] == 'high']['fitness'].min() - optima[func_name]
+                param = folder_template.parse(folder.name)['a']
+                group.append((param, float(y_best)))
+
+            group.sort(key=itemgetter(0))
+            axes.scatter(*list(zip(*group)), label=f'{group_name} runs', s=10)
+
         axes.set_ylabel('error')
         axes.set_xlabel('adjustment parameter a')
         axes.legend(loc=1)
