@@ -65,7 +65,7 @@ def main(save_exts=('.png', '.pdf')):
                 (name, np.mean(np.array(list(values))[:,1]))
                 for name, values in groupby(group, key=itemgetter(0))
             ]
-            axes.plot(*zip(means), label=f'{group_name} (mean)')
+            axes.plot(*zip(*means), label=f'{group_name} (mean)')
             axes.scatter(*list(zip(*group)), label=f'{group_name} runs', s=10)
 
         axes.set_ylabel('error')
