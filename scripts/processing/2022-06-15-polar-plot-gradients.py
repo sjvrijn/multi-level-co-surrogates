@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from parse import compile
 from pyprojroot import here
+from tqdm import tqdm
 import xarray as xr
 
 import multiLevelCoSurrogates as mlcs
@@ -32,7 +33,7 @@ errorgrid_template = compile('errorgrid_{iteration:d}.nc')
 def plot_folder_angles_as_polar(folder: Path, exts):
     if not subfolder_template.parse(folder.name):
         return
-    angles, budgets = load_budget_and_angles(folder)
+    angles, median_angles, budgets = load_budget_and_angles(folder)
     if not angles:
         return  # no .nc files were present
 
@@ -44,24 +45,30 @@ def plot_folder_angles_as_polar(folder: Path, exts):
     plt.close('all')
 
 
-def plot_grouped_folder_angles_as_polar(group_of_folders, group_name, exts):
+def plot_grouped_folder_angles_as_polar(folders, group_name, exts):
     print(f'plotting group {group_name}')
 
-    fig, ax = plt.subplots(1, 1, subplot_kw={'projection': 'polar'})
-    for folder in group_of_folders:
+
+    fig, axes = plt.subplots(nrows=1, ncols=2, subplot_kw={'projection': 'polar'})
+    fig.suptitle(group_name)
+
+    for folder in tqdm(list(folders), leave=False, desc='Experiment reps'):
         if not subfolder_template.parse(folder.name):
             return
-        angles, budgets = load_budget_and_angles(folder)
+        angles, median_angles, budgets = load_budget_and_angles(folder)
         if not angles:
             return  # no .nc files were present
 
-        ax.plot(angles, budgets, lw=.75, c='black')
+        axes[0].plot(angles, budgets, lw=.75, c='black')
+        axes[1].plot(median_angles, budgets, lw=.75, c='black')
 
-    ax.set_thetalim(thetamin=0, thetamax=120)
-    ax.set_thetagrids([0, 15, 30, 45, 60, 75, 90, 105, 120])
-    ax.set_xlabel('Used budget')
-    ax.set_ylabel('Error Grid gradient angle')
-    ax.set_title(group_name)
+    for ax, median_only in zip(axes.flatten(), [False, True]):
+        ax.set_thetalim(thetamin=0, thetamax=120)
+        ax.set_thetagrids([0, 15, 30, 45, 60, 75, 90, 105, 120])
+        ax.set_xlabel('Used budget')
+        ax.set_ylabel('Gradient angle')
+        ax.set_title(f'{"Median-only" if median_only else "All repetitions"}')
+
     for ext in exts:
         fig.savefig(plot_path / f'{group_name}{ext}', bbox_inches='tight')
     fig.clear()
@@ -69,6 +76,7 @@ def plot_grouped_folder_angles_as_polar(group_of_folders, group_name, exts):
 
 
 def load_budget_and_angles(folder):
+    # todo: cache results
     budgets = [0]
     init_budget = subfolder_template.parse(folder.name)['init_budget']
     df = pd.read_csv(folder / 'log.csv', index_col=0, sep=';')
@@ -76,21 +84,25 @@ def load_budget_and_angles(folder):
 
     # todo: rewrite proc.get_gradient_angles to be more generic?
     # angle_df = proc.get_gradient_angles(folder)
+
     angles = []
-    for file in sorted(folder.iterdir()):
+    median_angles = []
+    for file in tqdm(sorted(folder.iterdir()), leave=False, desc='EG files'):
         if not errorgrid_template.parse(file.name):
             continue
         with xr.open_dataset(file) as ds:
             da = ds['mses'].sel(model='high_hier')
         with da.load() as da:
             angle_summary = mlcs.utils.error_grids.calc_angle(da)
+            median_summary = mlcs.utils.error_grids.calc_angle(da.median(dim='rep'))
         angles.append(angle_summary.theta)
+        median_angles.append(median_summary.theta)
 
     if len(angles) != len(budgets):
         actual_length = min(len(angles), len(budgets))
-        angles, budgets = angles[:actual_length], budgets[:actual_length]
+        angles, median_angles, budgets = angles[:actual_length], median_angles[:actual_length], budgets[:actual_length]
 
-    return angles, budgets
+    return angles, median_angles, budgets
 
 
 def remove_idx(name: Union[Path, str]) -> str:
