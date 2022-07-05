@@ -188,7 +188,7 @@ def select_subsample(xdata, num):
     include = np.where(distm == np.max(distm))[0]
     si = np.arange(xdata.shape[1])
     remain = np.delete(si, include)
-    for j in range(num - 2):
+    for _ in range(num - 2):
         minr = np.zeros([np.size(remain)])
         minrind = np.zeros([np.size(remain)])
         for i, ind in enumerate(remain):
@@ -197,9 +197,7 @@ def select_subsample(xdata, num):
         minminrind = np.argmax(minr)
         include = np.append(include, minrind[minminrind])
         remain = np.delete(si, include)
-    sub_x = xdata[:, list(map(int, include[:num]))]
-
-    return sub_x
+    return xdata[:, list(map(int, include[:num]))]
 
 
 def create_subsample_set(ndim, size_per_fidelity, desired_range=None):
@@ -302,3 +300,15 @@ def sample_by_function(func, n_samples, ndim, range_in, range_out, *,
         function_based_sample = np.vstack((function_based_sample, filtered_sample))
 
     return function_based_sample[:n_samples]
+
+
+def split_set(set_, size):
+    """Split a set in two random parts of size `size` and `len(set_) - size`"""
+    seq = np.random.permutation(list(set_))
+    a, b = seq[:size], seq[size:]
+    return set(a), set(b)
+
+
+def idx_set(seq):
+    """short-hand for set(range(len(sequence)))"""
+    return set(range(len(seq)))

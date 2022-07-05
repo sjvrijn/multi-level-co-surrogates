@@ -12,7 +12,7 @@ __email__ = 's.j.van.rijn@liacs.leidenuniv.nl'
 from hypothesis import given
 from hypothesis.strategies import lists, text, integers
 import numpy as np
-import pytest
+from pytest import fixture, raises, warns
 from more_itertools import pairwise
 
 import multiLevelCoSurrogates as mlcs
@@ -30,6 +30,17 @@ def setup_archive():
     for fidelity, (candidates, fitness) in data.items():
         archive.addcandidates(candidates, fitness, fidelity=fidelity)
     return all_candidates, archive, data
+
+
+@fixture
+def bifid_archive():
+    """Create a typical bi-fidelity archive with fidelities 'high' and 'low'"""
+    archive = CandidateArchive()
+    candidates = np.random.rand(10, 2)
+    archive.addcandidates(candidates, np.random.rand(10), fidelity='low')
+    archive.addcandidates(candidates[:5], np.random.rand(5), fidelity='high')
+
+    return archive
 
 
 def test_bare_archive():
@@ -90,21 +101,21 @@ def test_add_candidate_without_fidelity_raises_error():
     candidates = np.random.rand(5, 2)
     fitnesses = np.random.rand(5, 1)
 
-    with pytest.raises(ValueError):
+    with raises(ValueError):
         archive.addcandidate(candidates[0], fitnesses[0])
-    with pytest.raises(ValueError):
+    with raises(ValueError):
         archive.addcandidates(candidates, fitnesses)
 
 
 def test_add_candidate_with_nan_raises_error():
     """Adding candidates with `NaN` as fitness raises ValueError"""
     archive = CandidateArchive()
-    with pytest.raises(ValueError):
+    with raises(ValueError):
         archive.addcandidate(np.random.rand(5), np.nan)
 
     fitnesses = np.random.rand(5)
     fitnesses[2] = np.nan
-    with pytest.raises(ValueError):
+    with raises(ValueError):
         archive.addcandidates(np.random.rand(5,5), fitnesses)
 
 
@@ -303,5 +314,48 @@ def test_undo_last_incorrect_fidelity():
     for fid in fidelity_order:
         archive.addcandidate(np.random.rand(2), np.random.rand(), fidelity=fid)
 
-    with pytest.raises(ValueError):
+    with raises(ValueError):
         archive.undo_last(fidelity='C')
+
+
+def test_split_archive(bifid_archive):
+    a_high, a_low = 3, 7
+    a, b = bifid_archive.split(3, 7)
+
+    assert a.count('low') == a_low
+    assert a.count('high') == a_high
+    assert a.count('low') + b.count('low') == bifid_archive.count('low')
+    assert a.count('high') + b.count('high') == bifid_archive.count('high')
+
+
+def test_split_errors(bifid_archive):
+    # invalid num_high
+    with raises(ValueError):
+        bifid_archive.split(-1, 7)
+    with raises(ValueError):
+        bifid_archive.split(6, 7)
+
+    # invalid num_low
+    with raises(ValueError):
+        bifid_archive.split(3, 11)
+
+    # # invalid comparison
+    with raises(ValueError):
+        bifid_archive.split(4, 3)
+
+
+def test_split_warnings(bifid_archive):
+
+    # not enough high-fid
+    with warns(mlcs.LowHighFidSamplesWarning):
+        bifid_archive.split(0, 3)
+    with warns(mlcs.LowHighFidSamplesWarning):
+        bifid_archive.split(1, 3)
+
+    # no high-fid samples in test-set
+    with warns(mlcs.NoHighFidTrainSamplesWarning):
+        bifid_archive.split(5, 7)
+
+    # no non-high-fidelity low-fidelity samples in test set
+    with warns(mlcs.NoSpareLowFidSamplesWarning):
+        bifid_archive.split(3, 3)

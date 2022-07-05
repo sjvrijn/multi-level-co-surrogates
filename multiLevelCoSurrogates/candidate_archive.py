@@ -15,11 +15,12 @@ from dataclasses import dataclass
 from numbers import Number
 from pathlib import Path
 from typing import Iterable, Union
+from warnings import warn
 
 import numpy as np
 
 import mf2
-from multiLevelCoSurrogates.utils import BiFidelityDoE
+from multiLevelCoSurrogates.utils import idx_set, split_set, BiFidelityDoE, LowHighFidSamplesWarning, NoHighFidTrainSamplesWarning, NoSpareLowFidSamplesWarning
 
 CandidateSet = namedtuple('CandidateSet', ['candidates', 'fitnesses'])
 
@@ -244,6 +245,99 @@ class CandidateArchive:
                 break
 
 
+    def split(self, num_high: int, num_low: int) -> tuple['CandidateArchive', 'CandidateArchive']:
+        r"""Split the archive into two according to the given size.
+
+        Assumes the archive has fidelity levels 'high' and 'low'. Will split
+        such that the first returned archive matches the specified size, and the
+        other archive contains all remaining samples and fitness values.
+
+        Illustrative example of splitting an archive with 3 high-fidelity and 5
+        low-fidelity into one with 2 high- and 3 low-fidelity, and the remainder
+        (1 high-, 2 low-fidelity).
+
+                                    Original archive:
+
+                               | candidate | high | low |
+                               |-----------|------|-----|
+                               | [0.0,0.1] |  x   |  x  |
+                               | [0.2,0.3] |  x   |  x  |
+                               | [0.4,0.5] |      |  x  |
+                               | [0.6,0.7] |      |  x  |
+                               | [0.8,0.9] |  x   |  x  |
+
+                                        /        \
+                                     /              \
+                                  /                    \
+                               /                          \
+        Selected            /                                \        Remainder
+
+        | candidate | high | low |                    | candidate | high | low |
+        |-----------|------|-----|                    |-----------|------|-----|
+        | [0.0,0.1] |      |  x  |                    | [0.0,0.1] |  x   |     |
+        | [0.2,0.3] |  x   |  x  |                    | [0.2,0.3] |      |     |
+        | [0.4,0.5] |      |     |                    | [0.4,0.5] |      |  x  |
+        | [0.6,0.7] |      |     |                    | [0.6,0.7] |      |  x  |
+        | [0.8,0.9] |  x   |  x  |                    | [0.8,0.9] |      |     |
+
+        Note that 'high' -> 'low'                     Note that 'high' !-> 'low'
+
+        Note: this method only makes deep copies of the Candidates when needed,
+        so any changes in the original archive may apply to the split archives
+        and vice versa.
+        """
+        cur_num_high, cur_num_low = self.count('high'), self.count('low')
+        # Errors
+        if 'high' not in self.fidelities or 'low' not in self.fidelities:
+            raise ValueError("Fidelity levels 'high' and 'low' are both "
+                             "required, but not present")
+        if not 0 <= num_high <= cur_num_high:
+            raise ValueError(f"'num_high' must be in the range [0, len(doe.high) "
+                             f"(={cur_num_high})], but is {num_high}")
+        if num_low > cur_num_low:
+            raise ValueError(f"'num_low' cannot be greater than len(doe.low) "
+                             f"(={cur_num_low}), but is {num_low}")
+        if num_low < num_high:
+            raise ValueError(f"'num_low' must be at least 'num_high', "
+                             f"but {num_low} < {num_high}")
+
+        # Warnings
+        if num_high < 2:
+            warn("Not enough high-fidelity samples selected to serve as a training set",
+                 category=LowHighFidSamplesWarning)
+        if num_high == cur_num_high:
+            warn("All high-fidelity samples selected, none left over as test set",
+                 category=NoHighFidTrainSamplesWarning)
+        if num_low == num_high:
+            warn("No additional low-fidelity samples to be selected",
+                 category=NoSpareLowFidSamplesWarning)
+
+        selected = CandidateArchive()
+        other = CandidateArchive()
+
+        # prepare the sets of indices by which to split the candidates
+        high_indices = {idx for idx, c in enumerate(self.candidates) if 'high' in c.fidelities}
+        high_select, high_other = split_set(high_indices, num_high)
+        # select remaining low-fidelity from those not already included with high-fidelity
+        low_leftover = idx_set(self.candidates) - high_select
+        low_select, low_other = split_set(low_leftover, num_low - num_high)
+
+        # high-fidelity candidates for which only low-fidelity is selected must be split
+        if to_split_up := low_select & high_other:
+            low_select -= to_split_up
+            high_other -= to_split_up
+            split_candidates = [self.candidates[idx].split() for idx in to_split_up]
+            for high, low in split_candidates:
+                selected.candidates.append(low)
+                other.candidates.append(high)
+
+        # add the relevant candidates
+        selected.candidates.extend([self.candidates[idx] for idx in high_select | low_select])
+        other.candidates.extend([self.candidates[idx] for idx in high_other | low_other])
+
+        return selected, other
+
+
     def _updateminmax(self, value: float, fidelity: str=None):
 
         if fidelity not in self.max:  # or self.min
@@ -274,3 +368,8 @@ class Candidate:
         if isinstance(other, Candidate):
             other = other.x
         return np.all(self.x == other)
+
+    def split(self) -> tuple['Candidate', 'Candidate']:
+        """Split the candidate into two copies with only high- or low-fidelity"""
+        return Candidate(self.idx, self.x, {'high': self.fidelities['high']}), \
+               Candidate(self.idx, self.x, {'low': self.fidelities['low']})
