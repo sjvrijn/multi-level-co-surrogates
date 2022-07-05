@@ -49,7 +49,7 @@ def plot_result_vs_adjustable(save_exts=('.png', '.pdf')):
             if func_name in folder.name and folder_template.parse(folder.name)
         ]
 
-        fig, axes = plt.subplots(nrows=1, ncols=1, constrained_layout=True)
+        fig, ax = plt.subplots(nrows=1, ncols=1, constrained_layout=True)
 
         for group_name in groups:
 
@@ -62,19 +62,13 @@ def plot_result_vs_adjustable(save_exts=('.png', '.pdf')):
                 param = folder_template.parse(folder.name)['a']
                 group.append((param, float(y_best)))
 
-            group.sort(key=itemgetter(0))
-            means = [
-                (name, np.mean(np.array(list(values))[:,1]))
-                for name, values in groupby(group, key=itemgetter(0))
-            ]
-            axes.plot(*zip(*means), label=f'{group_name} (mean)')
-            axes.scatter(*list(zip(*group)), label=f'{group_name} runs', s=10)
+            plot_group_mean_on_axis(ax, group, group_name)
 
-        axes.set_ylabel('error')
-        axes.set_xlabel('adjustment parameter a')
-        axes.legend(loc=1)
-        axes.set_yscale('log')
-        axes.set_title(func_name)
+        ax.set_ylabel('error')
+        ax.set_xlabel('adjustment parameter a')
+        ax.legend(loc=1)
+        ax.set_yscale('log')
+        ax.set_title(func_name)
         for ext in save_exts:
             fig.savefig(plot_path / f'adjustable_{func_name}_fixed_naive_comparison{ext}')
         fig.clear()
@@ -93,7 +87,7 @@ def plot_result_vs_correlation(save_exts=('.png', '.pdf')):
             if func_name in folder.name and folder_template.parse(folder.name)
         ]
 
-        fig, axes = plt.subplots(nrows=1, ncols=1, constrained_layout=True)
+        fig, ax = plt.subplots(nrows=1, ncols=1, constrained_layout=True)
 
         for group_name in groups:
 
@@ -108,26 +102,29 @@ def plot_result_vs_correlation(save_exts=('.png', '.pdf')):
                     (correlations['fname'] == func_name.lower())
                     & (correlations['param'] == param)
                 ]['pearson_r']
-                # print(func_name, param, corr)
                 group.append((float(corr), float(y_best)))
 
-            group.sort(key=itemgetter(0))
-            means = [
-                (name, np.mean(np.array(list(values))[:,1]))
-                for name, values in groupby(group, key=itemgetter(0))
-            ]
-            axes.plot(*zip(*means), label=f'{group_name} (mean)')
-            axes.scatter(*list(zip(*group)), label=f'{group_name} runs', s=10)
+            plot_group_mean_on_axis(ax, group, group_name)
 
-        axes.set_ylabel('error')
-        axes.set_xlabel('correlation $r$')
-        axes.legend(loc=1)
-        axes.set_yscale('log')
-        axes.set_title(func_name)
+        ax.set_ylabel('error')
+        ax.set_xlabel('correlation $r$')
+        ax.legend(loc=1)
+        ax.set_yscale('log')
+        ax.set_title(func_name)
         for ext in save_exts:
             fig.savefig(plot_path / f'correlation_{func_name}_fixed_naive_comparison{ext}')
         fig.clear()
         plt.close('all')
+
+
+def plot_group_mean_on_axis(ax, group, group_name):
+    group.sort(key=itemgetter(0))
+    means = [
+        (name, np.mean(np.array(list(values))[:, 1]))
+        for name, values in groupby(group, key=itemgetter(0))
+    ]
+    ax.plot(*zip(*means), label=f'{group_name} (mean)')
+    ax.scatter(*list(zip(*group)), label=f'{group_name} runs', s=10)
 
 
 if __name__ == '__main__':
