@@ -30,10 +30,10 @@ subfolder_template = compile('{func_name}-{method}-b{init_budget:d}-i{idx:d}')
 errorgrid_template = compile('errorgrid_{iteration:d}.nc')
 
 
-def plot_folder_angles_as_polar(folder: Path, exts):
+def plot_folder_angles_as_polar(folder: Path, exts, force_regen=False):
     if not subfolder_template.parse(folder.name):
         return
-    angles, median_angles, budgets = load_budget_and_angles(folder)
+    angles, median_angles, budgets = get_budget_and_angles(folder, force_regen=force_regen)
     if not angles:
         return  # no .nc files were present
 
@@ -45,7 +45,7 @@ def plot_folder_angles_as_polar(folder: Path, exts):
     plt.close('all')
 
 
-def plot_grouped_folder_angles_as_polar(folders, group_name, exts):
+def plot_grouped_folder_angles_as_polar(folders, group_name, exts, force_regen=False):
     print(f'plotting group {group_name}')
 
 
@@ -55,7 +55,7 @@ def plot_grouped_folder_angles_as_polar(folders, group_name, exts):
     for folder in tqdm(list(folders), leave=False, desc='Experiment reps'):
         if not subfolder_template.parse(folder.name):
             return
-        angles, median_angles, budgets = load_budget_and_angles(folder)
+        angles, median_angles, budgets = get_budget_and_angles(folder, force_regen=force_regen)
         if not angles:
             return  # no .nc files were present
 
@@ -75,15 +75,31 @@ def plot_grouped_folder_angles_as_polar(folders, group_name, exts):
     plt.close('all')
 
 
-def load_budget_and_angles(folder):
-    # todo: cache results
+def get_budget_and_angles(folder: Path, force_regen: bool=False):
+    angles_filename = folder / 'angles.csv'
+    if force_regen or not angles_filename.exists():
+        angles, budgets, median_angles = calculate_angles(folder)
+        df = pd.DataFrame({
+            'angles': angles,
+            'median_angles': median_angles,
+            'budgets': budgets,
+        })
+        df.to_csv(angles_filename, index=False)
+
+    else:
+        df = pd.read_csv(angles_filename)
+        angles = df['angles'].values.tolist()
+        median_angles = df['median_angles'].values.tolist()
+        budgets = df['budgets'].values.tolist()
+
+    return angles, median_angles, budgets
+
+
+def calculate_angles(folder):
     budgets = [0]
     init_budget = subfolder_template.parse(folder.name)['init_budget']
     df = pd.read_csv(folder / 'log.csv', index_col=0, sep=';')
     budgets.extend((init_budget - df['budget'].values).tolist())
-
-    # todo: rewrite proc.get_gradient_angles to be more generic?
-    # angle_df = proc.get_gradient_angles(folder)
 
     angles = []
     median_angles = []
@@ -100,9 +116,11 @@ def load_budget_and_angles(folder):
 
     if len(angles) != len(budgets):
         actual_length = min(len(angles), len(budgets))
-        angles, median_angles, budgets = angles[:actual_length], median_angles[:actual_length], budgets[:actual_length]
+        angles = angles[:actual_length]
+        median_angles = median_angles[:actual_length]
+        budgets = budgets[:actual_length]
 
-    return angles, median_angles, budgets
+    return angles, budgets, median_angles
 
 
 def remove_idx(name: Union[Path, str]) -> str:
@@ -119,11 +137,11 @@ def main(args):
             continue
         folders.append(subfolder)
         if args.singles:
-            plot_folder_angles_as_polar(subfolder, suffixes)
+            plot_folder_angles_as_polar(subfolder, suffixes, force_regen=args.force_regen)
 
     if args.grouped:
         for name, folder_group in groupby(folders, key=remove_idx):
-            plot_grouped_folder_angles_as_polar(folder_group, name, suffixes)
+            plot_grouped_folder_angles_as_polar(folder_group, name, suffixes, force_regen=args.force_regen)
 
 
 if __name__ == '__main__':
@@ -134,6 +152,8 @@ if __name__ == '__main__':
                         help="Plot every run comparison individually. Default: --no-singles.")
     parser.add_argument("--grouped", action=argparse.BooleanOptionalAction, default=True,
                         help="Plot comparison of methods over multiple runs. Default: --grouped.")
+    parser.add_argument('--force-regen', action='store_true',
+                        help="Force regeneration of all caching files")
     args = parser.parse_args()
 
     main(args)
