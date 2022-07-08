@@ -11,6 +11,7 @@ degrees during the optimization progress
 
 import argparse
 from itertools import groupby
+from operator import itemgetter
 from pathlib import Path
 from typing import Union
 
@@ -54,10 +55,14 @@ def plot_vertical_linreg_component(folders, exts, force_regen=False):
         alpha_max.extend((df['alpha'] + 1.96*se_nhigh).values.tolist())
 
 
+    alpha_stuff = list(zip(alpha_min, alpha, alpha_max))
+    alpha_stuff.sort(key=itemgetter(1))
+    alpha_min, alpha, alpha_max = zip(*alpha_stuff)
+
     fig, ax = plt.subplots(1, 1)
 
-    ax.plot(sorted(alpha), label='vertical component')
-    ax.fill_between(np.arange(len(alpha)), sorted(alpha_min), sorted(alpha_max), color='black', alpha=.3)
+    ax.plot(alpha, label='vertical component')
+    ax.fill_between(np.arange(len(alpha)), alpha_min, alpha_max, color='black', alpha=.3)
     ax.axhline(y=0, color='black')
 
     ax.set_title('sorted values for the vertical component')
