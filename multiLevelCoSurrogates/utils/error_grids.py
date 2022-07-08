@@ -7,6 +7,9 @@ import xarray as xr
 import multiLevelCoSurrogates as mlcs
 
 
+AngleSummary = namedtuple('AngleSummary', 'alpha beta theta deg deg_low deg_high SSE df var_nhigh var_nlow')
+
+
 def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
     """Determine linear regression coefficients after training index -> value"""
 
@@ -27,7 +30,6 @@ def calc_angle(da: xr.DataArray):
     """Calculate the global gradient angle of an Error Grid based
     on the slope of beta_1 / beta_2 from a linear regression fit.
     """
-    AngleSummary = namedtuple('AngleSummary', 'alpha beta theta deg deg_low deg_high')
     reg, SSE = mlcs.utils.error_grids.fit_lin_reg(da, calc_SSE=True)
 
     beta_high, beta_low = reg.coef_
@@ -60,7 +62,7 @@ def calc_angle(da: xr.DataArray):
     elif mid_angle > 180:
         min_angle, mid_angle, max_angle = min_angle-180, mid_angle-180, max_angle-180
 
-    return AngleSummary(beta_high, beta_low, theta, mid_angle, min_angle, max_angle)
+    return AngleSummary(beta_high, beta_low, theta, mid_angle, min_angle, max_angle, SSE, df, var_nhigh, var_nlow)
 
 
 class ConfidenceInterval(namedtuple('ConfidenceInterval', 'mean se lower upper')):

@@ -78,21 +78,12 @@ def plot_grouped_folder_angles_as_polar(folders, group_name, exts, force_regen=F
 def get_budget_and_angles(folder: Path, force_regen: bool=False):
     angles_filename = folder / 'angles.csv'
     if force_regen or not angles_filename.exists():
-        angles, budgets, median_angles = calculate_angles(folder)
-        df = pd.DataFrame({
-            'angles': angles,
-            'median_angles': median_angles,
-            'budgets': budgets,
-        })
+        df = calculate_angles(folder)
         df.to_csv(angles_filename, index=False)
-
     else:
         df = pd.read_csv(angles_filename)
-        angles = df['angles'].values.tolist()
-        median_angles = df['median_angles'].values.tolist()
-        budgets = df['budgets'].values.tolist()
 
-    return angles, median_angles, budgets
+    return [df[c].values.tolist() for c in ['theta', 'median_theta', 'budgets']]
 
 
 def calculate_angles(folder):
@@ -111,16 +102,21 @@ def calculate_angles(folder):
         with da.load() as da:
             angle_summary = mlcs.utils.error_grids.calc_angle(da)
             median_summary = mlcs.utils.error_grids.calc_angle(da.median(dim='rep'))
-        angles.append(angle_summary.theta)
+        angles.append(angle_summary)
         median_angles.append(median_summary.theta)
 
+    # todo: better error handling on why this would happen and how to deal with it
     if len(angles) != len(budgets):
         actual_length = min(len(angles), len(budgets))
         angles = angles[:actual_length]
         median_angles = median_angles[:actual_length]
         budgets = budgets[:actual_length]
 
-    return angles, budgets, median_angles
+    df = pd.DataFrame.from_records(angles, columns=mlcs.utils.error_grids.AngleSummary._fields)
+    df['median_theta'] = median_angles
+    df['budgets'] = budgets
+
+    return df
 
 
 def remove_idx(name: Union[Path, str]) -> str:
