@@ -74,6 +74,34 @@ def plot_vertical_linreg_component(folders, exts, force_regen=False):
 
 
 
+def scatter_component_vs_errorgrid_size(folders, exts, force_regen=False):
+
+    alpha = []
+    eg_size_high, eg_size_low = [], []
+    for folder in folders:
+
+        df = get_budget_and_angles(folder, force_regen=force_regen)
+        if 'alpha' not in df.columns:
+            continue
+        alpha.extend(df['alpha'].values.tolist())
+
+        for file in sorted(folder.iterdir()):
+            if file.suffix != '.nc':
+                continue
+            with xr.open_dataset(file) as ds:
+                eg_size_high.append(len(ds.coords['n_high']))
+                eg_size_low.append(len(ds.coords['n_low']))
+
+
+    fig, ax = plt.subplots(1, 1)
+
+    plt.scatter(alpha, eg_size_high, label='high')
+    plt.scatter(alpha, eg_size_low, label='low')
+    for ext in exts:
+        fig.savefig(plot_path / f'vert-component-scatter{ext}', bbox_inches='tight')
+    fig.clear()
+    plt.close('all')
+
 
 def get_budget_and_angles(folder: Path, force_regen: bool=False):
     angles_filename = folder / 'angles.csv'
@@ -110,6 +138,7 @@ def main(args):
     ]
 
     plot_vertical_linreg_component(folders, suffixes, force_regen=args.force_regen)
+    scatter_component_vs_errorgrid_size(folders, suffixes)
 
 
 
