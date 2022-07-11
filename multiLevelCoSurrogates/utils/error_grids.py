@@ -78,6 +78,10 @@ class ConfidenceInterval(namedtuple('ConfidenceInterval', 'mean se lower upper')
                f'H0{" not" if 0 in self else ""} rejected'
 
 
+class InvalidSlopeError(ValueError):
+    """warns that the slope for determining 'tau' is negative in (at least) one axis"""
+
+
 class UnhelpfulTauWarning(UserWarning):
     """warns that fidelity-selection parameter 'tau' is smaller than one"""
 
@@ -86,6 +90,9 @@ def calculate_tau(EG: xr.DataArray, cost_ratio):
     """Calculate slope ratio `tau` based on the angle of the EG's gradient"""
     reg = fit_lin_reg(EG)
     coef_high, coef_low = reg.coef_[:2]
+
+    if coef_high < 0 or coef_low < 0:
+        raise InvalidSlopeError('Error Grid implies improvement from removing samples')
 
     coef_low /= cost_ratio              # scale coef_low by cost ratio
     slope_ratio = coef_low / coef_high  # i.e. inverse of slope high/low

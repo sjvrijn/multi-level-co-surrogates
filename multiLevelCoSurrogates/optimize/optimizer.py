@@ -5,6 +5,7 @@ from functools import partial
 from operator import itemgetter
 from pathlib import Path
 from time import perf_counter
+from warnings import warn
 
 import mf2
 import numpy as np
@@ -225,7 +226,15 @@ class Optimizer:
             return 'low'
 
         if self.fid_selection_method in [FidelitySelection.NAIVE_EG, FidelitySelection.PROTO_EG]:
-            self.tau = mlcs.calculate_tau(self.proto_eg.error_grid['mses'], self.cost_ratio)
+            try:
+                self.tau = mlcs.calculate_tau(self.proto_eg.error_grid['mses'], self.cost_ratio)
+            except mlcs.InvalidSlopeError:
+                warn("Slope was invalid, defaulting to 1/cost_ratio")
+                self.tau = -1  # to be reset later
+
+            if self.tau <= 1:
+                self.tau = 1 / self.cost_ratio
+
             # compare \tau with current count t to select fidelity, must be >= 1
             fidelity = 'high' if 1 <= self.tau <= self.time_since_high_eval else 'low'
         elif self.fid_selection_method == FidelitySelection.FIXED:
