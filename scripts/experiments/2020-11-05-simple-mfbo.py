@@ -16,7 +16,6 @@ from pyprojroot import here
 from tqdm import TqdmWarning
 
 import multiLevelCoSurrogates as mlcs
-from multiLevelCoSurrogates.optimizer import FidelitySelection, Optimizer
 
 save_dir = here('files/2020-11-05-simple-mfbo/', warn=False)
 save_dir.mkdir(parents=True, exist_ok=True)
@@ -24,9 +23,9 @@ save_dir.mkdir(parents=True, exist_ok=True)
 FOLDER_NAME_TEMPLATE = '{func_name}-{name}-c{cost_ratio:f}-b{budget:d}-i{idx:d}'
 
 FIDELITY_SELECTORS = {
-    'fixed': FidelitySelection.FIXED,
-    'naive': FidelitySelection.NAIVE_EG,
-    'proto-eg': FidelitySelection.PROTO_EG,
+    'fixed': mlcs.FidelitySelection.FIXED,
+    'naive': mlcs.FidelitySelection.NAIVE_EG,
+    'proto-eg': mlcs.FidelitySelection.PROTO_EG,
 }
 
 FUNCTIONS = [
@@ -60,7 +59,7 @@ def do_run(benchmark_func, fidelity_selector, kwargs, force_rerun=False):
     elif list(run_save_dir.iterdir()):
         return  # directory already contains files: don't overwrite
 
-    optimizer = Optimizer(
+    optimizer = mlcs.Optimizer(
         func=benchmark_func,
         fid_selection_method=fidelity_selector,
         **kwargs,

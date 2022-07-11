@@ -1,21 +1,19 @@
-from operator import itemgetter
-
-import pandas as pd
-from scipy.optimize import minimize
-from time import perf_counter
-
-from functools import partial
-
 from _csv import writer
 from collections import namedtuple
 from enum import IntEnum
-
-import numpy as np
+from functools import partial
+from operator import itemgetter
 from pathlib import Path
-from tqdm import tqdm
+from time import perf_counter
 
 import mf2
+import numpy as np
+import pandas as pd
+from scipy.optimize import minimize
+from tqdm import tqdm
+
 import multiLevelCoSurrogates as mlcs
+
 
 RANDOM_SEED_BASE = 20160501
 RAND_SAMPLES_PER_DIM = 10
