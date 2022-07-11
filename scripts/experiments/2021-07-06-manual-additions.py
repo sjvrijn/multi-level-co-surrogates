@@ -10,39 +10,21 @@ from warnings import warn, simplefilter
 import mf2
 import numpy as np
 import pandas as pd
-import xarray as xr
 from collections import namedtuple
 from operator import itemgetter
-from sklearn.linear_model import LinearRegression
-from scipy.optimize import minimize
 from pyprojroot import here
-
-from experiments import scale_to_function, create_subsampling_error_grid, mlcs, plot_archive
-
-
+from scipy.optimize import minimize
 from time import time
+
+import multiLevelCoSurrogates as mlcs
+
+from experiments import scale_to_function, create_subsampling_error_grid, plot_archive
 
 
 save_dir = here('files/2021-07-06-manual-additions/', warn=False)
 save_dir.mkdir(parents=True, exist_ok=True)
 plot_dir = here('plots/2021-07-06-manual-additions/', warn=False)
 plot_dir.mkdir(parents=True, exist_ok=True)
-
-#TODO de-duplicate (already present in processing.py
-def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
-    """Return lin-reg coefficients after training index -> value"""
-
-    series = da.to_series().dropna()
-    X = np.array(series.index.tolist())[:,:2]  # remove rep_idx (3rd column)
-    y = np.log10(series.values)
-    reg = LinearRegression().fit(X, y)
-
-    if not calc_SSE:
-        return reg
-
-    pred_y = reg.predict(X)
-    SSE = np.sum((pred_y - y)**2)
-    return reg, SSE
 
 
 def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, fidelity_order, mfm_opts, num_reps=50):
@@ -228,7 +210,7 @@ class TauSmallerThanOneWarning(UserWarning):
 
 def calc_tau_from_EG(EG, cost_ratio):
     # fit lin-reg for beta_1, beta_2
-    reg = fit_lin_reg(EG)
+    reg = mlcs.fit_lin_reg(EG)
     beta_1, beta_2 = reg.coef_[:2]
     # determine \tau based on beta_1, beta_2 and cost_ratio
     print(beta_1, beta_2)
