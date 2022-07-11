@@ -1,7 +1,10 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-"""Experiment file for comparing simple versions of multi-fidelity optimizers"""
+"""
+2021-07-06-manual-additions.py: running multi-fidelity bayesian optimizers,
+but having manually pre-selected the fidelity order
+"""
 
 import argparse
 from itertools import cycle

@@ -1,7 +1,10 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-"""Experiment file for comparing simple versions of multi-fidelity optimizers"""
+"""
+2020-11-05-simple-mfbo.py: Experiment file for running simple multi-fidelity
+bayesian optimizers
+"""
 
 import argparse
 from itertools import product
