@@ -83,6 +83,12 @@ class CandidateArchive:
         return self._all_fidelities.keys()
 
 
+    @property
+    def indices(self):
+        return tuple(c.idx for c in self.candidates if 'high' in c.fidelities),\
+               tuple(c.idx for c in self.candidates if 'low' in c.fidelities)
+
+
     def addcandidates(self, candidates: np.ndarray,
                       fitnesses: Iterable[float], fidelity: str=None):
         """Add candidate, fitness pairs to the archive for given fidelity.
