@@ -78,7 +78,7 @@ class ConfidenceInterval(namedtuple('ConfidenceInterval', 'mean se lower upper')
                f'H0{" not" if 0 in self else ""} rejected'
 
 
-class TauSmallerThanOneWarning(UserWarning):
+class UnhelpfulTauWarning(UserWarning):
     """warns that fidelity-selection parameter 'tau' is smaller than one"""
 
 
@@ -92,5 +92,7 @@ def calculate_tau(EG: xr.DataArray, cost_ratio):
     tau = np.ceil(slope_ratio)
 
     if tau <= 1:
-        warn('Low-fidelity not expected to add information', category=TauSmallerThanOneWarning)
+        warn('Low-fidelity not expected to add worthwhile information',
+             category=UnhelpfulTauWarning)
+
     return tau

@@ -225,7 +225,7 @@ def main(idx=None):
     import sklearn
     simplefilter("ignore", category=FutureWarning)
     simplefilter("ignore", category=sklearn.exceptions.ConvergenceWarning)
-    simplefilter("ignore", category=mlcs.TauSmallerThanOneWarning)
+    simplefilter("ignore", category=mlcs.UnhelpfulTauWarning)
     simplefilter("ignore", category=mlcs.LowHighFidSamplesWarning)
     num_iters = 1
     np.random.seed(20160501)

@@ -71,7 +71,7 @@ def main(args):
     import sklearn
     simplefilter("ignore", category=FutureWarning)
     simplefilter("ignore", category=sklearn.exceptions.ConvergenceWarning)
-    simplefilter("ignore", category=mlcs.TauSmallerThanOneWarning)
+    simplefilter("ignore", category=mlcs.UnhelpfulTauWarning)
     simplefilter("ignore", category=mlcs.LowHighFidSamplesWarning)
     simplefilter("ignore", category=TqdmWarning)
 
