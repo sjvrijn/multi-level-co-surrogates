@@ -112,16 +112,6 @@ def filter_instances(instances: Sequence[Instance], data: xr.DataArray) -> List[
             if instance not in existing_instances]
 
 
-def scale_to_function(func: MultiFidelityFunction,
-                      xx: Sequence[Sequence],
-                      range_in=mlcs.ValueRange(0, 1)) -> List[Sequence]:
-    """Scale the input data `xx` from `range_in` to the bounds of the given function.
-    :param range_in: defined range from which input values were drawn. Default: (0,1)
-    """
-    range_out = (np.array(func.l_bound), np.array(func.u_bound))
-    return [mlcs.rescale(x, range_in=range_in, range_out=range_out) for x in xx]
-
-
 def plot_model_and_samples(func: MultiFidelityFunction, kernel: str,
                            scaling_option: str, instance: Instance) -> None:
     """Create a multi-fidelity model based on given instance and show a plot of
@@ -138,7 +128,7 @@ def plot_model_and_samples(func: MultiFidelityFunction, kernel: str,
     set_seed_by_instance(num_high, num_low, rep)
 
     high_x, low_x = mlcs.bi_fidelity_doe(func.ndim, num_high, num_low)
-    high_x, low_x = scale_to_function(func, [high_x, low_x])
+    high_x, low_x = mlcs.scale_to_function(func, [high_x, low_x])
     high_y, low_y = func.high(high_x), \
                     func.low(low_x)
 
@@ -243,7 +233,7 @@ def create_model_error_grid(
 
         # Create Multi-Fidelity DoE in- and output according to instance specification
         high_x, low_x = mlcs.bi_fidelity_doe(func.ndim, num_high, num_low)
-        high_x, low_x = scale_to_function(func, [high_x, low_x])
+        high_x, low_x = mlcs.scale_to_function(func, [high_x, low_x])
         high_y, low_y = func.high(high_x), \
                         func.low(low_x)
 
@@ -355,7 +345,7 @@ def create_resampling_error_grid(
     # Create initial DoE
     np.random.seed(20160501)  # Setting seed for reproducibility
     doe = mlcs.bi_fidelity_doe(func.ndim, doe_high, doe_low)
-    doe = scale_to_function(func, doe)
+    doe = mlcs.scale_to_function(func, doe)
 
 
     results = []
@@ -469,7 +459,7 @@ def create_resampling_leftover_error_grid(
     # Create initial DoE
     np.random.seed(20160501 + seed_offset)  # Setting seed for reproducibility
     doe = mlcs.bi_fidelity_doe(func.ndim, doe_high, doe_low)
-    doe = scale_to_function(func, doe)
+    doe = mlcs.scale_to_function(func, doe)
 
 
     results = []

@@ -1,5 +1,9 @@
 from collections import namedtuple
+from typing import Sequence, List
+
 import numpy as np
+
+from mf2 import MultiFidelityFunction
 
 ValueRange = namedtuple('ValueRange', ['min', 'max'])
 
@@ -33,3 +37,13 @@ def rescale(values, *, range_in=None, range_out=ValueRange(0, 1), scale_only=Fal
         scaled_values = (scaled_values * scale_out) + range_out.min
 
     return scaled_values
+
+
+def scale_to_function(func: MultiFidelityFunction,
+                      xx: Sequence[Sequence],
+                      range_in=ValueRange(0, 1)) -> List[Sequence]:
+    """Scale the input data `xx` from `range_in` to the bounds of the given function.
+    :param range_in: defined range from which input values were drawn. Default: (0,1)
+    """
+    range_out = (np.array(func.l_bound), np.array(func.u_bound))
+    return [rescale(x, range_in=range_in, range_out=range_out) for x in xx]

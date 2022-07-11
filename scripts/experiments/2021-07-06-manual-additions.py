@@ -21,8 +21,8 @@ from time import time
 
 import multiLevelCoSurrogates as mlcs
 
-from experiments import scale_to_function, create_subsampling_error_grid, plot_archive
-
+from experiments import create_subsampling_error_grid, plot_archive
+from multiLevelCoSurrogates import scale_to_function
 
 save_dir = here('files/2021-07-06-manual-additions/', warn=False)
 save_dir.mkdir(parents=True, exist_ok=True)

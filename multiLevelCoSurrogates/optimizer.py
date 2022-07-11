@@ -16,7 +16,6 @@ from tqdm import tqdm
 
 import mf2
 import multiLevelCoSurrogates as mlcs
-from experiments.experiments import scale_to_function
 
 RANDOM_SEED_BASE = 20160501
 RAND_SAMPLES_PER_DIM = 10
@@ -327,7 +326,7 @@ class Optimizer:
 def make_mf_doe(func: mf2.MultiFidelityFunction, doe_n_high: int, doe_n_low: int):
     # make mf-DoE
     high_x, low_x = mlcs.bi_fidelity_doe(func.ndim, doe_n_high, doe_n_low)
-    high_x, low_x = scale_to_function(func, [high_x, low_x])
+    high_x, low_x = mlcs.scale_to_function(func, [high_x, low_x])
     high_y, low_y = func.high(high_x), func.low(low_x)
     # create archive
     return mlcs.CandidateArchive.from_bi_fid_doe(high_x, low_x, high_y, low_y)
