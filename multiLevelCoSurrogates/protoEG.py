@@ -43,23 +43,18 @@ class ProtoEG:
         instance_spec = mlcs.InstanceSpec.from_archive(
             self.archive, num_reps=self.num_reps, step=self.interval
         )
-        doe = self.archive.as_doe()
 
         error_records = []
         for h, l, rep in instance_spec.instances:
-
             mlcs.set_seed_by_instance(h, l, rep)
-            train, test = mlcs.split_bi_fidelity_doe(doe, h, l)
+            train, test = self.archive.split(h, l)
 
-            test_x = test.high
-            # self.test_sets[(h, l)].append(test_x)
-
-            train_archive = self._create_train_archive(train)
-
-            model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive, **self.mfm_opts)
+            model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train, **self.mfm_opts)
             # self.models[(h,l)].append(model)
 
-            test_y = self.archive.getfitnesses(test_x, fidelity='high')
+            test_x, test_y = test.getcandidates(fidelity='high')
+            # self.test_sets[(h, l)].append(test_x)
+
             mse = mean_squared_error(test_y, model.top_level_model.predict(test_x))
             error_records.append([h, l, rep, 'high_hier', mse])
 
