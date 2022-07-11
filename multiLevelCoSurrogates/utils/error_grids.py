@@ -83,11 +83,14 @@ class TauSmallerThanOneWarning(UserWarning):
 
 
 def calculate_tau(EG: xr.DataArray, cost_ratio):
-    # fit lin-reg for beta_1, beta_2
+    """Calculate slope ratio `tau` based on the angle of the EG's gradient"""
     reg = fit_lin_reg(EG)
-    beta_1, beta_2 = reg.coef_[:2]
-    # determine \tau based on beta_1, beta_2 and cost_ratio
-    tau = np.ceil(1 / (beta_1 / (beta_2 / cost_ratio)))
+    coef_high, coef_low = reg.coef_[:2]
+
+    coef_low /= cost_ratio              # scale coef_low by cost ratio
+    slope_ratio = coef_low / coef_high  # i.e. inverse of slope high/low
+    tau = np.ceil(slope_ratio)
+
     if tau <= 1:
         warn('Low-fidelity not expected to add information', category=TauSmallerThanOneWarning)
     return tau
