@@ -16,7 +16,7 @@ from pyprojroot import here
 from tqdm import TqdmWarning
 
 import multiLevelCoSurrogates as mlcs
-from multiLevelCoSurrogates.optimizer import FidelitySelection, Optimizer, TauSmallerThanOneWarning
+from multiLevelCoSurrogates.optimizer import FidelitySelection, Optimizer
 
 save_dir = here('files/2020-11-05-simple-mfbo/', warn=False)
 save_dir.mkdir(parents=True, exist_ok=True)
@@ -72,7 +72,7 @@ def main(args):
     import sklearn
     simplefilter("ignore", category=FutureWarning)
     simplefilter("ignore", category=sklearn.exceptions.ConvergenceWarning)
-    simplefilter("ignore", category=TauSmallerThanOneWarning)
+    simplefilter("ignore", category=mlcs.TauSmallerThanOneWarning)
     simplefilter("ignore", category=mlcs.LowHighFidSamplesWarning)
     simplefilter("ignore", category=TqdmWarning)
 

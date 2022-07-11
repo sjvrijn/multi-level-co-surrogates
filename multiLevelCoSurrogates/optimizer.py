@@ -1,5 +1,3 @@
-from _warnings import warn
-
 from operator import itemgetter
 
 import pandas as pd
@@ -230,7 +228,7 @@ class Optimizer:
             return 'low'
 
         if self.fid_selection_method in [FidelitySelection.NAIVE_EG, FidelitySelection.PROTO_EG]:
-            self.tau = calc_tau_from_EG(self.proto_eg.error_grid['mses'], self.cost_ratio)
+            self.tau = mlcs.calculate_tau(self.proto_eg.error_grid['mses'], self.cost_ratio)
             # compare \tau with current count t to select fidelity, must be >= 1
             fidelity = 'high' if 1 <= self.tau <= self.time_since_high_eval else 'low'
         elif self.fid_selection_method == FidelitySelection.FIXED:
@@ -346,18 +344,3 @@ def select_high_fid_only_candidates(archive):
     }
     selected_candidates = all_low - all_high
     return [np.array(cand).reshape(1, -1) for cand in selected_candidates]
-
-
-class TauSmallerThanOneWarning(UserWarning):
-    """warns that fidelity-selection parameter 'tau' is smaller than one"""
-
-
-def calc_tau_from_EG(EG, cost_ratio):
-    # fit lin-reg for beta_1, beta_2
-    reg = mlcs.utils.error_grids.fit_lin_reg(EG)
-    beta_1, beta_2 = reg.coef_[:2]
-    # determine \tau based on beta_1, beta_2 and cost_ratio
-    tau = np.ceil(1 / (beta_1 / (beta_2 / cost_ratio)))
-    if tau <= 1:
-        warn('Low-fidelity not expected to add information', category=TauSmallerThanOneWarning)
-    return tau

@@ -8,7 +8,7 @@ but having manually pre-selected the fidelity order
 
 import argparse
 from itertools import cycle
-from warnings import warn, simplefilter
+from warnings import simplefilter
 
 import mf2
 import numpy as np
@@ -62,7 +62,7 @@ def proto_EG_multifid_bo(func, init_budget, cost_ratio, doe_n_high, doe_n_low, f
     iter_since_high_eval = 0
     while budget > 0:
 
-        tau = calc_tau_from_EG(proto_eg.error_grid['mses'], cost_ratio)
+        tau = mlcs.calculate_tau(proto_eg.error_grid['mses'], cost_ratio)
         # compare \tau with current count t to select fidelity, must be >= 1
         fidelity = next(fidelity_iter)
 
@@ -160,7 +160,7 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, fidelity
         #select next fidelity to evaluate:
         #sample error grid
         EG = create_subsampling_error_grid(archive, num_reps=num_reps, func=func, **mfm_opts)
-        tau = calc_tau_from_EG(EG, cost_ratio)
+        tau = mlcs.calculate_tau(EG, cost_ratio)
 
         #compare \tau with current count t to select fidelity, must be >= 1
         fidelity = next(fidelity_iter)
@@ -207,21 +207,6 @@ def simple_multifid_bo(func, budget, cost_ratio, doe_n_high, doe_n_low, fidelity
     return mfbo, pd.DataFrame.from_records(entries, columns=Entry._fields), archive
 
 
-class TauSmallerThanOneWarning(UserWarning):
-    """warns that fidelity-selection parameter 'tau' is smaller than one"""
-
-
-def calc_tau_from_EG(EG, cost_ratio):
-    # fit lin-reg for beta_1, beta_2
-    reg = mlcs.fit_lin_reg(EG)
-    beta_1, beta_2 = reg.coef_[:2]
-    # determine \tau based on beta_1, beta_2 and cost_ratio
-    print(beta_1, beta_2)
-    tau = np.ceil(1 / (beta_1 / (beta_2 / cost_ratio)))
-    if tau <= 1:
-        warn('Low-fidelity not expected to add information', category=TauSmallerThanOneWarning)
-    return tau
-
 
 def select_high_fid_only_candidates(archive):
     all_low = {
@@ -240,7 +225,7 @@ def main(idx=None):
     import sklearn
     simplefilter("ignore", category=FutureWarning)
     simplefilter("ignore", category=sklearn.exceptions.ConvergenceWarning)
-    simplefilter("ignore", category=TauSmallerThanOneWarning)
+    simplefilter("ignore", category=mlcs.TauSmallerThanOneWarning)
     simplefilter("ignore", category=mlcs.LowHighFidSamplesWarning)
     num_iters = 1
     np.random.seed(20160501)

@@ -1,3 +1,4 @@
+from _warnings import warn
 from collections import namedtuple
 
 import numpy as np
@@ -75,3 +76,18 @@ class ConfidenceInterval(namedtuple('ConfidenceInterval', 'mean se lower upper')
         upper = self.upper if self.upper is not None else self.mean + 1.96*self.se
         return f'95% CI: {self.mean:.4f} +/- {1.96*self.se:.4f} {np.array([lower, upper])}: ' \
                f'H0{" not" if 0 in self else ""} rejected'
+
+
+class TauSmallerThanOneWarning(UserWarning):
+    """warns that fidelity-selection parameter 'tau' is smaller than one"""
+
+
+def calculate_tau(EG: xr.DataArray, cost_ratio):
+    # fit lin-reg for beta_1, beta_2
+    reg = fit_lin_reg(EG)
+    beta_1, beta_2 = reg.coef_[:2]
+    # determine \tau based on beta_1, beta_2 and cost_ratio
+    tau = np.ceil(1 / (beta_1 / (beta_2 / cost_ratio)))
+    if tau <= 1:
+        warn('Low-fidelity not expected to add information', category=TauSmallerThanOneWarning)
+    return tau
