@@ -31,7 +31,7 @@ class ProtoEG:
         self.mfm_opts = mfm_opts if mfm_opts is not None else dict()
 
         self.models = {}
-        # self.test_sets = defaultdict(list)  # test_sets[(n_high, n_low)] = [test_1, ..., test_nreps]
+        self.test_sets = defaultdict(list)  # test_sets[(n_high, n_low)] = [test_1, ..., test_nreps]
         self.error_grid = None  # xr.Dataset
 
         self.num_models_trained = 0
