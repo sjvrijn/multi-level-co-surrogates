@@ -229,7 +229,8 @@ class Optimizer:
             try:
                 self.tau = mlcs.calculate_tau(self.proto_eg.error_grid['mses'], self.cost_ratio)
             except mlcs.InvalidSlopeError:
-                warn("Slope was invalid, defaulting to 1/cost_ratio")
+                warn("Slope was invalid, defaulting to 1/cost_ratio",
+                     category=mlcs.UnhelpfulTauWarning)
                 self.tau = -1  # to be reset later
 
             if self.tau <= 1:
