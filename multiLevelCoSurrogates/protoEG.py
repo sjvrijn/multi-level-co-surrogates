@@ -30,8 +30,8 @@ class ProtoEG:
         self.interval = interval
         self.mfm_opts = mfm_opts if mfm_opts is not None else dict()
 
-        self.models = defaultdict(list)  # models[(n_high, n_low)] = [model_1, ..., model_nreps]
-        self.test_sets = defaultdict(list)  # test_sets[(n_high, n_low)] = [test_1, ..., test_nreps]
+        self.models = {}
+        # self.test_sets = defaultdict(list)  # test_sets[(n_high, n_low)] = [test_1, ..., test_nreps]
         self.error_grid = None  # xr.Dataset
 
         self.num_models_trained = 0
@@ -49,12 +49,17 @@ class ProtoEG:
             mlcs.set_seed_by_instance(h, l, rep)
             train, test = self.archive.split(h, l)
 
-            model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train, **self.mfm_opts)
-            # self.models[(h,l)].append(model)
+            idx_hash = train.indices
+            if idx_hash in self.models:
+                model = self.models[idx_hash]
+                self.num_models_reused += 1
+            else:
+                model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train,
+                                                **self.mfm_opts)
+                self.models[idx_hash] = model
+                self.num_models_trained += 1
 
             test_x, test_y = test.getcandidates(fidelity='high')
-            # self.test_sets[(h, l)].append(test_x)
-
             mse = mean_squared_error(test_y, model.top_level_model.predict(test_x))
             error_records.append([h, l, rep, 'high_hier', mse])
 
