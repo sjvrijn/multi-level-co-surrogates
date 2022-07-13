@@ -43,10 +43,10 @@ FUNCTIONS = [
 
     mf2.borehole,  # 9
 
-    *[mf2.adjustable.branin(a) for a in np.round(np.linspace(0, 1, 11),2)],      # 10-20
-    *[mf2.adjustable.paciorek(a) for a in np.round(np.linspace(0.1, 1, 10),2)],  # 21-30
-    *[mf2.adjustable.hartmann3(a) for a in np.round(np.linspace(0, 1, 11),2)],   # 31-41
-    *[mf2.adjustable.trid(a) for a in np.round(np.linspace(0, 1, 11),2)],        # 42-52
+    *[mf2.adjustable.branin(a) for a in np.round(np.linspace(0, 1, 21),2)],       # 10-30
+    *[mf2.adjustable.paciorek(a) for a in np.round(np.linspace(0.05, 1, 20),2)],  # 31-50
+    *[mf2.adjustable.hartmann3(a) for a in np.round(np.linspace(0, 1, 21),2)],    # 51-71
+    *[mf2.adjustable.trid(a) for a in np.round(np.linspace(0, 1, 21),2)],         # 72-92
 ]
 
 
