@@ -21,6 +21,7 @@ RAND_SAMPLES_PER_DIM = 10
 archive_file = 'archive.npz'
 errorgrid_file_template = 'errorgrid_{:03d}.nc'
 Entry = namedtuple('Entry', 'iteration budget time_since_high_eval tau fidelity wall_time nhigh nlow reuse_fraction candidate fitness')
+BAR_FORMAT = '{l_bar}{bar}| {n:.1f}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]'
 
 
 class FidelitySelection(IntEnum):
@@ -96,8 +97,7 @@ class Optimizer:
         if self.use_x_opt:
             y_opt = self.func.high(self.func.x_opt)
 
-        with tqdm(total=self.init_budget, leave=False) as pbar:
-            pbar.update(self.init_budget - self.budget)
+        with tqdm(total=self.init_budget, leave=False, initial=self.init_budget-self.budget, bar_format=BAR_FORMAT) as pbar:
 
             while self.budget > 0:
                 fidelity = self.select_fidelity()
@@ -109,7 +109,7 @@ class Optimizer:
                     x, fidelity = self.select_next_low_fid()
 
                 # evaluate best place
-                self.budget -= eval_cost[fidelity]
+                self.budget = np.round(self.budget - eval_cost[fidelity], decimals=4)
                 pbar.update(eval_cost[fidelity])
                 y = self.func[fidelity](x.reshape(1, -1))[0]
                 self.archive.addcandidate(candidate=x.flatten(), fitness=y, fidelity=fidelity)
