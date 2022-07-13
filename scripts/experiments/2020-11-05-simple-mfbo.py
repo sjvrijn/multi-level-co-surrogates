@@ -107,9 +107,15 @@ if __name__ == '__main__':
 
     cost_ratios = [0.1, 0.2, 0.25, 0.5]
     experiments = ['fixed', 'naive', 'proto-eg']
+    # All non-adjustable, Branin 0,0.05,0.25, Paciorek 0.05--0.25, Hartmann3 0.2--0.4, Trid 0.65--1
+    func_indices = list(range(10))\
+                   + [10,11,15]\
+                   + [31,32,33,34,35]\
+                   + [55,56,57,58,59]\
+                   + [85,86,87,88,89,90,91,92]
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('idx', type=int, default=range(len(FUNCTIONS)), nargs='*',
+    parser.add_argument('idx', type=int, default=func_indices, nargs='*',
                         help=f'Experiment indices [0-{len(FUNCTIONS) - 1}] to run. Default: all')
     parser.add_argument('-e', '--experiment', type=str, default=experiments, nargs='*',
                         help=f'Experiment function to run. Options: {", ".join(experiments)}. Default: all')
