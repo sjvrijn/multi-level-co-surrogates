@@ -85,8 +85,8 @@ class CandidateArchive:
 
     @property
     def indices(self):
-        return tuple(c.idx for c in self.candidates if 'high' in c.fidelities),\
-               tuple(c.idx for c in self.candidates if 'low' in c.fidelities)
+        return tuple(sorted(c.idx for c in self.candidates if 'high' in c.fidelities)),\
+               tuple(sorted(c.idx for c in self.candidates if 'low' in c.fidelities))
 
 
     def addcandidates(self, candidates: np.ndarray,
