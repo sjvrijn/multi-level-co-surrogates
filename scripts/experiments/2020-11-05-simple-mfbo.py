@@ -84,6 +84,7 @@ def main(args):
         'doe_n_low': 10,
         'num_reps': args.nreps,
         'use_x_opt': args.shortcut,
+        'cache_models': args.cache_models,
     }
 
     for func in functions:
@@ -131,6 +132,8 @@ if __name__ == '__main__':
                         help='Force rerunning this experiment. Deletes previous files')
     parser.add_argument('--shortcut', action='store_true',
                         help="Stop optimization when optimum reached based on function's `x_opt`")
+    parser.add_argument('--cache-models', action='store_true',
+                        help="Cache models when building an error grid. NOTE: requires 200+GB RAM")
     arguments = parser.parse_args()
 
     # ensure only valid experiment names are passed on

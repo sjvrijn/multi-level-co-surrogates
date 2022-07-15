@@ -45,6 +45,7 @@ class Optimizer:
         num_reps: int=50,
         goal: str='minimize',
         use_x_opt: bool=False,
+        cache_models: bool=False,
     ):
 
         if doe_n_high + cost_ratio * doe_n_low >= init_budget:
@@ -76,7 +77,8 @@ class Optimizer:
         self.proto_eg = None
         self.tau = 0
         if fid_selection_method in [FidelitySelection.NAIVE_EG, FidelitySelection.PROTO_EG]:
-            self.proto_eg = mlcs.ProtoEG(self.archive, num_reps=num_reps, interval=1)
+            self.proto_eg = mlcs.ProtoEG(self.archive, num_reps=num_reps,
+                                         interval=1, cache_models=cache_models)
             self.proto_eg.subsample_errorgrid()
 
         self.mfm = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=self.archive,

@@ -22,6 +22,7 @@ class ProtoEG:
             num_reps: int=50,
             interval: int=2,
             mfm_opts=None,
+            cache_models: bool=False,
     ):
         """Container for everything needed to create (advanced) Error Grids"""
 
@@ -29,6 +30,7 @@ class ProtoEG:
         self.num_reps = num_reps
         self.interval = interval
         self.mfm_opts = mfm_opts if mfm_opts is not None else dict()
+        self.cache_models = cache_models
 
         self.models = {}
         self.test_sets = defaultdict(list)  # test_sets[(n_high, n_low)] = [test_1, ..., test_nreps]
@@ -56,7 +58,8 @@ class ProtoEG:
             else:
                 model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train,
                                                 **self.mfm_opts)
-                self.models[idx_hash] = model
+                if self.cache_models:
+                    self.models[idx_hash] = model
                 self.num_models_trained += 1
 
             test_x, test_y = test.getcandidates(fidelity='high')
