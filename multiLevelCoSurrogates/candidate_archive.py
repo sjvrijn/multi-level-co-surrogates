@@ -80,7 +80,7 @@ class CandidateArchive:
 
     @property
     def fidelities(self):
-        return self._all_fidelities.keys()
+        return list(self._all_fidelities.keys())
 
 
     @property
@@ -104,10 +104,15 @@ class CandidateArchive:
         Will overwrite fitness value if already present
         """
         # unspecified fidelity when explicit fidelities are present raises Error
-        if fidelity is None and len(self.fidelities) >= 1 and fidelity not in self.fidelities:
-            raise ValueError(f'Since explcit fidelities are present, new candidates '
-                             f'cannot be added with implicit fidelity. Fidelities '
-                             f'currently present: {self.fidelities}')
+        if fidelity is None:
+            if len(self.fidelities) > 1:
+                raise ValueError(f'Since explcit fidelities are present, new candidates '
+                                 f'cannot be added with implicit fidelity. Fidelities '
+                                 f'currently present: {self.fidelities}')
+            elif len(self.fidelities) == 1:
+                fidelity = self.fidelities[0]
+            else:
+                fidelity = '_fitness_'
 
         # explicitly casting to float in case it isn't a number, e.g. np.ndarray
         if not isinstance(fitness, Number):
@@ -219,8 +224,6 @@ class CandidateArchive:
         }
         for fid in self.fidelities:
             fitnesses = self.getfitnesses(save_args['candidates'], fidelity=fid)
-            if fid is None:
-                fid = 'None'
             save_args[fid] = fitnesses
 
         np.savez(file, **save_args)
@@ -235,8 +238,7 @@ class CandidateArchive:
         copy (saved) and use with care.
         """
         # If no fidelity is specified, simply select the last one to undo
-        # TODO: deal more nicely with 'None' in list of fidelities, just confusing now...
-        if fidelity is None and len(self.fidelities) > 1:
+        if fidelity is None:
             fidelity = self._update_history[-1][1]
 
         if fidelity not in self.fidelities:
@@ -244,7 +246,6 @@ class CandidateArchive:
 
         while True:  # do-while
             idx, fid = self._update_history.pop(-1)
-            assert self.candidates[idx].idx == idx  # runtime sanity check
             del self.candidates[idx].fidelities[fid]
 
             if fid == fidelity:
