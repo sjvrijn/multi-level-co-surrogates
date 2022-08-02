@@ -95,8 +95,12 @@ def scatter_component_vs_errorgrid_size(folders, exts, force_regen=False):
 
     fig, ax = plt.subplots(1, 1)
 
-    plt.scatter(alpha, eg_size_high, label='high')
-    plt.scatter(alpha, eg_size_low, label='low')
+    random_offsets = np.random.random(len(eg_size_high)) / 2 - .25
+
+    ax.scatter(alpha, eg_size_low + random_offsets, s=4, alpha=.1, label='low')
+    ax.scatter(alpha, eg_size_high + random_offsets, s=4, alpha=.1, label='high')
+    ax.axvline(x=0, color='black', linewidth=.5)
+    ax.legend(loc=0)
     for ext in exts:
         fig.savefig(plot_path / f'vert-component-scatter{ext}', bbox_inches='tight')
     fig.clear()
