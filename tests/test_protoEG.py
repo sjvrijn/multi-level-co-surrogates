@@ -14,7 +14,6 @@ module_path = str(here('scripts/experiments'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-import experiments as exp
 import multiLevelCoSurrogates as mlcs
 
 
@@ -22,15 +21,14 @@ import multiLevelCoSurrogates as mlcs
 def prepare_DoE(func, nh=3, nl=5):
     np.random.seed(20160501)  # Setting seed for reproducibility
     init_DoE = mlcs.bi_fidelity_doe(func.ndim, nh, nl)
-    DoE = exp.scale_to_function(func, init_DoE)
+    DoE = mlcs.scale_to_function(func, init_DoE)
     return mlcs.BiFidelityDoE(*DoE)
 
 
 def get_experiment_subsampled_EG(func, DoE, instances):
 
     results = []
-    for i, (num_high, num_low, rep) in enumerate(instances):
-
+    for num_high, num_low, rep in instances:
         mlcs.set_seed_by_instance(num_high, num_low, rep)
 
         # Create sub-sampled Multi-Fidelity DoE in- and output according to instance specification

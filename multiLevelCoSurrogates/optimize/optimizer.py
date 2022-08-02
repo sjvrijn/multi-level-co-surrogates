@@ -21,6 +21,7 @@ RAND_SAMPLES_PER_DIM = 10
 archive_file = 'archive.npz'
 errorgrid_file_template = 'errorgrid_{:03d}.nc'
 Entry = namedtuple('Entry', 'iteration budget time_since_high_eval tau fidelity wall_time nhigh nlow reuse_fraction candidate fitness')
+BAR_FORMAT = '{l_bar}{bar}| {n:.1f}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]'
 
 
 class FidelitySelection(IntEnum):
@@ -44,6 +45,7 @@ class Optimizer:
         num_reps: int=50,
         goal: str='minimize',
         use_x_opt: bool=False,
+        cache_models: bool=False,
     ):
 
         if doe_n_high + cost_ratio * doe_n_low >= init_budget:
@@ -75,7 +77,8 @@ class Optimizer:
         self.proto_eg = None
         self.tau = 0
         if fid_selection_method in [FidelitySelection.NAIVE_EG, FidelitySelection.PROTO_EG]:
-            self.proto_eg = mlcs.ProtoEG(self.archive, num_reps=num_reps, interval=1)
+            self.proto_eg = mlcs.ProtoEG(self.archive, num_reps=num_reps,
+                                         interval=1, cache_models=cache_models)
             self.proto_eg.subsample_errorgrid()
 
         self.mfm = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=self.archive,
@@ -96,8 +99,7 @@ class Optimizer:
         if self.use_x_opt:
             y_opt = self.func.high(self.func.x_opt)
 
-        with tqdm(total=self.init_budget, leave=False) as pbar:
-            pbar.update(self.init_budget - self.budget)
+        with tqdm(total=self.init_budget, leave=False, initial=self.init_budget-self.budget, bar_format=BAR_FORMAT) as pbar:
 
             while self.budget > 0:
                 fidelity = self.select_fidelity()
@@ -109,7 +111,7 @@ class Optimizer:
                     x, fidelity = self.select_next_low_fid()
 
                 # evaluate best place
-                self.budget -= eval_cost[fidelity]
+                self.budget = np.round(self.budget - eval_cost[fidelity], decimals=4)
                 pbar.update(eval_cost[fidelity])
                 y = self.func[fidelity](x.reshape(1, -1))[0]
                 self.archive.addcandidate(candidate=x.flatten(), fitness=y, fidelity=fidelity)
@@ -229,7 +231,8 @@ class Optimizer:
             try:
                 self.tau = mlcs.calculate_tau(self.proto_eg.error_grid['mses'], self.cost_ratio)
             except mlcs.InvalidSlopeError:
-                warn("Slope was invalid, defaulting to 1/cost_ratio")
+                warn("Slope was invalid, defaulting to 1/cost_ratio",
+                     category=mlcs.UnhelpfulTauWarning)
                 self.tau = -1  # to be reset later
 
             if self.tau <= 1:

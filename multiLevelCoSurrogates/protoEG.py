@@ -22,6 +22,7 @@ class ProtoEG:
             num_reps: int=50,
             interval: int=2,
             mfm_opts=None,
+            cache_models: bool=False,
     ):
         """Container for everything needed to create (advanced) Error Grids"""
 
@@ -29,8 +30,9 @@ class ProtoEG:
         self.num_reps = num_reps
         self.interval = interval
         self.mfm_opts = mfm_opts if mfm_opts is not None else dict()
+        self.cache_models = cache_models
 
-        self.models = defaultdict(list)  # models[(n_high, n_low)] = [model_1, ..., model_nreps]
+        self.models = {}
         self.test_sets = defaultdict(list)  # test_sets[(n_high, n_low)] = [test_1, ..., test_nreps]
         self.error_grid = None  # xr.Dataset
 
@@ -43,23 +45,24 @@ class ProtoEG:
         instance_spec = mlcs.InstanceSpec.from_archive(
             self.archive, num_reps=self.num_reps, step=self.interval
         )
-        doe = self.archive.as_doe()
 
         error_records = []
         for h, l, rep in instance_spec.instances:
-
             mlcs.set_seed_by_instance(h, l, rep)
-            train, test = mlcs.split_bi_fidelity_doe(doe, h, l)
+            train, test = self.archive.split(h, l)
 
-            test_x = test.high
-            # self.test_sets[(h, l)].append(test_x)
+            idx_hash = train.indices
+            if idx_hash in self.models:
+                model = self.models[idx_hash]
+                self.num_models_reused += 1
+            else:
+                model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train,
+                                                **self.mfm_opts)
+                if self.cache_models:
+                    self.models[idx_hash] = model
+                self.num_models_trained += 1
 
-            train_archive = self._create_train_archive(train)
-
-            model = mlcs.MultiFidelityModel(fidelities=['high', 'low'], archive=train_archive, **self.mfm_opts)
-            # self.models[(h,l)].append(model)
-
-            test_y = self.archive.getfitnesses(test_x, fidelity='high')
+            test_x, test_y = test.getcandidates(fidelity='high')
             mse = mean_squared_error(test_y, model.top_level_model.predict(test_x))
             error_records.append([h, l, rep, 'high_hier', mse])
 

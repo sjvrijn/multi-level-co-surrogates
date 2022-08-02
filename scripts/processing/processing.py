@@ -54,7 +54,7 @@ named_functions = {
     for func in mf2.bi_fidelity_functions
 }
 
-for a, f in product(np.round(np.linspace(0, 1, 11),2),
+for a, f in product(np.round(np.linspace(0, 1, 21),2),
                     mf2.adjustable.bi_fidelity_functions):
     if a == 0 and 'paciorek' in f.name.lower():
         continue

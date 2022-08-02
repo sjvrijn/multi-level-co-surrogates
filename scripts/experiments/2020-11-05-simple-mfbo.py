@@ -43,10 +43,10 @@ FUNCTIONS = [
 
     mf2.borehole,  # 9
 
-    *[mf2.adjustable.branin(a) for a in np.round(np.linspace(0, 1, 11),2)],      # 10-20
-    *[mf2.adjustable.paciorek(a) for a in np.round(np.linspace(0.1, 1, 10),2)],  # 21-30
-    *[mf2.adjustable.hartmann3(a) for a in np.round(np.linspace(0, 1, 11),2)],   # 31-41
-    *[mf2.adjustable.trid(a) for a in np.round(np.linspace(0, 1, 11),2)],        # 42-52
+    *[mf2.adjustable.branin(a) for a in np.round(np.linspace(0, 1, 21),2)],       # 10-30
+    *[mf2.adjustable.paciorek(a) for a in np.round(np.linspace(0.05, 1, 20),2)],  # 31-50
+    *[mf2.adjustable.hartmann3(a) for a in np.round(np.linspace(0, 1, 21),2)],    # 51-71
+    *[mf2.adjustable.trid(a) for a in np.round(np.linspace(0, 1, 21),2)],         # 72-92
 ]
 
 
@@ -84,6 +84,7 @@ def main(args):
         'doe_n_low': 10,
         'num_reps': args.nreps,
         'use_x_opt': args.shortcut,
+        'cache_models': args.cache_models,
     }
 
     for func in functions:
@@ -107,9 +108,15 @@ if __name__ == '__main__':
 
     cost_ratios = [0.1, 0.2, 0.25, 0.5]
     experiments = ['fixed', 'naive', 'proto-eg']
+    # All non-adjustable, Branin 0,0.05,0.25, Paciorek 0.05--0.25, Hartmann3 0.2--0.4, Trid 0.65--1
+    func_indices = list(range(10))\
+                   + [10,11,15]\
+                   + [31,32,33,34,35]\
+                   + [55,56,57,58,59]\
+                   + [85,86,87,88,89,90,91,92]
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('idx', type=int, default=range(len(FUNCTIONS)), nargs='*',
+    parser.add_argument('idx', type=int, default=func_indices, nargs='*',
                         help=f'Experiment indices [0-{len(FUNCTIONS) - 1}] to run. Default: all')
     parser.add_argument('-e', '--experiment', type=str, default=experiments, nargs='*',
                         help=f'Experiment function to run. Options: {", ".join(experiments)}. Default: all')
@@ -125,6 +132,8 @@ if __name__ == '__main__':
                         help='Force rerunning this experiment. Deletes previous files')
     parser.add_argument('--shortcut', action='store_true',
                         help="Stop optimization when optimum reached based on function's `x_opt`")
+    parser.add_argument('--cache-models', action='store_true',
+                        help="Cache models when building an error grid. NOTE: requires 200+GB RAM")
     arguments = parser.parse_args()
 
     # ensure only valid experiment names are passed on
