@@ -48,19 +48,18 @@ def plot_folder_angles_as_polar(folder: Path, exts, force_regen=False):
 def plot_grouped_folder_angles_as_polar(folders, group_name, exts, force_regen=False):
     print(f'plotting group {group_name}')
 
-
     fig, axes = plt.subplots(nrows=1, ncols=2, subplot_kw={'projection': 'polar'})
     fig.suptitle(group_name)
 
-    for folder in tqdm(list(folders), leave=False, desc='Experiment reps'):
+    for idx, folder in tqdm(enumerate(list(folders)), leave=False, desc='Experiment reps'):
         if not subfolder_template.parse(folder.name):
             return
         angles, median_angles, budgets = get_budget_and_angles(folder, force_regen=force_regen)
         if not angles:
             return  # no .nc files were present
 
-        axes[0].plot(angles, budgets, lw=.75, c='black')
-        axes[1].plot(median_angles, budgets, lw=.75, c='black')
+        axes[0].plot(angles, budgets, lw=.75, c='black', alpha=.9-(idx*.15))
+        axes[1].plot(median_angles, budgets, lw=.75, c='black', alpha=.9-(idx*.15))
 
     for ax, median_only in zip(axes.flatten(), [False, True]):
         ax.set_thetalim(thetamin=0, thetamax=120)
