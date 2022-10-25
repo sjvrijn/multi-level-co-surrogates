@@ -195,7 +195,7 @@ def plot_grouped_but_individually(save_exts=('.png', '.pdf')):
 
             ax = axes[0]
             # EG size path
-            ax.plot(df['nlow'].values, df['nhigh'].values, marker='o', **fmt)
+            ax.plot(df['nlow'].values, df['nhigh'].values, marker='o', ms=1, **fmt)
             # ax.set_title('EG size \'path\'')
             ax.set_title(f'{func_name} with init_budget={init_budget} (idx {idx})')
             ax.set_ylabel('high-fid samples')
