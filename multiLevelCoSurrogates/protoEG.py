@@ -218,8 +218,8 @@ class ProtoEG:
         :returns: fraction [0, 1] of samples that can be reused
         """
 
-        max_high = self.archive.count('high') if not max_high else max_high
-        max_low = self.archive.count('low') if not max_low else max_low
+        max_high = max_high or self.archive.count('high')
+        max_low = max_low or self.archive.count('low')
 
         if fidelity == 'high':
             fraction = (max_high-num_high+1) / (max_high+1)
