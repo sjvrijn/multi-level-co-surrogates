@@ -59,8 +59,9 @@ def compare_different_runs(save_exts=('.png', '.pdf')):
                 colors[method] = len(colors)
             plot_on_axes(axes, init_budget, df, label=label, color=f'C{colors[method]}', linewidth=.75)
 
+        save_name = f'comparison-{func_name}-b{init_budget}'.replace(".", "").replace(" ","_")
         for suffix in save_exts:
-            fig.savefig(plot_path / f'comparison-{func_name}-b{init_budget}{suffix}')
+            fig.savefig(plot_path / f'{save_name}{suffix}')
         plt.close()
 
 
@@ -93,8 +94,9 @@ def compare_different_strategies(save_exts=('.png', '.pdf')):
             df = add_min_over_time_to_log(df, func_name.lower())
             plot_on_axes(axes, init_budget, df, label=method)
 
+        save_name = f'comparison-{func_name}-b{init_budget}-i{idx}'.replace(".", "").replace(" ","_")
         for suffix in save_exts:
-            fig.savefig(plot_path / f'comparison-{func_name}-b{init_budget}-i{idx}{suffix}')
+            fig.savefig(plot_path / f'{save_name}{suffix}')
         plt.close()
 
 
@@ -236,7 +238,8 @@ def plot_grouped_but_individually(save_exts=('.png', '.pdf')):
 
         for suffix in save_exts:
             for fig, plot_type, plot_folder in zip(figs, names, plot_folders):
-                fig.savefig(plot_folder / f'{plot_type}-comparison-{func_name}-b{init_budget}-{suffix}')
+                save_name = f'{plot_type}-comparison-{func_name}-b{init_budget}'.replace(".", "").replace(" ", "_")
+                fig.savefig(plot_folder / f'{save_name}{suffix}')
         plt.close('all')
 
 

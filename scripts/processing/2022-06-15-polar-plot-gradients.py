@@ -69,7 +69,7 @@ def plot_grouped_folder_angles_as_polar(folders, group_name, exts, force_regen=F
         ax.set_title(f'{"Median-only" if median_only else "All repetitions"}')
 
     for ext in exts:
-        fig.savefig(plot_path / f'{group_name}{ext}', bbox_inches='tight')
+        fig.savefig(plot_path / f'{group_name.replace(".", "").replace(" ", "_")}{ext}', bbox_inches='tight')
     fig.clear()
     plt.close('all')
 
