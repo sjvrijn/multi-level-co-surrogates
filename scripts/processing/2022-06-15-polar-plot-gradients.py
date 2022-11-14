@@ -26,7 +26,7 @@ data_path = here('files/2020-11-05-simple-mfbo/')
 plot_path = here('plots/2022-06-15-polar-plot-gradients/', warn=False)
 plot_path.mkdir(exist_ok=True, parents=True)
 
-subfolder_template = compile('{func_name}-{method}-b{init_budget:d}-i{idx:d}')
+subfolder_template = compile('{func_name}-{method}-c{cost_ratio:f}-b{init_budget:d}-i{idx:d}')
 errorgrid_template = compile('errorgrid_{iteration:d}.nc')
 
 
