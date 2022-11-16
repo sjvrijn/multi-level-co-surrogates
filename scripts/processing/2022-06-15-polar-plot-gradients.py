@@ -30,10 +30,10 @@ subfolder_template = compile('{func_name}-{method}-c{cost_ratio:f}-b{init_budget
 errorgrid_template = compile('errorgrid_{iteration:d}.nc')
 
 
-def plot_folder_angles_as_polar(folder: Path, exts, force_regen=False):
+def plot_folder_angles_as_polar(folder: Path, exts, force_regen=False, use_cost_ratio=None):
     if not subfolder_template.parse(folder.name):
         return
-    angles, median_angles, budgets = get_budget_and_angles(folder, force_regen=force_regen)
+    angles, median_angles, budgets = get_budget_and_angles(folder, force_regen=force_regen, use_cost_ratio=use_cost_ratio)
     if not angles:
         return  # no .nc files were present
 
@@ -45,7 +45,7 @@ def plot_folder_angles_as_polar(folder: Path, exts, force_regen=False):
     plt.close('all')
 
 
-def plot_grouped_folder_angles_as_polar(folders, group_name, exts, force_regen=False):
+def plot_grouped_folder_angles_as_polar(folders, group_name, exts, force_regen=False, use_cost_ratio=None):
     print(f'plotting group {group_name}')
 
     fig, axes = plt.subplots(nrows=1, ncols=2, subplot_kw={'projection': 'polar'})
@@ -54,7 +54,7 @@ def plot_grouped_folder_angles_as_polar(folders, group_name, exts, force_regen=F
     for idx, folder in tqdm(enumerate(list(folders)), leave=False, desc='Experiment reps'):
         if not subfolder_template.parse(folder.name):
             return
-        angles, median_angles, budgets = get_budget_and_angles(folder, force_regen=force_regen)
+        angles, median_angles, budgets = get_budget_and_angles(folder, force_regen=force_regen, use_cost_ratio=use_cost_ratio)
         if not angles:
             return  # no .nc files were present
 
@@ -74,10 +74,10 @@ def plot_grouped_folder_angles_as_polar(folders, group_name, exts, force_regen=F
     plt.close('all')
 
 
-def get_budget_and_angles(folder: Path, force_regen: bool=False):
+def get_budget_and_angles(folder: Path, force_regen: bool=False, use_cost_ratio: bool=False):
     angles_filename = folder / 'angles.csv'
     if force_regen or not angles_filename.exists():
-        df = calculate_angles(folder)
+        df = calculate_angles(folder, use_cost_ratio=use_cost_ratio)
         df.to_csv(angles_filename, index=False)
     else:
         df = pd.read_csv(angles_filename)
@@ -85,9 +85,11 @@ def get_budget_and_angles(folder: Path, force_regen: bool=False):
     return [df[c].values.tolist() for c in ['theta', 'median_theta', 'budgets']]
 
 
-def calculate_angles(folder):
+def calculate_angles(folder: Path, use_cost_ratio: bool=False):
     budgets = [0]
-    init_budget = subfolder_template.parse(folder.name)['init_budget']
+    match = subfolder_template.parse(folder.name)
+    init_budget = match['init_budget']
+    cost_ratio = match['cost_ratio'] if use_cost_ratio else None
     df = pd.read_csv(folder / 'log.csv', index_col=0, sep=';')
     budgets.extend((init_budget - df['budget'].values).tolist())
 
@@ -99,8 +101,8 @@ def calculate_angles(folder):
         with xr.open_dataset(file) as ds:
             da = ds['mses'].sel(model='high_hier')
         with da.load() as da:
-            angle_summary = mlcs.utils.error_grids.calc_angle(da)
-            median_summary = mlcs.utils.error_grids.calc_angle(da.median(dim='rep'))
+            angle_summary = mlcs.utils.error_grids.calc_angle(da, cost_ratio=cost_ratio)
+            median_summary = mlcs.utils.error_grids.calc_angle(da.median(dim='rep'), cost_ratio=cost_ratio)
         angles.append(angle_summary)
         median_angles.append(median_summary.theta)
 
@@ -132,11 +134,11 @@ def main(args):
             continue
         folders.append(subfolder)
         if args.singles:
-            plot_folder_angles_as_polar(subfolder, suffixes, force_regen=args.force_regen)
+            plot_folder_angles_as_polar(subfolder, suffixes, force_regen=args.force_regen, use_cost_ratio=args.cost_ratio)
 
     if args.grouped:
         for name, folder_group in groupby(folders, key=remove_idx):
-            plot_grouped_folder_angles_as_polar(folder_group, name, suffixes, force_regen=args.force_regen)
+            plot_grouped_folder_angles_as_polar(folder_group, name, suffixes, force_regen=args.force_regen, use_cost_ratio=args.cost_ratio)
 
 
 if __name__ == '__main__':
@@ -149,6 +151,8 @@ if __name__ == '__main__':
                         help="Plot comparison of methods over multiple runs. Default: --grouped.")
     parser.add_argument('--force-regen', action='store_true',
                         help="Force regeneration of all caching files")
+    parser.add_argument('--cost-ratio', action='store_true', default=True,
+                        help="Include cost-ratio in calculating angles. Default: --cost-ratio")
     args = parser.parse_args()
 
     main(args)

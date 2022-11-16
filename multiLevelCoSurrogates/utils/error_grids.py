@@ -27,14 +27,19 @@ def fit_lin_reg(da: xr.DataArray, calc_SSE: bool=False):
     return reg, SSE
 
 
-def calc_angle(da: xr.DataArray):
+def calc_angle(da: xr.DataArray, cost_ratio: float=None):
     """Calculate the global gradient angle of an Error Grid based
     on the slope of beta_1 / beta_2 from a linear regression fit.
+
+    :param da:          xr.DataArray containing all model errors
+    :param cost_ratio:  [optional] cost ratio between high- and low-fidelity
     """
     reg, SSE = mlcs.utils.error_grids.fit_lin_reg(da, calc_SSE=True)
 
     beta_high, beta_low = reg.coef_
     ratio = beta_high / beta_low
+    if cost_ratio:
+        ratio *= cost_ratio
     df = da.size - 3
 
     nhighs = da.coords['n_high'].values
