@@ -48,8 +48,10 @@ def plot_folder_angles_as_polar(folder: Path, exts, force_regen=False, use_cost_
 def plot_grouped_folder_angles_as_polar(folders, group_name, exts, force_regen=False, use_cost_ratio=None):
     print(f'plotting group {group_name}')
 
-    fig, axes = plt.subplots(nrows=1, ncols=2, subplot_kw={'projection': 'polar'})
-    fig.suptitle(group_name)
+    fig_all, ax_all = plt.subplots(nrows=1, ncols=1, subplot_kw={'projection': 'polar'})
+    fig_med, ax_med = plt.subplots(nrows=1, ncols=1, subplot_kw={'projection': 'polar'})
+    fig_all.suptitle(group_name)
+    fig_med.suptitle(group_name)
 
     for idx, folder in tqdm(enumerate(list(folders)), leave=False, desc='Experiment reps'):
         if not subfolder_template.parse(folder.name):
@@ -58,19 +60,21 @@ def plot_grouped_folder_angles_as_polar(folders, group_name, exts, force_regen=F
         if not angles:
             return  # no .nc files were present
 
-        axes[0].plot(angles, budgets, lw=.75, c='black', alpha=.9-(idx*.15))
-        axes[1].plot(median_angles, budgets, lw=.75, c='black', alpha=.9-(idx*.15))
+        ax_all.plot(angles, budgets, lw=.75, c='black', alpha=.9-(idx*.15))
+        ax_med.plot(median_angles, budgets, lw=.75, c='black', alpha=.9-(idx*.15))
 
-    for ax, median_only in zip(axes.flatten(), [False, True]):
+    for ax, title in zip([ax_all, ax_med], ["Using all repetitions", "Using only median of repetitions"]):
         ax.set_thetalim(thetamin=0, thetamax=120)
         ax.set_thetagrids([0, 15, 30, 45, 60, 75, 90, 105, 120])
         ax.set_xlabel('Used budget')
         ax.set_ylabel('Gradient angle')
-        ax.set_title(f'{"Median-only" if median_only else "All repetitions"}')
+        ax.set_title(title)
 
     for ext in exts:
-        fig.savefig(plot_path / f'{group_name.replace(".", "").replace(" ", "_")}{ext}', bbox_inches='tight')
-    fig.clear()
+        fig_all.savefig(plot_path / f'{group_name.replace(".", "").replace(" ", "_")}{ext}', bbox_inches='tight')
+        fig_med.savefig(plot_path / f'medians_{group_name.replace(".", "").replace(" ", "_")}{ext}', bbox_inches='tight')
+    fig_all.clear()
+    fig_med.clear()
     plt.close('all')
 
 
