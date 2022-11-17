@@ -45,7 +45,7 @@ def plot_folder_angles_as_polar(folder: Path, exts, force_regen=False, use_cost_
     plt.close('all')
 
 
-def plot_grouped_folder_angles_as_polar(folders, group_name, exts, force_regen=False, use_cost_ratio=None):
+def plot_grouped_folder_angles_as_polar(folders, group_name, exts, force_regen=False, use_cost_ratio=None, save_median=False):
     print(f'plotting group {group_name}')
 
     fig_all, ax_all = plt.subplots(nrows=1, ncols=1, subplot_kw={'projection': 'polar'})
@@ -61,7 +61,8 @@ def plot_grouped_folder_angles_as_polar(folders, group_name, exts, force_regen=F
             return  # no .nc files were present
 
         ax_all.plot(angles, budgets, lw=.75, c='black', alpha=.9-(idx*.15))
-        ax_med.plot(median_angles, budgets, lw=.75, c='black', alpha=.9-(idx*.15))
+        if save_median:
+            ax_med.plot(median_angles, budgets, lw=.75, c='black', alpha=.9-(idx*.15))
 
     for ax, title in zip([ax_all, ax_med], ["Using all repetitions", "Using only median of repetitions"]):
         ax.set_thetalim(thetamin=0, thetamax=120)
@@ -72,7 +73,8 @@ def plot_grouped_folder_angles_as_polar(folders, group_name, exts, force_regen=F
 
     for ext in exts:
         fig_all.savefig(plot_path / f'{group_name.replace(".", "").replace(" ", "_")}{ext}', bbox_inches='tight')
-        fig_med.savefig(plot_path / f'medians_{group_name.replace(".", "").replace(" ", "_")}{ext}', bbox_inches='tight')
+        if save_median:
+            fig_med.savefig(plot_path / f'medians_{group_name.replace(".", "").replace(" ", "_")}{ext}', bbox_inches='tight')
     fig_all.clear()
     fig_med.clear()
     plt.close('all')
@@ -138,11 +140,16 @@ def main(args):
             continue
         folders.append(subfolder)
         if args.singles:
-            plot_folder_angles_as_polar(subfolder, suffixes, force_regen=args.force_regen, use_cost_ratio=args.cost_ratio)
+            plot_folder_angles_as_polar(subfolder, suffixes,
+                                        force_regen=args.force_regen,
+                                        use_cost_ratio=args.cost_ratio)
 
     if args.grouped:
         for name, folder_group in groupby(folders, key=remove_idx):
-            plot_grouped_folder_angles_as_polar(folder_group, name, suffixes, force_regen=args.force_regen, use_cost_ratio=args.cost_ratio)
+            plot_grouped_folder_angles_as_polar(folder_group, name, suffixes,
+                                                force_regen=args.force_regen,
+                                                use_cost_ratio=args.cost_ratio,
+                                                save_median=args.save_median)
 
 
 if __name__ == '__main__':
@@ -154,9 +161,11 @@ if __name__ == '__main__':
     parser.add_argument("--grouped", action=argparse.BooleanOptionalAction, default=True,
                         help="Plot comparison of methods over multiple runs. Default: --grouped.")
     parser.add_argument('--force-regen', action='store_true',
-                        help="Force regeneration of all caching files")
+                        help="Force regeneration of all caching files. Default: --no-force-regen")
     parser.add_argument('--cost-ratio', action='store_true', default=True,
                         help="Include cost-ratio in calculating angles. Default: --cost-ratio")
+    parser.add_argument('--save-median', action='store_true',
+                        help="Also save grouped plots for only median repetition. Default: --no-save-median")
     args = parser.parse_args()
 
     main(args)
